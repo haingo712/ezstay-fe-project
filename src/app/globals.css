@@ -1,0 +1,62 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --secondary: #475569;
+  --background: #ffffff;
+  --text: #1f2937;
+}
+
+.dark {
+  --primary: #3b82f6;
+  --primary-dark: #60a5fa;
+  --secondary: #94a3b8;
+  --background: #111827;
+  --text: #f3f4f6;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+[data-theme='dark'] {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 0, 0, 0;
+  --background-end-rgb: 0, 0, 0;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-start-rgb));
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Autofill fix for dark mode */
+input:-webkit-autofill,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:active {
+  transition: background-color 5000s ease-in-out 0s;
+}
+html.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill:focus,
+html.dark input:-webkit-autofill:hover,
+html.dark input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #111827 inset !important;
+  box-shadow: 0 0 0 1000px #111827 inset !important;
+  -webkit-text-fill-color: #fff !important;
+  caret-color: #fff !important;
+}
