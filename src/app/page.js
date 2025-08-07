@@ -11,7 +11,6 @@ import CustomerReviews from '../components/CustomerReviews';
 import HowItWorks from '../components/HowItWorks';
 import BlogNews from '../components/BlogNews';
 import FAQ from '../components/FAQ';
-import StickyCTA from '../components/StickyCTA';
 
 export default function Home() {
   return (
@@ -27,7 +26,6 @@ export default function Home() {
       <CustomerReviews />
       <FAQ />
       <Footer />
-      <StickyCTA />
     </div>
   );
 }
