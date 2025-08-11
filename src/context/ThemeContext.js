@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 
-const ThemeContext = createContext({
+export const ThemeContext = createContext({
   theme: "light",
   toggleTheme: () => {},
 });
