@@ -13,7 +13,9 @@ export default function Footer() {
               EZStay
             </h3>
             <p className="text-gray-700 dark:text-gray-300 text-sm mb-2">
-              Connecting tenants and landlords with trust and transparency.
+              Modern room rental platform connecting tenants and landlords with
+              trust and transparency. Powered by MongoDB and ASP.NET
+              microservices.
             </p>
             <div className="flex space-x-3 mt-4">
               <a
@@ -73,15 +75,15 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/rooms"
+                  href="/search"
                   className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
                 >
-                  Find Room
+                  Find Rooms
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/post"
+                  href="/owner/posts"
                   className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
                 >
                   Post Room
@@ -89,18 +91,58 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/blog"
+                  href="/support"
                   className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
                 >
-                  Blog
+                  Support
                 </Link>
               </li>
             </ul>
           </div>
-          {/* Support */}
+          {/* Services */}
           <div>
             <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-3">
-              Support
+              Services
+            </h4>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link
+                  href="/dashboard"
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
+                >
+                  User Dashboard
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/owner"
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
+                >
+                  Owner Panel
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/staff"
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
+                >
+                  Staff Panel
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin"
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
+                >
+                  Admin Panel
+                </Link>
+              </li>
+            </ul>
+          </div>
+          {/* Contact */}
+          <div>
+            <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-3">
+              Contact Information
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
@@ -120,51 +162,16 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <Link
-                  href="/faq"
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
-                >
-                  FAQ
-                </Link>
+                <span className="text-gray-700 dark:text-gray-300">
+                  Address: FPT University, Ho Chi Minh City
+                </span>
               </li>
               <li>
                 <Link
-                  href="/contact"
+                  href="/support"
                   className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
                 >
-                  Contact
-                </Link>
-              </li>
-            </ul>
-          </div>
-          {/* About */}
-          <div>
-            <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-3">
-              About
-            </h4>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link
-                  href="/about"
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
-                >
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/terms"
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
-                >
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/privacy"
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
-                >
-                  Privacy Policy
+                  Support Center
                 </Link>
               </li>
             </ul>
@@ -172,7 +179,22 @@ export default function Footer() {
         </div>
         <div className="border-t border-gray-200 dark:border-gray-700 pt-6 flex flex-col md:flex-row items-center justify-between">
           <div className="text-gray-600 dark:text-gray-400 text-sm">
-            © 2025 EZStay. All rights reserved.
+            © 2025 EZStay. All rights reserved. Built with Next.js, MongoDB &
+            ASP.NET Core.
+          </div>
+          <div className="flex space-x-4 mt-4 md:mt-0">
+            <Link
+              href="/terms"
+              className="text-gray-600 dark:text-gray-400 hover:text-blue-600 text-sm"
+            >
+              Terms of Service
+            </Link>
+            <Link
+              href="/privacy"
+              className="text-gray-600 dark:text-gray-400 hover:text-blue-600 text-sm"
+            >
+              Privacy Policy
+            </Link>
           </div>
         </div>
       </div>

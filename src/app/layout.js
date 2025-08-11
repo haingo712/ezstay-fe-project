@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
-import ClientThemeProvider from '@/components/ClientThemeProvider';
+import ClientThemeProvider from "@/components/ClientThemeProvider";
+import AIAssistant from "@/components/AIAssistant";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,7 +23,7 @@ export default function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <script
+        <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -47,6 +48,7 @@ export default function RootLayout({ children }) {
       >
         <ClientThemeProvider>
           {children}
+          <AIAssistant />
         </ClientThemeProvider>
       </body>
     </html>
