@@ -4,10 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginPage() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  const { login } = useAuth();
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -27,9 +29,12 @@ export default function LoginPage() {
   };
 
   const validate = () => {
-    if (!form.email.trim()) return "Email is required.";
-    if (!/\S+@\S+\.\S+/.test(form.email))
-      return "Please enter a valid email address.";
+    if (!form.email.trim()) return "Email or phone number is required.";
+    // Allow either email format or phone number format
+    const isEmail = /\S+@\S+\.\S+/.test(form.email);
+    const isPhone = /^[0-9]{10,11}$/.test(form.email.replace(/\D/g, ''));
+    if (!isEmail && !isPhone) 
+      return "Please enter a valid email address or phone number.";
     if (!form.password) return "Password is required.";
     if (form.password.length < 6)
       return "Password must be at least 6 characters.";
@@ -46,12 +51,24 @@ export default function LoginPage() {
       return;
     }
     setLoading(true);
-    // Mock login (replace with real API call when backend ready)
-    setTimeout(() => {
-      setSuccess("Login successful! Redirecting...");
+
+    try {
+      const result = await login({
+        email: form.email,
+        password: form.password,
+      });
+
+      if (result.success) {
+        setSuccess(result.message || "Login successful! Redirecting...");
+        setTimeout(() => router.push("/"), 1200);
+      } else {
+        setError(result.message || "Login failed. Please check your credentials.");
+      }
+    } catch (error) {
+      setError(error.message);
+    } finally {
       setLoading(false);
-      setTimeout(() => router.push("/"), 1200);
-    }, 1000);
+    }
   };
 
   const handleSocialLogin = (provider) => {
@@ -148,17 +165,17 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                Email Address
+                Email Address or Phone Number
               </label>
               <input
-                type="email"
+                type="text"
                 name="email"
                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="Enter your email"
+                placeholder="Enter your email or phone number"
                 required
-                autoComplete="email"
+                autoComplete="username"
               />
             </div>
 

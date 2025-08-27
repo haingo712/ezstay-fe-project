@@ -1,41 +1,19 @@
-// src/utils/api.js - API Configuration for MongoDB & ASP.NET Microservices
+// src/utils/api.js - API Configuration for EZStay Backend Microservices
 
-// Main API URLs for different microservices
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-export const AUTH_API =
-  process.env.NEXT_PUBLIC_AUTH_API || "http://localhost:5001";
-export const PROPERTY_API =
-  process.env.NEXT_PUBLIC_PROPERTY_API || "http://localhost:5002";
-export const PAYMENT_API =
-  process.env.NEXT_PUBLIC_PAYMENT_API || "http://localhost:5003";
-export const NOTIFICATION_API =
-  process.env.NEXT_PUBLIC_NOTIFICATION_API || "http://localhost:5004";
+// API Gateway URL - All requests go through this single endpoint
+export const API_GATEWAY_URL =
+  process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:7001";
 
 // Helper function for API calls
 export async function apiFetch(path, options = {}) {
-  // Determine which API to use based on the path
-  let baseUrl = API_URL;
-
-  if (path.startsWith("/auth/")) {
-    baseUrl = AUTH_API;
-  } else if (
-    path.startsWith("/properties/") ||
-    path.startsWith("/rooms/") ||
-    path.startsWith("/posts/")
-  ) {
-    baseUrl = PROPERTY_API;
-  } else if (path.startsWith("/payments/") || path.startsWith("/bills/")) {
-    baseUrl = PAYMENT_API;
-  } else if (path.startsWith("/notifications/")) {
-    baseUrl = NOTIFICATION_API;
-  }
+  // All requests go through API Gateway
+  const baseUrl = API_GATEWAY_URL;
 
   if (!baseUrl) {
-    throw new Error("API URL is not configured for: " + path);
+    throw new Error("API Gateway URL is not configured");
   }
 
-  const url = `${baseUrl}/api${path}`;
+  const url = `${baseUrl}${path}`;
 
   const defaultHeaders = {
     "Content-Type": "application/json",
@@ -87,132 +65,282 @@ export async function apiFetch(path, options = {}) {
   }
 }
 
-// Authentication helpers
+// Authentication API (chưa có backend - sẽ dùng mock data)
 export const authAPI = {
   login: (credentials) =>
-    apiFetch("/auth/login", {
-      method: "POST",
-      body: JSON.stringify(credentials),
+    Promise.resolve({
+      token: "mock-jwt-token",
+      user: { id: "1", email: credentials.email, role: "owner" },
     }),
 
   register: (userData) =>
-    apiFetch("/auth/register", {
-      method: "POST",
-      body: JSON.stringify(userData),
+    Promise.resolve({
+      token: "mock-jwt-token",
+      user: { id: "1", email: userData.email, role: "owner" },
     }),
 
-  logout: () =>
-    apiFetch("/auth/logout", {
-      method: "POST",
-    }),
+  logout: () => Promise.resolve({}),
 
-  refreshToken: () =>
-    apiFetch("/auth/refresh", {
-      method: "POST",
-    }),
+  refreshToken: () => Promise.resolve({ token: "new-mock-token" }),
 
-  getProfile: () => apiFetch("/auth/profile"),
+  getProfile: () =>
+    Promise.resolve({
+      id: "1",
+      email: "owner@example.com",
+      role: "owner",
+    }),
 };
 
-// Property/Room helpers
-export const propertyAPI = {
-  getRooms: (params = {}) => {
+// Boarding House API - Đã hoàn thành
+export const boardingHouseAPI = {
+  // Lấy tất cả nhà trọ
+  getAll: (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    return apiFetch(`/rooms${queryString ? `?${queryString}` : ""}`);
+    return apiFetch(
+      `/api/BoardingHouses${queryString ? `?${queryString}` : ""}`
+    );
   },
 
-  getRoom: (id) => apiFetch(`/rooms/${id}`),
+  // Lấy nhà trọ theo owner ID
+  getByOwnerId: (ownerId, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiFetch(
+      `/api/BoardingHouses/owner/${ownerId}${
+        queryString ? `?${queryString}` : ""
+      }`
+    );
+  },
 
-  createRoom: (roomData) =>
-    apiFetch("/rooms", {
+  // Lấy nhà trọ theo ID
+  getById: (id) => apiFetch(`/api/BoardingHouses/${id}`),
+
+  // Tạo nhà trọ mới
+  create: (houseData) =>
+    apiFetch("/api/BoardingHouses", {
       method: "POST",
-      body: JSON.stringify(roomData),
+      body: JSON.stringify(houseData),
     }),
 
-  updateRoom: (id, roomData) =>
-    apiFetch(`/rooms/${id}`, {
+  // Cập nhật nhà trọ
+  update: (id, houseData) =>
+    apiFetch(`/api/BoardingHouses/${id}`, {
       method: "PUT",
-      body: JSON.stringify(roomData),
+      body: JSON.stringify(houseData),
     }),
 
-  deleteRoom: (id) =>
-    apiFetch(`/rooms/${id}`, {
+  // Xóa nhà trọ
+  delete: (id) =>
+    apiFetch(`/api/BoardingHouses/${id}`, {
       method: "DELETE",
     }),
-
-  getPosts: (params = {}) => {
-    const queryString = new URLSearchParams(params).toString();
-    return apiFetch(`/posts${queryString ? `?${queryString}` : ""}`);
-  },
-
-  createPost: (postData) =>
-    apiFetch("/posts", {
-      method: "POST",
-      body: JSON.stringify(postData),
-    }),
 };
 
-// Payment helpers
-export const paymentAPI = {
-  getBills: (params = {}) => {
+// Room API - Đã hoàn thành
+export const roomAPI = {
+  // Lấy tất cả phòng
+  getAll: (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    return apiFetch(`/bills${queryString ? `?${queryString}` : ""}`);
+    return apiFetch(`/api/Rooms${queryString ? `?${queryString}` : ""}`);
   },
 
-  createBill: (billData) =>
-    apiFetch("/bills", {
-      method: "POST",
-      body: JSON.stringify(billData),
-    }),
-
-  payBill: (billId, paymentData) =>
-    apiFetch(`/bills/${billId}/pay`, {
-      method: "POST",
-      body: JSON.stringify(paymentData),
-    }),
-};
-
-// Notification helpers
-export const notificationAPI = {
-  getNotifications: (params = {}) => {
+  // Lấy phòng theo house ID
+  getByHouseId: (houseId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    return apiFetch(`/notifications${queryString ? `?${queryString}` : ""}`);
+    return apiFetch(
+      `/api/Rooms/ByHouseId/${houseId}${queryString ? `?${queryString}` : ""}`
+    );
   },
 
-  markAsRead: (notificationId) =>
-    apiFetch(`/notifications/${notificationId}/read`, {
+  // Lấy phòng theo house location ID
+  getByHouseLocationId: (locationId, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiFetch(
+      `/api/Rooms/ByHouseLocationId/${locationId}${
+        queryString ? `?${queryString}` : ""
+      }`
+    );
+  },
+
+  // Lấy phòng theo ID
+  getById: (id) => apiFetch(`/api/Rooms/${id}`),
+
+  // Tạo phòng mới
+  create: (roomData) =>
+    apiFetch("/api/Rooms", {
+      method: "POST",
+      body: JSON.stringify(roomData),
+    }),
+
+  // Cập nhật phòng
+  update: (id, roomData) =>
+    apiFetch(`/api/Rooms/${id}`, {
       method: "PUT",
+      body: JSON.stringify(roomData),
     }),
 
-  sendNotification: (notificationData) =>
-    apiFetch("/notifications", {
-      method: "POST",
-      body: JSON.stringify(notificationData),
+  // Xóa phòng
+  delete: (id) =>
+    apiFetch(`/api/Rooms/${id}`, {
+      method: "DELETE",
     }),
 };
 
-// Utility function to check if APIs are available
+// Amenity API - Đã hoàn thành
+export const amenityAPI = {
+  // Lấy tiện nghi theo owner ID
+  getByOwnerId: (ownerId) => apiFetch(`/api/Amenity/ByOwnerId/${ownerId}`),
+
+  // Lấy tiện nghi theo owner ID với OData
+  getByOwnerIdOData: (ownerId, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiFetch(
+      `/api/Amenity/ByOwnerId/odata/${ownerId}${
+        queryString ? `?${queryString}` : ""
+      }`
+    );
+  },
+
+  // Lấy tên tiện nghi duy nhất
+  getDistinctNames: () => apiFetch("/api/Amenity/DistinctNames"),
+
+  // Lấy tiện nghi theo ID
+  getById: (id) => apiFetch(`/api/Amenity/${id}`),
+
+  // Tạo tiện nghi mới
+  create: (amenityData) =>
+    apiFetch("/api/Amenity", {
+      method: "POST",
+      body: JSON.stringify(amenityData),
+    }),
+
+  // Cập nhật tiện nghi
+  update: (id, amenityData) =>
+    apiFetch(`/api/Amenity/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(amenityData),
+    }),
+
+  // Xóa tiện nghi
+  delete: (id) =>
+    apiFetch(`/api/Amenity/${id}`, {
+      method: "DELETE",
+    }),
+};
+
+// House Location API - Đã hoàn thành
+export const houseLocationAPI = {
+  // Lấy tất cả locations
+  getAll: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiFetch(
+      `/api/HouseLocations${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  // Lấy location theo house ID
+  getByHouseId: (houseId, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiFetch(
+      `/api/HouseLocations/house/${houseId}${
+        queryString ? `?${queryString}` : ""
+      }`
+    );
+  },
+
+  // Lấy location theo ID
+  getById: (id) => apiFetch(`/api/HouseLocations/${id}`),
+
+  // Tạo location mới
+  create: (locationData) =>
+    apiFetch("/api/HouseLocations", {
+      method: "POST",
+      body: JSON.stringify(locationData),
+    }),
+
+  // Cập nhật location
+  update: (id, locationData) =>
+    apiFetch(`/api/HouseLocations/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(locationData),
+    }),
+
+  // Xóa location
+  delete: (id) =>
+    apiFetch(`/api/HouseLocations/${id}`, {
+      method: "DELETE",
+    }),
+};
+
+// Room Amenity API - Đã hoàn thành
+export const roomAmenityAPI = {
+  // Lấy tất cả room amenity
+  getAll: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiFetch(`/api/RoomAmenity${queryString ? `?${queryString}` : ""}`);
+  },
+
+  // Lấy amenity theo room ID
+  getByRoomId: (roomId, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiFetch(
+      `/api/RoomAmenity/ByRoomId/${roomId}${
+        queryString ? `?${queryString}` : ""
+      }`
+    );
+  },
+
+  // Lấy room amenity theo ID
+  getById: (id) => apiFetch(`/api/RoomAmenity/${id}`),
+
+  // Tạo room amenity mới
+  create: (roomAmenityData) =>
+    apiFetch("/api/RoomAmenity", {
+      method: "POST",
+      body: JSON.stringify(roomAmenityData),
+    }),
+
+  // Cập nhật room amenity
+  update: (id, roomAmenityData) =>
+    apiFetch(`/api/RoomAmenity/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(roomAmenityData),
+    }),
+
+  // Xóa room amenity
+  delete: (id) =>
+    apiFetch(`/api/RoomAmenity/${id}`, {
+      method: "DELETE",
+    }),
+};
+
+// Legacy API exports for backward compatibility
+export const propertyAPI = roomAPI; // Alias for room API
+
+// Payment API chưa có backend - sử dụng mock data
+export const paymentAPI = {
+  getBills: () => Promise.resolve([]),
+  createBill: () => Promise.resolve({ success: true }),
+  payBill: () => Promise.resolve({ success: true }),
+};
+
+// Notification API chưa có backend - sử dụng mock data
+export const notificationAPI = {
+  getNotifications: () => Promise.resolve([]),
+  markAsRead: () => Promise.resolve({ success: true }),
+  sendNotification: () => Promise.resolve({ success: true }),
+};
+
+// Utility function to check API Gateway health
 export const checkAPIHealth = async () => {
-  const apis = {
-    main: API_URL,
-    auth: AUTH_API,
-    property: PROPERTY_API,
-    payment: PAYMENT_API,
-    notification: NOTIFICATION_API,
-  };
-
-  const healthChecks = {};
-
-  for (const [name, url] of Object.entries(apis)) {
-    try {
-      const response = await fetch(`${url}/health`, { method: "GET" });
-      healthChecks[name] = response.ok;
-    } catch {
-      healthChecks[name] = false;
-    }
+  try {
+    const response = await fetch(`${API_GATEWAY_URL}/health`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    return { gateway: response.ok };
+  } catch {
+    return { gateway: false };
   }
-
-  return healthChecks;
 };
 
 export default apiFetch;

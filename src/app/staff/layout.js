@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function StaffLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -133,119 +134,121 @@ export default function StaffLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Navbar />
+    <ProtectedRoute requiredRole={["Staff", "Admin"]}>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Navbar />
 
-      <div className="flex pt-4" style={{ height: "calc(100vh - 1rem)" }}>
-        {/* Sidebar */}
-        <div
-          className={`fixed top-16 left-0 bottom-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-lg transform ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:top-0 lg:h-full`}
-        >
-          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Staff Panel
-            </h2>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+        <div className="flex pt-4" style={{ height: "calc(100vh - 1rem)" }}>
+          {/* Sidebar */}
+          <div
+            className={`fixed top-16 left-0 bottom-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-lg transform ${
+              sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:top-0 lg:h-full`}
+          >
+            <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Staff Panel
+              </h2>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
 
-          <nav className="mt-4 px-4 flex-1 overflow-y-auto">
-            <ul className="space-y-2">
-              {navigation.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    href={item.href}
-                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                      isActive(item.href)
-                        ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200"
-                        : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                    }`}
-                    onClick={() => setSidebarOpen(false)}
-                  >
-                    {item.icon}
-                    <span className="ml-3">{item.name}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
+            <nav className="mt-4 px-4 flex-1 overflow-y-auto">
+              <ul className="space-y-2">
+                {navigation.map((item) => (
+                  <li key={item.name}>
+                    <Link
+                      href={item.href}
+                      className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                        isActive(item.href)
+                          ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200"
+                          : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                      }`}
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      {item.icon}
+                      <span className="ml-3">{item.name}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
 
-          {/* Staff info at bottom - optional */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">S</span>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  Staff User
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Content Moderator
-                </p>
+            {/* Staff info at bottom - optional */}
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-medium">S</span>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    Staff User
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Content Moderator
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Mobile sidebar overlay */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+          {/* Mobile sidebar overlay */}
+          {sidebarOpen && (
+            <div
+              className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
 
-        {/* Main content */}
-        <div className="flex-1 flex flex-col lg:ml-0 min-h-0">
-          {/* Mobile header */}
-          <div className="lg:hidden flex items-center justify-between h-16 px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+          {/* Main content */}
+          <div className="flex-1 flex flex-col lg:ml-0 min-h-0">
+            {/* Mobile header */}
+            <div className="lg:hidden flex items-center justify-between h-16 px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Staff Panel
-            </h1>
-            <div></div>
-          </div>
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Staff Panel
+              </h1>
+              <div></div>
+            </div>
 
-          {/* Page content */}
-          <main className="flex-1 overflow-y-auto p-6">{children}</main>
+            {/* Page content */}
+            <main className="flex-1 overflow-y-auto p-6">{children}</main>
+          </div>
         </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }

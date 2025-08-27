@@ -2,31 +2,39 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
+  const router = useRouter();
+  const { isAuthenticated, user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
-  // Mock authentication state
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState("guest"); // 'guest', 'user', 'owner', 'admin', 'staff'
+  // Get user role from user object or default to guest
+  const userRole = user?.role || "guest";
+  const userEmail = user?.email || "user@example.com";
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   const handleLogout = () => {
-    setIsAuthenticated(false);
-    setUserRole("guest");
+    logout();
+    setIsUserMenuOpen(false);
+    router.push("/");
   };
 
   const getNavigationItems = () => {
-    return [
+    const baseItems = [
       { href: "/", label: "Home" },
       { href: "/search-rooms", label: "Find Rooms" },
       { href: "/owner/posts", label: "Post Rooms" },
       { href: "/support", label: "Support" },
       { href: "/about", label: "About" },
     ];
+
+    return baseItems;
   };
 
   const getUserDashboardLink = () => {
@@ -105,22 +113,36 @@ export default function Navbar() {
 
               {/* Authentication Actions */}
               {isAuthenticated ? (
-                <div className="flex items-center space-x-3">
-                  <Link
-                    href={getUserDashboardLink()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
-                  >
-                    Dashboard
-                  </Link>
+                <div className="relative">
                   <button
-                    onClick={handleLogout}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 font-medium"
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full text-white font-bold text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Logout
+                    {userEmail.charAt(0).toUpperCase()}
                   </button>
+                  {isUserMenuOpen && (
+                    <div className="absolute right-0 w-56 py-2 mt-2 bg-white rounded-md shadow-xl dark:bg-gray-800 z-20">
+                      <div className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 border-b dark:border-gray-600">
+                        <p className="font-semibold truncate">{userEmail}</p>
+                      </div>
+                      <Link
+                        href={getUserDashboardLink()}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        Profile
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full px-4 py-2 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="flex items-center space-x-3">
+                <div className="hidden md:flex items-center space-x-3">
                   <Link
                     href="/login"
                     className="px-4 py-2 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 font-medium"

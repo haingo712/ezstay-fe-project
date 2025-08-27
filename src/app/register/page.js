@@ -4,10 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  const { register } = useAuth();
   const [form, setForm] = useState({
     full_name: "",
     email: "",
@@ -21,6 +23,15 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  
+  // OTP Verification states
+  const [showOtpPopup, setShowOtpPopup] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [otpSuccess, setOtpSuccess] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -65,30 +76,113 @@ export default function RegisterPage() {
     }
     setLoading(true);
 
-    // Mock register (replace with real API call when backend ready)
-    setTimeout(() => {
-      setSuccess("Registration successful! You can now sign in.");
-      setLoading(false);
-      setForm({
-        full_name: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-        phone_number: "",
-        terms: false,
+    try {
+      console.log("handleSubmit: Calling register with form data:", {
+        fullName: form.full_name,
+        email: form.email,
+        phone: form.phone_number,
+        password: form.password,
       });
-      setTimeout(() => router.push("/login"), 1500);
-    }, 1200);
+      const result = await register({
+        fullName: form.full_name,
+        email: form.email,
+        phone: form.phone_number,
+        password: form.password,
+      });
+
+      console.log("handleSubmit: Received result from useAuth:", result);
+
+      if (result && result.success) {
+        setSuccess(result.message || "Registration successful! Please check your email for OTP.");
+        setRegisteredEmail(form.email);
+        setShowOtpPopup(true); // Show OTP popup instead of redirecting
+        // Clear form
+        setForm({
+          full_name: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+          phone_number: "",
+          terms: false,
+        });
+      } else {
+        console.error("handleSubmit: Registration failed. Result:", result);
+        setError((result && result.message) || "Registration failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("handleSubmit: Caught error:", error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSocialRegister = (provider) => {
     setLoading(true);
-    // Mock social register (replace with real OAuth integration)
+    // Social registration logic here
     setTimeout(() => {
-      setSuccess(`${provider} registration successful! Redirecting...`);
+      setError(`${provider} registration not implemented yet.`);
       setLoading(false);
-      setTimeout(() => router.push("/"), 1200);
     }, 1000);
+  };
+
+  // Handle OTP verification
+  const handleOtpSubmit = async (e) => {
+    e.preventDefault();
+    if (!otpCode.trim()) {
+      setOtpError("Please enter the OTP code.");
+      return;
+    }
+    
+    setOtpLoading(true);
+    setOtpError("");
+    
+    try {
+      // Import authService for OTP verification
+      const authService = (await import('@/services/authService')).default;
+      const result = await authService.verifyOtp(registeredEmail, otpCode);
+      
+      if (result.success) {
+        setShowOtpPopup(false);
+        setSuccess(result.message || "Email verified successfully! You can now sign in.");
+        setTimeout(() => router.push("/login"), 1500);
+      } else {
+        setOtpError(result.message || "Invalid OTP. Please try again.");
+      }
+    } catch (error) {
+      setOtpError(error.message || "OTP verification failed. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  // Handle Resend OTP
+  const handleResendOtp = async () => {
+    setResendLoading(true);
+    setOtpError("");
+    setOtpSuccess("");
+    
+    try {
+      const authService = (await import('@/services/authService')).default;
+      const result = await authService.resendOtp(registeredEmail);
+      
+      if (result.success) {
+        setOtpSuccess(result.message || "A new OTP has been sent to your email.");
+      } else {
+        setOtpError(result.message || "Failed to resend OTP. Please try again later.");
+      }
+    } catch (error) {
+      setOtpError(error.message || "An error occurred while resending the OTP.");
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
+  // Close OTP popup
+  const closeOtpPopup = () => {
+    setShowOtpPopup(false);
+    setOtpCode("");
+    setOtpError("");
   };
 
   return (
@@ -431,6 +525,98 @@ export default function RegisterPage() {
           </div>
         </div>
       </div>
+
+      {/* OTP Verification Popup */}
+      {showOtpPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 w-full max-w-md mx-4">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                Verify Your Email
+              </h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
+                We've sent a 6-digit verification code to{" "}
+                <span className="font-semibold text-purple-600 dark:text-purple-400">
+                  {registeredEmail}
+                </span>
+              </p>
+            </div>
+
+            <form onSubmit={handleOtpSubmit}>
+              <div className="mb-4">
+                <label
+                  htmlFor="otpCode"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Enter Verification Code
+                </label>
+                <input
+                  id="otpCode"
+                  type="text"
+                  maxLength="6"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                  className="w-full px-4 py-3 text-center text-lg font-mono tracking-widest border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  placeholder="123456"
+                  autoComplete="off"
+                  required
+                />
+              </div>
+
+              {otpError && (
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <p className="text-sm text-red-600 dark:text-red-400">{otpError}</p>
+                </div>
+              )}
+
+              {otpSuccess && (
+                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <p className="text-sm text-green-600 dark:text-green-400">{otpSuccess}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={closeOtpPopup}
+                  className="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  disabled={otpLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={otpLoading || !otpCode.trim()}
+                >
+                  {otpLoading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Verifying...
+                    </div>
+                  ) : (
+                    'Verify Email'
+                  )}
+                </button>
+              </div>
+
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleResendOtp}
+                  disabled={resendLoading}
+                >
+                  {resendLoading ? "Sending..." : "Didn't receive code? Resend"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
