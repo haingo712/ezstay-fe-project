@@ -69,6 +69,20 @@ export default function StaffLayout({ children }) {
       ),
     },
     {
+      name: "Amenity Management",
+      href: "/staff/amenity-management",
+      icon: (
+        <svg 
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.172 1.172l-3.456 3.456a2 2 0 01-2.828 0L10.8 18.884a2 2 0 00-2.828 0l-1.788 1.788a2 2 0 000 2.828l.012.012a2 2 0 002.828 0l1.788-1.788a2 2 0 012.828 0l1.172 1.172a2 2 0 002.828 0l3.456-3.456a2 2 0 000-2.828l-1.172-1.172zM19.428 15.428L16 12m0 0a2 2 0 01-2-2V4a2 2 0 012-2h2a2 2 0 012 2v6a2 2 0 01-2 2h-2z"></path>
+        </svg>
+      )
+    },
+    {
       name: "Reports",
       href: "/staff/reports",
       icon: (
@@ -134,7 +148,7 @@ export default function StaffLayout({ children }) {
   };
 
   return (
-    <ProtectedRoute requiredRole={["Staff", "Admin"]}>
+    <ProtectedRoute requiredRole={[3, 4]}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar />
 

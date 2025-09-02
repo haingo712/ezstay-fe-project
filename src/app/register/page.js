@@ -51,12 +51,12 @@ export default function RegisterPage() {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email))
       return "Invalid email format.";
     // Password: 6+ characters, 1 uppercase, 1 lowercase, 1 number
-    if (!form.password) return "Password is required.";
-    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/.test(form.password))
-      return "Password must be at least 6 characters, include uppercase, lowercase, and number.";
-    // Confirm password
-    if (form.password !== form.confirmPassword)
-      return "Passwords do not match.";
+    // if (!form.password) return "Password is required.";
+    // if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/.test(form.password))
+    //   return "Password must be at least 6 characters, include uppercase, lowercase, and number.";
+    // // Confirm password
+    // if (form.password !== form.confirmPassword)
+    //   return "Passwords do not match.";
     // Phone number: if provided, must be valid
     if (form.phone_number && !/^\+?\d{9,15}$/.test(form.phone_number))
       return "Phone number must be 9-15 digits and can start with +.";
@@ -327,7 +327,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="Create a password"
                   required
-                  minLength={6}
+                  
                   autoComplete="new-password"
                 />
                 <button
@@ -388,7 +388,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="Confirm your password"
                   required
-                  minLength={6}
+                  
                   autoComplete="new-password"
                 />
                 <button

@@ -36,8 +36,8 @@ export default function LoginPage() {
     if (!isEmail && !isPhone) 
       return "Please enter a valid email address or phone number.";
     if (!form.password) return "Password is required.";
-    if (form.password.length < 6)
-      return "Password must be at least 6 characters.";
+    // if (form.password.length < 6)
+    //   return "Password must be at least 6 characters.";
     return null;
   };
 
@@ -58,9 +58,22 @@ export default function LoginPage() {
         password: form.password,
       });
 
-      if (result.success) {
+      if (result.success && result.user) {
         setSuccess(result.message || "Login successful! Redirecting...");
-        setTimeout(() => router.push("/"), 1200);
+        
+        // Role-based redirection
+        const userRole = result.user.role;
+        console.log("🔍 User role for redirection:", userRole, `(Type: ${typeof userRole})`);
+        
+        // Check if role is 3 (staff) - handle both string and number types
+        if (userRole === 3 || userRole === "3") {
+          console.log("✅ Redirecting to staff page...");
+          setTimeout(() => router.push("/staff/users"), 1200);
+        } else {
+          console.log("✅ Redirecting to homepage...");
+          setTimeout(() => router.push("/"), 1200);
+        }
+        
       } else {
         setError(result.message || "Login failed. Please check your credentials.");
       }
@@ -192,7 +205,7 @@ export default function LoginPage() {
                   onChange={handleChange}
                   placeholder="Enter your password"
                   required
-                  minLength={6}
+                  
                   autoComplete="current-password"
                 />
                 <button

@@ -1,83 +1,59 @@
 // src/hooks/useAuth.js - Custom hook for authentication
-
 import { useState, useEffect } from "react";
-import authService from "@/services/authService";
+import AuthService from "@/services/authService";
 
 export function useAuth() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = () => {
-      const isAuth = authService.isAuthenticated();
-      setIsAuthenticated(isAuth);
-      
-      if (isAuth) {
-        const userInfo = authService.getUserInfo();
-        setUser(userInfo);
-      } else {
-        setUser(null);
-      }
-      
-      setLoading(false);
-    };
-
-    checkAuth();
-    
-    // Listen for storage changes (when user logs in/out in another tab)
-    const handleStorageChange = () => {
-      checkAuth();
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
+    // On initial load, check if there's a token and get user info
+    const currentUser = AuthService.getUserInfo();
+    if (currentUser) {
+      setUser(currentUser);
+      setIsAuthenticated(true);
+    }
+    setLoading(false);
   }, []);
 
   const login = async (credentials) => {
-    try {
-      const result = await authService.login(credentials);
-      
-      if (result.Success) {
-        setIsAuthenticated(true);
-        const userInfo = authService.getUserInfo();
-        setUser(userInfo);
-      }
-      
-      return result;
-    } catch (error) {
-      throw error;
+    setLoading(true);
+    const result = await AuthService.login(credentials);
+    if (result.success) {
+      // After a successful login, the authService has stored the token.
+      // We can now get the user info from the service, which decodes the new token.
+      const currentUser = AuthService.getUserInfo();
+      setUser(currentUser);
+      setIsAuthenticated(true);
+    } else {
+      // If login fails, ensure user state is cleared
+      setUser(null);
+      setIsAuthenticated(false);
     }
+    setLoading(false);
+    return result;
   };
 
   const register = async (userData) => {
-    try {
-      console.log("useAuth: Calling authService.register with:", userData);
-      const result = await authService.register(userData);
-      console.log("useAuth: Received result from authService:", result);
-      return result;
-    } catch (error) {
-      console.error("useAuth: Error during registration:", error);
-      throw error;
-    }
+    // The register function in authService handles the API call.
+    // This hook just acts as a pass-through.
+    return await AuthService.register(userData);
   };
 
   const logout = () => {
-    authService.logout();
-    setIsAuthenticated(false);
+    AuthService.logout();
     setUser(null);
+    setIsAuthenticated(false);
   };
 
   return {
     isAuthenticated,
     user,
-    role: user?.role || null,
     loading,
     login,
     register,
     logout,
+    role: user?.role || null,
   };
 }

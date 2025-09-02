@@ -22,10 +22,18 @@ export default function ProtectedRoute({ children, requiredRole = null }) {
         // Support multiple roles: requiredRole can be a string or array
         const userRole = user?.role;
         const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+        
+        console.log("🛡️ ProtectedRoute: Checking authorization...");
+        console.log("   - User Role:", userRole, `(Type: ${typeof userRole})`);
+        console.log("   - Allowed Roles:", allowedRoles);
+        console.log("   - User Object:", user);
+
         if (!allowedRoles.includes(userRole)) {
+          console.warn("🚫 Access Denied: User role is not in the allowed list.");
           router.push("/not-authorized"); // Redirect to not-authorized page
           return;
         }
+        console.log("✅ Access Granted: User has the required role.");
       }
 
       setShouldRender(true);

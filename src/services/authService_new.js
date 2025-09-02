@@ -1,5 +1,5 @@
 // Authentication Service - Clean version
-const API_URL = "http://localhost:7001/api/Auth";
+const API_URL = "http://localhost:7000/api/Auth";
 
 class AuthService {
   // Register user
