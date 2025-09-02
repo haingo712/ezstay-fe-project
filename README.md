@@ -10,35 +10,6 @@ This is the frontend for the EZStay project, a modern web application for a room
 - **UI Library**: [React](https://reactjs.org/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 
-## Key Features
-
-- **User Authentication**: Secure registration, login, and logout functionality.
-- **OTP Email Verification**: New user registrations require email verification via a one-time password (OTP) sent to their email address. The user account is only created in the database *after* successful verification.
-- **Role-Based Access Control (RBAC)**:
-  - The application supports three user roles: `Admin`, `Staff`, and `User`.
-  - Frontend routes are protected based on user roles (e.g., `/admin` is only accessible to `Admin` users).
-  - A "Not Authorized" page is shown to users trying to access restricted areas.
-- **JWT Token Management**: User sessions are managed using JSON Web Tokens (JWT), which are stored in `localStorage`.
-- **Admin Dashboard**:
-  - A dedicated section for administrators.
-  - Feature to create new `Staff` accounts.
-- **Modern UI**: A clean and responsive user interface.
-
-## Environment Variables
-
-To run this project, you will need to create a `.env.local` file in the root of the `ezstay-fe-project` directory.
-
-> **Important Note:** The `.env.local` file is included in the project's `.gitignore` file. This means it will **not** be pushed to the GitHub repository. Each developer must create their own local copy of this file.
-
-Create the file `ezstay-fe-project/.env.local` and add the following content:
-
-```env
-# This should be the URL of your Ocelot API Gateway
-NEXT_PUBLIC_API_URL=http://localhost:7001
-```
-
-This variable is used to tell the Next.js application where to send API requests.
-
 ## Getting Started
 
 ### Prerequisites

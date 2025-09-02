@@ -1,7 +1,7 @@
 // Authentication Service for EZStay
 class AuthService {
   constructor() {
-    this.apiUrl = "http://localhost:7001/api/Auth";
+    this.apiUrl = "https://localhost:7000/api/Auth";
   }
 
   // Register new user
@@ -147,10 +147,14 @@ class AuthService {
           localStorage.setItem("userEmail", credentials.email);
         }
         
+        // After successful login, get user info
+        const user = this.getUserInfo();
+
         return {
           success: true,
           message: data.message || "Login successful!",
           token: data.token,
+          user: user, // Return user object
         };
       } else {
         return {
@@ -175,7 +179,21 @@ class AuthService {
 
   // Get stored auth token
   getToken() {
-    return localStorage.getItem("authToken");
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      console.log("🔐 Retrieved token from localStorage:", token.substring(0, 20) + "...");
+      
+      // Decode and log token payload for debugging
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log("🔍 Token payload:", payload);
+      } catch (e) {
+        console.error("❌ Error decoding token:", e);
+      }
+    } else {
+      console.log("❌ No token found in localStorage");
+    }
+    return token;
   }
 
   // Get stored user email
@@ -194,7 +212,31 @@ class AuthService {
       // .NET Core uses a long schema for the email claim in JWT. We check for both that and the simple 'email'.
       const email = payload.email || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
       // .NET Core uses a long schema for the role claim in JWT. We check for both that and the simple 'role'.
-      const role = payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+      let role = payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+      
+      console.log("🔍 JWT Payload:", payload);
+      console.log("🔍 Raw role from token:", role, `(Type: ${typeof role})`);
+      
+      // Convert role to number for consistent checking
+      if (role) {
+        if (typeof role === 'string') {
+          // Handle role names (Staff, Admin, etc.)
+          switch (role.toLowerCase()) {
+            case 'staff':
+              role = 3;
+              break;
+            case 'admin':
+              role = 4;
+              break;
+            default:
+              // Try to parse as number if it's a numeric string
+              const parsedRole = parseInt(role, 10);
+              role = isNaN(parsedRole) ? role : parsedRole;
+          }
+        }
+      }
+
+      console.log("🔍 Final role:", role, `(Type: ${typeof role})`);
       return { ...payload, email, role };
     } catch (error) {
       console.error("Error decoding token:", error);

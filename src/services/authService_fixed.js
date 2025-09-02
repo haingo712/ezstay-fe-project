@@ -1,7 +1,7 @@
 // Authentication Service for EZStay
 class AuthService {
   constructor() {
-    this.apiUrl = "http://localhost:7001/api/Auth";
+    this.apiUrl = "http://localhost:7000/api/Auth";
   }
 
   // Register new user
