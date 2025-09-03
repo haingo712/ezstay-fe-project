@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function OwnerLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -150,6 +151,25 @@ export default function OwnerLayout({ children }) {
       ),
     },
     {
+      name: "Utility Rates",
+      href: "/owner/utility-rate",
+      icon: (
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M13 10V3L4 14h7v7l9-11h-7z"
+          />
+        </svg>
+      ),
+    },
+    {
       name: "Requests",
       href: "/owner/requests",
       icon: (
@@ -234,10 +254,11 @@ export default function OwnerLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Navbar />
+    <ProtectedRoute requiredRole={2}>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Navbar />
 
-      <div className="flex pt-4" style={{ height: "calc(100vh - 1rem)" }}>
+        <div className="flex pt-4" style={{ height: "calc(100vh - 1rem)" }}>
         {/* Sidebar */}
         <div
           className={`fixed top-16 left-0 bottom-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-lg transform ${
@@ -331,5 +352,6 @@ export default function OwnerLayout({ children }) {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

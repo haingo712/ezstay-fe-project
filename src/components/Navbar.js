@@ -20,9 +20,11 @@ export default function Navbar() {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   const handleLogout = () => {
+    console.log("🚪 Logout initiated from Navbar");
     logout();
     setIsUserMenuOpen(false);
-    router.push("/");
+    // Redirect to login page after logout instead of home page
+    router.push("/login");
   };
 
   const getNavigationItems = () => {

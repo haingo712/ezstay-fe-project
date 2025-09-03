@@ -263,6 +263,9 @@ const AmenityManagement = () => {
                                 <thead className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/50 dark:to-emerald-900/50">
                                     <tr>
                                         <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                                            ID
+                                        </th>
+                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                             Type
                                         </th>
                                         <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
@@ -276,6 +279,9 @@ const AmenityManagement = () => {
                                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                     {amenities.map((amenity, index) => (
                                         <tr key={amenity.id || `amenity-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
+                                            <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-gray-700 dark:text-gray-300">
+                                                {amenity.id || `temp-${index}`}
+                                            </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center">
                                                     <div className="flex-shrink-0 h-10 w-10">

@@ -214,14 +214,31 @@ class AuthService {
       // .NET Core uses a long schema for the role claim in JWT. We check for both that and the simple 'role'.
       let role = payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
       
+      // Get user ID from various possible claim names
+      const id = payload.id || 
+                 payload.sub || 
+                 payload.userId || 
+                 payload.nameid || 
+                 payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
+      
       console.log("🔍 JWT Payload:", payload);
       console.log("🔍 Raw role from token:", role, `(Type: ${typeof role})`);
+      console.log("🔍 User ID from token:", id);
+      console.log("🔍 All possible role fields:", {
+        'role': payload.role,
+        'http://schemas.microsoft.com/ws/2008/06/identity/claims/role': payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'],
+        'Role': payload.Role,
+        'userRole': payload.userRole
+      });
       
       // Convert role to number for consistent checking
       if (role) {
         if (typeof role === 'string') {
-          // Handle role names (Staff, Admin, etc.)
+          // Handle role names (Staff, Admin, Owner, etc.)
           switch (role.toLowerCase()) {
+            case 'owner':
+              role = 2;
+              break;
             case 'staff':
               role = 3;
               break;
@@ -234,10 +251,30 @@ class AuthService {
               role = isNaN(parsedRole) ? role : parsedRole;
           }
         }
+      } else {
+        // If no role found, try other possible field names
+        role = payload.Role || payload.userRole || payload['Role'];
+        if (role && typeof role === 'string') {
+          switch (role.toLowerCase()) {
+            case 'owner':
+              role = 2;
+              break;
+            case 'staff':
+              role = 3;
+              break;
+            case 'admin':
+              role = 4;
+              break;
+            default:
+              const parsedRole = parseInt(role, 10);
+              role = isNaN(parsedRole) ? role : parsedRole;
+          }
+        }
       }
 
       console.log("🔍 Final role:", role, `(Type: ${typeof role})`);
-      return { ...payload, email, role };
+      console.log("🔍 Final user object:", { ...payload, email, role, id });
+      return { ...payload, email, role, id };
     } catch (error) {
       console.error("Error decoding token:", error);
       return null;

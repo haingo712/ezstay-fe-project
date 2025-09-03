@@ -42,9 +42,16 @@ export function useAuth() {
   };
 
   const logout = () => {
+    console.log("🚪 Logout: Clearing auth state");
+    
+    // Clear authentication service data first
     AuthService.logout();
+    
+    // Immediately clear state to prevent any race conditions
     setUser(null);
     setIsAuthenticated(false);
+    
+    console.log("✅ Logout: Auth state cleared");
   };
 
   return {
