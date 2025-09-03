@@ -65,10 +65,20 @@ export default function LoginPage() {
         const userRole = result.user.role;
         console.log("🔍 User role for redirection:", userRole, `(Type: ${typeof userRole})`);
         
+        // Check if role is 2 (owner) - handle both string and number types
+        if (userRole === 2 || userRole === "2") {
+          console.log("✅ Redirecting to owner page...");
+          setTimeout(() => router.push("/owner/utility-rate"), 1200);
+        }
         // Check if role is 3 (staff) - handle both string and number types
-        if (userRole === 3 || userRole === "3") {
+        else if (userRole === 3 || userRole === "3") {
           console.log("✅ Redirecting to staff page...");
           setTimeout(() => router.push("/staff/users"), 1200);
+        } 
+        // Check if role is 4 (admin) - handle both string and number types
+        else if (userRole === 4 || userRole === "4") {
+          console.log("✅ Redirecting to admin page...");
+          setTimeout(() => router.push("/admin/dashboard"), 1200);
         } else {
           console.log("✅ Redirecting to homepage...");
           setTimeout(() => router.push("/"), 1200);

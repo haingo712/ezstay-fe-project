@@ -1,25 +1,42 @@
 import api from '../utils/api';
 
-const getAmenitiesForStaff = async () => {
+const getAllAmenities = async () => {
   try {
-    console.log("🏢 Fetching amenities for staff...");
+    console.log("🏢 Fetching all amenities (GetAll endpoint)...");
     
-    // Temporary: Try GetAll endpoint first for testing
-    let response;
-    try {
-      console.log("🔄 Trying GetAll endpoint for testing...");
-      response = await api.get('/api/Amenity');
-      console.log("✅ Success with /api/Amenity (GetAll):", response);
-      return response.data || response;
-    } catch (error) {
-      console.log("❌ GetAll endpoint failed, trying staff-specific...");
-      // If GetAll fails, try staff endpoint
-      response = await api.get('/api/Amenity/ByStaffId');
-      console.log("✅ Success with /api/Amenity/ByStaffId:", response);
-      return response.data || response;
+    // Use GetAll endpoint - this should return ALL amenities regardless of which staff created them
+    const response = await api.get('/api/Amenity');
+    console.log("✅ Success with /api/Amenity (GetAll):", response);
+    
+    // Backend returns different formats:
+    // Success: {isSuccess: true, data: [...], message: "..."}
+    // Fail (empty): {isSuccess: false, message: "Không có tiện ích nào.", data: null}
+    if (response.isSuccess === false) {
+      console.log("ℹ️ Backend indicates no amenities available:", response.message);
+      return []; // Return empty array instead of throwing error
     }
+    
+    return response.data || response;
   } catch (error) {
-    console.error('❌ Error fetching amenities:', error);
+    console.error('❌ Error fetching amenities from GetAll endpoint:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.data
+    });
+    
+    // If GetAll fails, try returning an empty array for now so the UI doesn't break
+    if (error.response?.status === 500) {
+      console.error('🚨 Backend Internal Server Error');
+      console.error('� Possible causes:');
+      console.error('   - Database empty (backend returns Fail instead of Success with empty array)');
+      console.error('   - Serialization issues');
+      console.error('   - Database connection problems');
+      
+      // Return empty array to prevent UI crash
+      return [];
+    }
+    
     throw error;
   }
 };
@@ -70,7 +87,7 @@ const deleteAmenity = async (id) => {
 };
 
 const amenityService = {
-  getAmenitiesForStaff,
+  getAllAmenities,
   createAmenity,
   updateAmenity,
   deleteAmenity,

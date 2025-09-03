@@ -37,26 +37,37 @@ async function apiFetch(path, options = {}) {
   };
 
   try {
-  console.log("🌐 API Request:", {
-    url,
-    method: config.method || 'GET',
-    headers: config.headers
-  });
+  // Only log request details for non-404 attempts to reduce console noise
+  if (!url.includes('UtilityRate') || !config.skipLogging) {
+    console.log("🌐 API Request:", {
+      url,
+      method: config.method || 'GET',
+      headers: config.headers
+    });
+  }
 
   const response = await fetch(url, config);
 
-  console.log("📥 API Response:", {
-    url,
-    status: response.status,
-    statusText: response.statusText,
-    ok: response.ok
-  });
+  // Log response details, but reduce noise for 404s during endpoint discovery
+  if (response.status === 404 && url.includes('UtilityRate')) {
+    // Silent 404 for utility rate endpoint discovery
+  } else {
+    console.log("📥 API Response:", {
+      url,
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
+    });
+  }
 
   if (!response.ok) {
     let errorData;
     try {
       errorData = await response.json();
-      console.log("❌ API Error Data:", errorData);
+      // Only log error data for non-404 responses to reduce console noise
+      if (response.status !== 404) {
+        console.log("❌ API Error Data:", errorData);
+      }
     } catch (e) {
       errorData = { message: response.statusText };
     }
