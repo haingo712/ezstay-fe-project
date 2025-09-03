@@ -131,73 +131,23 @@ Visit [http://localhost:3000](http://localhost:3000) in your browser.
 Create file `.env.local`:
 
 ```env
-NEXT_PUBLIC_API_GATEWAY_URL=http://localhost:7001
+NEXT_PUBLIC_API_GATEWAY_URL=https://localhost:7000
 NODE_ENV=development
-NEXT_PUBLIC_AMENITY_API_URL=https://localhost:7111
-NEXT_PUBLIC_BOARDING_HOUSE_API_URL=https://localhost:7186
-NEXT_PUBLIC_ROOM_API_URL=https://localhost:7086
-NEXT_PUBLIC_HOUSE_LOCATION_API_URL=https://localhost:7278
-NEXT_PUBLIC_ROOM_AMENITY_API_URL=https://localhost:7152
-NEXT_PUBLIC_MOCK_OWNER_ID=123e4567-e89b-12d3-a456-426614174000
 NEXT_PUBLIC_API_URL=http://localhost:5000
 ```
 
 Create file `.env.example`:
 
 ```env
-# EZStay Frontend Environment Configuration
-# Copy this file to .env.local and update the values for your environment
-
 # Main API Gateway URL
-NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_API_GATEWAY_URL=https://localhost:7000
 
-# Microservice URLs for ASP.NET Core Backend
-NEXT_PUBLIC_AUTH_API=http://localhost:5001
-NEXT_PUBLIC_PROPERTY_API=http://localhost:5002
-NEXT_PUBLIC_PAYMENT_API=http://localhost:5003
-NEXT_PUBLIC_NOTIFICATION_API=http://localhost:5004
+# Mock Data for Development
+NEXT_PUBLIC_MOCK_OWNER_ID=123e4567-e89b-12d3-a456-426614174000
 
-# MongoDB Connection (for reference - used by backend)
-# MONGODB_CONNECTION_STRING=mongodb://localhost:27017/ezstay
+# Development Environment
+NODE_ENV=development
 
-# JWT Secret (for reference - used by backend)
-# JWT_SECRET=your_jwt_secret_key_here
-
-# Payment Gateway Configuration (for reference - used by backend)
-# STRIPE_PUBLIC_KEY=pk_test_...
-# STRIPE_SECRET_KEY=sk_test_...
-
-# Email Service Configuration (for reference - used by backend)
-# SMTP_HOST=smtp.gmail.com
-# SMTP_PORT=587
-# SMTP_USER=your_email@gmail.com
-# SMTP_PASS=your_app_password
-
-# File Upload Configuration (for reference - used by backend)
-# UPLOAD_MAX_SIZE=10485760
-# UPLOAD_ALLOWED_TYPES=jpg,jpeg,png,gif,pdf
-
-# Redis Configuration (for reference - used by backend)
-# REDIS_CONNECTION_STRING=localhost:6379
-
-# Application Configuration
-NEXT_PUBLIC_APP_NAME=EZStay
-NEXT_PUBLIC_APP_VERSION=1.0.0
-NEXT_PUBLIC_SUPPORT_EMAIL=support@ezstay.com
-NEXT_PUBLIC_SUPPORT_PHONE=+84898552368
-
-# Feature Flags
-NEXT_PUBLIC_ENABLE_AI_ASSISTANT=true
-NEXT_PUBLIC_ENABLE_DARK_MODE=true
-NEXT_PUBLIC_ENABLE_ANALYTICS=true
-
-# External Service URLs
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=GA-XXXXXXXXX
-
-# Development/Testing Flags
-NEXT_PUBLIC_MOCK_API=false
-NEXT_PUBLIC_DEBUG_MODE=false
 
 ```
 
