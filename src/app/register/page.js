@@ -145,7 +145,7 @@ export default function RegisterPage() {
       if (result.success) {
         setShowOtpPopup(false);
         setSuccess(result.message || "Email verified successfully! You can now sign in.");
-        setTimeout(() => router.push("/login"), 1500);
+        router.push("/login");
       } else {
         setOtpError(result.message || "Invalid OTP. Please try again.");
       }
