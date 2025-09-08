@@ -143,12 +143,17 @@ class AuthService {
       if (response.ok && (data.success || data.token)) {
         // Store auth token
         if (data.token) {
+          console.log("💾 Storing new auth token...");
           localStorage.setItem("authToken", data.token);
           localStorage.setItem("userEmail", credentials.email);
+          
+          // Add small delay to ensure localStorage is updated
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
         
         // After successful login, get user info
         const user = this.getUserInfo();
+        console.log("✅ Login successful, user info:", user);
 
         return {
           success: true,
@@ -157,6 +162,7 @@ class AuthService {
           user: user, // Return user object
         };
       } else {
+        console.log("❌ Login failed:", data.message);
         return {
           success: false,
           message: data.message || "Login failed. Please check your credentials.",
@@ -173,8 +179,48 @@ class AuthService {
 
   // Logout user
   logout() {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userEmail");
+    console.log("🚪 AuthService: Starting logout process...");
+    
+    // Method 1: Clear specific auth-related items
+    const keysToRemove = [
+      "authToken", 
+      "userEmail", 
+      "userRole", 
+      "userId", 
+      "user",
+      "auth_token", // Alternative naming
+      "token"       // Alternative naming
+    ];
+    
+    keysToRemove.forEach(key => {
+      if (localStorage.getItem(key)) {
+        console.log(`🗑️ Removing localStorage key: ${key}`);
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Method 2: Scan and remove any keys that might contain auth data
+    const allKeys = Object.keys(localStorage);
+    console.log("🔍 All localStorage keys before cleanup:", allKeys);
+    
+    allKeys.forEach(key => {
+      if (key.toLowerCase().includes('auth') || 
+          key.toLowerCase().includes('token') || 
+          key.toLowerCase().includes('user')) {
+        console.log(`🗑️ Removing additional auth key: ${key}`);
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Method 3: Nuclear option - clear everything if needed
+    const remainingKeys = Object.keys(localStorage);
+    if (remainingKeys.length > 0) {
+      console.log("⚠️ Still have remaining keys, clearing all localStorage:", remainingKeys);
+      localStorage.clear();
+    }
+    
+    console.log("✅ AuthService: Logout completed, localStorage cleared");
+    console.log("🔍 Remaining localStorage keys:", Object.keys(localStorage));
   }
 
   // Get stored auth token
@@ -205,10 +251,21 @@ class AuthService {
   getUserInfo() {
     const token = this.getToken();
     if (!token) {
+      console.log("❌ No token available for getUserInfo");
       return null;
     }
+    
     try {
+      // Check if token is expired
       const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+      
+      if (payload.exp && payload.exp < currentTime) {
+        console.log("⏰ Token expired, clearing localStorage");
+        this.logout();
+        return null;
+      }
+      
       // .NET Core uses a long schema for the email claim in JWT. We check for both that and the simple 'email'.
       const email = payload.email || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
       // .NET Core uses a long schema for the role claim in JWT. We check for both that and the simple 'role'.
@@ -273,10 +330,21 @@ class AuthService {
       }
 
       console.log("🔍 Final role:", role, `(Type: ${typeof role})`);
-      console.log("🔍 Final user object:", { ...payload, email, role, id });
-      return { ...payload, email, role, id };
+      
+      const userInfo = { ...payload, email, role, id };
+      console.log("🔍 Final user object:", userInfo);
+      
+      // Validate that we have essential info
+      if (!email || !role) {
+        console.warn("⚠️ Token missing essential info - email or role");
+        return null;
+      }
+      
+      return userInfo;
     } catch (error) {
       console.error("Error decoding token:", error);
+      // Clear invalid token
+      this.logout();
       return null;
     }
   }

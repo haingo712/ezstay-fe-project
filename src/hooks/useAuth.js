@@ -1,5 +1,5 @@
 // src/hooks/useAuth.js - Custom hook for authentication
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import AuthService from "@/services/authService";
 
 export function useAuth() {
@@ -7,31 +7,51 @@ export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // On initial load, check if there's a token and get user info
+  // Refresh user info from token
+  const refreshUserInfo = useCallback(() => {
     const currentUser = AuthService.getUserInfo();
-    if (currentUser) {
+    console.log("🔄 Refreshing user info:", currentUser);
+    
+    if (currentUser && currentUser.role) {
       setUser(currentUser);
       setIsAuthenticated(true);
+      console.log("✅ User authenticated with role:", currentUser.role);
+    } else {
+      setUser(null);
+      setIsAuthenticated(false);
+      console.log("❌ No valid user found");
     }
-    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    // On initial load, check if there's a token and get user info
+    console.log("🚀 useAuth: Initial authentication check");
+    refreshUserInfo();
+    setLoading(false);
+  }, [refreshUserInfo]);
 
   const login = async (credentials) => {
     setLoading(true);
+    console.log("🔑 Login attempt for:", credentials.email);
+    
     const result = await AuthService.login(credentials);
+    
     if (result.success) {
-      // After a successful login, the authService has stored the token.
-      // We can now get the user info from the service, which decodes the new token.
-      const currentUser = AuthService.getUserInfo();
-      setUser(currentUser);
-      setIsAuthenticated(true);
+      console.log("✅ Login successful, refreshing user info...");
+      
+      // Add a small delay to ensure token is properly stored
+      setTimeout(() => {
+        refreshUserInfo();
+        setLoading(false);
+      }, 50);
     } else {
+      console.log("❌ Login failed:", result.message);
       // If login fails, ensure user state is cleared
       setUser(null);
       setIsAuthenticated(false);
+      setLoading(false);
     }
-    setLoading(false);
+    
     return result;
   };
 
@@ -42,7 +62,7 @@ export function useAuth() {
   };
 
   const logout = () => {
-    console.log("🚪 Logout: Clearing auth state");
+    console.log("🚪 useAuth: Starting logout process");
     
     // Clear authentication service data first
     AuthService.logout();
@@ -50,8 +70,21 @@ export function useAuth() {
     // Immediately clear state to prevent any race conditions
     setUser(null);
     setIsAuthenticated(false);
+    setLoading(false);
     
-    console.log("✅ Logout: Auth state cleared");
+    // Force a small delay then redirect to home instead of login
+    setTimeout(() => {
+      console.log("✅ useAuth: Logout completed, redirecting to home");
+      // Double-check that everything is cleared
+      const remainingUser = AuthService.getUserInfo();
+      if (remainingUser) {
+        console.warn("⚠️ Warning: User info still exists after logout, forcing clear");
+        AuthService.logout(); // Force clear again
+      }
+      
+      // Redirect to home page instead of forcing reload
+      window.location.href = '/';
+    }, 100);
   };
 
   return {
@@ -61,6 +94,7 @@ export function useAuth() {
     login,
     register,
     logout,
+    refreshUserInfo, // Export this for manual refresh if needed
     role: user?.role || null,
   };
 }
