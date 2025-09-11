@@ -8,7 +8,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import profileService from "@/services/profileService";
 
 export default function ProfilePage() {
-  const { user, isAuthenticated, refreshUserInfo } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
@@ -27,9 +27,6 @@ export default function ProfilePage() {
 
   // Avatar preview
   const [avatarPreview, setAvatarPreview] = useState("");
-  
-  // Track if profile exists (for create vs update)
-  const [profileExists, setProfileExists] = useState(false);
 
   // Load profile data from backend
   useEffect(() => {
@@ -38,18 +35,10 @@ export default function ProfilePage() {
     }
   }, [isAuthenticated]);
 
-  // Sync avatar preview with profile avatar
-  useEffect(() => {
-    console.log("🔄 Syncing avatar preview:", profile.avatar);
-    setAvatarPreview(profile.avatar);
-  }, [profile.avatar]);
-
   const loadProfile = async () => {
     try {
       setLoading(true);
       const profileData = await profileService.getProfile();
-      console.log("📥 Profile data received from backend:", profileData);
-      console.log("🖼️ Avatar URL from backend:", profileData.avata);
       
       setProfile({
         email: profileData.email || user?.email || "",
@@ -61,11 +50,8 @@ export default function ProfilePage() {
         address: profileData.adrress || "", // Note: backend uses "Adrress"
       });
       setAvatarPreview(profileData.avata || "");
-      setProfileExists(true); // Profile exists in backend
-      console.log("🖼️ Avatar preview set to:", profileData.avata || "");
     } catch (err) {
       console.error('Error loading profile:', err);
-      setProfileExists(false); // Profile doesn't exist
       // Fallback to user data from auth
       if (user) {
         setProfile(prev => ({
@@ -89,56 +75,25 @@ export default function ProfilePage() {
     }));
   };
 
-  // Handle avatar URL change
+  // Handle avatar upload
   const handleAvatarChange = (e) => {
-    const url = e.target.value.trim();
-    console.log("🖼️ Avatar URL changed:", url);
-    
-    setProfile((prev) => ({
-      ...prev,
-      avatar: url,
-    }));
-    
-    // Always set preview to match input
-    setAvatarPreview(url);
-    
-    // Validate URL format but don't block preview
-    if (url && !isValidImageUrl(url)) {
-      console.warn("⚠️ URL format may not be supported:", url);
-    } else {
-      setError(""); // Clear any previous errors
-    }
-  };
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setError("File size must be less than 5MB");
+        return;
+      }
 
-  // Validate image URL format
-  const isValidImageUrl = (url) => {
-    try {
-      const validUrl = new URL(url);
-      const pathname = validUrl.pathname.toLowerCase();
-      
-      // Check for common image extensions
-      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
-      const hasValidExtension = imageExtensions.some(ext => pathname.endsWith(ext));
-      
-      // Check for known image hosting services
-      const imageServices = [
-        'imgur.com',
-        'unsplash.com', 
-        'pixabay.com',
-        'pexels.com',
-        'picsum.photos',
-        'via.placeholder.com',
-        'ui-avatars.com',
-        'robohash.org',
-        'avatars.githubusercontent.com',
-        'gravatar.com',
-        'randomuser.me'
-      ];
-      const isKnownService = imageServices.some(service => validUrl.hostname.includes(service));
-      
-      return hasValidExtension || isKnownService;
-    } catch {
-      return false;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target.result;
+        setAvatarPreview(result);
+        setProfile((prev) => ({
+          ...prev,
+          avatar: result,
+        }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -158,32 +113,14 @@ export default function ProfilePage() {
         bio: profile.bio,
       };
 
-      console.log("📤 Profile data to save:", profileData);
-      console.log("🖼️ Avatar URL being sent:", profileData.avata);
-      console.log("🔄 Profile exists:", profileExists);
+      console.log("Profile data to save:", profileData);
       
-      let result;
-      if (profileExists) {
-        console.log("📝 Updating existing profile...");
-        result = await profileService.updateProfile(profileData);
-      } else {
-        console.log("➕ Creating new profile...");
-        result = await profileService.createProfile(profileData);
-        setProfileExists(true); // Now profile exists
-      }
-      console.log("📥 Backend response:", result);
+      await profileService.createProfile(profileData);
       
       setSuccess("Profile updated successfully!");
       
       // Reload profile data to reflect changes
-      console.log("🔄 Reloading profile after save...");
       await loadProfile();
-      
-      // Refresh user info in auth context to update navbar avatar
-      console.log("🔄 Refreshing user info for navbar...");
-      await refreshUserInfo(true); // Pass true to load avatar
-      
-      console.log("🔄 Profile reload complete");
     } catch (err) {
       setError(err.message || "Failed to update profile");
     } finally {
@@ -238,20 +175,12 @@ export default function ProfilePage() {
                 <div className="relative">
                   <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 border-4 border-white dark:border-gray-600 shadow-lg">
                     {avatarPreview ? (
-                      <img
+                      <Image
                         src={avatarPreview}
                         alt="Avatar preview"
+                        width={128}
+                        height={128}
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          console.error("❌ Avatar URL failed to load:", avatarPreview);
-                          setError(`Invalid avatar URL: ${avatarPreview}`);
-                          setAvatarPreview("");
-                          setProfile(prev => ({ ...prev, avatar: "" }));
-                        }}
-                        onLoad={() => {
-                          console.log("✅ Avatar loaded successfully:", avatarPreview);
-                          setError(""); // Clear any previous errors
-                        }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
@@ -262,20 +191,18 @@ export default function ProfilePage() {
                     )}
                   </div>
                 </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Avatar URL
+                <div>
+                  <label className="block">
+                    <span className="sr-only">Choose avatar</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-400 dark:hover:file:bg-blue-900/30 transition-colors"
+                    />
                   </label>
-                  <input
-                    type="url"
-                    name="avatar"
-                    value={profile.avatar}
-                    onChange={handleAvatarChange}
-                    placeholder="https://example.com/avatar.jpg"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
                   <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    Enter a direct URL to your avatar image
+                    JPG, PNG up to 5MB
                   </p>
                 </div>
               </div>

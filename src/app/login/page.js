@@ -67,8 +67,8 @@ export default function LoginPage() {
         
         // Check if role is 2 (owner) - handle both string and number types
         if (userRole === 2 || userRole === "2") {
-          console.log("✅ Redirecting to owner page...");
-          router.push("/owner/utility-rate");
+          console.log("✅ Redirecting to owner boarding houses page...");
+          router.push("/owner/boarding-houses");
         }
         // Check if role is 3 (staff) - handle both string and number types
         else if (userRole === 3 || userRole === "3") {

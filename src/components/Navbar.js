@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, refreshUserInfo } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -30,8 +30,7 @@ export default function Navbar() {
   const getNavigationItems = () => {
     const baseItems = [
       { href: "/", label: "Home" },
-      { href: "/search-rooms", label: "Find Rooms" },
-      { href: "/owner/posts", label: "Post Rooms" },
+      { href: "/boarding-houses", label: "Boarding Houses" },
       { href: "/support", label: "Support" },
       { href: "/about", label: "About" },
     ];
@@ -118,9 +117,21 @@ export default function Navbar() {
                 <div className="relative">
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full text-white font-bold text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full text-white font-bold text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 overflow-hidden"
                   >
-                    {userEmail.charAt(0).toUpperCase()}
+                    {user?.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt="User Avatar"
+                        className="w-full h-full object-cover"
+                        onError={() => {
+                          // On error, hide image and show letter
+                          console.log("Avatar failed to load, showing letter");
+                        }}
+                      />
+                    ) : (
+                      <span>{userEmail.charAt(0).toUpperCase()}</span>
+                    )}
                   </button>
                   {isUserMenuOpen && (
                     <div className="absolute right-0 w-56 py-2 mt-2 bg-white rounded-md shadow-xl dark:bg-gray-800 z-20">

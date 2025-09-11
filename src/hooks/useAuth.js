@@ -1,6 +1,7 @@
 // src/hooks/useAuth.js - Custom hook for authentication
 import { useState, useEffect, useCallback } from "react";
 import AuthService from "@/services/authService";
+import profileService from "@/services/profileService";
 
 export function useAuth() {
   const [user, setUser] = useState(null);
@@ -8,11 +9,28 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   // Refresh user info from token
-  const refreshUserInfo = useCallback(() => {
+  const refreshUserInfo = useCallback(async (loadAvatar = false) => {
     const currentUser = AuthService.getUserInfo();
     console.log("🔄 Refreshing user info:", currentUser);
     
     if (currentUser && currentUser.role) {
+      // Only load avatar if explicitly requested
+      if (loadAvatar) {
+        try {
+          const profileData = await profileService.getProfile();
+          if (profileData) {
+            currentUser.avatar = profileData.avata || null;
+            console.log("🖼️ Loaded user avatar:", currentUser.avatar);
+          } else {
+            currentUser.avatar = null;
+            console.log("📝 No profile found for user, avatar not loaded.");
+          }
+        } catch (err) {
+          console.log("⚠️ Could not load user avatar:", err.message);
+          currentUser.avatar = null;
+        }
+      }
+      
       setUser(currentUser);
       setIsAuthenticated(true);
       console.log("✅ User authenticated with role:", currentUser.role);
@@ -25,8 +43,8 @@ export function useAuth() {
 
   useEffect(() => {
     // On initial load, check if there's a token and get user info
-    console.log("🚀 useAuth: Initial authentication check");
-    refreshUserInfo();
+    console.log("🚀 useAuth: Initial authentication check, loading avatar...");
+    refreshUserInfo(true); // Load avatar on initial load
     setLoading(false);
   }, [refreshUserInfo]);
 
@@ -87,6 +105,20 @@ export function useAuth() {
     }, 100);
   };
 
+  // Method to load avatar for navbar
+  const loadUserAvatar = useCallback(async () => {
+    if (user) {
+      try {
+        const profileData = await profileService.getProfile();
+        const updatedUser = { ...user, avatar: profileData.avata || null };
+        setUser(updatedUser);
+        console.log("🖼️ Updated user avatar:", updatedUser.avatar);
+      } catch (err) {
+        console.log("⚠️ Could not load avatar for navbar:", err.message);
+      }
+    }
+  }, [user]);
+
   return {
     isAuthenticated,
     user,
@@ -95,6 +127,7 @@ export function useAuth() {
     register,
     logout,
     refreshUserInfo, // Export this for manual refresh if needed
+    loadUserAvatar, // Export this to load avatar when needed
     role: user?.role || null,
   };
 }
