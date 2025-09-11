@@ -66,7 +66,7 @@ export default function RoleRedirect({ children }) {
         if (!pathname.startsWith('/owner')) {
           console.log("🚫 Owner user trying to access non-owner page, redirecting to owner dashboard...");
           setIsRedirecting(true);
-          router.push('/owner/utility-rate');
+          router.push('/owner/boarding-houses');
           return;
         }
       }

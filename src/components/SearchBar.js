@@ -2,17 +2,30 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '../hooks/useAuth';
 import { sampleLocations } from '../sampleData/rooms';
 
 export default function SearchBar() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [keyword, setKeyword] = useState('');
   const [location, setLocation] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
 
+  // Ẩn SearchBar cho guest
+  if (!isAuthenticated) {
+    return null;
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    if (!isAuthenticated) {
+      // Redirect to login if not authenticated
+      router.push('/login?returnUrl=/boarding-houses');
+      return;
+    }
     
     // Build search URL with parameters
     const params = new URLSearchParams();
@@ -21,12 +34,16 @@ export default function SearchBar() {
     if (minPrice) params.set('minPrice', minPrice);
     if (maxPrice) params.set('maxPrice', maxPrice);
     
-    const searchURL = params.toString() ? `/search?${params.toString()}` : '/search';
+    const searchURL = params.toString() ? `/boarding-houses?${params.toString()}` : '/boarding-houses';
     router.push(searchURL);
   };
 
   const handleQuickSearch = (searchLocation) => {
-    router.push(`/search?location=${encodeURIComponent(searchLocation)}`);
+    if (!isAuthenticated) {
+      router.push('/login?returnUrl=/boarding-houses');
+      return;
+    }
+    router.push(`/boarding-houses?location=${encodeURIComponent(searchLocation)}`);
   };
 
   return (
@@ -34,10 +51,10 @@ export default function SearchBar() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Find Your Perfect Room
+            Find Your Perfect Boarding House
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Thousands of quality rooms waiting for you to discover
+            Thousands of quality boarding houses waiting for you to discover
           </p>
         </div>
 
@@ -50,7 +67,7 @@ export default function SearchBar() {
               </label>
               <input
                 type="text"
-                placeholder="Enter keywords, address..."
+                placeholder="Enter boarding house name, address..."
                 value={keyword}
                 onChange={e => setKeyword(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"

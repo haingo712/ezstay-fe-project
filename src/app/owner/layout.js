@@ -37,8 +37,8 @@ export default function OwnerLayout({ children }) {
       ),
     },
     {
-      name: "Properties",
-      href: "/owner/properties",
+      name: "Boarding Houses",
+      href: "/owner/boarding-houses",
       icon: (
         <svg
           className="w-5 h-5"

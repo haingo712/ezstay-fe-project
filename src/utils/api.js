@@ -34,24 +34,26 @@ async function apiFetch(path, options = {}) {
       ...defaultHeaders,
       ...(options.headers || {}),
     },
+    // Add CORS headers - Remove credentials to fix CORS with wildcard
+    mode: 'cors',
+    // credentials: 'include', // Commented out to fix CORS wildcard issue
   };
 
   try {
-  // Only log request details for non-404 attempts to reduce console noise
-  if (!url.includes('UtilityRate') || !config.skipLogging) {
+  // Log request details for room API calls to help debug 500 errors
+  if (url.includes('/api/Rooms') || !url.includes('UtilityRate') || !config.skipLogging) {
     console.log("🌐 API Request:", {
       url,
       method: config.method || 'GET',
-      headers: config.headers
+      headers: config.headers,
+      body: config.body ? JSON.parse(config.body) : undefined
     });
   }
 
   const response = await fetch(url, config);
 
-  // Log response details, but reduce noise for 404s during endpoint discovery
-  if (response.status === 404 && url.includes('UtilityRate')) {
-    // Silent 404 for utility rate endpoint discovery
-  } else {
+  // Log response details, especially for room API calls
+  if (url.includes('/api/Rooms') || (response.status === 404 && !url.includes('UtilityRate'))) {
     console.log("📥 API Response:", {
       url,
       status: response.status,
@@ -101,6 +103,58 @@ const api = {
     post: (path, data, options) => apiFetch(path, { method: 'POST', body: JSON.stringify(data), ...options }),
     put: (path, data, options) => apiFetch(path, { method: 'PUT', body: JSON.stringify(data), ...options }),
     delete: (path, options) => apiFetch(path, { method: 'DELETE', ...options }),
+};
+
+// Boarding House API
+export const boardingHouseAPI = {
+  getAll: () => api.get('/api/BoardingHouses'),
+  getById: (id) => api.get(`/api/BoardingHouses/${id}`),
+  getByOwnerId: (ownerId) => api.get('/api/BoardingHouses/owner'), // Backend gets ownerId from JWT token
+  create: (data) => api.post('/api/BoardingHouses', data),
+  update: (id, data) => api.put(`/api/BoardingHouses/${id}`, data),
+  delete: (id) => api.delete(`/api/BoardingHouses/${id}`)
+};
+
+// House Location API
+export const houseLocationAPI = {
+  getAll: () => api.get('/api/HouseLocations'),
+  getById: (id) => api.get(`/api/HouseLocations/${id}`),
+  getByHouseId: (houseId) => api.get(`/api/HouseLocations/house/${houseId}`),
+  create: (data) => api.post('/api/HouseLocations', data),
+  update: (id, data) => api.put(`/api/HouseLocations/${id}`, data),
+  delete: (id) => api.delete(`/api/HouseLocations/${id}`)
+};
+
+// Room API
+export const roomAPI = {
+  getAll: () => api.get('/api/Rooms'),
+  getById: (id) => api.get(`/api/Rooms/${id}`),
+  getByBoardingHouseId: (houseId) => api.get(`/api/Rooms/ByHouseId/${houseId}`),
+  getByHouseId: (houseId) => api.get(`/api/Rooms/ByHouseId/${houseId}`), // Alias for compatibility
+  
+  // Correct endpoint based on backend controller
+  // If a houseLocationId is provided use the Location route, otherwise use the house-only route
+  create: (houseId, houseLocationId, data) => {
+    if (houseLocationId) {
+      return api.post(`/api/Rooms/House/${houseId}/Location/${houseLocationId}`, data);
+    }
+    return api.post(`/api/Rooms/House/${houseId}`, data);
+  },
+  
+  update: (id, data) => api.put(`/api/Rooms/${id}`, data),
+  delete: (id) => api.delete(`/api/Rooms/${id}`)
+};
+
+// Amenity API
+export const amenityAPI = {
+  getAll: () => api.get('/api/Amenity'),
+  getById: (id) => api.get(`/api/Amenity/${id}`),
+  getByOwnerId: () => api.get('/api/Amenity/ByStaffId'), // Staff = Owner in this context
+  getByStaffId: () => api.get('/api/Amenity/ByStaffId'),
+  getAllOdata: () => api.get('/api/Amenity/odata'),
+  create: (data) => api.post('/api/Amenity', data),
+  update: (id, data) => api.put(`/api/Amenity/${id}`, data),
+  delete: (id) => api.delete(`/api/Amenity/${id}`)
 };
 
 export default api;
