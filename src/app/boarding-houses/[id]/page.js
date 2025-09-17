@@ -52,7 +52,7 @@ export default function BoardingHouseDetailPage() {
       const mockRooms = [
         {
           id: `room-1-${house.id}`,
-          roomName: 'Phòng 101',
+          roomName: 'Room 101',
           price: 2500000,
           area: 20,
           maxTenants: 2,
@@ -63,7 +63,7 @@ export default function BoardingHouseDetailPage() {
         },
         {
           id: `room-2-${house.id}`,
-          roomName: 'Phòng 102',
+          roomName: 'Room 102',
           price: 3000000,
           area: 25,
           maxTenants: 3,
@@ -74,7 +74,7 @@ export default function BoardingHouseDetailPage() {
         },
         {
           id: `room-3-${house.id}`,
-          roomName: 'Phòng 103',
+          roomName: 'Room 103',
           price: 2800000,
           area: 22,
           maxTenants: 2,

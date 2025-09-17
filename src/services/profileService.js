@@ -15,8 +15,12 @@ class ProfileService {
       return response;
     } catch (error) {
       if (error.response && error.response.status === 404) {
-        console.log("Profile not found (404), returning null as it likely hasn't been created yet.");
+        console.log("📝 Profile not found (404), returning null as it likely hasn't been created yet.");
         return null; // Return null if profile does not exist
+      }
+      if (error.response && error.response.status === 401) {
+        console.log("🔐 Profile fetch failed due to authentication (401), returning null.");
+        return null; // Return null for auth errors to avoid breaking the app
       }
       console.error("❌ Error fetching profile:", error);
       console.error("❌ Error details:", {

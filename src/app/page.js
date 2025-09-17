@@ -10,10 +10,12 @@ import CustomerReviews from '../components/CustomerReviews';
 import HowItWorks from '../components/HowItWorks';
 import BlogNews from '../components/BlogNews';
 import FAQ from '../components/FAQ';
+import RoleBasedRedirect from '../components/RoleBasedRedirect';
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors">
+    <RoleBasedRedirect>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors">
       <Navbar />
       <Hero />
       <SearchBar />
@@ -24,6 +26,7 @@ export default function Home() {
       <CustomerReviews />
       <FAQ />
       <Footer />
-    </div>
+      </div>
+    </RoleBasedRedirect>
   );
 }

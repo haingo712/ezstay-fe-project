@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/hooks/useAuth";
+import RedirectIfAuthenticated from "@/components/RedirectIfAuthenticated";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -186,7 +187,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-100 dark:from-gray-900 dark:to-slate-800 px-4 py-8">
+    <RedirectIfAuthenticated>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-100 dark:from-gray-900 dark:to-slate-800 px-4 py-8">
       <div className="w-full max-w-lg">
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-8 rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50">
           {/* Theme Toggle */}
@@ -617,6 +619,7 @@ export default function RegisterPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </RedirectIfAuthenticated>
   );
 }

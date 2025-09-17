@@ -1,5 +1,5 @@
 // src/services/roomService.js
-import { roomAPI, houseLocationAPI } from "@/utils/api";
+import { roomAPI } from "@/utils/api";
 
 // Development mode flag - set to true if backend is having issues
 const DEV_MODE = process.env.NODE_ENV === 'development';
@@ -79,23 +79,9 @@ class RoomService {
     }
   }
 
-  // helper to expose house locations to UI
-  async getHouseLocations(houseId) {
-    try {
-      const res = await houseLocationAPI.getByHouseId(houseId);
-      return res;
-    } catch (err) {
-      console.error("Error fetching house locations:", err);
-      return [];
-    }
-  }
-
-  async create(houseId, data, explicitHouseLocationId = null) {
+  async create(houseId, data) {
     try {
       console.log(`🚪 Creating new room for house ${houseId}...`, data);
-  // We intentionally do not require or fetch houseLocation here.
-  // If an explicit houseLocationId was passed, it will be used; otherwise the house-only endpoint is called.
-  const houseLocationId = explicitHouseLocationId || null;
       
       // Prepare room data according to backend CreateRoomDto
       const roomData = {
@@ -106,8 +92,8 @@ class RoomService {
 
       console.log("📤 Sending room data:", roomData);
       
-  // Call room create API; api.js will pick the correct route (with or without location)
-  const response = await roomAPI.create(houseId, houseLocationId, roomData);
+      // Call room create API - no houseLocationId needed
+      const response = await roomAPI.create(houseId, roomData);
       console.log("✅ Room created successfully:", response);
       
       // Handle backend response format (ApiResponse<RoomDto>)
@@ -144,17 +130,49 @@ class RoomService {
 
   async update(id, data) {
     try {
-      console.log(`🚪 Updating room ${id}...`, data);
+      console.log(`🚪 Updating room ${id}...`);
+      console.log("📥 Received data:", data);
+      console.log("📋 RoomStatus raw value:", data.roomStatus, "Type:", typeof data.roomStatus);
       
       // Prepare update data according to backend UpdateRoomDto
-      // Note: UpdateRoomDto doesn't have RoomName field
+      // Note: UpdateRoomDto doesn't include RoomName field (commented out in backend)
+      console.log("🔢 Raw roomStatus before processing:", data.roomStatus, "Type:", typeof data.roomStatus);
+      
+      // Convert roomStatus to integer, handling both string and number types
+      let roomStatus = 0; // Default to Available
+      
+      if (typeof data.roomStatus === 'number') {
+        roomStatus = data.roomStatus;
+      } else if (typeof data.roomStatus === 'string') {
+        // Handle string enum values from API response
+        switch(data.roomStatus.toLowerCase()) {
+          case 'available': roomStatus = 0; break;
+          case 'maintenance': roomStatus = 1; break;
+          case 'occupied': roomStatus = 2; break;
+          default:
+            // Try parsing as number
+            const parsed = parseInt(data.roomStatus, 10);
+            if (!isNaN(parsed)) {
+              roomStatus = parsed;
+            }
+        }
+      }
+      
+      // Ensure roomStatus is within valid range (0, 1, 2)
+      if (roomStatus < 0 || roomStatus > 2) {
+        console.warn("⚠️ Room status out of range, defaulting to 0:", roomStatus);
+        roomStatus = 0;
+      }
+      
+      console.log("✅ Final processed roomStatus:", roomStatus, "Type:", typeof roomStatus);
+      
       const updateData = {
         area: parseFloat(data.area),
         price: parseFloat(data.price),
-        roomStatus: data.roomStatus || 0 // 0 = Available, 1 = Occupied, 2 = Maintenance
+        roomStatus: roomStatus
       };
 
-      console.log("📤 Sending update data:", updateData);
+      console.log("📤 Sending update data (without roomName):", updateData);
 
       const response = await roomAPI.update(id, updateData);
       console.log("✅ Room updated successfully:", response);
@@ -170,9 +188,15 @@ class RoomService {
       
       if (error.response) {
         const status = error.response.status;
-        const errorData = error.data || {};
+        const errorData = error.response.data || error.data || {};
+        
+        console.log("Backend error details:", errorData);
         
         if (status === 400) {
+          // Handle specific validation errors
+          if (errorData.message && errorData.message.includes('RoomName')) {
+            throw new Error("Lỗi: Tên phòng không thể thay đổi. Chỉ có thể cập nhật diện tích, giá và trạng thái.");
+          }
           throw new Error(errorData.message || "Dữ liệu phòng không hợp lệ. Vui lòng kiểm tra lại các trường.");
         } else if (status === 404) {
           throw new Error("Không tìm thấy phòng. Phòng có thể đã bị xóa.");

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../hooks/useAuth';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import RoleBasedRedirect from '../../components/RoleBasedRedirect';
 import Link from 'next/link';
 import boardingHouseService from '../../services/boardingHouseService';
 
@@ -83,7 +84,8 @@ export default function BoardingHousesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+    <RoleBasedRedirect>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Navbar />
       
       <div className="py-8">
@@ -200,6 +202,7 @@ export default function BoardingHousesPage() {
       </div>
       
       <Footer />
-    </div>
+      </div>
+    </RoleBasedRedirect>
   );
 }

@@ -109,7 +109,15 @@ const api = {
 export const boardingHouseAPI = {
   getAll: () => api.get('/api/BoardingHouses'),
   getById: (id) => api.get(`/api/BoardingHouses/${id}`),
-  getByOwnerId: (ownerId) => api.get('/api/BoardingHouses/owner'), // Backend gets ownerId from JWT token
+  // Backend endpoint /api/BoardingHouses/owner gets ownerId from JWT token
+  getByOwnerId: (ownerId) => {
+    console.log("🏠 Calling boarding house API for ownerId:", ownerId);
+    console.log("🔑 Current token:", authService.getToken() ? "Present" : "Missing");
+    console.log("👤 User info:", authService.getUserInfo());
+    
+    // The backend endpoint /owner extracts ownerId from JWT token automatically
+    return api.get('/api/BoardingHouses/owner');
+  },
   create: (data) => api.post('/api/BoardingHouses', data),
   update: (id, data) => api.put(`/api/BoardingHouses/${id}`, data),
   delete: (id) => api.delete(`/api/BoardingHouses/${id}`)
@@ -132,12 +140,8 @@ export const roomAPI = {
   getByBoardingHouseId: (houseId) => api.get(`/api/Rooms/ByHouseId/${houseId}`),
   getByHouseId: (houseId) => api.get(`/api/Rooms/ByHouseId/${houseId}`), // Alias for compatibility
   
-  // Correct endpoint based on backend controller
-  // If a houseLocationId is provided use the Location route, otherwise use the house-only route
-  create: (houseId, houseLocationId, data) => {
-    if (houseLocationId) {
-      return api.post(`/api/Rooms/House/${houseId}/Location/${houseLocationId}`, data);
-    }
+  // Simplified create method - only needs houseId according to backend CreateRoomDto
+  create: (houseId, data) => {
     return api.post(`/api/Rooms/House/${houseId}`, data);
   },
   
