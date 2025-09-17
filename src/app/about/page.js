@@ -2,13 +2,15 @@
 
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
+import RoleBasedRedirect from "../../components/RoleBasedRedirect";
 import { useTheme } from "@/context/ThemeContext";
 
 export default function AboutPage() {
   const { theme } = useTheme();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <RoleBasedRedirect>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
 
       <div className="pt-4 pb-20">
@@ -317,6 +319,7 @@ export default function AboutPage() {
       </div>
 
       <Footer />
-    </div>
+      </div>
+    </RoleBasedRedirect>
   );
 }

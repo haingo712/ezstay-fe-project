@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+import RoleBasedRedirect from "@/components/RoleBasedRedirect";
 
 export default function SupportPage() {
   const [activeTab, setActiveTab] = useState("contact");
@@ -142,7 +143,8 @@ export default function SupportPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <RoleBasedRedirect>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
 
       {/* Hero Section */}
@@ -578,6 +580,7 @@ export default function SupportPage() {
           </div>
         </div>
       </section>
-    </div>
+      </div>
+    </RoleBasedRedirect>
   );
 }

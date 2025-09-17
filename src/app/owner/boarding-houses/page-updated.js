@@ -600,7 +600,7 @@ export default function PropertiesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Địa chỉ đầy đủ
+                    Detailed Address
                   </label>
                   <input
                     type="text"

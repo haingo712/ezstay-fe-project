@@ -43,8 +43,8 @@ export function useAuth() {
 
   useEffect(() => {
     // On initial load, check if there's a token and get user info
-    console.log("🚀 useAuth: Initial authentication check, loading avatar...");
-    refreshUserInfo(true); // Load avatar on initial load
+    console.log("🚀 useAuth: Initial authentication check");
+    refreshUserInfo(false); // Don't load avatar on initial load to avoid 401 errors
     setLoading(false);
   }, [refreshUserInfo]);
 
@@ -58,10 +58,11 @@ export function useAuth() {
       console.log("✅ Login successful, refreshing user info...");
       
       // Add a small delay to ensure token is properly stored
-      setTimeout(() => {
-        refreshUserInfo();
+      setTimeout(async () => {
+        await refreshUserInfo();
         setLoading(false);
-      }, 50);
+        console.log("🔄 Auth state updated after login");
+      }, 100); // Increased delay
     } else {
       console.log("❌ Login failed:", result.message);
       // If login fails, ensure user state is cleared
