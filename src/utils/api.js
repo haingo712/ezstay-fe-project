@@ -102,6 +102,7 @@ const api = {
     get: (path, options) => apiFetch(path, { method: 'GET', ...options }),
     post: (path, data, options) => apiFetch(path, { method: 'POST', body: JSON.stringify(data), ...options }),
     put: (path, data, options) => apiFetch(path, { method: 'PUT', body: JSON.stringify(data), ...options }),
+    patch: (path, data, options) => apiFetch(path, { method: 'PATCH', body: JSON.stringify(data), ...options }),
     delete: (path, options) => apiFetch(path, { method: 'DELETE', ...options }),
 };
 
@@ -110,8 +111,8 @@ export const boardingHouseAPI = {
   getAll: () => api.get('/api/BoardingHouses'),
   getById: (id) => api.get(`/api/BoardingHouses/${id}`),
   // Backend endpoint /api/BoardingHouses/owner gets ownerId from JWT token
-  getByOwnerId: (ownerId) => {
-    console.log("🏠 Calling boarding house API for ownerId:", ownerId);
+  getByOwnerId: () => {
+    console.log("🏠 Calling boarding house API...");
     console.log("🔑 Current token:", authService.getToken() ? "Present" : "Missing");
     console.log("👤 User info:", authService.getUserInfo());
     
@@ -138,7 +139,7 @@ export const roomAPI = {
   getAll: () => api.get('/api/Rooms'),
   getById: (id) => api.get(`/api/Rooms/${id}`),
   getByBoardingHouseId: (houseId) => api.get(`/api/Rooms/ByHouseId/${houseId}`),
-  getByHouseId: (houseId) => api.get(`/api/Rooms/ByHouseId/${houseId}`), // Alias for compatibility
+  getByHouseId: (houseId) => api.get(`/api/Rooms/ByHouseId/${houseId}/Status`), // Alias for compatibility
   
   // Simplified create method - only needs houseId according to backend CreateRoomDto
   create: (houseId, data) => {

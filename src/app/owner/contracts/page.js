@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import CreateContractModal from '@/components/CreateContractModal';
 
 export default function ContractsPage() {
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState('active');
+  const [activeTab, setActiveTab] = useState('all');
   const [contracts, setContracts] = useState([
     {
       id: 1,
@@ -138,6 +139,7 @@ export default function ContractsPage() {
   ]);
 
   const [showContractModal, setShowContractModal] = useState(false);
+  const [showCreateContractModal, setShowCreateContractModal] = useState(false);
   const [modalType, setModalType] = useState(''); // 'create', 'view', 'renew', 'terminate'
   const [selectedContract, setSelectedContract] = useState(null);
   const [contractData, setContractData] = useState({
@@ -247,25 +249,9 @@ export default function ContractsPage() {
     setSelectedContract(contract);
     
     if (type === 'create') {
-      setContractData({
-        tenantId: '',
-        roomId: '',
-        startDate: '',
-        endDate: '',
-        monthlyRent: '',
-        securityDeposit: '',
-        terms: {
-          leaseDuration: 12,
-          renewalOption: true,
-          petPolicy: 'No pets allowed',
-          smokingPolicy: 'No smoking',
-          maintenanceResponsibility: 'Landlord handles major repairs',
-          utilitiesIncluded: [],
-          utilitiesExcluded: [],
-          earlyTerminationFee: '',
-          lateFeePolicy: '$25 after 5 days late'
-        }
-      });
+      // Use the new CreateContractModal instead
+      setShowCreateContractModal(true);
+      return;
     } else if (type === 'renew' && contract) {
       const newStartDate = contract.endDate;
       const newEndDate = new Date(contract.endDate);
@@ -373,6 +359,15 @@ export default function ContractsPage() {
     }));
   };
 
+  const handleCreateContractSuccess = () => {
+    // Close the modal
+    setShowCreateContractModal(false);
+    // Refresh the contracts list (in a real app, this would refetch from API)
+    // For now, we'll just show success message
+    alert('Contract created successfully!');
+    // TODO: Implement actual refresh logic
+  };
+
   const generateContractPDF = (contract) => {
     // This would integrate with a PDF generation service
     alert(`Generating PDF for contract ${contract.contractId}...`);
@@ -445,6 +440,19 @@ export default function ContractsPage() {
             ))}
           </nav>
         </div>
+      </div>
+
+      {/* Add Contract Button - Always visible */}
+      <div className="flex justify-end mb-6">
+        <button
+          onClick={() => handleOpenModal('create')}
+          className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Add Contract
+        </button>
       </div>
 
       {/* Summary Stats */}
@@ -1013,6 +1021,13 @@ export default function ContractsPage() {
           </div>
         </div>
       )}
+      
+      {/* New Create Contract Modal */}
+      <CreateContractModal
+        isOpen={showCreateContractModal}
+        onClose={() => setShowCreateContractModal(false)}
+        onSuccess={handleCreateContractSuccess}
+      />
     </div>
   );
 }

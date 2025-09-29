@@ -36,7 +36,7 @@ export default function RoleBasedRedirect({ children }) {
       const roleConfig = {
         2: { // Owner
           allowedPaths: ['/owner'],
-          redirectTo: '/owner/boarding-houses',
+          redirectTo: '/owner',
           strictMode: true // Owner cannot access any other pages
         },
         3: { // Staff

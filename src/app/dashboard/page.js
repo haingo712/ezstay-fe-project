@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { boardingHouseAPI, roomAPI, amenityAPI } from "@/utils/api";
-import { backendConnection } from "@/services/BackendConnectionService";
+// import { backendConnection } from "@/services/BackendConnectionService";
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
@@ -23,7 +23,8 @@ export default function DashboardPage() {
       setConnectionStatus("connecting");
 
       // Kiểm tra kết nối backend
-      const isConnected = await backendConnection.checkConnection();
+      // const isConnected = await backendConnection.checkConnection();
+      const isConnected = false; // Giả sử không kết nối được để dùng dữ liệu mẫu
 
       if (isConnected) {
         setConnectionStatus("connected");

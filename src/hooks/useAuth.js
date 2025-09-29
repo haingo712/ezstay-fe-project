@@ -57,12 +57,10 @@ export function useAuth() {
     if (result.success) {
       console.log("✅ Login successful, refreshing user info...");
       
-      // Add a small delay to ensure token is properly stored
-      setTimeout(async () => {
-        await refreshUserInfo();
-        setLoading(false);
-        console.log("🔄 Auth state updated after login");
-      }, 100); // Increased delay
+      // Refresh user info immediately and await it
+      await refreshUserInfo();
+      setLoading(false);
+      console.log("🔄 Auth state updated after login");
     } else {
       console.log("❌ Login failed:", result.message);
       // If login fails, ensure user state is cleared

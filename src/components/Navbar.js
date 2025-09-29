@@ -40,12 +40,16 @@ export default function Navbar() {
 
   const getUserDashboardLink = () => {
     switch (userRole) {
+      case 4:
       case "admin":
         return "/admin";
+      case 3:
       case "staff":
         return "/staff";
+      case 2:
       case "owner":
         return "/owner";
+      case 1:
       case "user":
         return "/dashboard";
       default:

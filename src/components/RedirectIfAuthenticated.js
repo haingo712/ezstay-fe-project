@@ -29,8 +29,8 @@ export default function RedirectIfAuthenticated({ children }) {
       console.log("   - User role value:", userRole, `(Type: ${typeof userRole})`);
       
       if (userRole === 2) { // Owner
-        console.log("✅ Redirecting Owner to boarding houses page...");
-        router.push("/owner/boarding-houses");
+        console.log("✅ Redirecting Owner to owner dashboard...");
+        router.push("/owner");
       } else if (userRole === 3) { // Staff
         console.log("✅ Redirecting Staff to staff page...");
         router.push("/staff");

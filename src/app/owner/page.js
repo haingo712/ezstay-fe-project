@@ -34,7 +34,7 @@ const BoardingHouseCard = ({ house, onEdit, onDelete, onClick }) => (
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3">
-            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Rooms</p>
+            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Units</p>
             <p className="text-lg font-bold text-blue-900 dark:text-blue-100">{house.totalRooms || 0}</p>
           </div>
           <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3">
@@ -205,10 +205,10 @@ const RoomList = ({ houseId }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
         </div>
-        <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Rooms Yet</h4>
-        <p className="text-gray-500 dark:text-gray-400 mb-4">Start creating rooms for this boarding house</p>
+        <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Units Yet</h4>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">Start creating units for this boarding house</p>
         <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
-          Create First Room
+          Create First Unit
         </button>
       </div>
     );
@@ -630,45 +630,6 @@ export default function OwnerDashboard() {
                 </div>
               </div>
 
-              {/* Room Management Section - Shows when a house is selected */}
-              {selectedHouse && (
-                <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border dark:border-gray-700">
-                  <div className="p-6 border-b dark:border-gray-700">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                          {selectedHouse.name} - Room Management
-                        </h3>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-                          Create and manage rooms in this boarding house
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <button 
-                          onClick={() => setShowAddRoomModal(true)}
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
-                          <span>Create Room</span>
-                        </button>
-                        <button 
-                          onClick={() => setSelectedHouse(null)}
-                          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <RoomList houseId={selectedHouse.id} />
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Sidebar - Takes 1/4 of width */}

@@ -13,7 +13,7 @@ const UtilityRateManagement = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentRate, setCurrentRate] = useState(null);
     const [formData, setFormData] = useState({
-        type: 1, // 1: Electric, 2: Water
+        type: 1, // 1: Water, 2: Electric (matching backend enum)
         tier: 1,
         from: 0,
         to: 0,
@@ -79,6 +79,7 @@ const UtilityRateManagement = () => {
         if (!userId) {
             setIsLoading(false);
             setError("User not authenticated or ID not available");
+            console.log("❌ fetchUtilityRates: No user ID found", { user });
             return;
         }
 
@@ -86,17 +87,23 @@ const UtilityRateManagement = () => {
             setIsLoading(true);
             setError(null);
             
+            console.log("🚀 fetchUtilityRates: Starting fetch for userId:", userId);
+            console.log("🔍 fetchUtilityRates: User object:", user);
+            
             // Add timeout to prevent infinite loading
             const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Request timeout')), 10000)
+                setTimeout(() => reject(new Error('Request timeout after 10 seconds')), 10000)
             );
             
             const apiPromise = utilityRateService.getAllUtilityRatesByOwner(userId);
             
+            console.log("⏳ fetchUtilityRates: Calling API...");
             const response = await Promise.race([apiPromise, timeoutPromise]);
             
             // Debug: Log raw API response
-            console.log('🌐 Raw API Response:', response);
+            console.log('🌐 fetchUtilityRates: Raw API Response:', response);
+            console.log('🌐 fetchUtilityRates: Response type:', typeof response);
+            console.log('🌐 fetchUtilityRates: Is array:', Array.isArray(response));
             
             let ratesData = [];
             
@@ -809,108 +816,6 @@ var mongoClient = new MongoClient(...);`}</pre>
                         </div>
                     </div>
                 )}
-
-                {/* Utility Rates Table */}
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-                    {utilityRates.length === 0 ? (
-                        <div className="p-12 text-center">
-                            <div className="max-w-md mx-auto">
-                                <div className="p-4 bg-gradient-to-r from-yellow-100 to-blue-100 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-                                    <Calculator className="h-12 w-12 text-yellow-600" />
-                                </div>
-                                <h3 className="text-xl font-semibold text-gray-800 mb-3">No Utility Rates Found</h3>
-                                <p className="text-gray-600 mb-6">Start by adding your first utility pricing tier.</p>
-                                <button
-                                    onClick={openCreateModal}
-                                    className="bg-gradient-to-r from-yellow-500 to-blue-500 text-white px-6 py-3 rounded-xl hover:from-yellow-600 hover:to-blue-600 transition-all duration-200 font-medium inline-flex items-center space-x-2"
-                                >
-                                    <PlusCircle className="h-5 w-5" />
-                                    <span>Add First Rate</span>
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                                            Type
-                                        </th>
-                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                                            Tier
-                                        </th>
-                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                                            Range
-                                        </th>
-                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                                            Price
-                                        </th>
-                                        <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {utilityRates.map((rate, index) => {
-                                        console.log("🔍 Rendering rate:", rate, "type:", rate.type, "typeof:", typeof rate.type);
-                                        const typeInfo = getUtilityTypeInfo(rate.type);
-                                        return (
-                                            <tr key={rate.id || index} className="hover:bg-gray-50 transition-colors duration-150">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className={`p-2 ${typeInfo.bg} rounded-lg`}>
-                                                            <span className={typeInfo.color}>
-                                                                {typeInfo.icon}
-                                                            </span>
-                                                        </div>
-                                                        <span className="text-sm font-medium text-gray-900">
-                                                            {typeInfo.name}
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
-                                                        Tier {rate.tier}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className="text-sm text-gray-900 font-medium">
-                                                        {rate.from} - {rate.to} {typeInfo.unit}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className="text-sm font-bold text-green-600">
-                                                        {rate.price.toFixed(0)}{typeInfo.currency}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                    <div className="flex justify-center space-x-3">
-                                                        <button
-                                                            onClick={() => openEditModal(rate)}
-                                                            className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
-                                                            title="Edit rate"
-                                                        >
-                                                            <Edit className="h-4 w-4" />
-                                                        </button>
-                                                        {/* Delete button temporarily disabled - backend endpoint not available */}
-                                                        <button
-                                                            disabled
-                                                            className="p-2 bg-gray-400 text-white rounded-lg cursor-not-allowed opacity-50"
-                                                            title="Delete functionality temporarily unavailable - backend endpoint disabled"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
 
                 {/* Enhanced Modal */}
                 {isModalOpen && (

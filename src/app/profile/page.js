@@ -5,7 +5,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AddressSelector from "@/components/AddressSelector";
 import profileService from "@/services/profileService";
+import otpService from "@/services/otpService";
 
 export default function ProfilePage() {
   const { user, isAuthenticated, refreshUserInfo } = useAuth();
@@ -14,22 +16,34 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
-  // Form state - simplified to match backend structure
+  // Form state - enhanced to match backend structure
   const [profile, setProfile] = useState({
     email: "",
     phone: "",
     fullName: "",
-    avatar: "",
+    avatar: "",        // Backend avatar URL (from Avata field)
     gender: "Male",
     bio: "",
     address: "",
+    dateOfBirth: "",
+    provinceId: "",      // For AddressSelector (ID)
+    communeId: "",       // For AddressSelector (ID)
+    provinceName: "",    // For display (Name)
+    communeName: ""      // For display (Name)
   });
 
-  // Avatar preview
+  // Avatar upload state
+  const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState("");
-  
-  // Track if profile exists (for create vs update)
-  const [profileExists, setProfileExists] = useState(false);
+
+  // OTP states for phone/email updates
+  const [showPhoneOtp, setShowPhoneOtp] = useState(false);
+  const [showEmailOtp, setShowEmailOtp] = useState(false);
+  const [pendingPhone, setPendingPhone] = useState("");
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [emailOtp, setEmailOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
 
   // Load profile data from backend
   useEffect(() => {
@@ -38,49 +52,58 @@ export default function ProfilePage() {
     }
   }, [isAuthenticated]);
 
-  // Sync avatar preview with profile avatar
+  // Sync avatar preview - prioritize file over backend URL
   useEffect(() => {
-    console.log("🔄 Syncing avatar preview:", profile.avatar);
-    setAvatarPreview(profile.avatar);
-  }, [profile.avatar]);
+    if (!avatarFile && profile.avatar) {
+      // If no file selected, use backend avatar URL
+      setAvatarPreview(profile.avatar);
+    }
+  }, [profile.avatar, avatarFile]);
 
   const loadProfile = async () => {
     try {
       setLoading(true);
       const profileData = await profileService.getProfile();
-      console.log("📥 Profile data received from backend:", profileData);
-      console.log("🖼️ Avatar URL from backend:", profileData.avata);
       
-      setProfile({
-        email: profileData.email || user?.email || "",
-        phone: profileData.phone || user?.phone || "",
-        fullName: profileData.fullName || user?.fullName || "",
-        avatar: profileData.avata || "", // Note: backend uses "Avata" 
-        gender: profileService.getGenderText(profileData.gender) || "Male",
-        bio: profileData.bio || "",
-        address: profileData.adrress || "", // Note: backend uses "Adrress"
-      });
-      setAvatarPreview(profileData.avata || "");
-      setProfileExists(true); // Profile exists in backend
-      console.log("🖼️ Avatar preview set to:", profileData.avata || "");
-    } catch (err) {
-      console.error('Error loading profile:', err);
-      setProfileExists(false); // Profile doesn't exist
-      // Fallback to user data from auth
-      if (user) {
+      if (profileData) {
+        console.log("📄 Profile loaded from backend:", profileData);
+        
+        // Map backend response (UserResponseDTO) to frontend state
+        setProfile({
+          email: user?.email || "",
+          phone: profileData.Phone || user?.phone || "",
+          fullName: profileData.FullName || user?.fullName || "",
+          avatar: profileData.Avata || "", // Backend typo "Avata" - this is the image URL
+          gender: profileService.getGenderText(profileData.Gender) || "Male",
+          bio: profileData.Bio || "",
+          address: profileData.Adrress || "", // Backend typo "Adrress" 
+          dateOfBirth: profileData.DateOfBirth ? 
+            new Date(profileData.DateOfBirth).toISOString().split('T')[0] : "",
+          // Address: backend stores Province/Commune names but expects ProvinceId/CommuneId for updates
+          provinceId: profileData.ProvinceId || "", // ID for AddressSelector
+          communeId: profileData.CommuneId || "",   // ID for AddressSelector  
+          provinceName: profileData.Province || "", // Name for display
+          communeName: profileData.Commune || ""    // Name for display
+        });
+      } else {
+        console.log("📝 Profile exists but empty, initializing with user data from token");
+        // Backend auto-creates empty profile, just initialize with token data
         setProfile(prev => ({
           ...prev,
-          email: user.email || "",
-          phone: user.phone || "",
-          fullName: user.fullName || "",
+          email: user?.email || "",
+          phone: user?.phone || "",
+          fullName: user?.fullName || ""
         }));
       }
+    } catch (error) {
+      console.error("❌ Error loading profile:", error);
+      setError("Failed to load profile data");
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle input changes - simplified
+  // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProfile((prev) => ({
@@ -89,60 +112,126 @@ export default function ProfilePage() {
     }));
   };
 
-  // Handle avatar URL change
-  const handleAvatarChange = (e) => {
-    const url = e.target.value.trim();
-    console.log("🖼️ Avatar URL changed:", url);
-    
-    setProfile((prev) => ({
+  // Handle avatar file upload
+  const handleAvatarFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setAvatarFile(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle address selection - receive full address object from AddressSelector
+  const handleAddressChange = (addressData) => {
+    setProfile(prev => ({
       ...prev,
-      avatar: url,
+      provinceId: addressData.provinceCode?.toString() || "",    // Convert to string for backend
+      communeId: addressData.wardCode?.toString() || "",         // Convert to string for backend  
+      provinceName: addressData.provinceName || "",              // Save name for display
+      communeName: addressData.wardName || "",                   // Save name for display
+      address: addressData.address || ""                         // Detail address
     }));
-    
-    // Always set preview to match input
-    setAvatarPreview(url);
-    
-    // Validate URL format but don't block preview
-    if (url && !isValidImageUrl(url)) {
-      console.warn("⚠️ URL format may not be supported:", url);
-    } else {
-      setError(""); // Clear any previous errors
-    }
   };
 
-  // Validate image URL format
-  const isValidImageUrl = (url) => {
+  // Request Phone OTP
+  const handleRequestPhoneOtp = async () => {
+    if (!pendingPhone) {
+      setError("Please enter a phone number");
+      return;
+    }
+
     try {
-      const validUrl = new URL(url);
-      const pathname = validUrl.pathname.toLowerCase();
-      
-      // Check for common image extensions
-      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
-      const hasValidExtension = imageExtensions.some(ext => pathname.endsWith(ext));
-      
-      // Check for known image hosting services
-      const imageServices = [
-        'imgur.com',
-        'unsplash.com', 
-        'pixabay.com',
-        'pexels.com',
-        'picsum.photos',
-        'via.placeholder.com',
-        'ui-avatars.com',
-        'robohash.org',
-        'avatars.githubusercontent.com',
-        'gravatar.com',
-        'randomuser.me'
-      ];
-      const isKnownService = imageServices.some(service => validUrl.hostname.includes(service));
-      
-      return hasValidExtension || isKnownService;
-    } catch {
-      return false;
+      setOtpLoading(true);
+      await otpService.requestPhoneOtp(pendingPhone);
+      setShowPhoneOtp(true);
+      setSuccess("OTP sent to your phone");
+      setError("");
+    } catch (error) {
+      setError("Failed to send phone OTP");
+      console.error(error);
+    } finally {
+      setOtpLoading(false);
     }
   };
 
-  // Handle form submission
+  // Request Email OTP  
+  const handleRequestEmailOtp = async () => {
+    if (!pendingEmail) {
+      setError("Please enter an email address");
+      return;
+    }
+
+    try {
+      setOtpLoading(true);
+      await otpService.requestEmailOtp(pendingEmail);
+      setShowEmailOtp(true);
+      setSuccess("OTP sent to your email");
+      setError("");
+    } catch (error) {
+      setError("Failed to send email OTP");
+      console.error(error);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  // Verify and update phone
+  const handleUpdatePhone = async () => {
+    if (!otpService.verifyOtp(pendingPhone, phoneOtp)) {
+      setError("Invalid or expired OTP");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await profileService.updatePhone(pendingPhone, phoneOtp);
+      setProfile(prev => ({ ...prev, phone: pendingPhone }));
+      setSuccess("Phone updated successfully");
+      setShowPhoneOtp(false);
+      setPendingPhone("");
+      setPhoneOtp("");
+      otpService.clearOtp(pendingPhone);
+      setError("");
+    } catch (error) {
+      setError("Failed to update phone");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Verify and update email
+  const handleUpdateEmail = async () => {
+    if (!otpService.verifyOtp(pendingEmail, emailOtp)) {
+      setError("Invalid or expired OTP");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await profileService.updateEmail(pendingEmail, emailOtp);
+      setProfile(prev => ({ ...prev, email: pendingEmail }));
+      setSuccess("Email updated successfully");
+      setShowEmailOtp(false);
+      setPendingEmail("");
+      setEmailOtp("");
+      otpService.clearOtp(pendingEmail);
+      setError("");
+    } catch (error) {
+      setError("Failed to update email");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle form submission - Only for updating existing profile
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -150,41 +239,38 @@ export default function ProfilePage() {
     setSuccess("");
 
     try {
-      // Prepare data for backend API
+      // Prepare data for backend update-profile API
       const profileData = {
-        adrress: profile.address, // Backend expects "Adrress"
-        gender: profileService.getGenderEnum(profile.gender), // Convert to enum
-        avata: profile.avatar, // Backend expects "Avata"
+        fullName: profile.fullName,
+        gender: profile.gender, // Keep as text, updateProfile will convert to enum
         bio: profile.bio,
+        dateOfBirth: profile.dateOfBirth,
+        phone: profile.phone,
+        provinceId: profile.provinceId,
+        communeId: profile.communeId
       };
 
-      console.log("📤 Profile data to save:", profileData);
-      console.log("🖼️ Avatar URL being sent:", profileData.avata);
-      console.log("🔄 Profile exists:", profileExists);
+      console.log("📤 Profile data to update:", profileData);
+      console.log("🖼️ Avatar file:", avatarFile);
       
-      let result;
-      if (profileExists) {
-        console.log("📝 Updating existing profile...");
-        result = await profileService.updateProfile(profileData);
-      } else {
-        console.log("➕ Creating new profile...");
-        result = await profileService.createProfile(profileData);
-        setProfileExists(true); // Now profile exists
-      }
+      // Always update - this page is only for updating existing profiles
+      console.log("📝 Updating profile...");
+      const result = await profileService.updateProfile(profileData, avatarFile);
       console.log("📥 Backend response:", result);
       
       setSuccess("Profile updated successfully!");
       
       // Reload profile data to reflect changes
-      console.log("🔄 Reloading profile after save...");
+      console.log("🔄 Reloading profile after update...");
       await loadProfile();
       
       // Refresh user info in auth context to update navbar avatar
       console.log("🔄 Refreshing user info for navbar...");
       await refreshUserInfo(true); // Pass true to load avatar
       
-      console.log("🔄 Profile reload complete");
+      console.log("🔄 Profile update complete");
     } catch (err) {
+      console.error("❌ Profile update error:", err);
       setError(err.message || "Failed to update profile");
     } finally {
       setLoading(false);
@@ -263,20 +349,32 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Avatar URL
-                  </label>
-                  <input
-                    type="url"
-                    name="avatar"
-                    value={profile.avatar}
-                    onChange={handleAvatarChange}
-                    placeholder="https://example.com/avatar.jpg"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    Enter a direct URL to your avatar image
-                  </p>
+                  <div className="space-y-3">
+                    <input
+                      type="file"
+                      id="avatar-upload"
+                      accept="image/*"
+                      onChange={handleAvatarFileChange}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="avatar-upload"
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors cursor-pointer"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Choose Avatar Image
+                    </label>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      JPG, PNG, or GIF. Max file size 2MB.
+                    </p>
+                    {avatarFile && (
+                      <p className="text-sm text-green-600 dark:text-green-400">
+                        ✅ Selected: {avatarFile.name}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -359,18 +457,21 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Address */}
+              {/* Address Selector */}
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Address
                 </label>
-                <input
-                  type="text"
-                  name="address"
-                  value={profile.address}
-                  onChange={handleInputChange}
-                  placeholder="Enter your full address"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                <AddressSelector
+                  value={{
+                    provinceCode: profile.provinceId ? parseInt(profile.provinceId) : null,
+                    provinceName: profile.provinceName,
+                    wardCode: profile.communeId ? parseInt(profile.communeId) : null,
+                    wardName: profile.communeName,
+                    address: profile.address
+                  }}
+                  onChange={handleAddressChange}
+                  className="space-y-4"
                 />
               </div>
 
@@ -404,7 +505,7 @@ export default function ProfilePage() {
                 disabled={loading}
                 className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg"
               >
-                {loading ? "Saving..." : "Save Changes"}
+                {loading ? "Updating..." : "Update Profile"}
               </button>
             </div>
           </form>
@@ -413,3 +514,4 @@ export default function ProfilePage() {
     </ProtectedRoute>
   );
 }
+
