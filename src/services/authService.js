@@ -139,12 +139,16 @@ class AuthService {
       const data = await response.json();
       console.log("📥 Login response:", data);
       
-      // Use lowercase 'success' and 'token' from backend response
-      if (response.ok && (data.success || data.token)) {
+      // Check both PascalCase (C#) and camelCase (JavaScript) naming conventions
+      const success = data.Success || data.success;
+      const token = data.Token || data.token;
+      const message = data.Message || data.message;
+      
+      if (response.ok && (success || token)) {
         // Store auth token
-        if (data.token) {
+        if (token) {
           console.log("💾 Storing new auth token...");
-          localStorage.setItem("authToken", data.token);
+          localStorage.setItem("authToken", token);
           localStorage.setItem("userEmail", credentials.email);
           
           // Add small delay to ensure localStorage is updated
@@ -157,15 +161,15 @@ class AuthService {
 
         return {
           success: true,
-          message: data.message || "Login successful!",
-          token: data.token,
+          message: message || "Login successful!",
+          token: token,
           user: user, // Return user object
         };
       } else {
-        console.log("❌ Login failed:", data.message);
+        console.log("❌ Login failed:", message);
         return {
           success: false,
-          message: data.message || "Login failed. Please check your credentials.",
+          message: message || "Login failed. Please check your credentials.",
         };
       }
     } catch (error) {
@@ -271,6 +275,15 @@ class AuthService {
       // .NET Core uses a long schema for the role claim in JWT. We check for both that and the simple 'role'.
       let role = payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
       
+      // Get fullName from name claim
+      const fullName = payload.name || 
+                       payload.fullName || 
+                       payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
+                       payload.FullName;
+      
+      // Get phone number
+      const phone = payload.phone || payload.Phone;
+      
       // Get user ID from various possible claim names
       const id = payload.id || 
                  payload.sub || 
@@ -331,7 +344,7 @@ class AuthService {
 
       console.log("🔍 Final role:", role, `(Type: ${typeof role})`);
       
-      const userInfo = { ...payload, email, role, id };
+      const userInfo = { ...payload, email, role, id, fullName, phone };
       console.log("🔍 Final user object:", userInfo);
       
       // Validate that we have essential info

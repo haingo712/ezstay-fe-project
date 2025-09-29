@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useSocialAuth } from "@/hooks/useSocialAuth";
 import RedirectIfAuthenticated from "@/components/RedirectIfAuthenticated";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { register } = useAuth();
+  const { signInWithGoogle, signInWithFacebook, loading: socialLoading } = useSocialAuth();
   const [form, setForm] = useState({
     full_name: "",
     email: "",
@@ -52,12 +54,12 @@ export default function RegisterPage() {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email))
       return "Invalid email format.";
     // Password: 6+ characters, 1 uppercase, 1 lowercase, 1 number
-    // if (!form.password) return "Password is required.";
+    if (!form.password) return "Password is required.";
     // if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/.test(form.password))
     //   return "Password must be at least 6 characters, include uppercase, lowercase, and number.";
     // // Confirm password
-    // if (form.password !== form.confirmPassword)
-    //   return "Passwords do not match.";
+    if (form.password !== form.confirmPassword)
+      return "Passwords do not match.";
     // Phone number: if provided, must be valid
     if (form.phone_number && !/^\+?\d{9,15}$/.test(form.phone_number))
       return "Phone number must be 9-15 digits and can start with +.";
@@ -118,13 +120,42 @@ export default function RegisterPage() {
     }
   };
 
-  const handleSocialRegister = (provider) => {
-    setLoading(true);
-    // Social registration logic here
-    setTimeout(() => {
-      setError(`${provider} registration not implemented yet.`);
-      setLoading(false);
-    }, 1000);
+  const handleSocialRegister = async (provider) => {
+    if (socialLoading || loading) return;
+    
+    try {
+      setError("");
+      setSuccess("");
+      
+      let result;
+      if (provider === "Google") {
+        result = await signInWithGoogle();
+      } else if (provider === "Facebook") {
+        result = await signInWithFacebook();
+      }
+      
+      if (result && result.success) {
+        setSuccess(`${provider} login successful! Redirecting...`);
+        setTimeout(() => {
+          // Use same redirect logic as regular login
+          const userRole = result.user?.role;
+          if (userRole === 2) {
+            router.push("/owner");
+          } else if (userRole === 3) {
+            router.push("/staff");
+          } else if (userRole === 4) {
+            router.push("/admin");
+          } else {
+            router.push("/");
+          }
+        }, 1000);
+      } else {
+        setError(result?.message || `${provider} login failed. Please try again.`);
+      }
+    } catch (error) {
+      console.error(`${provider} login error:`, error);
+      setError(`${provider} login failed. Please try again.`);
+    }
   };
 
   // Handle OTP verification
@@ -190,15 +221,23 @@ export default function RegisterPage() {
     <RedirectIfAuthenticated>
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-100 dark:from-gray-900 dark:to-slate-800 px-4 py-8">
       <div className="w-full max-w-lg">
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-8 rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50">
+        <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-8 rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50">
           {/* Theme Toggle */}
           <button
             type="button"
             onClick={toggleTheme}
-            className="absolute top-6 right-6 p-2 rounded-full bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-200 hover:bg-white/70 dark:hover:bg-gray-600/70 transition-all duration-200"
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-200 hover:bg-white/70 dark:hover:bg-gray-600/70 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50"
             aria-label="Toggle theme"
           >
-            {theme === "dark" ? "☀️" : "🌙"}
+            {theme === "dark" ? (
+              <svg className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            )}
           </button>
 
           {/* Header */}
@@ -216,8 +255,8 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => handleSocialRegister("Google")}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+              disabled={loading || socialLoading}
+              className="w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -245,8 +284,8 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => handleSocialRegister("Facebook")}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-3 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-xl py-3 px-4 transition-colors duration-200"
+              disabled={loading || socialLoading}
+              className="w-full flex items-center justify-center gap-3 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-xl py-3 px-4 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
@@ -324,7 +363,7 @@ export default function RegisterPage() {
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all duration-200 bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 pr-12"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all duration-200 bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 pr-14"
                   value={form.password}
                   onChange={handleChange}
                   placeholder="Create a password"
@@ -334,9 +373,10 @@ export default function RegisterPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-500 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 rounded-lg"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  tabIndex={-1}
                 >
                   {showPassword ? (
                     <svg
@@ -385,7 +425,7 @@ export default function RegisterPage() {
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   name="confirmPassword"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all duration-200 bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 pr-12"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all duration-200 bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 pr-14"
                   value={form.confirmPassword}
                   onChange={handleChange}
                   placeholder="Confirm your password"
@@ -395,11 +435,12 @@ export default function RegisterPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-500 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 rounded-lg"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   aria-label={
                     showConfirmPassword ? "Hide password" : "Show password"
                   }
+                  tabIndex={-1}
                 >
                   {showConfirmPassword ? (
                     <svg

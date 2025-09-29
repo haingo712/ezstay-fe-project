@@ -1,101 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
+import { rentalPostService } from '@/services/rentalPostService';
 
 export default function PostsPage() {
+  const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      authorId: 1,
-      roomId: 1,
-      roomName: 'Modern Studio Apartment',
-      houseName: 'Sunrise Residence',
-      title: 'Beautiful Modern Studio in Downtown - Perfect for Professionals',
-      description: 'Stunning studio apartment with city views, modern amenities, and excellent location. Perfect for working professionals who value comfort and convenience.',
-      contactPhone: '+1 (555) 123-4567',
-      createdAt: '2024-01-20T10:30:00Z',
-      isActive: true,
-      isApproved: true,
-      approvedBy: 201,
-      approvedAt: '2024-01-20T14:15:00Z',
-      views: 156,
-      inquiries: 23,
-      favorites: 12,
-      images: ['/api/placeholder/400/300', '/api/placeholder/400/300', '/api/placeholder/400/300'],
-      price: 250,
-      area: 35,
-      maxTenants: 2
-    },
-    {
-      id: 2,
-      authorId: 1,
-      roomId: 2,
-      roomName: 'Cozy Room Near University',
-      houseName: 'Student Haven',
-      title: 'Student-Friendly Room Near Campus - Great for Studies',
-      description: 'Quiet and comfortable room perfect for students. Walking distance to university, study-friendly environment, and affordable pricing.',
-      contactPhone: '+1 (555) 123-4567',
-      createdAt: '2024-01-18T09:15:00Z',
-      isActive: true,
-      isApproved: false,
-      approvedBy: null,
-      approvedAt: null,
-      views: 89,
-      inquiries: 12,
-      favorites: 8,
-      images: ['/api/placeholder/400/300'],
-      price: 180,
-      area: 20,
-      maxTenants: 1
-    },
-    {
-      id: 3,
-      authorId: 1,
-      roomId: 3,
-      roomName: 'Spacious Shared House Room',
-      houseName: 'Green Valley House',
-      title: 'Large Room in Peaceful Shared House with Garden',
-      description: 'Spacious room in a beautiful shared house with garden access. Perfect for those who enjoy community living in a peaceful environment.',
-      contactPhone: '+1 (555) 123-4567',
-      createdAt: '2024-01-15T16:45:00Z',
-      isActive: false,
-      isApproved: true,
-      approvedBy: 201,
-      approvedAt: '2024-01-16T10:30:00Z',
-      views: 67,
-      inquiries: 8,
-      favorites: 5,
-      images: ['/api/placeholder/400/300', '/api/placeholder/400/300'],
-      price: 200,
-      area: 45,
-      maxTenants: 3
-    },
-    {
-      id: 4,
-      authorId: 1,
-      roomId: 4,
-      roomName: 'Luxury Penthouse Room',
-      houseName: 'Sunrise Residence',
-      title: 'Premium Penthouse Room with City Views - Executive Living',
-      description: 'Luxury penthouse room with panoramic city views and premium amenities. Perfect for executives and professionals seeking upscale living.',
-      contactPhone: '+1 (555) 123-4567',
-      createdAt: '2024-01-12T11:20:00Z',
-      isActive: true,
-      isApproved: true,
-      approvedBy: 202,
-      approvedAt: '2024-01-13T09:45:00Z',
-      views: 234,
-      inquiries: 45,
-      favorites: 28,
-      images: ['/api/placeholder/400/300'],
-      price: 350,
-      area: 50,
-      maxTenants: 2
-    }
-  ]);
+  const [posts, setPosts] = useState([]);
 
   const [showPostModal, setShowPostModal] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
@@ -114,9 +30,36 @@ export default function PostsPage() {
     { id: 4, name: 'Luxury Penthouse Room', houseName: 'Sunrise Residence' }
   ]);
 
+  // Load posts from API
+  const loadPosts = useCallback(async () => {
+    try {
+      if (!user || !user.id) return;
+      
+      setLoading(true);
+      setError(null);
+      console.log('🏠 Loading posts for owner:', user.id);
+      
+      const response = await rentalPostService.getOwnerPosts(user.id);
+      setPosts(response || []);
+      console.log('✅ Posts loaded:', response);
+    } catch (error) {
+      console.error('❌ Error loading posts:', error);
+      setError('Failed to load posts. Please try again.');
+      setPosts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (mounted && user) {
+      loadPosts();
+    }
+  }, [mounted, user, loadPosts]);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-US', {
@@ -137,29 +80,34 @@ export default function PostsPage() {
     if (!post.isActive) {
       return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
-    if (!post.isApproved) {
+    if (post.isApproved === null) {
       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+    }
+    if (post.isApproved === 0) {
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
     }
     return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
   };
 
   const getStatusText = (post) => {
     if (!post.isActive) return 'Inactive';
-    if (!post.isApproved) return 'Pending Approval';
-    return 'Active';
+    if (post.isApproved === null) return 'Pending Approval';
+    if (post.isApproved === 0) return 'Rejected';
+    return 'Approved';
   };
 
   const getStatusIcon = (post) => {
     if (!post.isActive) return '⏸️';
-    if (!post.isApproved) return '⏳';
+    if (post.isApproved === null) return '⏳';
+    if (post.isApproved === 0) return '❌';
     return '✅';
   };
 
   const filteredPosts = posts.filter(post => {
     if (activeTab === 'all') return true;
-    if (activeTab === 'active') return post.isActive && post.isApproved;
-    if (activeTab === 'pending') return post.isActive && !post.isApproved;
-    if (activeTab === 'inactive') return !post.isActive;
+    if (activeTab === 'active') return post.isActive && post.isApproved === 1;
+    if (activeTab === 'pending') return post.isActive && post.isApproved === null;
+    if (activeTab === 'inactive') return !post.isActive || post.isApproved === 0;
     return true;
   });
 
@@ -187,97 +135,102 @@ export default function PostsPage() {
     setShowPostModal(true);
   };
 
-  const handleSubmitPost = (e) => {
+  const handleSubmitPost = async (e) => {
     e.preventDefault();
     
-    const selectedRoom = availableRooms.find(r => r.id === parseInt(postData.roomId));
-    
-    if (editingPost) {
-      // Update existing post
-      setPosts(prev => prev.map(post => 
-        post.id === editingPost.id 
-          ? { 
-              ...post, 
-              ...postData,
-              roomId: parseInt(postData.roomId),
-              roomName: selectedRoom?.name || post.roomName,
-              houseName: selectedRoom?.houseName || post.houseName,
-              isApproved: false, // Reset approval status when edited
-              approvedBy: null,
-              approvedAt: null
-            }
-          : post
-      ));
-      alert('Post updated successfully! It will need re-approval.');
-    } else {
-      // Add new post
-      const newPost = {
-        id: posts.length + 1,
-        authorId: 1,
-        ...postData,
-        roomId: parseInt(postData.roomId),
-        roomName: selectedRoom?.name || 'Unknown Room',
-        houseName: selectedRoom?.houseName || 'Unknown House',
-        createdAt: new Date().toISOString(),
-        isActive: true,
-        isApproved: false,
-        approvedBy: null,
-        approvedAt: null,
-        views: 0,
-        inquiries: 0,
-        favorites: 0,
-        price: 250, // This should come from room data
-        area: 35,   // This should come from room data
-        maxTenants: 2 // This should come from room data
-      };
-      setPosts(prev => [newPost, ...prev]);
-      alert('Post created successfully! It will be reviewed for approval.');
+    try {
+      const selectedRoom = availableRooms.find(r => r.id === parseInt(postData.roomId));
+      
+      if (editingPost) {
+        // Update existing post
+        const updatedData = {
+          ...postData,
+          roomId: parseInt(postData.roomId),
+          roomName: selectedRoom?.name || editingPost.roomName,
+          houseName: selectedRoom?.houseName || editingPost.houseName,
+        };
+        
+        await rentalPostService.updatePost(editingPost.id, updatedData);
+        alert('Post updated successfully! It will need re-approval.');
+      } else {
+        // Create new post
+        const newPostData = {
+          ...postData,
+          roomId: parseInt(postData.roomId),
+          roomName: selectedRoom?.name || 'Unknown Room',
+          houseName: selectedRoom?.houseName || 'Unknown House',
+        };
+        
+        await rentalPostService.createPost(newPostData);
+        alert('Post created successfully! Waiting for staff approval.');
+      }
+      
+      // Reload posts and close modal
+      await loadPosts();
+      setShowPostModal(false);
+      setEditingPost(null);
+      setPostData({
+        roomId: '',
+        title: '',
+        description: '',
+        contactPhone: '',
+        images: []
+      });
+      
+    } catch (error) {
+      console.error('Error submitting post:', error);
+      alert('Failed to submit post. Please try again.');
     }
-
-    setShowPostModal(false);
-    setEditingPost(null);
-    setPostData({
-      roomId: '',
-      title: '',
-      description: '',
-      contactPhone: '',
-      images: []
-    });
   };
 
-  const handleDeletePost = (postId) => {
+  const handleDeletePost = async (postId) => {
     if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
-      setPosts(prev => prev.filter(post => post.id !== postId));
-      alert('Post deleted successfully!');
+      try {
+        await rentalPostService.deletePost(postId);
+        await loadPosts();
+        alert('Post deleted successfully!');
+      } catch (error) {
+        console.error('Error deleting post:', error);
+        alert('Failed to delete post. Please try again.');
+      }
     }
   };
 
-  const handleToggleActive = (postId) => {
-    setPosts(prev => prev.map(post => 
-      post.id === postId 
-        ? { ...post, isActive: !post.isActive }
-        : post
-    ));
+  const handleToggleActive = async (postId) => {
+    try {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+      
+      const updatedData = { ...post, isActive: !post.isActive };
+      await rentalPostService.updatePost(postId, updatedData);
+      await loadPosts();
+      alert(updatedData.isActive ? 'Post activated!' : 'Post deactivated!');
+    } catch (error) {
+      console.error('Error toggling post status:', error);
+      alert('Failed to update post status. Please try again.');
+    }
   };
 
-  const handleDuplicatePost = (post) => {
-    const duplicatedPost = {
-      ...post,
-      id: posts.length + 1,
-      title: `${post.title} (Copy)`,
-      createdAt: new Date().toISOString(),
-      isApproved: false,
-      approvedBy: null,
-      approvedAt: null,
-      views: 0,
-      inquiries: 0,
-      favorites: 0
-    };
-    setPosts(prev => [duplicatedPost, ...prev]);
-    alert('Post duplicated successfully!');
+  const handleDuplicatePost = async (post) => {
+    try {
+      const duplicatedData = {
+        roomId: post.roomId,
+        title: `${post.title} (Copy)`,
+        description: post.description,
+        contactPhone: post.contactPhone,
+        images: post.images || []
+      };
+      
+      await rentalPostService.createPost(duplicatedData);
+      await loadPosts();
+      alert('Post duplicated successfully!');
+    } catch (error) {
+      console.error('Error duplicating post:', error);
+      alert('Failed to duplicate post. Please try again.');
+    }
   };
 
-  if (!mounted) {
+  if (!mounted || loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -285,12 +238,30 @@ export default function PostsPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-600 mb-4">❌</div>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          Error Loading Posts
+        </h3>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">{error}</p>
+        <button
+          onClick={loadPosts}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
   const totalPosts = posts.length;
-  const activePosts = posts.filter(p => p.isActive && p.isApproved).length;
-  const pendingPosts = posts.filter(p => p.isActive && !p.isApproved).length;
-  const inactivePosts = posts.filter(p => !p.isActive).length;
-  const totalViews = posts.reduce((sum, post) => sum + post.views, 0);
-  const totalInquiries = posts.reduce((sum, post) => sum + post.inquiries, 0);
+  const activePosts = posts.filter(p => p.isActive && p.isApproved === 1).length;
+  const pendingPosts = posts.filter(p => p.isActive && p.isApproved === null).length;
+  const inactivePosts = posts.filter(p => !p.isActive || p.isApproved === 0).length;
+  const totalViews = posts.reduce((sum, post) => sum + (post.views || 0), 0);
+  const totalInquiries = posts.reduce((sum, post) => sum + (post.inquiries || 0), 0);
 
   return (
     <div className="space-y-6">

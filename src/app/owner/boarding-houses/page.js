@@ -337,6 +337,7 @@ export default function BoardingHousesPage() {
                   </div>
                   <div className="flex justify-end space-x-3 mt-4">
                     <Link href={`/owner/rooms?houseId=${house.id}&houseName=${encodeURIComponent(house.houseName)}`} className="text-blue-500 hover:underline text-sm font-medium">Manage Rooms</Link>
+                    <Link href={`/owner/boarding-houses/${house.id}/contracts`} className="text-purple-500 hover:underline text-sm font-medium">Manage Contracts</Link>
                     <button onClick={() => handleEdit(house)} className="text-yellow-500 hover:underline text-sm font-medium">Edit</button>
                     <button onClick={() => handleDelete(house.id)} className="text-red-500 hover:underline text-sm font-medium">Delete</button>
                   </div>
