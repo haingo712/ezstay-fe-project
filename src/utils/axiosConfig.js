@@ -17,10 +17,14 @@ const axiosInstance = axios.create({
 // Request interceptor to add auth token
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Get token from localStorage
-    const token = localStorage.getItem('ezstay_token');
+    // Get token from localStorage (try both key names for compatibility)
+    const token = localStorage.getItem('ezstay_token') || localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log(`🔑 Token found (${token.substring(0, 20)}...)`);
+    } else {
+      console.warn('⚠️ No token found in localStorage');
+      console.log('Available keys:', Object.keys(localStorage));
     }
     
     console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`);
@@ -43,10 +47,21 @@ axiosInstance.interceptors.response.use(
     
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
-      console.warn('🔐 Unauthorized access, clearing token...');
+      console.warn('🔐 Unauthorized access detected');
+      const token = localStorage.getItem('ezstay_token') || localStorage.getItem('authToken');
+      console.log('Token in localStorage:', token?.substring(0, 50));
+      console.log('Response:', error.response?.data);
+      
+      // Clear all token variations
       localStorage.removeItem('ezstay_token');
+      localStorage.removeItem('authToken');
       localStorage.removeItem('ezstay_user');
-      window.location.href = '/login';
+      localStorage.removeItem('userEmail');
+      
+      // Redirect to login
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
     }
     
     return Promise.reject(error);

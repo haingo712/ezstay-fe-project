@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AddressSelector from "@/components/AddressSelector";
+import FaceRegistrationModal from "@/components/FaceRegistrationModal";
 import profileService from "@/services/profileService";
 import otpService from "@/services/otpService";
 
@@ -35,6 +36,9 @@ export default function ProfilePage() {
   // Avatar upload state
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState("");
+
+  // Face registration modal state
+  const [showFaceModal, setShowFaceModal] = useState(false);
 
   // OTP states for phone/email updates
   const [showPhoneOtp, setShowPhoneOtp] = useState(false);
@@ -377,6 +381,27 @@ export default function ProfilePage() {
                   </div>
                 </div>
               </div>
+
+              {/* Face Registration Button */}
+              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">
+                  Face Recognition
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Register your face for quick and secure login using facial recognition
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowFaceModal(true)}
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  Register Face
+                </button>
+              </div>
             </div>
 
             {/* Basic Information */}
@@ -511,6 +536,16 @@ export default function ProfilePage() {
           </form>
         </div>
       </div>
+
+      {/* Face Registration Modal */}
+      <FaceRegistrationModal
+        isOpen={showFaceModal}
+        onClose={() => setShowFaceModal(false)}
+        onSuccess={() => {
+          setSuccess("Face registered successfully!");
+          setShowFaceModal(false);
+        }}
+      />
     </ProtectedRoute>
   );
 }

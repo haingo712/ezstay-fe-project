@@ -1,6 +1,25 @@
 'use client';
 
-import reviews from '../sampleData/customerReviews';
+const reviews = [
+  {
+    avatar: '/image.png',
+    rating: 5,
+    content: 'Great place to stay! Clean rooms and friendly staff.',
+    name: 'John Doe'
+  },
+  {
+    avatar: '/image.png',
+    rating: 5,
+    content: 'Perfect location near the university. Highly recommended!',
+    name: 'Jane Smith'
+  },
+  {
+    avatar: '/image.png',
+    rating: 4,
+    content: 'Good value for money. The room is spacious and comfortable.',
+    name: 'Mike Johnson'
+  }
+];
 
 function StarRating({ rating }) {
   return (
