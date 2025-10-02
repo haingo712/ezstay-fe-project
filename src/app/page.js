@@ -8,7 +8,7 @@ import Hero from '../components/Hero';
 import SearchBar from '../components/SearchBar';
 import CustomerReviews from '../components/CustomerReviews';
 import HowItWorks from '../components/HowItWorks';
-import BlogNews from '../components/BlogNews';
+import LatestPosts from '../components/LatestPosts';
 import FAQ from '../components/FAQ';
 import RoleBasedRedirect from '../components/RoleBasedRedirect';
 
@@ -19,10 +19,10 @@ export default function Home() {
       <Navbar />
       <Hero />
       <SearchBar />
+      <LatestPosts />
       <Stats />
       <HowItWorks />
       <Features />
-      <BlogNews />
       <CustomerReviews />
       <FAQ />
       <Footer />

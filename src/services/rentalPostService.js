@@ -1,10 +1,10 @@
 import axiosInstance from '@/utils/axiosConfig';
 
 export const rentalPostService = {
-  // Get all posts for owner
-  getOwnerPosts: async (ownerId) => {
+  // Get all posts for owner (using token authentication)
+  getOwnerPosts: async () => {
     try {
-      const response = await axiosInstance.get(`/api/RentalPosts/owner/${ownerId}`);
+      const response = await axiosInstance.get('/api/RentalPosts/owner');
       return response.data;
     } catch (error) {
       console.error('Error fetching owner posts:', error);
@@ -12,13 +12,24 @@ export const rentalPostService = {
     }
   },
 
-  // Create new post
+  // Create new post (backend will auto-fill: AuthorName, RoomName, HouseName from token + RoomId)
   createPost: async (postData) => {
     try {
-      const response = await axiosInstance.post('/api/RentalPosts', postData);
+      // Only send: roomId, title, description, contactPhone
+      const payload = {
+        roomId: postData.roomId,
+        title: postData.title,
+        description: postData.description,
+        contactPhone: postData.contactPhone
+      };
+      console.log('📤 Creating post with payload:', payload);
+      const response = await axiosInstance.post('/api/RentalPosts', payload);
+      console.log('✅ Post created successfully:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error creating post:', error);
+      console.error('❌ Error creating post:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
       throw error;
     }
   },
@@ -26,7 +37,12 @@ export const rentalPostService = {
   // Update post
   updatePost: async (postId, postData) => {
     try {
-      const response = await axiosInstance.put(`/api/RentalPosts/${postId}`, postData);
+      const payload = {
+        title: postData.title,
+        description: postData.description,
+        contactPhone: postData.contactPhone
+      };
+      const response = await axiosInstance.put(`/api/RentalPosts/${postId}`, payload);
       return response.data;
     } catch (error) {
       console.error('Error updating post:', error);
@@ -35,56 +51,41 @@ export const rentalPostService = {
   },
 
   // Delete post
-  deletePost: async (postId) => {
+  deletePost: async (postId, deletedBy) => {
     try {
-      await axiosInstance.delete(`/api/RentalPosts/${postId}`);
+      await axiosInstance.delete(`/api/RentalPosts/${postId}?deletedBy=${deletedBy}`);
     } catch (error) {
       console.error('Error deleting post:', error);
       throw error;
     }
   },
 
-  // Get pending posts (for staff)
-  getPendingPosts: async () => {
+  // Get all posts for users (includes approved posts)
+  getAllForUser: async () => {
     try {
-      const response = await axiosInstance.get('/api/RentalPosts/pending');
+      const response = await axiosInstance.get('/api/RentalPosts');
       return response.data;
     } catch (error) {
-      console.error('Error fetching pending posts:', error);
+      console.error('Error fetching posts:', error);
       throw error;
     }
   },
 
-  // Approve post (for staff)
-  approvePost: async (postId) => {
+  // Get post by ID
+  getById: async (postId) => {
     try {
-      const response = await axiosInstance.post(`/api/RentalPosts/${postId}/approve`);
+      const response = await axiosInstance.get(`/api/RentalPosts/${postId}`);
       return response.data;
     } catch (error) {
-      console.error('Error approving post:', error);
+      console.error('Error fetching post:', error);
       throw error;
     }
   },
 
-  // Reject post (for staff)
-  rejectPost: async (postId) => {
-    try {
-      const response = await axiosInstance.post(`/api/RentalPosts/${postId}/reject`);
-      return response.data;
-    } catch (error) {
-      console.error('Error rejecting post:', error);
-      throw error;
-    }
-  },
-
-  // Get all approved posts (for homepage)
-  getApprovedPosts: async () => {
-    try {
-      const response = await axiosInstance.get('/api/RentalPosts/approved');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching approved posts:', error);
-      throw error;
-    }
+  // Alias for getById
+  getPostById: async (postId) => {
+    return rentalPostService.getById(postId);
   }
 };
+
+export default rentalPostService;

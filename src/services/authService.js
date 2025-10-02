@@ -145,10 +145,11 @@ class AuthService {
       const message = data.Message || data.message;
       
       if (response.ok && (success || token)) {
-        // Store auth token
+        // Store auth token (use both keys for compatibility)
         if (token) {
           console.log("💾 Storing new auth token...");
           localStorage.setItem("authToken", token);
+          localStorage.setItem("ezstay_token", token); // Also store with new key
           localStorage.setItem("userEmail", credentials.email);
           
           // Add small delay to ensure localStorage is updated

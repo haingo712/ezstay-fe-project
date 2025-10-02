@@ -2,10 +2,17 @@ import api from "@/utils/api";
 
 const contractService = {
   create: async (data) => {
-    console.log("🔗 Creating contract with data:", data);
-    const response = await api.post('/api/Contract', data);
-    console.log("✅ Contract created successfully:", response);
-    return response;
+    console.log("🔗 CONTRACT SERVICE - Creating contract with data:", data);
+    console.log("🔗 CONTRACT SERVICE - Data JSON:", JSON.stringify(data, null, 2));
+    try {
+      const response = await api.post('/api/Contract', data);
+      console.log("✅ CONTRACT SERVICE - Contract created successfully:", response);
+      return response;
+    } catch (error) {
+      console.error("❌ CONTRACT SERVICE - Error creating contract:", error);
+      console.error("❌ CONTRACT SERVICE - Error response:", error.response);
+      throw error;
+    }
   },
   
   getAll: async () => {
@@ -63,7 +70,7 @@ const contractService = {
   // Get contracts by tenant
   getByTenantId: async (tenantId) => {
     try {
-      const response = await api.get(`/api/Contract/tenant/${tenantId}`);
+      const response = await api.get(`/api/Contract/MyContract`);
       return response.data || response;
     } catch (error) {
       console.error('Error fetching contracts by tenant:', error);

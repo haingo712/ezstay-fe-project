@@ -1,23 +1,63 @@
 // src/services/profileService.js
 import api from "@/utils/api";
+import imageService from "./imageService";
 
 class ProfileService {
   constructor() {
     this.baseUrl = "/api/User";
+    this.imageUrl = "/api/Images";
   }
 
-  // Lấy profile của user hiện tại
-  // Note: Backend tự động tạo profile rỗng khi user đăng ký
+  // Upload avatar image và trả về URL
+  async uploadAvatar(avatarFile) {
+    try {
+      console.log("� Uploading avatar via imageService...");
+      return await imageService.upload(avatarFile);
+    } catch (error) {
+      console.error("❌ Error uploading avatar:", error);
+      throw error;
+    }
+  }
+
+  // Tạo profile mới (UserDTO)
+  async createProfile(profileData) {
+    try {
+      console.log("👤 Creating new profile...", profileData);
+      
+      const createData = {
+        Gender: this.getGenderEnum(profileData.gender || "Male"),
+        Avata: profileData.avata || null, // Use null instead of empty string
+        Bio: profileData.bio || null,
+        Province: profileData.province || null, // Use null instead of empty string
+        Commune: profileData.commune || null,   
+        DetailAddress: profileData.detailAddress || null
+      };
+      
+      console.log("📤 Sending to backend:", createData);
+      console.log("🔢 Gender enum value:", createData.Gender);
+      console.log("📸 Avatar value:", createData.Avata);
+      
+      const response = await api.post(`${this.baseUrl}/create-profile`, createData);
+      console.log("✅ Profile created successfully:", response);
+      return response;
+    } catch (error) {
+      console.error("❌ Error creating profile:", error);
+      throw error;
+    }
+  }
+
+  // Lấy profile của user hiện tại  
+  // Note: Profile có thể chưa tồn tại, trả về null nếu 404
   async getProfile() {
     try {
       console.log("👤 Fetching user profile...");
       const response = await api.get(`${this.baseUrl}/profile`);
-      console.log("✅ Profile fetched successfully:", response);
-      return response;
+      console.log("✅ Profile fetched successfully:", response.data);
+      return response.data;
     } catch (error) {
       if (error.response && error.response.status === 404) {
-        console.log("📝 Profile not found (404) - this should not happen as backend auto-creates profiles.");
-        return null; 
+        console.log("📝 Profile not found (404) - User needs to create profile first.");
+        return null; // Gracefully handle no profile
       }
       if (error.response && error.response.status === 401) {
         console.log("🔐 Profile fetch failed due to authentication (401).");
@@ -30,13 +70,14 @@ class ProfileService {
         url: error.config?.url,
         method: error.config?.method
       });
-      throw error;
+      
+      // Don't throw error - let frontend handle gracefully
+      return null;
     }
   }
 
-  // Cập nhật profile với FormData (khớp với UpdateUserDTO backend)
-  // Note: Backend tự động tạo profile rỗng khi user đăng ký, frontend chỉ cần update
-  async updateProfile(profileData, avatarFile = null) {
+  // Cập nhật profile với FormData (UpdateUserDTO)
+  async updateProfile(profileData) {
     try {
       console.log("👤 Updating profile...", profileData);
       
@@ -63,19 +104,18 @@ class ProfileService {
       if (profileData.phone && profileData.phone.trim()) {
         formData.append('Phone', profileData.phone.trim());
       }
-      // Add address fields (backend expects ID but stores name in User model)
+      if (profileData.avatar && profileData.avatar.trim()) {
+        formData.append('Avatar', profileData.avatar.trim());
+      }
+      if (profileData.detailAddress && profileData.detailAddress.trim()) {
+        formData.append('DetailAddress', profileData.detailAddress.trim());
+      }
+      // Backend UpdateUserDTO uses ProvinceId/CommuneId (not Code)
       if (profileData.provinceId && profileData.provinceId.trim()) {
         formData.append('ProvinceId', profileData.provinceId.trim());
       }
       if (profileData.communeId && profileData.communeId.trim()) {
         formData.append('CommuneId', profileData.communeId.trim());
-      }
-      // Note: Backend UpdateUserDTO uses ProvinceId/CommuneId but 
-      // User model stores Province/Commune (names). Backend service should handle conversion.
-      
-      // Add avatar file if provided (IFormFile Avatar)
-      if (avatarFile) {
-        formData.append('Avatar', avatarFile);
       }
       
       console.log("📤 FormData being sent to backend:");

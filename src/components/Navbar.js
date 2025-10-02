@@ -16,6 +16,10 @@ export default function Navbar() {
   // Get user role from user object or default to guest
   const userRole = user?.role || "guest";
   const userEmail = user?.email || "user@example.com";
+  
+  // Debug logging
+  console.log("Navbar - User:", user);
+  console.log("Navbar - UserRole:", userRole, "Type:", typeof userRole);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -30,7 +34,7 @@ export default function Navbar() {
   const getNavigationItems = () => {
     const baseItems = [
       { href: "/", label: "Home" },
-      { href: "/boarding-houses", label: "Boarding Houses" },
+      { href: "/rental-posts", label: "Rental Post" },
       { href: "/support", label: "Support" },
       { href: "/about", label: "About" },
     ];
@@ -148,6 +152,13 @@ export default function Navbar() {
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         Profile
+                      </Link>
+                      <Link
+                        href="/profile/rental-history"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        Rental History
                       </Link>
                       <Link
                         href={getUserDashboardLink()}

@@ -52,7 +52,7 @@ export default function ContractsManagementPage() {
   const [dependentErrors, setDependentErrors] = useState({});
 
   // New contract creation states
-  const [createStep, setCreateStep] = useState(1); // 1: contract, 2: identity profile
+  const [createStep, setCreateStep] = useState(1); // 1: contract, 2: identity profile, 3: utility readings
   const [creatingContract, setCreatingContract] = useState(false);
   
   // Contract form data
@@ -87,10 +87,26 @@ export default function ContractsManagementPage() {
 
   const [contractErrors, setContractErrors] = useState({});
   const [profileErrors, setProfileErrors] = useState({});
+
+  // Utility readings form data
+  const [utilityReadingData, setUtilityReadingData] = useState({
+    electricityReading: {
+      price: "",
+      note: "",
+      currentIndex: ""
+    },
+    waterReading: {
+      price: "",
+      note: "",
+      currentIndex: ""
+    }
+  });
+  const [utilityErrors, setUtilityErrors] = useState({});
   
   // Rooms data
   const [rooms, setRooms] = useState([]);
   const [roomsLoading, setRoomsLoading] = useState(false);
+  const [currentEditingRoomId, setCurrentEditingRoomId] = useState(null); // Track room ID when editing
 
   // Address data
   const [provinces, setProvinces] = useState([]);
@@ -181,7 +197,23 @@ export default function ContractsManagementPage() {
       // Fetch rooms for this specific boarding house
       const roomsResponse = await roomService.getByBoardingHouseId(houseId);
       console.log("🏠 Rooms fetched:", roomsResponse);
-      setRooms(roomsResponse || []);
+      
+      // Filter only available rooms (roomStatus = 0)
+      // BUT: Include current editing room even if not available
+      const availableRooms = (roomsResponse || []).filter(room => {
+        const isAvailable = room.roomStatus === 0 || 
+                           room.roomStatus === "Available" || 
+                           room.roomStatus?.toLowerCase() === "available";
+        const isCurrentEditingRoom = currentEditingRoomId && room.id === currentEditingRoomId;
+        
+        return isAvailable || isCurrentEditingRoom;
+      });
+      
+      console.log("✅ Available rooms filtered:", availableRooms.length, "out of", roomsResponse.length);
+      if (currentEditingRoomId) {
+        console.log("📌 Including current editing room:", currentEditingRoomId);
+      }
+      setRooms(availableRooms);
       
     } catch (error) {
       console.error("❌ Error fetching rooms:", error);
@@ -273,11 +305,130 @@ export default function ContractsManagementPage() {
     setShowModal(true);
   };
 
-  const handleEditContract = (contract) => {
-    setSelectedContract(contract);
-    setEditData({ ...contract });
-    setModalType('edit');
-    setShowModal(true);
+  const handleEditContract = async (contract) => {
+    console.log("✏️ Opening edit contract modal for:", contract.id);
+    console.log("📋 Contract data received:", contract);
+    
+    try {
+      // Fetch full contract details to ensure we have all data
+      console.log("🔄 Fetching full contract details...");
+      const fullContract = await contractService.getById(contract.id);
+      console.log("✅ Full contract data fetched:", fullContract);
+      
+      setSelectedContract(fullContract);
+      
+      // Set current editing room ID so it can be included in room dropdown
+      const editingRoomId = fullContract.roomId;
+      setCurrentEditingRoomId(editingRoomId);
+      console.log("🔑 Set current editing room ID:", editingRoomId);
+      
+      // Fetch rooms and manually include editing room if needed
+      const roomsResponse = await roomService.getByBoardingHouseId(houseId);
+      const availableRooms = (roomsResponse || []).filter(room => {
+        const isAvailable = room.roomStatus === 0 || 
+                           room.roomStatus === "Available" || 
+                           room.roomStatus?.toLowerCase() === "available";
+        const isEditingRoom = editingRoomId && room.id === editingRoomId;
+        return isAvailable || isEditingRoom;
+      });
+      console.log("✅ Rooms loaded for edit (including current):", availableRooms.length);
+      setRooms(availableRooms);
+      
+      // Populate contract data from existing contract
+      setContractData({
+        tenantId: fullContract.tenantId || "",
+        roomId: fullContract.roomId || "",
+        checkinDate: fullContract.checkinDate ? fullContract.checkinDate.split('T')[0] : "",
+        checkoutDate: fullContract.checkoutDate ? fullContract.checkoutDate.split('T')[0] : "",
+        depositAmount: fullContract.depositAmount || 0,
+        numberOfOccupants: fullContract.numberOfOccupants || 1,
+        notes: fullContract.notes || ""
+      });
+      
+      console.log("📝 Contract data populated:", {
+        tenantId: fullContract.tenantId,
+        roomId: fullContract.roomId,
+        checkinDate: fullContract.checkinDate,
+        checkoutDate: fullContract.checkoutDate,
+        depositAmount: fullContract.depositAmount,
+        numberOfOccupants: fullContract.numberOfOccupants
+      });
+    
+      // Populate identity profile if exists
+      if (fullContract.identityProfiles && fullContract.identityProfiles.length > 0) {
+        const profile = fullContract.identityProfiles[0]; // Get first profile
+        console.log("👤 Identity profile found:", profile);
+        
+        setIdentityProfileData({
+          fullName: profile.fullName || "",
+          dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.split('T')[0] : "",
+          phoneNumber: profile.phoneNumber || "",
+          email: profile.email || "",
+          provinceId: profile.provinceId || "",
+          wardId: profile.wardId || "",
+          address: profile.address || "",
+          temporaryResidence: profile.temporaryResidence || "",
+          citizenIdNumber: profile.citizenIdNumber || "",
+          citizenIdIssuedDate: profile.citizenIdIssuedDate ? profile.citizenIdIssuedDate.split('T')[0] : "",
+          citizenIdIssuedPlace: profile.citizenIdIssuedPlace || "",
+          notes: profile.notes || "",
+          avatarUrl: profile.avatarUrl || "",
+          frontImageUrl: profile.frontImageUrl || "",
+          backImageUrl: profile.backImageUrl || ""
+        });
+        
+        // Load wards for the selected province
+        if (profile.provinceId) {
+          const provinceCode = parseInt(profile.provinceId);
+          const selectedProvince = provinces.find(p => p.code === provinceCode);
+          if (selectedProvince) {
+            setWards(selectedProvince.wards || []);
+            console.log("🏘️ Wards loaded for province:", provinceCode, "count:", selectedProvince.wards?.length);
+          }
+        }
+      } else {
+        console.log("⚠️ No identity profiles found for this contract");
+      }
+      
+      // Populate utility readings if exists
+      if (fullContract.utilityReadings && fullContract.utilityReadings.length > 0) {
+        console.log("⚡ Utility readings found:", fullContract.utilityReadings);
+        
+        const electricityReading = fullContract.utilityReadings.find(r => r.utilityType === 0 || r.utilityType === "Electricity");
+        const waterReading = fullContract.utilityReadings.find(r => r.utilityType === 1 || r.utilityType === "Water");
+        
+        setUtilityReadingData({
+          electricityReading: {
+            price: electricityReading?.price?.toString() || "",
+            note: electricityReading?.note || "",
+            currentIndex: electricityReading?.currentIndex?.toString() || ""
+          },
+          waterReading: {
+            price: waterReading?.price?.toString() || "",
+            note: waterReading?.note || "",
+            currentIndex: waterReading?.currentIndex?.toString() || ""
+          }
+        });
+        
+        console.log("⚡ Utility data populated:", {
+          electricity: electricityReading?.currentIndex,
+          water: waterReading?.currentIndex
+        });
+      } else {
+        console.log("⚠️ No utility readings found for this contract");
+      }
+      
+      // Set modal type and open modal
+      setModalType('edit');
+      setCreateStep(1); // Start from step 1
+      setShowCreateContractModal(true);
+      
+      console.log("✅ Edit modal opened successfully");
+      
+    } catch (error) {
+      console.error("❌ Error fetching contract details:", error);
+      alert("Error loading contract details: " + (error.message || "Unknown error"));
+    }
   };
 
   const handleDeleteContract = (contract) => {
@@ -380,10 +531,65 @@ export default function ContractsManagementPage() {
     return Object.keys(errors).length === 0;
   };
 
+  const validateUtilityStep = () => {
+    const errors = {};
+    
+    // Validate electricity reading
+    if (!utilityReadingData.electricityReading.currentIndex || parseFloat(utilityReadingData.electricityReading.currentIndex) < 0) {
+      errors.electricityCurrentIndex = "Electricity current index is required and must be >= 0";
+    }
+    
+    // Validate water reading
+    if (!utilityReadingData.waterReading.currentIndex || parseFloat(utilityReadingData.waterReading.currentIndex) < 0) {
+      errors.waterCurrentIndex = "Water current index is required and must be >= 0";
+    }
+
+    // Validate price fields if provided
+    if (utilityReadingData.electricityReading.price && parseFloat(utilityReadingData.electricityReading.price) < 0) {
+      errors.electricityPrice = "Electricity price must be >= 0";
+    }
+    
+    if (utilityReadingData.waterReading.price && parseFloat(utilityReadingData.waterReading.price) < 0) {
+      errors.waterPrice = "Water price must be >= 0";
+    }
+
+    // Validate note length
+    if (utilityReadingData.electricityReading.note && utilityReadingData.electricityReading.note.length > 100) {
+      errors.electricityNote = "Electricity note cannot exceed 100 characters";
+    }
+    
+    if (utilityReadingData.waterReading.note && utilityReadingData.waterReading.note.length > 100) {
+      errors.waterNote = "Water note cannot exceed 100 characters";
+    }
+
+    setUtilityErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateAllSteps = () => {
+    console.log("🔍 Validating all steps before creating contract...");
+    
+    const contractValid = validateContractStep();
+    const profileValid = validateProfileStep();
+    const utilityValid = validateUtilityStep();
+    
+    console.log("📋 Validation results:", {
+      contract: contractValid,
+      profile: profileValid,
+      utility: utilityValid
+    });
+    
+    return contractValid && profileValid && utilityValid;
+  };
+
   const handleNextStep = () => {
     if (createStep === 1) {
       if (validateContractStep()) {
         setCreateStep(2);
+      }
+    } else if (createStep === 2) {
+      if (validateProfileStep()) {
+        setCreateStep(3);
       }
     }
   };
@@ -391,57 +597,109 @@ export default function ContractsManagementPage() {
   const handlePreviousStep = () => {
     if (createStep === 2) {
       setCreateStep(1);
+    } else if (createStep === 3) {
+      setCreateStep(2);
     }
   };
 
   const handleCreateContract = async () => {
-    if (!validateProfileStep()) return;
+    const isEditMode = modalType === 'edit';
+    console.log(`🚀 Starting contract ${isEditMode ? 'update' : 'creation'}...`);
+    console.log("📝 Current form data:", {
+      contractData,
+      identityProfileData,
+      utilityReadingData
+    });
+
+    if (!validateAllSteps()) {
+      console.log("❌ Validation failed - stopping operation");
+      alert(`Please fix all validation errors before ${isEditMode ? 'updating' : 'creating'} the contract.`);
+      return;
+    }
 
     try {
       setCreatingContract(true);
 
-      // Prepare the request data according to backend DTO
-      const requestData = {
-        contract: {
-          tenantId: contractData.tenantId,
-          roomId: contractData.roomId,
-          checkinDate: contractData.checkinDate,
-          checkoutDate: contractData.checkoutDate,
-          depositAmount: parseFloat(contractData.depositAmount),
-          numberOfOccupants: parseInt(contractData.numberOfOccupants),
-          notes: contractData.notes || ""
+      // Validate GUID formats
+      const isValidGuid = (guid) => {
+        const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        return guidRegex.test(guid);
+      };
+
+      if (!isValidGuid(contractData.roomId)) {
+        alert("Invalid Room ID format. Please select a valid room.");
+        return;
+      }
+
+      // Prepare request data
+      const testSimpleData = {
+        TenantId: contractData.tenantId || "00000000-0000-0000-0000-000000000000",
+        RoomId: contractData.roomId,
+        CheckinDate: new Date(contractData.checkinDate).toISOString(),
+        CheckoutDate: new Date(contractData.checkoutDate).toISOString(),
+        DepositAmount: parseFloat(contractData.depositAmount) || 0,
+        NumberOfOccupants: parseInt(contractData.numberOfOccupants) || 1,
+        Notes: contractData.notes || "",
+        IdentityProfiles: {
+          FullName: identityProfileData.fullName || "Test User",
+          DateOfBirth: new Date(identityProfileData.dateOfBirth).toISOString(),
+          PhoneNumber: identityProfileData.phoneNumber || "0123456789",
+          Email: identityProfileData.email || "test@test.com",
+          ProvinceId: identityProfileData.provinceId ? identityProfileData.provinceId.toString() : "1",
+          WardId: identityProfileData.wardId ? identityProfileData.wardId.toString() : "1",
+          Address: identityProfileData.address || "Test Address",
+          TemporaryResidence: identityProfileData.temporaryResidence || "Test Residence",
+          CitizenIdNumber: identityProfileData.citizenIdNumber || "123456789",
+          CitizenIdIssuedDate: new Date(identityProfileData.citizenIdIssuedDate).toISOString(),
+          CitizenIdIssuedPlace: identityProfileData.citizenIdIssuedPlace || "Test Place",
+          Notes: identityProfileData.notes || "",
+          AvatarUrl: identityProfileData.avatarUrl || "",
+          FrontImageUrl: identityProfileData.frontImageUrl || "https://example.com/front.jpg",
+          BackImageUrl: identityProfileData.backImageUrl || "https://example.com/back.jpg"
         },
-        identityProfiles: {
-          fullName: identityProfileData.fullName,
-          dateOfBirth: identityProfileData.dateOfBirth,
-          phoneNumber: identityProfileData.phoneNumber,
-          email: identityProfileData.email || "",
-          provinceId: identityProfileData.provinceId,
-          wardId: identityProfileData.wardId,
-          address: identityProfileData.address,
-          temporaryResidence: identityProfileData.temporaryResidence,
-          citizenIdNumber: identityProfileData.citizenIdNumber,
-          citizenIdIssuedDate: identityProfileData.citizenIdIssuedDate,
-          citizenIdIssuedPlace: identityProfileData.citizenIdIssuedPlace,
-          notes: identityProfileData.notes || "",
-          avatarUrl: identityProfileData.avatarUrl || "",
-          frontImageUrl: identityProfileData.frontImageUrl,
-          backImageUrl: identityProfileData.backImageUrl
+        ElectricityReading: {
+          Price: utilityReadingData.electricityReading.price ? parseFloat(utilityReadingData.electricityReading.price) : null,
+          Note: utilityReadingData.electricityReading.note || "",
+          CurrentIndex: parseFloat(utilityReadingData.electricityReading.currentIndex) || 0
+        },
+        WaterReading: {
+          Price: utilityReadingData.waterReading.price ? parseFloat(utilityReadingData.waterReading.price) : null,
+          Note: utilityReadingData.waterReading.note || "",
+          CurrentIndex: parseFloat(utilityReadingData.waterReading.currentIndex) || 0
         }
       };
 
-      console.log("📋 Creating contract with profiles:", requestData);
+      // Use the test data with fallbacks
+      const requestData = testSimpleData;
+
+      console.log(`📋 ${isEditMode ? 'Updating' : 'Creating'} contract with profiles and utilities:`, requestData);
+      console.log("📋 Request data JSON:", JSON.stringify(requestData, null, 2));
+      console.log("📋 Request data structure validation:");
+      console.log("- TenantId:", requestData.TenantId);
+      console.log("- RoomId:", requestData.RoomId);
+      console.log("- IdentityProfiles:", requestData.IdentityProfiles);
+      console.log("- ElectricityReading:", requestData.ElectricityReading);
+      console.log("- WaterReading:", requestData.WaterReading);
       
-      const result = await contractService.create(requestData);
+      let result;
+      if (isEditMode) {
+        console.log("📝 Updating contract ID:", selectedContract.id);
+        result = await contractService.update(selectedContract.id, requestData);
+      } else {
+        console.log("✨ Creating new contract");
+        result = await contractService.create(requestData);
+      }
       
-      alert("Contract created successfully with identity profiles!");
+      alert(`Contract ${isEditMode ? 'updated' : 'created'} successfully with identity profiles and utility readings!`);
       
       // Reset form and close modal
       setShowCreateContractModal(false);
       setCreateStep(1);
+      setModalType(''); // Reset modal type
+      setCurrentEditingRoomId(null); // Reset current editing room
       setContractData({
-        tenantId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-        roomId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        tenantId: "",
+        roomId: "",
         checkinDate: "",
         checkoutDate: "",
         depositAmount: 0,
@@ -465,29 +723,59 @@ export default function ContractsManagementPage() {
         frontImageUrl: "",
         backImageUrl: ""
       });
+      setUtilityReadingData({
+        electricityReading: {
+          price: "",
+          note: "",
+          currentIndex: ""
+        },
+        waterReading: {
+          price: "",
+          note: "",
+          currentIndex: ""
+        }
+      });
       
-      // Refresh contracts list
+      // Refresh contracts list and rooms
       await fetchData();
+      await fetchRooms(); // Re-fetch rooms to get updated availability
 
     } catch (error) {
-      console.error("❌ Error creating contract:", error);
-      alert("Error creating contract: " + (error.message || error));
+      console.error(`❌ Error ${isEditMode ? 'updating' : 'creating'} contract:`, error);
+      console.error("❌ Error details:", {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      // Show detailed error message
+      let errorMessage = `Error ${isEditMode ? 'updating' : 'creating'} contract: `;
+      if (error.response?.status === 400) {
+        if (error.response.data?.errors) {
+          // ASP.NET Core validation errors
+          const validationErrors = Object.entries(error.response.data.errors)
+            .map(([field, errors]) => `${field}: ${errors.join(', ')}`)
+            .join('\n');
+          errorMessage += `\nValidation errors:\n${validationErrors}`;
+        } else if (error.response.data?.title) {
+          errorMessage += error.response.data.title;
+        } else if (error.response.data) {
+          errorMessage += JSON.stringify(error.response.data);
+        } else {
+          errorMessage += "Bad request - please check all required fields";
+        }
+      } else {
+        errorMessage += error.message || error;
+      }
+      
+      alert(errorMessage);
     } finally {
       setCreatingContract(false);
     }
   };
 
-  const handleUpdateContract = async () => {
-    try {
-      await contractService.update(selectedContract.id, editData);
-      await fetchData(); // Refresh data
-      setShowModal(false);
-      alert("Contract updated successfully!");
-    } catch (error) {
-      console.error("Error updating contract:", error);
-      alert("Error updating contract: " + (error.message || "Unknown error"));
-    }
-  };
+
 
   const handleConfirmDelete = async () => {
     try {
@@ -2051,14 +2339,6 @@ export default function ContractsManagementPage() {
                 >
                   Cancel
                 </button>
-                {modalType === 'edit' && (
-                  <button
-                    onClick={handleUpdateContract}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                  >
-                    Update Contract
-                  </button>
-                )}
                 {modalType === 'delete' && (
                   <button
                     onClick={handleConfirmDelete}
@@ -2130,7 +2410,7 @@ export default function ContractsManagementPage() {
         </div>
       )}
 
-      {/* Create Contract Modal - 2 Steps */}
+      {/* Create Contract Modal - 3 Steps */}
       {showCreateContractModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -2138,12 +2418,16 @@ export default function ContractsManagementPage() {
               {/* Modal Header */}
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  📝 Create New Contract
+                  {modalType === 'edit' ? '✏️ Edit Contract' : '📝 Create New Contract'}
                 </h3>
                 <button
                   onClick={() => {
                     setShowCreateContractModal(false);
                     setCreateStep(1);
+                    setModalType(''); // Reset modal type
+                    setCurrentEditingRoomId(null); // Reset current editing room
+                    // Re-fetch rooms to remove edit mode filter
+                    fetchRooms();
                   }}
                   className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 >
@@ -2167,10 +2451,19 @@ export default function ContractsManagementPage() {
                   }`}>
                     2
                   </div>
+                  <div className={`flex-1 h-1 mx-4 ${
+                    createStep >= 3 ? 'bg-blue-600' : 'bg-gray-300'
+                  }`}></div>
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                    createStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                  }`}>
+                    3
+                  </div>
                 </div>
                 <div className="flex justify-between mt-2">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Contract Details</span>
                   <span className="text-sm text-gray-600 dark:text-gray-400">Identity Profile</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Utility Readings</span>
                 </div>
               </div>
 
@@ -2720,8 +3013,235 @@ export default function ContractsManagementPage() {
                       ← Previous
                     </button>
                     <button
+                      onClick={handleNextStep}
+                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Utility Readings */}
+              {createStep === 3 && (
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    ⚡ Utility Readings (Electricity & Water)
+                  </h4>
+
+                  <div className="space-y-6">
+                    {/* Electricity Reading */}
+                    <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                      <h5 className="text-md font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                        <span className="mr-2">⚡</span>
+                        Electricity Reading
+                      </h5>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Current Index * (kWh)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={utilityReadingData.electricityReading.currentIndex}
+                            onChange={(e) => setUtilityReadingData({
+                              ...utilityReadingData,
+                              electricityReading: {
+                                ...utilityReadingData.electricityReading,
+                                currentIndex: e.target.value
+                              }
+                            })}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
+                              utilityErrors.electricityCurrentIndex ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            }`}
+                            placeholder="Enter electricity reading"
+                          />
+                          {utilityErrors.electricityCurrentIndex && (
+                            <p className="text-red-500 text-xs mt-1">{utilityErrors.electricityCurrentIndex}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Price (VND/kWh) - Optional
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={utilityReadingData.electricityReading.price}
+                            onChange={(e) => setUtilityReadingData({
+                              ...utilityReadingData,
+                              electricityReading: {
+                                ...utilityReadingData.electricityReading,
+                                price: e.target.value
+                              }
+                            })}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
+                              utilityErrors.electricityPrice ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            }`}
+                            placeholder="Enter electricity price"
+                          />
+                          {utilityErrors.electricityPrice && (
+                            <p className="text-red-500 text-xs mt-1">{utilityErrors.electricityPrice}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Note - Optional
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={100}
+                            value={utilityReadingData.electricityReading.note}
+                            onChange={(e) => setUtilityReadingData({
+                              ...utilityReadingData,
+                              electricityReading: {
+                                ...utilityReadingData.electricityReading,
+                                note: e.target.value
+                              }
+                            })}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
+                              utilityErrors.electricityNote ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            }`}
+                            placeholder="Add note (max 100 chars)"
+                          />
+                          <div className="text-xs text-gray-500 mt-1">
+                            {utilityReadingData.electricityReading.note.length}/100 characters
+                          </div>
+                          {utilityErrors.electricityNote && (
+                            <p className="text-red-500 text-xs mt-1">{utilityErrors.electricityNote}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Water Reading */}
+                    <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                      <h5 className="text-md font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                        <span className="mr-2">💧</span>
+                        Water Reading
+                      </h5>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Current Index * (m³)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={utilityReadingData.waterReading.currentIndex}
+                            onChange={(e) => setUtilityReadingData({
+                              ...utilityReadingData,
+                              waterReading: {
+                                ...utilityReadingData.waterReading,
+                                currentIndex: e.target.value
+                              }
+                            })}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
+                              utilityErrors.waterCurrentIndex ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            }`}
+                            placeholder="Enter water reading"
+                          />
+                          {utilityErrors.waterCurrentIndex && (
+                            <p className="text-red-500 text-xs mt-1">{utilityErrors.waterCurrentIndex}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Price (VND/m³) - Optional
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={utilityReadingData.waterReading.price}
+                            onChange={(e) => setUtilityReadingData({
+                              ...utilityReadingData,
+                              waterReading: {
+                                ...utilityReadingData.waterReading,
+                                price: e.target.value
+                              }
+                            })}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
+                              utilityErrors.waterPrice ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            }`}
+                            placeholder="Enter water price"
+                          />
+                          {utilityErrors.waterPrice && (
+                            <p className="text-red-500 text-xs mt-1">{utilityErrors.waterPrice}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Note - Optional
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={100}
+                            value={utilityReadingData.waterReading.note}
+                            onChange={(e) => setUtilityReadingData({
+                              ...utilityReadingData,
+                              waterReading: {
+                                ...utilityReadingData.waterReading,
+                                note: e.target.value
+                              }
+                            })}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
+                              utilityErrors.waterNote ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            }`}
+                            placeholder="Add note (max 100 chars)"
+                          />
+                          <div className="text-xs text-gray-500 mt-1">
+                            {utilityReadingData.waterReading.note.length}/100 characters
+                          </div>
+                          {utilityErrors.waterNote && (
+                            <p className="text-red-500 text-xs mt-1">{utilityErrors.waterNote}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Information Box */}
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0">
+                          <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                            Utility Reading Information
+                          </h3>
+                          <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
+                            <ul className="list-disc list-inside space-y-1">
+                              <li>Current Index is required for both electricity and water</li>
+                              <li>Price is optional - if not set, default rates will be used</li>
+                              <li>Notes are optional and limited to 100 characters</li>
+                              <li>These readings will be used as the starting point for billing calculations</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 3 Actions */}
+                  <div className="flex justify-between mt-6">
+                    <button
+                      onClick={handlePreviousStep}
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      ← Previous
+                    </button>
+                    <button
                       onClick={handleCreateContract}
-                      className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className={`px-6 py-2 ${modalType === 'edit' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
                       disabled={creatingContract}
                     >
                       {creatingContract ? (
@@ -2730,10 +3250,10 @@ export default function ContractsManagementPage() {
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          Creating...
+                          {modalType === 'edit' ? 'Updating Contract...' : 'Creating Contract...'}
                         </span>
                       ) : (
-                        'Create Contract'
+                        modalType === 'edit' ? 'Update Contract' : 'Create Contract'
                       )}
                     </button>
                   </div>

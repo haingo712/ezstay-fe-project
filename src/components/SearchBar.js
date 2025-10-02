@@ -3,7 +3,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../hooks/useAuth';
-import { sampleLocations } from '../sampleData/rooms';
+
+const sampleLocations = [
+  'Hanoi',
+  'Ho Chi Minh City',
+  'Da Nang',
+  'Hue',
+  'Can Tho',
+  'Hai Phong',
+  'Nha Trang',
+  'Vung Tau'
+];
 
 export default function SearchBar() {
   const router = useRouter();

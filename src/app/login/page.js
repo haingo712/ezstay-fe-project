@@ -7,6 +7,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useSocialAuth } from "@/hooks/useSocialAuth";
 import RedirectIfAuthenticated from "@/components/RedirectIfAuthenticated";
+import FaceLoginModal from "@/components/FaceLoginModal";
 
 // Import face-api.js
 let faceapi;
@@ -34,6 +35,7 @@ export default function LoginPage() {
   const [success, setSuccess] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showFaceLogin, setShowFaceLogin] = useState(false);
+  const [showFaceLoginModal, setShowFaceLoginModal] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [detectingFace, setDetectingFace] = useState(false);
   const [faceDetected, setFaceDetected] = useState(false);
@@ -837,58 +839,21 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Face Login Button */}
+            {/* Face Login Button with AI */}
             <button
               type="button"
-              onClick={handleToggleFaceLogin}
-              disabled={loading || !isClient}
-              className={`w-full font-semibold py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 ${
-                modelsLoaded
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white'
-                  : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
-              } ${
-                loading || !isClient ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              onClick={() => setShowFaceLoginModal(true)}
+              disabled={loading}
+              className="w-full font-semibold py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-3 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 text-white group"
             >
-              {!isClient ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Loading...
-                </>
-              ) : modelsLoaded ? (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Sign In with AI Face Recognition
-                </>
-              ) : (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Loading AI Models...
-                </>
-              )}
+              <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>🤖 Sign In with AI Face Recognition</span>
+              <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
             </button>
-
-            {/* Model loading and camera requirement notice */}
-            <div className="text-center">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {!modelsLoaded ? (
-                  <span className="text-blue-600 dark:text-blue-400">
-                    🤖 Loading AI face detection models...
-                  </span>
-                ) : (
-                  <>
-                    🎯 AI Face Recognition ready! Camera access required.
-                    {isClient && window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && (
-                      <span className="block text-yellow-600 dark:text-yellow-400 mt-1">
-                        ⚠️ HTTPS connection recommended for camera access
-                      </span>
-                    )}
-                  </>
-                )}
-              </p>
-            </div>
           </form>
 
           <div className="mt-6 text-center">
@@ -904,131 +869,23 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Face Login Camera Modal */}
-        {showFaceLogin && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-            {console.log('🎥 Rendering face login modal!')}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md mx-4">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Face ID Login</h3>
-                <button
-                  onClick={stopCamera}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="relative bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden">
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="w-full h-80 object-cover bg-black"
-                    onLoadedMetadata={() => {
-                      console.log("📹 Video metadata loaded");
-                      if (videoRef.current) {
-                        console.log("📹 Video dimensions:", videoRef.current.videoWidth, "x", videoRef.current.videoHeight);
-                        videoRef.current.play().catch(e => console.log("Video play error:", e));
-                      }
-                    }}
-                    onCanPlay={() => {
-                      console.log("📹 Video can play");
-                    }}
-                    onError={(e) => {
-                      console.error("📹 Video error:", e);
-                    }}
-                  />
-                  
-                  {/* Minimal Detection Overlay - Won't interfere with face detection */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    {/* Only show detection box when face is actually detected */}
-                    {faceDetected && (
-                      <div 
-                        className="absolute border-2 border-green-400 bg-green-400/10 rounded transition-all duration-300"
-                        style={{
-                          left: `${detectionBox.x}px`,
-                          top: `${detectionBox.y}px`,
-                          width: `${detectionBox.width}px`,
-                          height: `${detectionBox.height}px`,
-                        }}
-                      >
-                        {/* Simple corner indicators only */}
-                        <div className="absolute -top-1 -left-1 w-3 h-3 border-l-2 border-t-2 border-green-400"></div>
-                        <div className="absolute -top-1 -right-1 w-3 h-3 border-r-2 border-t-2 border-green-400"></div>
-                        <div className="absolute -bottom-1 -left-1 w-3 h-3 border-l-2 border-b-2 border-green-400"></div>
-                        <div className="absolute -bottom-1 -right-1 w-3 h-3 border-r-2 border-b-2 border-green-400"></div>
-                      </div>
-                    )}
-                    
-                    {/* Simple status indicator - bottom center */}
-                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        faceDetected 
-                          ? 'bg-green-400/20 text-green-400 border border-green-400/30' 
-                          : 'bg-gray-800/50 text-white border border-gray-600/30'
-                      }`}>
-                        {!modelsLoaded 
-                          ? '🤖 Loading AI...' 
-                          : faceDetected 
-                            ? '✅ Face Detected!' 
-                            : '🔍 Looking for face...'
-                        }
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <canvas ref={canvasRef} className="hidden" />
-                
-                <div className="text-center">
-                  <p className={`text-sm mb-4 transition-colors duration-300 ${
-                    faceDetected 
-                      ? 'text-green-600 dark:text-green-400' 
-                      : 'text-gray-600 dark:text-gray-300'
-                  }`}>
-                    {faceDetected 
-                      ? '🎯 Perfect! Face locked and ready for capture' 
-                      : '👤 Please position your face in the camera view'
-                    }
-                  </p>
-                  
-                  <div className="flex gap-3">
-                    <button
-                      onClick={stopCamera}
-                      className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleFaceLogin}
-                      disabled={!faceDetected || !modelsLoaded}
-                      className={`flex-1 px-4 py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${
-                        faceDetected && modelsLoaded
-                          ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 animate-pulse'
-                          : 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                      }`}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      {!modelsLoaded 
-                        ? '🤖 Loading AI...' 
-                        : faceDetected 
-                          ? '📸 Login with Face' 
-                          : '⏳ Detecting face...'
-                      }
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Enhanced Face Login Modal */}
+        {showFaceLoginModal && (
+          <FaceLoginModal
+            isOpen={showFaceLoginModal}
+            onClose={() => setShowFaceLoginModal(false)}
+            onSuccess={(result) => {
+              console.log('Face login successful:', result);
+              // Handle successful face login
+              if (result.user) {
+                // Store auth token
+                localStorage.setItem('token', result.token);
+                localStorage.setItem('user', JSON.stringify(result.user));
+                // Redirect based on role
+                router.push(result.user.role === 'Owner' ? '/owner' : '/dashboard');
+              }
+            }}
+          />
         )}
         </div>
       </div>
