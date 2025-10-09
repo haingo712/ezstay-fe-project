@@ -15,40 +15,62 @@ async function apiFetch(path, options = {}) {
 
   const url = `${baseUrl}${path}`;
 
+  const token = authService.getToken();
+  console.log("🔑 API Request - Token:", token ? "Present" : "Missing");
+  
+  // Check if this is a FormData request (skipContentType flag)
+  const isFormData = options.headers?.skipContentType === true;
+  
   const defaultHeaders = {
-    "Content-Type": "application/json",
     "Accept": "application/json",
   };
 
-  const token = authService.getToken();
-  console.log("🔑 API Request - Token:", token ? "Present" : "Missing");
+  // Only add Content-Type for JSON requests, NOT for FormData
+  if (!isFormData) {
+    defaultHeaders["Content-Type"] = "application/json";
+  }
   
   if (token) {
     defaultHeaders["Authorization"] = `Bearer ${token}`;
     console.log("🔐 Authorization header set with Bearer token");
   }
 
+  // Build config headers
+  const configHeaders = {
+    ...defaultHeaders,
+    ...(options.headers || {}),
+  };
+
+  // Remove the internal flag
+  delete configHeaders.skipContentType;
+
   const config = {
     ...options,
-    headers: {
-      ...defaultHeaders,
-      ...(options.headers || {}),
-    },
-    // Add CORS headers - Remove credentials to fix CORS with wildcard
+    headers: configHeaders,
     mode: 'cors',
-    // credentials: 'include', // Commented out to fix CORS wildcard issue
   };
 
   try {
-  // Log request details for room API calls to help debug 500 errors
-  if (url.includes('/api/Rooms') || !url.includes('UtilityRate') || !config.skipLogging) {
-    console.log("🌐 API Request:", {
-      url,
-      method: config.method || 'GET',
-      headers: config.headers,
-      body: config.body ? JSON.parse(config.body) : undefined
-    });
-  }
+    // Enhanced logging for debugging
+    if (isFormData) {
+      console.log("📤 FormData Request:", {
+        url,
+        method: config.method || 'GET',
+        headers: config.headers,
+        bodyType: config.body?.constructor?.name || typeof config.body,
+        hasContentType: !!config.headers['Content-Type']
+      });
+      
+      // List all headers being sent
+      console.log("🔍 All headers:", Object.keys(config.headers).map(key => `${key}: ${config.headers[key]}`));
+    } else if (url.includes('/api/Rooms') || !url.includes('UtilityRate') || !config.skipLogging) {
+      console.log("🌐 API Request:", {
+        url,
+        method: config.method || 'GET',
+        headers: config.headers,
+        body: config.body ? JSON.parse(config.body) : undefined
+      });
+    }
 
   const response = await fetch(url, config);
 
@@ -69,12 +91,29 @@ async function apiFetch(path, options = {}) {
       // Only log error data for non-404 responses to reduce console noise
       if (response.status !== 404) {
         console.log("❌ API Error Data:", errorData);
+        
+        // Log ASP.NET Core validation errors in detail
+        if (errorData.errors) {
+          console.log("🔍 Validation Errors:", errorData.errors);
+          Object.keys(errorData.errors).forEach(field => {
+            console.log(`  ❌ ${field}:`, errorData.errors[field]);
+          });
+        }
       }
     } catch (e) {
       errorData = { message: response.statusText };
     }
     
-    const error = new Error(errorData.message || `Request failed with status ${response.status}`);
+    // Build detailed error message for validation errors
+    let errorMessage = errorData.message || errorData.title || `Request failed with status ${response.status}`;
+    if (errorData.errors && typeof errorData.errors === 'object') {
+      const validationMessages = Object.entries(errorData.errors)
+        .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+        .join('; ');
+      errorMessage = `${errorMessage} - ${validationMessages}`;
+    }
+    
+    const error = new Error(errorMessage);
     error.response = response;
     error.data = errorData;
     throw error;
@@ -104,6 +143,31 @@ const api = {
     put: (path, data, options) => apiFetch(path, { method: 'PUT', body: JSON.stringify(data), ...options }),
     patch: (path, data, options) => apiFetch(path, { method: 'PATCH', body: JSON.stringify(data), ...options }),
     delete: (path, options) => apiFetch(path, { method: 'DELETE', ...options }),
+    
+    // FormData methods - don't stringify body, let browser set Content-Type with boundary
+    postFormData: (path, formData, options = {}) => {
+      return apiFetch(path, { 
+        method: 'POST', 
+        body: formData,
+        headers: {
+          skipContentType: true, // Signal to apiFetch to skip Content-Type header
+          ...(options.headers || {})
+        },
+        ...options 
+      });
+    },
+    
+    putFormData: (path, formData, options = {}) => {
+      return apiFetch(path, { 
+        method: 'PUT', 
+        body: formData,
+        headers: {
+          skipContentType: true, // Signal to apiFetch to skip Content-Type header
+          ...(options.headers || {})
+        },
+        ...options 
+      });
+    },
 };
 
 // Boarding House API
@@ -141,12 +205,24 @@ export const roomAPI = {
   getByBoardingHouseId: (houseId) => api.get(`/api/Rooms/ByHouseId/${houseId}`),
   getByHouseId: (houseId) => api.get(`/api/Rooms/ByHouseId/${houseId}/Status`), // Alias for compatibility
   
-  // Simplified create method - only needs houseId according to backend CreateRoomDto
+  // JSON create method (legacy, no image)
   create: (houseId, data) => {
     return api.post(`/api/Rooms/House/${houseId}`, data);
   },
   
+  // FormData create method (with image upload to Filebase IPFS)
+  createWithFormData: (houseId, formData) => {
+    return api.postFormData(`/api/Rooms/House/${houseId}`, formData);
+  },
+  
+  // JSON update method (legacy, no image)
   update: (id, data) => api.put(`/api/Rooms/${id}`, data),
+  
+  // FormData update method (with optional image upload to Filebase IPFS)
+  updateWithFormData: (id, formData) => {
+    return api.putFormData(`/api/Rooms/${id}`, formData);
+  },
+  
   delete: (id) => api.delete(`/api/Rooms/${id}`)
 };
 

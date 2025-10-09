@@ -7,6 +7,7 @@ import reviewService from '@/services/reviewService';
 import { Star, ArrowLeft, Save } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import SafeImage from '@/components/SafeImage';
 
 export default function EditReviewPage() {
   const params = useParams();
@@ -20,8 +21,9 @@ export default function EditReviewPage() {
   const [reviewForm, setReviewForm] = useState({
     rating: 5,
     content: '',
-    imageId: null
+    imageFile: null
   });
+  const [imagePreview, setImagePreview] = useState(null);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -47,8 +49,9 @@ export default function EditReviewPage() {
       setReviewForm({
         rating: response.rating || 5,
         content: response.content || '',
-        imageId: response.imageId || null
+        imageFile: null // No file selected initially
       });
+      setImagePreview(null); // Will show current image from response.imageUrl
     } catch (error) {
       console.error('Error loading review:', error);
       alert('Failed to load review');
@@ -75,6 +78,20 @@ export default function EditReviewPage() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setReviewForm({ ...reviewForm, imageFile: file });
+      
+      // Create temporary preview using base64 Data URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -84,7 +101,22 @@ export default function EditReviewPage() {
 
     try {
       setSubmitting(true);
-      const response = await reviewService.updateReview(reviewId, reviewForm);
+      
+      // Create FormData for file upload to backend
+      // Backend will upload the file to Filebase IPFS and return IPFS URL
+      const formData = new FormData();
+      formData.append('Rating', reviewForm.rating);
+      formData.append('Content', reviewForm.content);
+      
+      // Only append image if user selected a new one
+      if (reviewForm.imageFile) {
+        formData.append('ImageUrl', reviewForm.imageFile);
+        console.log('📤 Updating with new image:', reviewForm.imageFile.name);
+      } else {
+        console.log('📤 Updating without changing image');
+      }
+      
+      const response = await reviewService.updateReview(reviewId, formData);
       console.log('Review updated:', response);
       alert('Review updated successfully!');
       router.push(`/reviews/${reviewId}`);
@@ -236,21 +268,53 @@ export default function EditReviewPage() {
             </div>
           </div>
 
-          {/* Image ID (Optional) */}
+          {/* Current Image */}
+          {review.imageUrl && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Current Image
+              </label>
+              <div className="relative h-64 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                <SafeImage
+                  src={review.imageUrl}
+                  alt="Current Review Image"
+                  fill
+                  fallbackIcon="📷"
+                  objectFit="contain"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Upload New Image (Optional) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Image ID (Optional)
+              Upload New Image (Optional)
             </label>
             <input
-              type="text"
-              value={reviewForm.imageId || ''}
-              onChange={(e) => setReviewForm({ ...reviewForm, imageId: e.target.value || null })}
-              placeholder="Enter image GUID (optional)"
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             />
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Leave empty if you don't have an image to attach
+              Leave empty to keep current image. Uploaded to Filebase IPFS storage.
             </p>
+
+            {/* New Image Preview */}
+            {imagePreview && (
+              <div className="mt-3 relative h-64 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden border-2 border-blue-500">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imagePreview}
+                  alt="New Preview"
+                  className="w-full h-full object-contain"
+                />
+                <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                  New Image Preview
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Submit Button */}

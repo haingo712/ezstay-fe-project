@@ -348,9 +348,9 @@ class AuthService {
       const userInfo = { ...payload, email, role, id, fullName, phone };
       console.log("🔍 Final user object:", userInfo);
       
-      // Validate that we have essential info
-      if (!email || !role) {
-        console.warn("⚠️ Token missing essential info - email or role");
+      // Validate that we have essential info - only require role and id
+      if (!role || !id) {
+        console.warn("⚠️ Token missing essential info - role or userId");
         return null;
       }
       
@@ -394,6 +394,37 @@ class AuthService {
       }
     } catch (error) {
       console.error("💥 Create staff error:", error);
+      return { success: false, message: "Network error. Please try again." };
+    }
+  }
+
+  // Get account info by userId
+  async getAccountInfo(userId) {
+    try {
+      const token = this.getToken();
+      if (!token) {
+        return { success: false, message: "No authentication token found." };
+      }
+
+      console.log("👤 Fetching account info for userId:", userId);
+      
+      const response = await fetch(`https://localhost:7000/api/Accounts/${userId}`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      console.log("📥 Account info response:", data);
+
+      if (response.ok) {
+        return { success: true, data: data };
+      } else {
+        return { success: false, message: data.message || "Failed to fetch account info." };
+      }
+    } catch (error) {
+      console.error("💥 Get account info error:", error);
       return { success: false, message: "Network error. Please try again." };
     }
   }

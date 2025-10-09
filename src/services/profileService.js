@@ -19,30 +19,97 @@ class ProfileService {
     }
   }
 
-  // Tạo profile mới (UserDTO)
+  // Tạo profile mới (UserDTO) - Chỉ User role
   async createProfile(profileData) {
     try {
       console.log("👤 Creating new profile...", profileData);
       
-      const createData = {
-        Gender: this.getGenderEnum(profileData.gender || "Male"),
-        Avata: profileData.avata || null, // Use null instead of empty string
-        Bio: profileData.bio || null,
-        Province: profileData.province || null, // Use null instead of empty string
-        Commune: profileData.commune || null,   
-        DetailAddress: profileData.detailAddress || null
-      };
+      // Create FormData for [FromForm] UserDTO with IFormFile Avatar
+      const formData = new FormData();
       
-      console.log("📤 Sending to backend:", createData);
-      console.log("🔢 Gender enum value:", createData.Gender);
-      console.log("📸 Avatar value:", createData.Avata);
+      formData.append('Gender', this.getGenderEnum(profileData.gender || "Male"));
       
-      const response = await api.post(`${this.baseUrl}/create-profile`, createData);
+      // Avatar: IFormFile (required in backend)
+      if (profileData.avatar instanceof File) {
+        formData.append('Avatar', profileData.avatar);
+        console.log("📸 Avatar file added:", profileData.avatar.name);
+      } else {
+        console.warn("⚠️ No avatar file provided for create");
+      }
+      
+      formData.append('Bio', profileData.bio || "");
+      
+      if (profileData.dateOfBirth) {
+        const date = new Date(profileData.dateOfBirth);
+        formData.append('DateOfBirth', date.toISOString());
+      }
+      
+      if (profileData.detailAddress) {
+        formData.append('DetailAddress', profileData.detailAddress);
+      }
+      
+      if (profileData.provinceId) {
+        formData.append('ProvinceId', profileData.provinceId);
+      }
+      
+      if (profileData.wardId) {
+        formData.append('WardId', profileData.wardId);
+      }
+      
+      // CCCD fields (optional)
+      // ONLY send File objects, NOT string URLs
+      if (profileData.frontImageUrl) {
+        if (profileData.frontImageUrl instanceof File) {
+          formData.append('FrontImageUrl', profileData.frontImageUrl);
+          console.log('📤 Uploading front CCCD image file:', profileData.frontImageUrl.name);
+        } else {
+          console.log('⚠️ FrontImageUrl is not a File object, skipping');
+        }
+      }
+      if (profileData.backImageUrl) {
+        if (profileData.backImageUrl instanceof File) {
+          formData.append('BackImageUrl', profileData.backImageUrl);
+          console.log('📤 Uploading back CCCD image file:', profileData.backImageUrl.name);
+        } else {
+          console.log('⚠️ BackImageUrl is not a File object, skipping');
+        }
+      }
+      if (profileData.temporaryResidence) {
+        formData.append('TemporaryResidence', profileData.temporaryResidence);
+      }
+      if (profileData.citizenIdNumber) {
+        formData.append('CitizenIdNumber', profileData.citizenIdNumber);
+      }
+      if (profileData.citizenIdIssuedDate) {
+        const date = new Date(profileData.citizenIdIssuedDate);
+        formData.append('CitizenIdIssuedDate', date.toISOString());
+      }
+      if (profileData.citizenIdIssuedPlace) {
+        formData.append('CitizenIdIssuedPlace', profileData.citizenIdIssuedPlace);
+      }
+      
+      console.log("📤 FormData being sent to backend (create-profile):");
+      for (let [key, value] of formData.entries()) {
+        console.log(`  ${key}: ${value instanceof File ? value.name : value}`);
+      }
+      
+      // Use postFormData for FormData, not post (which would stringify it)
+      const response = await api.postFormData(`${this.baseUrl}/create-profile`, formData);
       console.log("✅ Profile created successfully:", response);
-      return response;
+      return response.data;
     } catch (error) {
       console.error("❌ Error creating profile:", error);
-      throw error;
+      console.error("❌ Error response:", error.response?.data);
+      console.error("❌ Error status:", error.response?.status);
+      console.error("❌ Error message:", error.response?.data?.message || error.message);
+      
+      // Throw detailed error for UI display
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.title ||
+                          error.response?.data ||
+                          error.message ||
+                          "Failed to create profile";
+      throw new Error(errorMessage);
     }
   }
 
@@ -51,9 +118,9 @@ class ProfileService {
   async getProfile() {
     try {
       console.log("👤 Fetching user profile...");
-      const response = await api.get(`${this.baseUrl}/profile`);
-      console.log("✅ Profile fetched successfully:", response.data);
-      return response.data;
+      const data = await api.get(`${this.baseUrl}/profile`);
+      console.log("✅ Profile fetched successfully:", data);
+      return data; // api.get() already returns parsed JSON data directly
     } catch (error) {
       if (error.response && error.response.status === 404) {
         console.log("📝 Profile not found (404) - User needs to create profile first.");
@@ -76,7 +143,7 @@ class ProfileService {
     }
   }
 
-  // Cập nhật profile với FormData (UpdateUserDTO)
+  // Cập nhật profile với FormData (UpdateUserDTO) - Tất cả roles
   async updateProfile(profileData) {
     try {
       console.log("👤 Updating profile...", profileData);
@@ -89,8 +156,8 @@ class ProfileService {
         const genderEnum = this.getGenderEnum(profileData.gender);
         formData.append('Gender', genderEnum);
       }
-      if (profileData.bio && profileData.bio.trim()) {
-        formData.append('Bio', profileData.bio.trim());
+      if (profileData.bio !== undefined && profileData.bio !== null) {
+        formData.append('Bio', profileData.bio);
       }
       if (profileData.dateOfBirth) {
         // Backend expects DateTime format, ensure proper format
@@ -98,24 +165,67 @@ class ProfileService {
         console.log("📅 Date conversion:", profileData.dateOfBirth, "→", date.toISOString());
         formData.append('DateOfBirth', date.toISOString());
       }
-      if (profileData.fullName && profileData.fullName.trim()) {
-        formData.append('FullName', profileData.fullName.trim());
+      if (profileData.fullName) {
+        formData.append('FullName', profileData.fullName);
       }
-      if (profileData.phone && profileData.phone.trim()) {
-        formData.append('Phone', profileData.phone.trim());
+      // Avatar field - ONLY send if it's a File object (new upload)
+      // If not sent (null/undefined) - backend will keep existing avatar
+      if (profileData.avatar !== undefined && profileData.avatar !== null) {
+        if (profileData.avatar instanceof File) {
+          // New file upload
+          formData.append('Avatar', profileData.avatar);
+          console.log('📤 Uploading new avatar file:', profileData.avatar.name);
+        } else {
+          // Not a File - don't send to FormData
+          console.log('ℹ️ Avatar is not a File object - backend will keep existing');
+        }
       }
-      if (profileData.avatar && profileData.avatar.trim()) {
-        formData.append('Avatar', profileData.avatar.trim());
+      if (profileData.detailAddress !== undefined && profileData.detailAddress !== null) {
+        formData.append('DetailAddress', profileData.detailAddress);
       }
-      if (profileData.detailAddress && profileData.detailAddress.trim()) {
-        formData.append('DetailAddress', profileData.detailAddress.trim());
+      // Backend UpdateUserDTO uses ProvinceId/WardId
+      if (profileData.provinceId) {
+        formData.append('ProvinceId', profileData.provinceId);
       }
-      // Backend UpdateUserDTO uses ProvinceId/CommuneId (not Code)
-      if (profileData.provinceId && profileData.provinceId.trim()) {
-        formData.append('ProvinceId', profileData.provinceId.trim());
+      if (profileData.wardId) {
+        formData.append('WardId', profileData.wardId); // Backend uses WardId
       }
-      if (profileData.communeId && profileData.communeId.trim()) {
-        formData.append('CommuneId', profileData.communeId.trim());
+      
+      // CCCD fields (optional)
+      // ONLY send if it's a File object (new upload)
+      // If string URL - DON'T send, backend will keep existing image
+      if (profileData.frontImageUrl !== undefined && profileData.frontImageUrl !== null) {
+        if (profileData.frontImageUrl instanceof File) {
+          formData.append('FrontImageUrl', profileData.frontImageUrl);
+          console.log('📤 Uploading new front CCCD image file:', profileData.frontImageUrl.name);
+        } else if (typeof profileData.frontImageUrl === 'string') {
+          // String URL - DON'T send to FormData (backend expects IFormFile only)
+          // Backend will keep existing URL if field is not sent
+          console.log('ℹ️ Keeping existing front CCCD image (not sending URL string)');
+        }
+      }
+      if (profileData.backImageUrl !== undefined && profileData.backImageUrl !== null) {
+        if (profileData.backImageUrl instanceof File) {
+          formData.append('BackImageUrl', profileData.backImageUrl);
+          console.log('📤 Uploading new back CCCD image file:', profileData.backImageUrl.name);
+        } else if (typeof profileData.backImageUrl === 'string') {
+          // String URL - DON'T send to FormData (backend expects IFormFile only)
+          // Backend will keep existing URL if field is not sent
+          console.log('ℹ️ Keeping existing back CCCD image (not sending URL string)');
+        }
+      }
+      if (profileData.temporaryResidence !== undefined && profileData.temporaryResidence !== null) {
+        formData.append('TemporaryResidence', profileData.temporaryResidence);
+      }
+      if (profileData.citizenIdNumber !== undefined && profileData.citizenIdNumber !== null) {
+        formData.append('CitizenIdNumber', profileData.citizenIdNumber);
+      }
+      if (profileData.citizenIdIssuedDate) {
+        const date = new Date(profileData.citizenIdIssuedDate);
+        formData.append('CitizenIdIssuedDate', date.toISOString());
+      }
+      if (profileData.citizenIdIssuedPlace !== undefined && profileData.citizenIdIssuedPlace !== null) {
+        formData.append('CitizenIdIssuedPlace', profileData.citizenIdIssuedPlace);
       }
       
       console.log("📤 FormData being sent to backend:");
@@ -123,10 +233,10 @@ class ProfileService {
         console.log(`  ${key}: ${value}`);
       }
       
-      // Don't set Content-Type manually for FormData - browser will set it with boundary
-      const response = await api.put(`${this.baseUrl}/update-profile`, formData);
+      // Use putFormData for FormData, not put (which would stringify it)
+      const response = await api.putFormData(`${this.baseUrl}/update-profile`, formData);
       console.log("✅ Profile updated successfully:", response);
-      return response;
+      return response.data;
     } catch (error) {
       console.error("❌ Error updating profile:", error);
       throw error;

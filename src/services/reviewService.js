@@ -15,10 +15,36 @@ const reviewService = {
   // Lấy review theo ID
   getReviewById: async (id) => {
     try {
+      console.log('📥 Fetching review by ID:', id);
       const response = await axiosInstance.get(`/api/Review/${id}`);
-      return response.data;
+      console.log('📦 Review response:', response);
+      console.log('📦 Review data:', response.data);
+      
+      // Handle different response formats
+      if (response.data) {
+        // Check if wrapped in isSuccess format
+        if (response.data.isSuccess && response.data.data) {
+          console.log('✅ Review data (wrapped):', response.data.data);
+          return response.data.data;
+        }
+        // Direct data
+        console.log('✅ Review data (direct):', response.data);
+        return response.data;
+      }
+      
+      throw new Error('No data in response');
     } catch (error) {
-      console.error('Error fetching review:', error);
+      console.error('❌ Error fetching review:', error);
+      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error data:', error.response?.data);
+      
+      // Provide more specific error messages
+      if (error.response?.status === 404) {
+        throw new Error('Review not found');
+      } else if (error.response?.status === 500) {
+        throw new Error('Server error. Please try again later or contact support.');
+      }
+      
       throw error;
     }
   },
@@ -41,19 +67,47 @@ const reviewService = {
     }
   },
 
-  // Tạo review mới (yêu cầu contractId)
+  // Tạo review mới (yêu cầu contractId) với FormData cho image upload
   createReview: async (contractId, reviewData) => {
     try {
-      console.log('Creating review for contract:', contractId, reviewData);
+      console.log('Creating review for contract:', contractId);
       
-      // Ensure the data matches backend DTO: { rating, content, imageId? }
+      // Check if reviewData is FormData (for image upload to Filebase IPFS)
+      if (reviewData instanceof FormData) {
+        console.log('📤 Sending review FormData with image to Filebase IPFS');
+        console.log('📤 FormData contents:', {
+          rating: reviewData.get('Rating'),
+          content: reviewData.get('Content'),
+          hasImage: !!reviewData.get('ImageUrl')
+        });
+        
+        // Use fetch with FormData - axiosInstance will handle multipart/form-data
+        const response = await axiosInstance.post(`/api/Review/${contractId}`, reviewData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        
+        console.log('✅ Review created with image:', response.data);
+        
+        // Backend returns: { isSuccess: true, message: "...", data: {...} }
+        if (response.data && response.data.isSuccess) {
+          console.log('📦 Created review data:', response.data.data);
+          console.log('🖼️ Filebase IPFS URL:', response.data.data?.imageUrl);
+          return response.data.data || response.data;
+        }
+        
+        return response.data;
+      }
+      
+      // Legacy: JSON data (for backward compatibility if needed)
       const payload = {
         rating: reviewData.rating,
         content: reviewData.content,
-        imageId: reviewData.imageId || null // Optional imageId
+        imageId: reviewData.imageId || null
       };
       
-      console.log('Review payload:', payload);
+      console.log('Review JSON payload:', payload);
       const response = await axiosInstance.post(`/api/Review/${contractId}`, payload);
       console.log('Review created response:', response.data);
       return response.data;
@@ -64,9 +118,38 @@ const reviewService = {
     }
   },
 
-  // Cập nhật review
+  // Cập nhật review với FormData cho optional image upload
   updateReview: async (id, reviewData) => {
     try {
+      console.log(`🔄 Updating review ${id}`);
+      
+      // Check if reviewData is FormData (for image upload)
+      if (reviewData instanceof FormData) {
+        console.log('📤 Sending review FormData with optional image update');
+        console.log('📤 FormData contents:', {
+          rating: reviewData.get('Rating'),
+          content: reviewData.get('Content'),
+          hasNewImage: !!reviewData.get('ImageUrl')
+        });
+        
+        const response = await axiosInstance.put(`/api/Review/${id}`, reviewData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        
+        console.log('✅ Review updated with FormData:', response.data);
+        
+        if (response.data && response.data.isSuccess) {
+          console.log('📦 Updated review data:', response.data.data);
+          console.log('🖼️ Filebase IPFS URL:', response.data.data?.imageUrl);
+          return response.data.data || response.data;
+        }
+        
+        return response.data;
+      }
+      
+      // Legacy: JSON data
       const response = await axiosInstance.put(`/api/Review/${id}`, reviewData);
       return response.data;
     } catch (error) {

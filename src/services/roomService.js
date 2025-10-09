@@ -111,16 +111,40 @@ class RoomService {
 
   async create(houseId, data) {
     try {
-      console.log(`🚪 Creating new room for house ${houseId}...`, data);
+      console.log(`🚪 Creating new room for house ${houseId}...`);
       
-      // Prepare room data according to backend CreateRoomDto
+      // Check if data is FormData (for image upload)
+      if (data instanceof FormData) {
+        console.log("📤 Sending room FormData with image to Filebase IPFS");
+        console.log("📤 FormData contents:", {
+          roomName: data.get('RoomName'),
+          area: data.get('Area'),
+          price: data.get('Price'),
+          hasImage: !!data.get('ImageUrl')
+        });
+        
+        // Call room create API with FormData
+        const response = await roomAPI.createWithFormData(houseId, data);
+        console.log("✅ Room created successfully with image:", response);
+        
+        // Backend returns: { isSuccess: true, message: "...", data: {...} }
+        if (response && response.isSuccess) {
+          console.log("📦 Created room data:", response.data);
+          console.log("🖼️ Filebase IPFS URL:", response.data?.imageUrl);
+          return response.data || response.result || response;
+        }
+        
+        return response;
+      }
+      
+      // Legacy: JSON data (no image)
       const roomData = {
         roomName: data.roomName,
         area: parseFloat(data.area),
         price: parseFloat(data.price)
       };
 
-      console.log("📤 Sending room data:", roomData);
+      console.log("📤 Sending room JSON data (no image):", roomData);
       
       // Call room create API - no houseLocationId needed
       const response = await roomAPI.create(houseId, roomData);
@@ -161,12 +185,34 @@ class RoomService {
   async update(id, data) {
     try {
       console.log(`🚪 Updating room ${id}...`);
-      console.log("📥 Received data:", data);
-      console.log("📋 RoomStatus raw value:", data.roomStatus, "Type:", typeof data.roomStatus);
       
-      // Prepare update data according to backend UpdateRoomDto
-      // Note: UpdateRoomDto doesn't include RoomName field (commented out in backend)
-      console.log("🔢 Raw roomStatus before processing:", data.roomStatus, "Type:", typeof data.roomStatus);
+      // Check if data is FormData (for image upload)
+      if (data instanceof FormData) {
+        console.log("� Sending room FormData with optional image update");
+        console.log("� FormData contents:", {
+          area: data.get('Area'),
+          price: data.get('Price'),
+          roomStatus: data.get('RoomStatus'),
+          hasNewImage: !!data.get('ImageUrl')
+        });
+        
+        // Call room update API with FormData
+        const response = await roomAPI.updateWithFormData(id, data);
+        console.log("✅ Room updated successfully with FormData:", response);
+        
+        // Backend returns: { isSuccess: true, message: "...", data: {...} }
+        if (response && response.isSuccess) {
+          console.log("📦 Updated room data:", response.data);
+          console.log("🖼️ Filebase IPFS URL:", response.data?.imageUrl);
+          return response.data || response.result || response;
+        }
+        
+        return response;
+      }
+      
+      // Legacy: JSON data (no image)
+      console.log("📥 Received JSON data:", data);
+      console.log("� RoomStatus raw value:", data.roomStatus, "Type:", typeof data.roomStatus);
       
       // Convert roomStatus to integer, handling both string and number types
       let roomStatus = 0; // Default to Available
@@ -202,7 +248,7 @@ class RoomService {
         roomStatus: roomStatus
       };
 
-      console.log("📤 Sending update data (without roomName):", updateData);
+      console.log("📤 Sending update JSON data (without roomName):", updateData);
 
       const response = await roomAPI.update(id, updateData);
       console.log("✅ Room updated successfully:", response);

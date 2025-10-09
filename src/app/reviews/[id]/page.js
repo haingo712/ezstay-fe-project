@@ -7,6 +7,7 @@ import { Star, Calendar, User, MessageSquare, ArrowLeft, Edit, Trash2 } from 'lu
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/hooks/useAuth';
+import SafeImage from '@/components/SafeImage';
 
 export default function ReviewDetailPage() {
   const params = useParams();
@@ -28,12 +29,30 @@ export default function ReviewDetailPage() {
     try {
       setLoading(true);
       setError(null);
+      console.log('🔍 Loading review ID:', reviewId);
       const response = await reviewService.getReviewById(reviewId);
-      console.log('Review detail:', response);
+      console.log('✅ Review detail loaded:', response);
+      
+      // Validate response has required fields
+      if (!response || !response.id) {
+        console.warn('⚠️ Review response missing id field:', response);
+        throw new Error('Invalid review data');
+      }
+      
       setReview(response);
     } catch (error) {
-      console.error('Error loading review:', error);
-      setError('Failed to load review details');
+      console.error('❌ Error loading review:', error);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error response:', error.response);
+      
+      // Set user-friendly error message
+      if (error.message === 'Review not found') {
+        setError('Review not found. It may have been deleted.');
+      } else if (error.message?.includes('Server error')) {
+        setError('Server error. The review service is temporarily unavailable. Please try again later.');
+      } else {
+        setError(error.message || 'Failed to load review details. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -91,20 +110,41 @@ export default function ReviewDetailPage() {
         <Navbar />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center py-12">
-            <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <MessageSquare className="h-16 w-16 text-red-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Review Not Found
+              {error?.includes('Server error') ? 'Server Error' : 'Review Not Found'}
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
               {error || 'The review you are looking for does not exist.'}
             </p>
-            <button
-              onClick={() => router.back()}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Go Back
-            </button>
+            
+            {/* Debug info for development */}
+            {process.env.NODE_ENV === 'development' && reviewId && (
+              <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-left max-w-md mx-auto">
+                <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">
+                  Review ID: {reviewId}
+                </p>
+                <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                  Check browser console for detailed error logs
+                </p>
+              </div>
+            )}
+            
+            <div className="flex gap-3 justify-center mt-6">
+              <button
+                onClick={() => router.back()}
+                className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Go Back
+              </button>
+              <button
+                onClick={() => loadReview()}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
           </div>
         </div>
         <Footer />
@@ -174,6 +214,24 @@ export default function ReviewDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Review Image (if exists) */}
+          {review.imageUrl && (
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Review Image
+              </h4>
+              <div className="relative h-64 md:h-96 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                <SafeImage
+                  src={review.imageUrl}
+                  alt="Review Image"
+                  fill
+                  fallbackIcon="📷"
+                  objectFit="contain"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Content */}
           <div className="mb-6">

@@ -33,7 +33,7 @@ export default function StaffLayout({ children }) {
       ),
     },
     {
-      name: "User Management",
+      name: "User & Owner Management",
       href: "/staff/users",
       icon: (
         <svg
