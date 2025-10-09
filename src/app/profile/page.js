@@ -9,6 +9,7 @@ import AddressSelector from "@/components/AddressSelector";
 import FaceRegistrationModal from "@/components/FaceRegistrationModal";
 import profileService from "@/services/profileService";
 import otpService from "@/services/otpService";
+import AuthService from "@/services/authService";
 
 export default function ProfilePage() {
   const { user, isAuthenticated, refreshUserInfo } = useAuth();
@@ -17,28 +18,55 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
+  // Profile state
+  const [profileExists, setProfileExists] = useState(false); // Track if profile already exists
+  
   // Form state - enhanced to match backend structure
   const [profile, setProfile] = useState({
     email: "",
     phone: "",
     fullName: "",
-    avatar: "",        // Backend avatar URL (from Avata field)
+    avatar: "",        // Backend avatar URL
     gender: "Male",
     bio: "",
-    address: "",
+    detailAddress: "",  // Backend uses DetailAddress
     dateOfBirth: "",
     provinceId: "",      // For AddressSelector (ID)
-    communeId: "",       // For AddressSelector (ID)
+    wardId: "",          // Backend uses WardId (not CommuneId)
     provinceName: "",    // For display (Name)
-    communeName: ""      // For display (Name)
+    wardName: "",        // Backend uses WardName (not CommuneName)
+    // CCCD fields (optional)
+    frontImageUrl: "",
+    backImageUrl: "",
+    temporaryResidence: "",
+    citizenIdNumber: "",
+    citizenIdIssuedDate: "",
+    citizenIdIssuedPlace: ""
   });
 
   // Avatar upload state
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState("");
+  
+  // CCCD image upload state
+  const [frontImageFile, setFrontImageFile] = useState(null);
+  const [frontImagePreview, setFrontImagePreview] = useState("");
+  const [backImageFile, setBackImageFile] = useState(null);
+  const [backImagePreview, setBackImagePreview] = useState("");
 
   // Face registration modal state
   const [showFaceModal, setShowFaceModal] = useState(false);
+
+  // Change password modal state
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // OTP states for phone/email updates
   const [showPhoneOtp, setShowPhoneOtp] = useState(false);
@@ -64,39 +92,125 @@ export default function ProfilePage() {
     }
   }, [profile.avatar, avatarFile]);
 
+  // Sync front CCCD image preview
+  useEffect(() => {
+    if (!frontImageFile && profile.frontImageUrl) {
+      // If no file selected, use backend URL
+      setFrontImagePreview(profile.frontImageUrl);
+    }
+  }, [profile.frontImageUrl, frontImageFile]);
+
+  // Sync back CCCD image preview
+  useEffect(() => {
+    if (!backImageFile && profile.backImageUrl) {
+      // If no file selected, use backend URL
+      setBackImagePreview(profile.backImageUrl);
+    }
+  }, [profile.backImageUrl, backImageFile]);
+
   const loadProfile = async () => {
     try {
       setLoading(true);
+      
+      console.log("🔍 Current user object:", user);
+      
+      // First, fetch account info to get email, phone, fullName
+      let accountInfo = null;
+      const userId = user?.id || user?.sub || user?.userId;
+      
+      if (userId) {
+        console.log("👤 Fetching account info for userId:", userId);
+        const accountResponse = await AuthService.getAccountInfo(userId);
+        console.log("📥 Account response:", accountResponse);
+        
+        if (accountResponse.success) {
+          accountInfo = accountResponse.data;
+          console.log("✅ Account info loaded:", accountInfo);
+        } else {
+          console.error("❌ Failed to load account info:", accountResponse.message);
+        }
+      } else {
+        console.warn("⚠️ No userId found in user object:", user);
+      }
+      
       const profileData = await profileService.getProfile();
       
+      console.log("🔍 ===== PROFILE DATA DEBUG =====");
+      console.log("🔍 Raw profile data from API:", JSON.stringify(profileData, null, 2));
+      console.log("🔍 Profile data type:", typeof profileData);
+      console.log("🔍 Profile data keys:", profileData ? Object.keys(profileData) : 'null');
+      
       if (profileData) {
-        console.log("📄 Profile loaded from backend:", profileData);
-        
-        // Map backend response (UserResponseDTO) to frontend state
-        setProfile({
-          email: user?.email || "",
-          phone: profileData.Phone || user?.phone || "",
-          fullName: profileData.FullName || user?.fullName || "",
-          avatar: profileData.Avata || "", // Backend typo "Avata" - this is the image URL
-          gender: profileService.getGenderText(profileData.Gender) || "Male",
-          bio: profileData.Bio || "",
-          address: profileData.Adrress || "", // Backend typo "Adrress" 
-          dateOfBirth: profileData.DateOfBirth ? 
-            new Date(profileData.DateOfBirth).toISOString().split('T')[0] : "",
-          // Address: backend stores Province/Commune names but expects ProvinceId/CommuneId for updates
-          provinceId: profileData.ProvinceId || "", // ID for AddressSelector
-          communeId: profileData.CommuneId || "",   // ID for AddressSelector  
-          provinceName: profileData.Province || "", // Name for display
-          communeName: profileData.Commune || ""    // Name for display
+        console.log("📄 Profile loaded from backend");
+        console.log("📄 All fields check:", {
+          email: profileData.email,
+          phone: profileData.phone,
+          fullName: profileData.fullName,
+          dateOfBirth: profileData.dateOfBirth,
+          bio: profileData.bio,
+          avatar: profileData.avatar,
+          detailAddress: profileData.detailAddress,
+          provinceId: profileData.provinceId,
+          wardId: profileData.wardId,
+          provinceName: profileData.provinceName,
+          wardName: profileData.wardName,
+          citizenIdNumber: profileData.citizenIdNumber,
+          gender: profileData.gender,
+          // Image URLs - IMPORTANT
+          frontImageUrl: profileData.frontImageUrl,
+          backImageUrl: profileData.backImageUrl
         });
+        
+        setProfileExists(true); // Profile exists
+        
+        // Map backend response (camelCase format) to frontend state
+        // Priority: Profile data > Account info > Token data
+        const newProfileState = {
+          email: profileData.email || accountInfo?.email || user?.email || "",
+          phone: profileData.phone || accountInfo?.phone || user?.phone || "",
+          fullName: profileData.fullName || accountInfo?.fullName || user?.fullName || "",
+          avatar: profileData.avatar || "",
+          gender: profileService.getGenderText(profileData.gender) || "Male",
+          bio: profileData.bio || "",
+          detailAddress: profileData.detailAddress || "", 
+          dateOfBirth: profileData.dateOfBirth ? 
+            new Date(profileData.dateOfBirth).toISOString().split('T')[0] : "",
+          // Address: backend uses provinceId/wardId and provinceName/wardName (camelCase)
+          provinceId: (profileData.provinceId || "").toString(),
+          wardId: (profileData.wardId || "").toString(),
+          provinceName: profileData.provinceName || "",
+          wardName: profileData.wardName || "",
+          // CCCD fields
+          frontImageUrl: profileData.frontImageUrl || "",
+          backImageUrl: profileData.backImageUrl || "",
+          temporaryResidence: profileData.temporaryResidence || "",
+          citizenIdNumber: profileData.citizenIdNumber || "",
+          citizenIdIssuedDate: profileData.citizenIdIssuedDate ? 
+            new Date(profileData.citizenIdIssuedDate).toISOString().split('T')[0] : "",
+          citizenIdIssuedPlace: profileData.citizenIdIssuedPlace || ""
+        };
+        
+        console.log("🖼️ IMAGE URLS DEBUG:");
+        console.log("  - Backend frontImageUrl:", profileData.frontImageUrl);
+        console.log("  - Backend backImageUrl:", profileData.backImageUrl);
+        console.log("  - Backend avatar:", profileData.avatar);
+        console.log("  - Mapped frontImageUrl:", newProfileState.frontImageUrl);
+        console.log("  - Mapped backImageUrl:", newProfileState.backImageUrl);
+        console.log("  - Mapped avatar:", newProfileState.avatar);
+        console.log("✅ New profile state to set:", JSON.stringify(newProfileState, null, 2));
+        
+        setProfile(newProfileState);
+        
+        console.log("✅ Profile state updated successfully");
       } else {
-        console.log("📝 Profile exists but empty, initializing with user data from token");
-        // Backend auto-creates empty profile, just initialize with token data
+        console.log("📝 Profile not found, user needs to create one");
+        setProfileExists(false); // Profile does not exist
+        // Initialize with basic user data from account info or token
         setProfile(prev => ({
           ...prev,
-          email: user?.email || "",
-          phone: user?.phone || "",
-          fullName: user?.fullName || ""
+          email: accountInfo?.email || accountInfo?.Email || user?.email || "",
+          phone: accountInfo?.phone || accountInfo?.Phone || user?.phone || "",
+          fullName: accountInfo?.fullName || accountInfo?.FullName || user?.fullName || ""
         }));
       }
     } catch (error) {
@@ -131,15 +245,45 @@ export default function ProfilePage() {
     }
   };
 
+  // Handle front CCCD image file upload
+  const handleFrontImageFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFrontImageFile(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFrontImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle back CCCD image file upload
+  const handleBackImageFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setBackImageFile(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBackImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Handle address selection - receive full address object from AddressSelector
   const handleAddressChange = (addressData) => {
     setProfile(prev => ({
       ...prev,
       provinceId: addressData.provinceCode?.toString() || "",    // Convert to string for backend
-      communeId: addressData.wardCode?.toString() || "",         // Convert to string for backend  
+      wardId: addressData.wardCode?.toString() || "",            // Backend uses wardId
       provinceName: addressData.provinceName || "",              // Save name for display
-      communeName: addressData.wardName || "",                   // Save name for display
-      address: addressData.address || ""                         // Detail address
+      wardName: addressData.wardName || "",                      // Backend uses wardName
+      detailAddress: addressData.address || ""                   // Detail address
     }));
   };
 
@@ -235,7 +379,97 @@ export default function ProfilePage() {
     }
   };
 
-  // Handle form submission - Only for updating existing profile
+  // Handle change password
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    try {
+      setChangingPassword(true);
+      
+      // Get token from localStorage
+      const token = localStorage.getItem("authToken") || localStorage.getItem("ezstay_token");
+      if (!token) {
+        setPasswordError("Not authenticated. Please login again.");
+        return;
+      }
+
+      // Get email from profile or user or localStorage
+      const email = profile.email || user?.email || localStorage.getItem("userEmail");
+      if (!email) {
+        setPasswordError("Email not found. Please refresh the page.");
+        return;
+      }
+
+      console.log("🔐 Changing password for email:", email);
+      console.log("Token exists:", !!token);
+
+      // Call API
+      const response = await fetch("https://localhost:7000/api/User/change-password", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          email: email,
+          oldPassword: passwordData.oldPassword,
+          newPassword: passwordData.newPassword
+        })
+      });
+
+      console.log("Response status:", response.status);
+
+      if (!response.ok) {
+        // Try to parse error response
+        let errorMessage = "Failed to change password";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.Message || errorMessage;
+        } catch (e) {
+          // If no JSON body, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Try to parse success response, but don't fail if empty
+      let successMessage = "✅ Password changed successfully!";
+      try {
+        const data = await response.json();
+        if (data?.message || data?.Message) {
+          successMessage = `✅ ${data.message || data.Message}`;
+        }
+      } catch (e) {
+        // Empty response is OK for success
+        console.log("Empty response (success)");
+      }
+
+      setPasswordSuccess(successMessage);
+      
+      // Clear form
+      setPasswordData({
+        oldPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      });
+
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setShowChangePasswordModal(false);
+        setPasswordSuccess("");
+      }, 2000);
+
+    } catch (error) {
+      console.error("❌ Change password error:", error);
+      setPasswordError(error.message || "Failed to change password. Please check your current password.");
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  // Handle form submission - POST (create) or PUT (update)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -243,39 +477,120 @@ export default function ProfilePage() {
     setSuccess("");
 
     try {
-      // Prepare data for backend update-profile API
+      // Prepare data for backend API
       const profileData = {
         fullName: profile.fullName,
-        gender: profile.gender, // Keep as text, updateProfile will convert to enum
+        gender: profile.gender, // profileService will convert to enum
         bio: profile.bio,
         dateOfBirth: profile.dateOfBirth,
-        phone: profile.phone,
+        detailAddress: profile.detailAddress,
         provinceId: profile.provinceId,
-        communeId: profile.communeId
+        wardId: profile.wardId, // Backend uses wardId
+        // CCCD fields (optional)
+        temporaryResidence: profile.temporaryResidence,
+        citizenIdNumber: profile.citizenIdNumber,
+        citizenIdIssuedDate: profile.citizenIdIssuedDate,
+        citizenIdIssuedPlace: profile.citizenIdIssuedPlace
       };
 
-      console.log("📤 Profile data to update:", profileData);
+      console.log("📤 Profile data:", profileData);
       console.log("🖼️ Avatar file:", avatarFile);
+      console.log("📷 Front CCCD file:", frontImageFile);
+      console.log("📷 Back CCCD file:", backImageFile);
+      console.log("📝 Profile exists:", profileExists);
       
-      // Always update - this page is only for updating existing profiles
-      console.log("📝 Updating profile...");
-      const result = await profileService.updateProfile(profileData, avatarFile);
-      console.log("📥 Backend response:", result);
+      // Add avatar file to profileData ONLY if new file selected
+      // Backend expects IFormFile, not string URL
+      // If no new file - DON'T send field, backend will keep existing avatar
+      if (avatarFile) {
+        console.log("📤 Will send avatar file to backend...");
+        profileData.avatar = avatarFile; // Send IFormFile
+        console.log("✅ Avatar file added to FormData");
+      } else {
+        // DON'T send avatar field - backend will keep existing avatar
+        console.log("ℹ️ No new avatar file - backend will keep existing avatar");
+      }
       
-      setSuccess("Profile updated successfully!");
+      // Add CCCD image files to profileData ONLY if new files selected
+      // Backend expects IFormFile, not string URL
+      // If no new file - DON'T send field, backend will keep existing URL
+      if (frontImageFile) {
+        console.log("📤 Will send front CCCD image file to backend...");
+        profileData.frontImageUrl = frontImageFile; // Send IFormFile
+        console.log("✅ Front CCCD image file added to FormData");
+      } else {
+        // DON'T send string URL - backend expects IFormFile only
+        // Backend will keep existing URL if field is not sent (null check)
+        console.log("ℹ️ No new front CCCD file - backend will keep existing image");
+      }
+      
+      if (backImageFile) {
+        console.log("📤 Will send back CCCD image file to backend...");
+        profileData.backImageUrl = backImageFile; // Send IFormFile
+        console.log("✅ Back CCCD image file added to FormData");
+      } else {
+        // DON'T send string URL - backend expects IFormFile only
+        // Backend will keep existing URL if field is not sent (null check)
+        console.log("ℹ️ No new back CCCD file - backend will keep existing image");
+      }
+      
+      let result;
+      const wasNewProfile = !profileExists;
+      
+      if (!profileExists) {
+        // POST: Create new profile (first time)
+        console.log("📝 Creating new profile...");
+        result = await profileService.createProfile(profileData);
+        console.log("📥 Profile created:", result);
+        setSuccess("Profile created successfully! Reloading...");
+        
+        // Wait a bit for backend to process
+        await new Promise(resolve => setTimeout(resolve, 300));
+      } else {
+        // PUT: Update existing profile
+        console.log("📝 Updating profile...");
+        result = await profileService.updateProfile(profileData);
+        console.log("📥 Profile updated:", result);
+        setSuccess("Profile updated successfully! Reloading...");
+      }
       
       // Reload profile data to reflect changes
-      console.log("🔄 Reloading profile after update...");
+      console.log("🔄 Reloading profile to get latest data...");
       await loadProfile();
+      
+      // Clear file states after successful save
+      setAvatarFile(null);
+      setFrontImageFile(null);
+      setFrontImagePreview("");
+      setBackImageFile(null);
+      setBackImagePreview("");
+      
+      // Update success message after reload
+      if (wasNewProfile) {
+        setSuccess("✅ Profile created and loaded successfully!");
+      } else {
+        setSuccess("✅ Profile updated successfully!");
+      }
       
       // Refresh user info in auth context to update navbar avatar
       console.log("🔄 Refreshing user info for navbar...");
       await refreshUserInfo(true); // Pass true to load avatar
       
-      console.log("🔄 Profile update complete");
+      console.log("🔄 Profile operation complete");
     } catch (err) {
-      console.error("❌ Profile update error:", err);
-      setError(err.message || "Failed to update profile");
+      console.error("❌ Profile error:", err);
+      console.error("❌ Error details:", {
+        message: err.message,
+        response: err.response,
+        stack: err.stack
+      });
+      
+      // Display detailed error message
+      const errorMsg = err.message || 
+                      err.response?.data?.message ||
+                      err.response?.data?.title ||
+                      "Failed to save profile. Please check console for details.";
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -402,6 +717,26 @@ export default function ProfilePage() {
                   Register Face
                 </button>
               </div>
+
+              {/* Change Password Button */}
+              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">
+                  Security
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Update your password to keep your account secure
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowChangePasswordModal(true)}
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  </svg>
+                  Change Password
+                </button>
+              </div>
             </div>
 
             {/* Basic Information */}
@@ -413,54 +748,57 @@ export default function ProfilePage() {
                 {/* Full Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Full Name
+                    Full Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="fullName"
                     value={profile.fullName}
                     onChange={handleInputChange}
+                    placeholder="Enter your full name"
+                    required
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    disabled
                   />
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Full name is from your account registration
+                    {profileExists ? "Full name from your profile" : "Enter your full name"}
                   </p>
                 </div>
 
                 {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Email
+                    Email <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
                     name="email"
                     value={profile.email}
                     onChange={handleInputChange}
+                    placeholder="Enter your email"
+                    required
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    disabled
                   />
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Email cannot be changed
+                    {profileExists ? "Email from your profile" : "Enter your email"}
                   </p>
                 </div>
 
                 {/* Phone */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Phone Number
+                    Phone Number <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
                     name="phone"
                     value={profile.phone}
                     onChange={handleInputChange}
+                    placeholder="Enter your phone number"
+                    required
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    disabled
                   />
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Phone number is from your account registration
+                    {profileExists ? "Phone from your profile" : "Enter your phone number"}
                   </p>
                 </div>
 
@@ -482,6 +820,20 @@ export default function ProfilePage() {
                 </div>
               </div>
 
+              {/* Date of Birth */}
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  name="dateOfBirth"
+                  value={profile.dateOfBirth}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
               {/* Address Selector */}
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -491,9 +843,9 @@ export default function ProfilePage() {
                   value={{
                     provinceCode: profile.provinceId ? parseInt(profile.provinceId) : null,
                     provinceName: profile.provinceName,
-                    wardCode: profile.communeId ? parseInt(profile.communeId) : null,
-                    wardName: profile.communeName,
-                    address: profile.address
+                    wardCode: profile.wardId ? parseInt(profile.wardId) : null,
+                    wardName: profile.wardName,
+                    address: profile.detailAddress
                   }}
                   onChange={handleAddressChange}
                   className="space-y-4"
@@ -516,6 +868,179 @@ export default function ProfilePage() {
               </div>
             </div>
 
+            {/* Citizen ID Information (CCCD) - Optional */}
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
+              <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
+                Citizen ID Information (Optional)
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Citizen ID Number */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Citizen ID Number (CCCD)
+                  </label>
+                  <input
+                    type="text"
+                    name="citizenIdNumber"
+                    value={profile.citizenIdNumber}
+                    onChange={handleInputChange}
+                    placeholder="e.g., 001234567890"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                {/* Citizen ID Issued Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Issued Date
+                  </label>
+                  <input
+                    type="date"
+                    name="citizenIdIssuedDate"
+                    value={profile.citizenIdIssuedDate}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                {/* Citizen ID Issued Place */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Issued Place
+                  </label>
+                  <input
+                    type="text"
+                    name="citizenIdIssuedPlace"
+                    value={profile.citizenIdIssuedPlace}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Cục Cảnh sát ĐKQL cư trú và DLQG về dân cư"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                {/* Temporary Residence */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Temporary Residence Address
+                  </label>
+                  <input
+                    type="text"
+                    name="temporaryResidence"
+                    value={profile.temporaryResidence}
+                    onChange={handleInputChange}
+                    placeholder="Enter temporary residence address if different from current address"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                {/* Front Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Front ID Image
+                  </label>
+                  <input
+                    type="file"
+                    id="front-image-upload"
+                    accept="image/*"
+                    onChange={handleFrontImageFileChange}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="front-image-upload"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors cursor-pointer"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Choose Front Image
+                  </label>
+                  {frontImageFile && (
+                    <p className="mt-2 text-sm text-green-600 dark:text-green-400">
+                      ✅ Selected: {frontImageFile.name}
+                    </p>
+                  )}
+                  {!frontImageFile && profile.frontImageUrl && (
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      📷 Current image uploaded
+                    </p>
+                  )}
+                </div>
+
+                {/* Back Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Back ID Image
+                  </label>
+                  <input
+                    type="file"
+                    id="back-image-upload"
+                    accept="image/*"
+                    onChange={handleBackImageFileChange}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="back-image-upload"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors cursor-pointer"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Choose Back Image
+                  </label>
+                  {backImageFile && (
+                    <p className="mt-2 text-sm text-green-600 dark:text-green-400">
+                      ✅ Selected: {backImageFile.name}
+                    </p>
+                  )}
+                  {!backImageFile && profile.backImageUrl && (
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      📷 Current image uploaded
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Preview CCCD Images */}
+              {(frontImagePreview || profile.frontImageUrl || backImagePreview || profile.backImageUrl) && (
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {(frontImagePreview || profile.frontImageUrl) && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Front ID Preview {frontImagePreview && "(New)"}
+                      </p>
+                      <div className="border-2 border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden">
+                        <img
+                          src={frontImagePreview || profile.frontImageUrl}
+                          alt="Front ID"
+                          className="w-full h-auto"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {(backImagePreview || profile.backImageUrl) && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Back ID Preview {backImagePreview && "(New)"}
+                      </p>
+                      <div className="border-2 border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden">
+                        <img
+                          src={backImagePreview || profile.backImageUrl}
+                          alt="Back ID"
+                          className="w-full h-auto"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Submit Button */}
             <div className="flex justify-end space-x-4">
               <button
@@ -530,7 +1055,7 @@ export default function ProfilePage() {
                 disabled={loading}
                 className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg"
               >
-                {loading ? "Updating..." : "Update Profile"}
+                {loading ? "Saving..." : profileExists ? "Update Profile" : "Create Profile"}
               </button>
             </div>
           </form>
@@ -546,6 +1071,128 @@ export default function ProfilePage() {
           setShowFaceModal(false);
         }}
       />
+
+      {/* Change Password Modal */}
+      {showChangePasswordModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setShowChangePasswordModal(false);
+                setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
+                setPasswordError("");
+                setPasswordSuccess("");
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Modal header */}
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Change Password
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Enter your current password and choose a new one
+              </p>
+            </div>
+
+            {/* Success message */}
+            {passwordSuccess && (
+              <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <p className="text-green-600 dark:text-green-400 text-sm">{passwordSuccess}</p>
+              </div>
+            )}
+
+            {/* Error message */}
+            {passwordError && (
+              <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <p className="text-red-600 dark:text-red-400 text-sm">{passwordError}</p>
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              {/* Current Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Current Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.oldPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, oldPassword: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Enter current password"
+                  disabled={changingPassword}
+                  required
+                />
+              </div>
+
+              {/* New Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  New Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Enter new password (min 6 characters)"
+                  disabled={changingPassword}
+                  required
+                  minLength={6}
+                />
+              </div>
+
+              {/* Confirm New Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Confirm New Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Confirm new password"
+                  disabled={changingPassword}
+                  required
+                />
+              </div>
+
+              {/* Buttons */}
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowChangePasswordModal(false);
+                    setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
+                    setPasswordError("");
+                    setPasswordSuccess("");
+                  }}
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                  disabled={changingPassword}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg"
+                  disabled={changingPassword}
+                >
+                  {changingPassword ? "Changing..." : "Change Password"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </ProtectedRoute>
   );
 }

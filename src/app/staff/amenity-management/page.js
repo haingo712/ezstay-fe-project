@@ -1,425 +1,450 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+
+import { useState, useEffect } from 'react';
 import amenityService from '@/services/amenityService';
-import { PlusCircle, Edit, Trash2, X, Sparkles } from 'lucide-react';
-import Toast from '@/components/Toast';
+import SafeImage from '@/components/SafeImage';
 
-const AmenityManagement = () => {
-    const [amenities, setAmenities] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentAmenity, setCurrentAmenity] = useState(null);
-    const [amenityName, setAmenityName] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
+export default function AmenityManagementPage() {
+  const [amenities, setAmenities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedAmenity, setSelectedAmenity] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  
+  const [newAmenity, setNewAmenity] = useState({
+    amenityName: '',
+    imageFile: null
+  });
+
+  const [editAmenity, setEditAmenity] = useState({
+    amenityName: '',
+    imageFile: null
+  });
+  const [editImagePreview, setEditImagePreview] = useState(null);
+
+  useEffect(() => {
+    loadAmenities();
+  }, []);
+
+  const loadAmenities = async () => {
+    try {
+      setLoading(true);
+      const data = await amenityService.getAllAmenities();
+      console.log('📦 Loaded amenities:', data);
+      setAmenities(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error loading amenities:', error);
+      setAmenities([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNewAmenity({ ...newAmenity, imageFile: file });
+      
+      // Create temporary preview using base64 Data URL (only for UI preview)
+      // Actual file will be uploaded to Filebase IPFS storage via backend
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result); // Base64 preview only - not sent to server
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCreateAmenity = async (e) => {
+    e.preventDefault();
     
-    // Toast state
-    const [toast, setToast] = useState(null);
-
-    useEffect(() => {
-        fetchAmenities();
-    }, []);
-
-    const showToast = (message, type = 'success') => {
-        setToast({ message, type });
-    };
-
-    const hideToast = () => {
-        setToast(null);
-    };
-
-    const fetchAmenities = async () => {
-        try {
-            setIsLoading(true);
-            setError(null);
-            console.log("🏢 Fetching all amenities...");
-            
-            const response = await amenityService.getAllAmenities();
-            console.log("📋 Fetch response:", response);
-            
-            let amenitiesData = [];
-            
-            if (Array.isArray(response)) {
-                amenitiesData = response;
-            } else if (response?.isSuccess === true && Array.isArray(response.data)) {
-                amenitiesData = response.data;
-            } else if (response?.isSuccess === false) {
-                amenitiesData = [];
-            } else {
-                amenitiesData = [];
-            }
-            
-            setAmenities(amenitiesData);
-        } catch (error) {
-            console.error('❌ Error fetching amenities:', error);
-            setError('Failed to fetch amenities');
-            setAmenities([]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleCreateAmenity = async () => {
-        if (!amenityName.trim()) {
-            showToast('Please enter an amenity name', 'error');
-            return;
-        }
-
-        try {
-            setIsSubmitting(true);
-            console.log("🆕 Creating amenity:", amenityName);
-            
-            const amenityData = {
-                amenityName: amenityName.trim()
-            };
-            
-            const response = await amenityService.createAmenity(amenityData);
-            console.log("✅ Create successful:", response);
-            
-            const newAmenity = response.data || response || {
-                id: Date.now().toString(),
-                amenityName: amenityName.trim()
-            };
-            
-            setAmenities(prev => [...prev, newAmenity]);
-            setIsModalOpen(false);
-            setAmenityName('');
-            setCurrentAmenity(null);
-            
-            showToast('Amenity created successfully!', 'success');
-        } catch (error) {
-            console.error('❌ Error creating amenity:', error);
-            showToast('Failed to create amenity', 'error');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleUpdateAmenity = async () => {
-        if (!amenityName.trim()) {
-            showToast('Please enter an amenity name', 'error');
-            return;
-        }
-
-        try {
-            setIsSubmitting(true);
-            console.log("🔄 Updating amenity:", currentAmenity.id);
-            
-            const amenityData = {
-                amenityName: amenityName.trim()
-            };
-            
-            await amenityService.updateAmenity(currentAmenity.id, amenityData);
-            console.log("✅ Update successful");
-            
-            setAmenities(prev => prev.map(amenity => 
-                amenity.id === currentAmenity.id 
-                    ? { ...amenity, amenityName: amenityName.trim() }
-                    : amenity
-            ));
-            
-            setIsModalOpen(false);
-            setAmenityName('');
-            setCurrentAmenity(null);
-            
-            showToast('Amenity updated successfully!', 'success');
-        } catch (error) {
-            console.error('❌ Error updating amenity:', error);
-            showToast('Failed to update amenity', 'error');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleDeleteAmenity = async (amenityId, amenityName) => {
-        if (!confirm(`Are you sure you want to delete "${amenityName}"?`)) {
-            return;
-        }
-
-        try {
-            console.log("🗑️ Deleting amenity:", amenityId);
-            
-            setAmenities(prev => prev.filter(amenity => amenity.id !== amenityId));
-            
-            await amenityService.deleteAmenity(amenityId);
-            console.log("✅ Delete successful");
-            
-            showToast('Amenity deleted successfully!', 'success');
-        } catch (error) {
-            console.error('❌ Error deleting amenity:', error);
-            showToast('Failed to delete amenity', 'error');
-            fetchAmenities();
-        }
-    };
-
-    const openCreateModal = () => {
-        setCurrentAmenity(null);
-        setAmenityName('');
-        setIsModalOpen(true);
-    };
-
-    const openEditModal = (amenity) => {
-        setCurrentAmenity(amenity);
-        setAmenityName(amenity.amenityName || '');
-        setIsModalOpen(true);
-    };
-
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setCurrentAmenity(null);
-        setAmenityName('');
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (currentAmenity) {
-            handleUpdateAmenity();
-        } else {
-            handleCreateAmenity();
-        }
-    };
-
-    if (isLoading) {
-        return (
-            <div className="space-y-8">
-                <div className="max-w-6xl mx-auto">
-                    <div className="flex items-center justify-center min-h-[400px]">
-                        <div className="flex flex-col items-center space-y-4">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 dark:border-green-400"></div>
-                            <p className="text-gray-600 dark:text-gray-400 font-medium">Loading amenities...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
+    if (!newAmenity.amenityName || !newAmenity.imageFile) {
+      alert('Please enter amenity name and select an image!');
+      return;
     }
 
-    return (
-        <div className="space-y-8">
-            <div className="max-w-6xl mx-auto">
-                {/* Header - Owner style */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8 border border-gray-100 dark:border-gray-700">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-                        <div className="flex items-center space-x-4">
-                            <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg">
-                                <Sparkles className="h-8 w-8 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                                    Amenity Management
-                                </h1>
-                                <p className="text-gray-600 dark:text-gray-400 mt-1">Manage all amenities in the system</p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={openCreateModal}
-                            className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
-                        >
-                            <PlusCircle className="h-5 w-5" />
-                            <span>Add New Amenity</span>
-                        </button>
-                    </div>
-                </div>
+    try {
+      // Create FormData for file upload to backend
+      // Backend will upload the file to Filebase IPFS and return IPFS URL
+      const formData = new FormData();
+      formData.append('AmenityName', newAmenity.amenityName);
+      formData.append('ImageUrl', newAmenity.imageFile); // Actual file object (not base64)
 
-                {/* Error Message */}
-                {error && (
-                    <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6">
-                        <div className="flex items-start space-x-3">
-                            <div className="p-1 bg-red-100 dark:bg-red-800 rounded-full">
-                                <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <div className="flex-1">
-                                <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">Error</h4>
-                                <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
+      console.log('📤 Sending create request:', {
+        amenityName: newAmenity.amenityName,
+        imageFile: newAmenity.imageFile.name
+      });
 
-                {/* Amenities Table - Owner style */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    {amenities.length === 0 ? (
-                        <div className="p-12 text-center">
-                            <div className="max-w-md mx-auto">
-                                <div className="p-6 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-full w-32 h-32 mx-auto mb-6 flex items-center justify-center">
-                                    <Sparkles className="h-16 w-16 text-green-600 dark:text-green-400" />
-                                </div>
-                                <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-3">No Amenities Found</h3>
-                                <p className="text-gray-600 dark:text-gray-400 mb-6">Start by adding your first amenity to the system.</p>
-                                <button
-                                    onClick={openCreateModal}
-                                    className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-200 font-medium inline-flex items-center space-x-2"
-                                >
-                                    <PlusCircle className="h-5 w-5" />
-                                    <span>Add First Amenity</span>
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/50 dark:to-emerald-900/50">
-                                    <tr>
-                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                            Type
-                                        </th>
-                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                            Name
-                                        </th>
-                                        <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {amenities.map((amenity, index) => (
-                                        <tr key={amenity.id || `amenity-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <div className="flex-shrink-0 h-10 w-10">
-                                                        <div className="h-10 w-10 rounded-full bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-800 dark:to-emerald-800 flex items-center justify-center">
-                                                            <Sparkles className="h-5 w-5 text-green-600 dark:text-green-400" />
-                                                        </div>
-                                                    </div>
-                                                    <div className="ml-4">
-                                                        <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-3 py-1 rounded-full">
-                                                            Amenity
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                    {amenity.amenityName || 'Unnamed Amenity'}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                <div className="flex justify-center space-x-3">
-                                                    <button
-                                                        onClick={() => openEditModal(amenity)}
-                                                        className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
-                                                        title="Edit amenity"
-                                                    >
-                                                        <Edit className="h-4 w-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteAmenity(amenity.id, amenity.amenityName)}
-                                                        className="p-2 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-lg hover:from-red-600 hover:to-pink-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
-                                                        title="Delete amenity"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
+      const result = await amenityService.createAmenity(formData);
+      
+      console.log('✅ Create response:', result);
+      
+      // Show success message from backend
+      alert('Amenity created successfully! ✅');
+      
+      setShowCreateModal(false);
+      setNewAmenity({ amenityName: '', imageFile: null });
+      setImagePreview(null);
+      
+      // Reload amenities to show the new one
+      await loadAmenities();
+    } catch (error) {
+      console.error('❌ Error creating amenity:', error);
+      alert(error.response?.data?.message || 'Failed to create amenity!');
+    }
+  };
 
-                {/* Enhanced Modal - Owner style */}
-                {isModalOpen && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all duration-300">
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-lg w-full transform transition-all duration-300 scale-100">
-                            {/* Modal Header */}
-                            <div className="relative overflow-hidden rounded-t-3xl">
-                                <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 p-8">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-green-600/20 to-emerald-600/20"></div>
-                                    <div className="absolute -top-1 -right-1 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
-                                    <div className="absolute -bottom-1 -left-1 w-24 h-24 bg-white/10 rounded-full blur-lg"></div>
-                                    
-                                    <div className="relative flex items-center justify-between">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl border border-white/30">
-                                                <Sparkles className="h-6 w-6 text-white" />
-                                            </div>
-                                            <div>
-                                                <h2 className="text-2xl font-bold text-white drop-shadow-lg">
-                                                    {currentAmenity ? 'Edit Amenity' : 'Add New Amenity'}
-                                                </h2>
-                                                <p className="text-white/80 text-sm">
-                                                    {currentAmenity ? 'Update amenity information' : 'Create a new amenity for the system'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={closeModal}
-                                            className="p-2 bg-white/20 backdrop-blur-sm rounded-full border border-white/30 hover:bg-white/30 transition-all duration-200 transform hover:scale-110"
-                                        >
-                                            <X className="w-6 h-6 text-white drop-shadow-lg" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+  const handleDeleteAmenity = async (id) => {
+    if (!confirm('Are you sure you want to delete this amenity?')) return;
 
-                            {/* Modal Body */}
-                            <form onSubmit={handleSubmit} className="p-8">
-                                <div className="space-y-6">
-                                    {/* Amenity Name */}
-                                    <div>
-                                        <label htmlFor="amenityName" className="block text-sm font-bold text-gray-800 dark:text-white mb-4 flex items-center space-x-2">
-                                            <span className="text-2xl">✨</span>
-                                            <span>Amenity Name</span>
-                                            <span className="text-red-500 text-lg">*</span>
-                                        </label>
-                                        <input
-                                            id="amenityName"
-                                            type="text"
-                                            value={amenityName}
-                                            onChange={(e) => setAmenityName(e.target.value)}
-                                            className="w-full px-6 py-4 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 font-medium text-gray-800 dark:text-white shadow-sm hover:shadow-md focus:shadow-lg"
-                                            placeholder="e.g., Swimming Pool, Gym, WiFi, Parking..."
-                                            required
-                                            autoFocus
-                                        />
-                                    </div>
-                                </div>
+    try {
+      await amenityService.deleteAmenity(id);
+      alert('Amenity deleted successfully!');
+      await loadAmenities();
+    } catch (error) {
+      console.error('Error deleting amenity:', error);
+      alert('Failed to delete amenity!');
+    }
+  };
 
-                                {/* Modal Footer */}
-                                <div className="flex space-x-4 pt-8">
-                                    <button
-                                        type="button"
-                                        onClick={closeModal}
-                                        disabled={isSubmitting}
-                                        className="flex-1 px-6 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-200 font-semibold transform hover:scale-[1.02] disabled:opacity-50 disabled:transform-none shadow-sm hover:shadow-md"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={isSubmitting || !amenityName.trim()}
-                                        className="flex-1 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-2xl transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                                    >
-                                        {isSubmitting ? (
-                                            <div className="flex items-center justify-center space-x-2">
-                                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                                                <span>Processing...</span>
-                                            </div>
-                                        ) : (
-                                            <span>{currentAmenity ? 'Update Amenity' : 'Create Amenity'}</span>
-                                        )}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
+  const handleEditImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setEditAmenity({ ...editAmenity, imageFile: file });
+      
+      // Create temporary preview using base64 Data URL (only for UI preview)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditImagePreview(reader.result); // Base64 preview only
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
-                {/* Toast */}
-                {toast && (
-                    <Toast
-                        message={toast.message}
-                        type={toast.type}
-                        onClose={hideToast}
-                    />
-                )}
-            </div>
+  const handleUpdateAmenity = async (e) => {
+    e.preventDefault();
+    
+    if (!editAmenity.amenityName) {
+      alert('Please enter amenity name!');
+      return;
+    }
+
+    try {
+      // Create FormData for file upload to backend
+      const formData = new FormData();
+      formData.append('AmenityName', editAmenity.amenityName);
+      
+      // Only append image if user selected a new one
+      if (editAmenity.imageFile) {
+        formData.append('ImageUrl', editAmenity.imageFile);
+        console.log('📤 Updating with new image:', editAmenity.imageFile.name);
+      } else {
+        console.log('📤 Updating without changing image');
+      }
+
+      console.log('📤 Sending update request for:', selectedAmenity.id);
+
+      const result = await amenityService.updateAmenity(selectedAmenity.id, formData);
+      
+      console.log('✅ Update response:', result);
+      
+      alert('Amenity updated successfully! ✅');
+      
+      setShowEditModal(false);
+      setSelectedAmenity(null);
+      setEditAmenity({ amenityName: '', imageFile: null });
+      setEditImagePreview(null);
+      
+      // Reload amenities to show updated data
+      await loadAmenities();
+    } catch (error) {
+      console.error('❌ Error updating amenity:', error);
+      alert(error.response?.data?.message || 'Failed to update amenity!');
+    }
+  };
+
+  const openEditModal = (amenity) => {
+    setSelectedAmenity(amenity);
+    setEditAmenity({
+      amenityName: amenity.amenityName,
+      imageFile: null // No file selected initially
+    });
+    setEditImagePreview(null); // Will show current image from amenity.imageUrl
+    setShowEditModal(true);
+  };
+
+  const closeModals = () => {
+    setShowCreateModal(false);
+    setShowEditModal(false);
+    setSelectedAmenity(null);
+    setNewAmenity({ amenityName: '', imageFile: null });
+    setImagePreview(null);
+    setEditAmenity({ amenityName: '', imageFile: null });
+    setEditImagePreview(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            🛠️ Amenity Management
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Manage system amenities and facilities
+          </p>
         </div>
-    );
-};
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-lg"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Add Amenity
+        </button>
+      </div>
 
-export default AmenityManagement;
+      {/* Stats Card */}
+      <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+        <p className="text-purple-100 text-sm">Total Amenities</p>
+        <p className="text-4xl font-bold mt-2">{amenities.length}</p>
+      </div>
+
+      {/* Amenities Grid */}
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 dark:text-gray-400 mt-4">Loading...</p>
+        </div>
+      ) : amenities.length === 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center">
+          <div className="text-6xl mb-4">🏗️</div>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            No Amenities Found
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400">
+            Add your first amenity to get started!
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {amenities.map((amenity) => (
+            <div
+              key={amenity.id}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+            >
+              {/* Image */}
+              <div className="relative h-48 bg-gray-200 dark:bg-gray-700">
+                <SafeImage
+                  src={amenity.imageUrl}
+                  alt={amenity.amenityName || 'Amenity'}
+                  fill
+                  fallbackIcon="🛠️"
+                  objectFit="cover"
+                />
+              </div>
+
+              {/* Content */}
+              <div className="p-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  {amenity.amenityName}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  ID: {amenity.id}
+                </p>
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => openEditModal(amenity)}
+                    className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 font-medium text-sm"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteAmenity(amenity.id)}
+                    className="flex-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 dark:bg-red-900 dark:text-red-200 font-medium text-sm"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                ➕ Add New Amenity
+              </h2>
+              
+              <form onSubmit={handleCreateAmenity} className="space-y-4">
+                {/* Amenity Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Amenity Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newAmenity.amenityName}
+                    onChange={(e) => setNewAmenity({ ...newAmenity, amenityName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="e.g. Wifi, Air Conditioner, Refrigerator..."
+                    maxLength={100}
+                  />
+                </div>
+
+                {/* Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Image *
+                  </label>
+                  <input
+                    type="file"
+                    required
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                  
+                  {/* Image Preview - Use regular img tag for Data URL */}
+                  {imagePreview && (
+                    <div className="mt-3 h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-2 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeModals}
+                    className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && selectedAmenity && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                ✏️ Edit Amenity
+              </h2>
+              
+              <form onSubmit={handleUpdateAmenity} className="space-y-4">
+                {/* Amenity Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Amenity Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editAmenity.amenityName}
+                    onChange={(e) => setEditAmenity({ ...editAmenity, amenityName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="e.g. Wifi, Air Conditioner, Refrigerator..."
+                    maxLength={100}
+                  />
+                </div>
+
+                {/* Current Image */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Current Image
+                  </label>
+                  <div className="h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center relative">
+                    <SafeImage
+                      src={selectedAmenity.imageUrl}
+                      alt={selectedAmenity.amenityName}
+                      fill
+                      fallbackIcon="🛠️"
+                      objectFit="contain"
+                    />
+                  </div>
+                </div>
+
+                {/* Upload New Image (Optional) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Upload New Image (Optional)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditImageChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Leave empty to keep current image
+                  </p>
+                  
+                  {/* New Image Preview */}
+                  {editImagePreview && (
+                    <div className="mt-3 h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center border-2 border-blue-500">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={editImagePreview}
+                        alt="New Preview"
+                        className="max-h-full max-w-full object-contain"
+                      />
+                      <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                        New Image
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-2 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                  >
+                    Update
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeModals}
+                    className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

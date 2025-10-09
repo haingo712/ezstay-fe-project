@@ -15,11 +15,16 @@ export default function Navbar() {
 
   // Get user role from user object or default to guest
   const userRole = user?.role || "guest";
-  const userEmail = user?.email || "user@example.com";
+  
+  // Get email from various possible JWT claim locations
+  const userEmail = user?.email || 
+                    user?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
+                    "Guest User";
   
   // Debug logging
   console.log("Navbar - User:", user);
   console.log("Navbar - UserRole:", userRole, "Type:", typeof userRole);
+  console.log("Navbar - UserEmail:", userEmail);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 

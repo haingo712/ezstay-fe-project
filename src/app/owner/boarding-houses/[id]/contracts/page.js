@@ -6,6 +6,8 @@ import roomService from "@/services/roomService";
 import { useAuth } from "@/hooks/useAuth";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import api from "@/utils/api";
+import { toast } from "react-toastify";
 
 
 export default function ContractsManagementPage() {
@@ -57,7 +59,6 @@ export default function ContractsManagementPage() {
   
   // Contract form data
   const [contractData, setContractData] = useState({
-    tenantId: "", // Default or will be generated
     roomId: "", // Will be selected
     checkinDate: "",
     checkoutDate: "",
@@ -66,8 +67,9 @@ export default function ContractsManagementPage() {
     notes: ""
   });
 
-  // Identity profiles form data
-  const [identityProfileData, setIdentityProfileData] = useState({
+  // Identity profiles form data - ARRAY for multiple occupants
+  const [profiles, setProfiles] = useState([{
+    userId: null,
     fullName: "",
     dateOfBirth: "",
     phoneNumber: "",
@@ -83,7 +85,15 @@ export default function ContractsManagementPage() {
     avatarUrl: "",
     frontImageUrl: "",
     backImageUrl: ""
-  });
+  }]);
+
+  // Computed getter/setter for backward compatibility with UI form
+  const identityProfileData = profiles[0] || {};
+  const setIdentityProfileData = (newData) => {
+    const newProfiles = [...profiles];
+    newProfiles[0] = newData;
+    setProfiles(newProfiles);
+  };
 
   const [contractErrors, setContractErrors] = useState({});
   const [profileErrors, setProfileErrors] = useState({});
@@ -111,6 +121,7 @@ export default function ContractsManagementPage() {
   // Address data
   const [provinces, setProvinces] = useState([]);
   const [wards, setWards] = useState([]);
+  const [wardsByProfile, setWardsByProfile] = useState({}); // Store wards for each profile: { profileIndex: [...wards] }
   const [addressLoading, setAddressLoading] = useState(false);
 
   // Dependent address selection states
@@ -134,6 +145,55 @@ export default function ContractsManagementPage() {
     // Load provinces data when component mounts
     fetchProvinces();
   }, []);
+
+  // Auto-generate profiles array when numberOfOccupants changes
+  useEffect(() => {
+    const count = parseInt(contractData.numberOfOccupants) || 1;
+    console.log('👥 Number of Occupants changed:', count);
+    
+    setProfiles(currentProfiles => {
+      console.log('📊 Current profiles before update:', currentProfiles.length);
+      
+      // If count hasn't changed, don't update anything to preserve data
+      if (currentProfiles.length === count) {
+        console.log('✅ Profiles count matches, no change needed - preserving existing data');
+        return currentProfiles; // Return SAME reference to prevent re-render
+      }
+      
+      if (currentProfiles.length < count) {
+        // Add more profiles - PRESERVE existing profiles
+        const newProfiles = [...currentProfiles];
+        for (let i = currentProfiles.length; i < count; i++) {
+          newProfiles.push({
+            userId: null,
+            fullName: '',
+            dateOfBirth: '',
+            phoneNumber: '',
+            email: '',
+            provinceId: '',
+            wardId: '',
+            address: '',
+            temporaryResidence: '',
+            citizenIdNumber: '',
+            citizenIdIssuedDate: '',
+            citizenIdIssuedPlace: '',
+            notes: '',
+            avatarUrl: '',
+            frontImageUrl: '',
+            backImageUrl: ''
+          });
+        }
+        console.log('➕ Adding profiles, new total:', newProfiles.length);
+        return newProfiles;
+      } else if (currentProfiles.length > count) {
+        // Remove excess profiles - PRESERVE remaining profiles
+        console.log('➖ Removing profiles, new total:', count);
+        return currentProfiles.slice(0, count);
+      }
+      
+      return currentProfiles;
+    });
+  }, [contractData.numberOfOccupants]);
 
   const fetchData = async () => {
     if (!user || !user.id) {
@@ -245,32 +305,168 @@ export default function ContractsManagementPage() {
     }
   };
 
-  const handleProvinceChange = (provinceCode) => {
-    console.log("🏛️ Province selected:", provinceCode);
+  // Helper function to update a specific profile in the array
+  const updateProfile = (profileIndex, field, value) => {
+    console.log(`📝 Updating profile ${profileIndex} - ${field}:`, value);
+    console.log(`📋 Current profiles array:`, profiles);
+    console.log(`📋 Profile BEFORE update:`, profiles[profileIndex]);
     
-    // Update provinceId in form data
-    setIdentityProfileData({
-      ...identityProfileData,
-      provinceId: provinceCode,
-      wardId: "" // Reset ward when province changes
+    setProfiles(currentProfiles => {
+      console.log(`🔄 Inside setProfiles callback - currentProfiles:`, currentProfiles);
+      const newProfiles = [...currentProfiles];
+      newProfiles[profileIndex] = {
+        ...newProfiles[profileIndex],
+        [field]: value
+      };
+      console.log(`✅ Profile ${profileIndex} AFTER update:`, newProfiles[profileIndex]);
+      console.log(`✅ New profiles array:`, newProfiles);
+      return newProfiles;
     });
-
-    // Find selected province and update wards
-    const selectedProvince = provinces.find(p => p.code.toString() === provinceCode);
-    if (selectedProvince) {
-      setWards(selectedProvince.wards || []);
-      console.log("🏘️ Wards updated:", selectedProvince.wards?.length);
-    } else {
-      setWards([]);
+    
+    // Clear profile-specific errors
+    const errorKey = `profile${profileIndex}_${field}`;
+    if (profileErrors[errorKey]) {
+      setProfileErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[errorKey];
+        return newErrors;
+      });
     }
   };
 
-  const handleWardChange = (wardCode) => {
-    console.log("🏘️ Ward selected:", wardCode);
-    setIdentityProfileData({
-      ...identityProfileData,
-      wardId: wardCode
+  // Search Identity Profile by phone number
+  const [searchingPhone, setSearchingPhone] = useState({});
+  
+  const searchIdentityProfileByPhone = async (profileIndex, phoneNumber) => {
+    if (!phoneNumber || phoneNumber.trim().length < 8) {
+      toast.error('Please enter a valid phone number');
+      return;
+    }
+
+    setSearchingPhone(prev => ({ ...prev, [profileIndex]: true }));
+    
+    try {
+      console.log('🔍 Searching User by phone:', phoneNumber);
+      
+      // Call correct API endpoint
+      const response = await api.get(`/api/User/searchphone/${phoneNumber}`);
+      console.log('📦 API Response:', response);
+      
+      // Backend returns object directly (no wrapper)
+      const userData = response;
+      
+      if (userData && userData.id) {
+        console.log('✅ Found User:', userData);
+        
+        // Find province to load wards dropdown
+        let wardsForProvince = [];
+        if (userData.provinceId) {
+          const selectedProvince = provinces.find(p => p.code.toString() === userData.provinceId.toString());
+          if (selectedProvince) {
+            wardsForProvince = selectedProvince.wards || [];
+            console.log('🏛️ Found province:', selectedProvince.name, 'with', wardsForProvince.length, 'wards');
+            
+            // Update wards dropdown for this profile
+            setWardsByProfile(prev => ({
+              ...prev,
+              [profileIndex]: wardsForProvince
+            }));
+          }
+        }
+        
+        // Map backend fields to form fields and auto-fill
+        setProfiles(currentProfiles => {
+          const newProfiles = [...currentProfiles];
+          newProfiles[profileIndex] = {
+            ...newProfiles[profileIndex],
+            // User ID
+            userId: userData.userId || userData.id || null,
+            // Personal info
+            fullName: userData.fullName || '',
+            dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split('T')[0] : '',
+            phoneNumber: userData.phone || phoneNumber,
+            email: userData.email || '',
+            // Address with names from backend
+            provinceId: userData.provinceId || '',
+            provinceName: userData.provinceName || '',
+            wardId: userData.wardId || '',
+            wardName: userData.wardName || '',
+            address: userData.detailAddress || '',
+            temporaryResidence: userData.temporaryResidence || '',
+            // Citizen ID
+            citizenIdNumber: userData.citizenIdNumber || '',
+            citizenIdIssuedDate: userData.citizenIdIssuedDate ? userData.citizenIdIssuedDate.split('T')[0] : '',
+            citizenIdIssuedPlace: userData.citizenIdIssuedPlace || '',
+            // Images and notes
+            avatarUrl: userData.avatar || '',
+            frontImageUrl: userData.frontImageUrl || '',
+            backImageUrl: userData.backImageUrl || '',
+            notes: userData.bio || ''
+          };
+          
+          console.log('✅ Profile auto-filled:', newProfiles[profileIndex]);
+          return newProfiles;
+        });
+        
+        toast.success(`Profile auto-filled for ${userData.fullName}!`);
+      } else {
+        console.log('❌ No user found');
+        toast.info('No user found with this phone number');
+      }
+    } catch (error) {
+      console.error('❌ Error searching user:', error);
+      if (error.response?.status === 404) {
+        toast.info('No user found with this phone number');
+      } else if (error.response?.status === 401) {
+        toast.error('Unauthorized. Please login again.');
+      } else {
+        toast.error('Failed to search user');
+      }
+    } finally {
+      setSearchingPhone(prev => ({ ...prev, [profileIndex]: false }));
+    }
+  };
+
+  const handleProvinceChange = (profileIndex, provinceCode) => {
+    console.log("🏛️ Province selected for profile", profileIndex, ":", provinceCode, "type:", typeof provinceCode);
+    console.log("🏛️ Total provinces:", provinces.length);
+    console.log("🏛️ First province sample:", provinces[0]);
+    
+    // Update provinceId in profile
+    updateProfile(profileIndex, 'provinceId', provinceCode);
+    updateProfile(profileIndex, 'wardId', ''); // Reset ward when province changes
+
+    // Find selected province and update wards FOR THIS PROFILE
+    const selectedProvince = provinces.find(p => {
+      const match = p.code.toString() === provinceCode.toString();
+      if (match) {
+        console.log("✅ Found matching province:", p.name, "code:", p.code);
+      }
+      return match;
     });
+    
+    if (selectedProvince) {
+      console.log("🏘️ Setting wards for profile", profileIndex, ":", selectedProvince.wards?.length, "wards");
+      setWardsByProfile(prev => {
+        const updated = {
+          ...prev,
+          [profileIndex]: selectedProvince.wards || []
+        };
+        console.log("🏘️ WardsByProfile updated:", updated);
+        return updated;
+      });
+    } else {
+      console.log("❌ Province not found! provinceCode:", provinceCode);
+      setWardsByProfile(prev => ({
+        ...prev,
+        [profileIndex]: []
+      }));
+    }
+  };
+
+  const handleWardChange = (profileIndex, wardCode) => {
+    console.log("🏘️ Ward selected for profile", profileIndex, ":", wardCode);
+    updateProfile(profileIndex, 'wardId', wardCode);
   };
 
   // Handler to update wards when province changes in dependent form
@@ -509,23 +705,26 @@ export default function ContractsManagementPage() {
   const validateProfileStep = () => {
     const errors = {};
     
-    if (!identityProfileData.fullName.trim()) errors.fullName = "Full name is required";
-    if (!identityProfileData.dateOfBirth) errors.dateOfBirth = "Date of birth is required";
-    if (!identityProfileData.phoneNumber.trim()) errors.phoneNumber = "Phone number is required";
-    if (!identityProfileData.provinceId) errors.provinceId = "Please select a province";
-    if (!identityProfileData.wardId) errors.wardId = "Please select a ward";
-    if (!identityProfileData.address.trim()) errors.address = "Address is required";
-    if (!identityProfileData.temporaryResidence.trim()) errors.temporaryResidence = "Temporary residence is required";
-    if (!identityProfileData.citizenIdNumber.trim()) errors.citizenIdNumber = "Citizen ID number is required";
-    if (!identityProfileData.citizenIdIssuedDate) errors.citizenIdIssuedDate = "Citizen ID issued date is required";
-    if (!identityProfileData.citizenIdIssuedPlace.trim()) errors.citizenIdIssuedPlace = "Citizen ID issued place is required";
-    if (!identityProfileData.frontImageUrl.trim()) errors.frontImageUrl = "Front image of ID is required";
-    if (!identityProfileData.backImageUrl.trim()) errors.backImageUrl = "Back image of ID is required";
+    // Validate all profiles in the array
+    profiles.forEach((profile, index) => {
+      if (!profile.fullName.trim()) errors[`profile${index}_fullName`] = "Full name is required";
+      if (!profile.dateOfBirth) errors[`profile${index}_dateOfBirth`] = "Date of birth is required";
+      if (!profile.phoneNumber.trim()) errors[`profile${index}_phoneNumber`] = "Phone number is required";
+      if (!profile.provinceId) errors[`profile${index}_provinceId`] = "Please select a province";
+      if (!profile.wardId) errors[`profile${index}_wardId`] = "Please select a ward";
+      if (!profile.address.trim()) errors[`profile${index}_address`] = "Address is required";
+      if (!profile.temporaryResidence.trim()) errors[`profile${index}_temporaryResidence`] = "Temporary residence is required";
+      if (!profile.citizenIdNumber.trim()) errors[`profile${index}_citizenIdNumber`] = "Citizen ID number is required";
+      if (!profile.citizenIdIssuedDate) errors[`profile${index}_citizenIdIssuedDate`] = "Citizen ID issued date is required";
+      if (!profile.citizenIdIssuedPlace.trim()) errors[`profile${index}_citizenIdIssuedPlace`] = "Citizen ID issued place is required";
+      if (!profile.frontImageUrl.trim()) errors[`profile${index}_frontImageUrl`] = "Front image of ID is required";
+      if (!profile.backImageUrl.trim()) errors[`profile${index}_backImageUrl`] = "Back image of ID is required";
 
-    // Email validation
-    if (identityProfileData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identityProfileData.email)) {
-      errors.email = "Invalid email format";
-    }
+      // Email validation
+      if (profile.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) {
+        errors[`profile${index}_email`] = "Invalid email format";
+      }
+    });
 
     setProfileErrors(errors);
     return Object.keys(errors).length === 0;
@@ -607,7 +806,7 @@ export default function ContractsManagementPage() {
     console.log(`🚀 Starting contract ${isEditMode ? 'update' : 'creation'}...`);
     console.log("📝 Current form data:", {
       contractData,
-      identityProfileData,
+      profiles,
       utilityReadingData
     });
 
@@ -631,53 +830,50 @@ export default function ContractsManagementPage() {
         return;
       }
 
-      // Prepare request data
-      const testSimpleData = {
-        TenantId: contractData.tenantId || "00000000-0000-0000-0000-000000000000",
+      // Prepare request data with ProfilesInContract array (NEW STRUCTURE)
+      const requestData = {
+        ProfilesInContract: profiles.map(p => ({
+          UserId: p.userId || null,
+          FullName: p.fullName,
+          DateOfBirth: new Date(p.dateOfBirth).toISOString(),
+          PhoneNumber: p.phoneNumber,
+          Email: p.email || null,
+          ProvinceId: p.provinceId,
+          WardId: p.wardId,
+          Address: p.address,
+          TemporaryResidence: p.temporaryResidence,
+          CitizenIdNumber: p.citizenIdNumber,
+          CitizenIdIssuedDate: new Date(p.citizenIdIssuedDate).toISOString(),
+          CitizenIdIssuedPlace: p.citizenIdIssuedPlace,
+          Notes: p.notes || null,
+          AvatarUrl: p.avatarUrl || null,
+          FrontImageUrl: p.frontImageUrl,
+          BackImageUrl: p.backImageUrl
+        })),
         RoomId: contractData.roomId,
         CheckinDate: new Date(contractData.checkinDate).toISOString(),
         CheckoutDate: new Date(contractData.checkoutDate).toISOString(),
-        DepositAmount: parseFloat(contractData.depositAmount) || 0,
-        NumberOfOccupants: parseInt(contractData.numberOfOccupants) || 1,
-        Notes: contractData.notes || "",
-        IdentityProfiles: {
-          FullName: identityProfileData.fullName || "Test User",
-          DateOfBirth: new Date(identityProfileData.dateOfBirth).toISOString(),
-          PhoneNumber: identityProfileData.phoneNumber || "0123456789",
-          Email: identityProfileData.email || "test@test.com",
-          ProvinceId: identityProfileData.provinceId ? identityProfileData.provinceId.toString() : "1",
-          WardId: identityProfileData.wardId ? identityProfileData.wardId.toString() : "1",
-          Address: identityProfileData.address || "Test Address",
-          TemporaryResidence: identityProfileData.temporaryResidence || "Test Residence",
-          CitizenIdNumber: identityProfileData.citizenIdNumber || "123456789",
-          CitizenIdIssuedDate: new Date(identityProfileData.citizenIdIssuedDate).toISOString(),
-          CitizenIdIssuedPlace: identityProfileData.citizenIdIssuedPlace || "Test Place",
-          Notes: identityProfileData.notes || "",
-          AvatarUrl: identityProfileData.avatarUrl || "",
-          FrontImageUrl: identityProfileData.frontImageUrl || "https://example.com/front.jpg",
-          BackImageUrl: identityProfileData.backImageUrl || "https://example.com/back.jpg"
-        },
+        DepositAmount: parseFloat(contractData.depositAmount),
+        NumberOfOccupants: parseInt(contractData.numberOfOccupants),
+        Notes: contractData.notes || null,
         ElectricityReading: {
           Price: utilityReadingData.electricityReading.price ? parseFloat(utilityReadingData.electricityReading.price) : null,
-          Note: utilityReadingData.electricityReading.note || "",
-          CurrentIndex: parseFloat(utilityReadingData.electricityReading.currentIndex) || 0
+          Note: utilityReadingData.electricityReading.note || null,
+          CurrentIndex: parseFloat(utilityReadingData.electricityReading.currentIndex)
         },
         WaterReading: {
           Price: utilityReadingData.waterReading.price ? parseFloat(utilityReadingData.waterReading.price) : null,
-          Note: utilityReadingData.waterReading.note || "",
-          CurrentIndex: parseFloat(utilityReadingData.waterReading.currentIndex) || 0
+          Note: utilityReadingData.waterReading.note || null,
+          CurrentIndex: parseFloat(utilityReadingData.waterReading.currentIndex)
         }
       };
 
-      // Use the test data with fallbacks
-      const requestData = testSimpleData;
-
-      console.log(`📋 ${isEditMode ? 'Updating' : 'Creating'} contract with profiles and utilities:`, requestData);
+      console.log(`📋 ${isEditMode ? 'Updating' : 'Creating'} contract with multiple profiles:`, requestData);
       console.log("📋 Request data JSON:", JSON.stringify(requestData, null, 2));
       console.log("📋 Request data structure validation:");
-      console.log("- TenantId:", requestData.TenantId);
       console.log("- RoomId:", requestData.RoomId);
-      console.log("- IdentityProfiles:", requestData.IdentityProfiles);
+      console.log("- ProfilesInContract (count):", requestData.ProfilesInContract.length);
+      console.log("- ProfilesInContract:", requestData.ProfilesInContract);
       console.log("- ElectricityReading:", requestData.ElectricityReading);
       console.log("- WaterReading:", requestData.WaterReading);
       
@@ -690,7 +886,7 @@ export default function ContractsManagementPage() {
         result = await contractService.create(requestData);
       }
       
-      alert(`Contract ${isEditMode ? 'updated' : 'created'} successfully with identity profiles and utility readings!`);
+      alert(`Contract ${isEditMode ? 'updated' : 'created'} successfully with ${profiles.length} identity profile(s) and utility readings!`);
       
       // Reset form and close modal
       setShowCreateContractModal(false);
@@ -706,7 +902,8 @@ export default function ContractsManagementPage() {
         numberOfOccupants: 1,
         notes: ""
       });
-      setIdentityProfileData({
+      setProfiles([{
+        userId: null,
         fullName: "",
         dateOfBirth: "",
         phoneNumber: "",
@@ -722,7 +919,7 @@ export default function ContractsManagementPage() {
         avatarUrl: "",
         frontImageUrl: "",
         backImageUrl: ""
-      });
+      }]);
       setUtilityReadingData({
         electricityReading: {
           price: "",
@@ -2285,6 +2482,66 @@ export default function ContractsManagementPage() {
                             placeholder="Enter additional notes (optional)"
                           />
                         </div>
+
+                        {/* Image Previews for Dependent */}
+                        {(dependentData.avatarUrl || dependentData.frontImageUrl || dependentData.backImageUrl) && (
+                          <div className="md:col-span-2">
+                            <h6 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">📷 Image Previews</h6>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              {/* Avatar Preview */}
+                              {dependentData.avatarUrl && (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Avatar</p>
+                                  <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden aspect-square">
+                                    <img
+                                      src={dependentData.avatarUrl}
+                                      alt="Avatar"
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-400 text-xs">Image not available</div>';
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              {/* Front ID Preview */}
+                              {dependentData.frontImageUrl && (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Front ID</p>
+                                  <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden aspect-video">
+                                    <img
+                                      src={dependentData.frontImageUrl}
+                                      alt="Front ID"
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-400 text-xs">Image not available</div>';
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              {/* Back ID Preview */}
+                              {dependentData.backImageUrl && (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Back ID</p>
+                                  <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden aspect-video">
+                                    <img
+                                      src={dependentData.backImageUrl}
+                                      alt="Back ID"
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-400 text-xs">Image not available</div>';
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                     
@@ -2477,22 +2734,6 @@ export default function ContractsManagementPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Tenant ID *
-                      </label>
-                      <input
-                        type="text"
-                        value={contractData.tenantId}
-                        onChange={(e) => setContractData({
-                          ...contractData,
-                          tenantId: e.target.value
-                        })}
-                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700"
-                        placeholder="Enter tenant ID"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Select Room *
                       </label>
                       {roomsLoading ? (
@@ -2662,347 +2903,263 @@ export default function ContractsManagementPage() {
                 </div>
               )}
 
-              {/* Step 2: Identity Profile */}
+              {/* Step 2: Identity Profiles (All Occupants) */}
               {createStep === 2 && (
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    👤 Tenant Identity Profile
+                    � Identity Profiles for All Occupants ({profiles.length} {profiles.length === 1 ? 'person' : 'people'})
                   </h4>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Full Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={identityProfileData.fullName}
-                        onChange={(e) => setIdentityProfileData({
-                          ...identityProfileData,
-                          fullName: e.target.value
-                        })}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          profileErrors.fullName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        }`}
-                        placeholder="Enter full name"
-                      />
-                      {profileErrors.fullName && (
-                        <p className="text-red-500 text-xs mt-1">{profileErrors.fullName}</p>
-                      )}
-                    </div>
+                  {/* Loop through all profiles */}
+                  {profiles.map((profile, profileIndex) => (
+                    <div key={profileIndex} className="mb-8 p-6 border-2 border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800">
+                      <h5 className="text-md font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                        <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                          {profileIndex + 1}
+                        </span>
+                        Profile {profileIndex + 1} of {profiles.length}
+                        {profileIndex === 0 && <span className="ml-2 text-sm text-blue-600 dark:text-blue-400">(Representative)</span>}
+                      </h5>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Date of Birth *
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={identityProfileData.dateOfBirth}
-                        onChange={(e) => setIdentityProfileData({
-                          ...identityProfileData,
-                          dateOfBirth: e.target.value
-                        })}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          profileErrors.dateOfBirth ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        }`}
-                      />
-                      {profileErrors.dateOfBirth && (
-                        <p className="text-red-500 text-xs mt-1">{profileErrors.dateOfBirth}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Phone Number *
-                      </label>
-                      <input
-                        type="tel"
-                        value={identityProfileData.phoneNumber}
-                        onChange={(e) => setIdentityProfileData({
-                          ...identityProfileData,
-                          phoneNumber: e.target.value
-                        })}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          profileErrors.phoneNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        }`}
-                        placeholder="Enter phone number"
-                      />
-                      {profileErrors.phoneNumber && (
-                        <p className="text-red-500 text-xs mt-1">{profileErrors.phoneNumber}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        value={identityProfileData.email}
-                        onChange={(e) => setIdentityProfileData({
-                          ...identityProfileData,
-                          email: e.target.value
-                        })}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          profileErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        }`}
-                        placeholder="Enter email"
-                      />
-                      {profileErrors.email && (
-                        <p className="text-red-500 text-xs mt-1">{profileErrors.email}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Province/City *
-                      </label>
-                      {addressLoading ? (
-                        <div className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 flex items-center">
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Loading provinces...
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Full Name */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name *</label>
+                          <input type="text" value={profile.fullName} onChange={(e) => updateProfile(profileIndex, 'fullName', e.target.value)}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_fullName`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                            placeholder="Enter full name" />
+                          {profileErrors[`profile${profileIndex}_fullName`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_fullName`]}</p>}
                         </div>
-                      ) : (
-                        <select
-                          value={identityProfileData.provinceId}
-                          onChange={(e) => handleProvinceChange(e.target.value)}
-                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                            profileErrors.provinceId ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                          }`}
-                        >
-                          <option value="">Select province/city...</option>
-                          {provinces.map((province) => (
-                            <option key={province.code} value={province.code}>
-                              {province.name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                      {profileErrors.provinceId && (
-                        <p className="text-red-500 text-xs mt-1">{profileErrors.provinceId}</p>
-                      )}
-                      {provinces.length === 0 && !addressLoading && (
-                        <p className="text-amber-500 text-xs mt-1">Unable to load provinces data.</p>
-                      )}
-                    </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Ward/District *
-                      </label>
-                      <select
-                        value={identityProfileData.wardId}
-                        onChange={(e) => handleWardChange(e.target.value)}
-                        disabled={!identityProfileData.provinceId || wards.length === 0}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          profileErrors.wardId ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        } ${
-                          !identityProfileData.provinceId || wards.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
-                      >
-                        <option value="">
-                          {!identityProfileData.provinceId 
-                            ? "Select province first..." 
-                            : wards.length === 0 
-                            ? "No wards available" 
-                            : "Select ward/district..."
-                          }
-                        </option>
-                        {wards.map((ward) => (
-                          <option key={ward.code} value={ward.code}>
-                            {ward.name}
-                          </option>
-                        ))}
-                      </select>
-                      {profileErrors.wardId && (
-                        <p className="text-red-500 text-xs mt-1">{profileErrors.wardId}</p>
-                      )}
-                      {identityProfileData.provinceId && wards.length === 0 && (
-                        <p className="text-amber-500 text-xs mt-1">No wards found for selected province.</p>
-                      )}
-                    </div>
+                        {/* Date of Birth */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date of Birth *</label>
+                          <input type="date" value={profile.dateOfBirth} onChange={(e) => updateProfile(profileIndex, 'dateOfBirth', e.target.value)}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_dateOfBirth`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} />
+                          {profileErrors[`profile${profileIndex}_dateOfBirth`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_dateOfBirth`]}</p>}
+                        </div>
 
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Address *
-                      </label>
-                      <input
-                        type="text"
-                        value={identityProfileData.address}
-                        onChange={(e) => setIdentityProfileData({
-                          ...identityProfileData,
-                          address: e.target.value
-                        })}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          profileErrors.address ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        }`}
-                        placeholder="Enter address"
-                      />
-                      {profileErrors.address && (
-                        <p className="text-red-500 text-xs mt-1">{profileErrors.address}</p>
-                      )}
-                    </div>
+                        {/* Phone Number with Search */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Phone Number * 
+                            <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">(Search to auto-fill)</span>
+                          </label>
+                          <div className="flex gap-2">
+                            <input 
+                              type="tel" 
+                              value={profile.phoneNumber} 
+                              onChange={(e) => updateProfile(profileIndex, 'phoneNumber', e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  searchIdentityProfileByPhone(profileIndex, profile.phoneNumber);
+                                }
+                              }}
+                              className={`flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_phoneNumber`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                              placeholder="Enter phone number" 
+                            />
+                            <button
+                              type="button"
+                              onClick={() => searchIdentityProfileByPhone(profileIndex, profile.phoneNumber)}
+                              disabled={searchingPhone[profileIndex] || !profile.phoneNumber}
+                              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                              title="Search existing profile by phone"
+                            >
+                              {searchingPhone[profileIndex] ? (
+                                <>
+                                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  Searching...
+                                </>
+                              ) : (
+                                <>
+                                  🔍 Search
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          {profileErrors[`profile${profileIndex}_phoneNumber`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_phoneNumber`]}</p>}
+                        </div>
 
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Temporary Residence *
-                      </label>
-                      <input
-                        type="text"
-                        value={identityProfileData.temporaryResidence}
-                        onChange={(e) => setIdentityProfileData({
-                          ...identityProfileData,
-                          temporaryResidence: e.target.value
-                        })}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          profileErrors.temporaryResidence ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        }`}
-                        placeholder="Enter temporary residence"
-                      />
-                      {profileErrors.temporaryResidence && (
-                        <p className="text-red-500 text-xs mt-1">{profileErrors.temporaryResidence}</p>
-                      )}
-                    </div>
+                        {/* Email */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
+                          <input type="email" value={profile.email} onChange={(e) => updateProfile(profileIndex, 'email', e.target.value)}
+                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700" 
+                            placeholder="Enter email (optional)" />
+                        </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Citizen ID Number *
-                      </label>
-                      <input
-                        type="text"
-                        value={identityProfileData.citizenIdNumber}
-                        onChange={(e) => setIdentityProfileData({
-                          ...identityProfileData,
-                          citizenIdNumber: e.target.value
-                        })}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          profileErrors.citizenIdNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        }`}
-                        placeholder="Enter citizen ID"
-                      />
-                      {profileErrors.citizenIdNumber && (
-                        <p className="text-red-500 text-xs mt-1">{profileErrors.citizenIdNumber}</p>
-                      )}
-                    </div>
+                        {/* Province */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Province *</label>
+                          {console.log(`🔍 Rendering Province Select - Profile ${profileIndex} provinceId:`, profile.provinceId, 'type:', typeof profile.provinceId)}
+                          <select value={profile.provinceId} onChange={(e) => handleProvinceChange(profileIndex, e.target.value)}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_provinceId`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                            <option value="">Select province...</option>
+                            {provinces.map((p) => {
+                              const isSelected = String(p.code) === String(profile.provinceId);
+                              if (isSelected) console.log(`✅ This option should be selected:`, p.name, p.code);
+                              return <option key={p.code} value={String(p.code)}>{p.name}</option>;
+                            })}
+                          </select>
+                          {profileErrors[`profile${profileIndex}_provinceId`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_provinceId`]}</p>}
+                        </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Citizen ID Issued Date *
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={identityProfileData.citizenIdIssuedDate}
-                        onChange={(e) => setIdentityProfileData({
-                          ...identityProfileData,
-                          citizenIdIssuedDate: e.target.value
-                        })}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          profileErrors.citizenIdIssuedDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        }`}
-                      />
-                      {profileErrors.citizenIdIssuedDate && (
-                        <p className="text-red-500 text-xs mt-1">{profileErrors.citizenIdIssuedDate}</p>
-                      )}
-                    </div>
+                        {/* Ward */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ward *</label>
+                          <select value={profile.wardId} onChange={(e) => handleWardChange(profileIndex, e.target.value)}
+                            disabled={!profile.provinceId} 
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_wardId`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} ${!profile.provinceId ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                            <option value="">{!profile.provinceId ? 'Select province first...' : 'Select ward...'}</option>
+                            {(wardsByProfile[profileIndex] || []).map((w) => <option key={w.code} value={String(w.code)}>{w.name}</option>)}
+                          </select>
+                          {profileErrors[`profile${profileIndex}_wardId`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_wardId`]}</p>}
+                        </div>
 
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Citizen ID Issued Place *
-                      </label>
-                      <input
-                        type="text"
-                        value={identityProfileData.citizenIdIssuedPlace}
-                        onChange={(e) => setIdentityProfileData({
-                          ...identityProfileData,
-                          citizenIdIssuedPlace: e.target.value
-                        })}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          profileErrors.citizenIdIssuedPlace ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        }`}
-                        placeholder="Enter issued place"
-                      />
-                      {profileErrors.citizenIdIssuedPlace && (
-                        <p className="text-red-500 text-xs mt-1">{profileErrors.citizenIdIssuedPlace}</p>
-                      )}
-                    </div>
+                        {/* Address */}
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address *</label>
+                          <input type="text" value={profile.address} onChange={(e) => updateProfile(profileIndex, 'address', e.target.value)}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_address`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                            placeholder="Enter detailed address" />
+                          {profileErrors[`profile${profileIndex}_address`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_address`]}</p>}
+                        </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Front Image URL *
-                      </label>
-                      <input
-                        type="url"
-                        value={identityProfileData.frontImageUrl}
-                        onChange={(e) => setIdentityProfileData({
-                          ...identityProfileData,
-                          frontImageUrl: e.target.value
-                        })}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          profileErrors.frontImageUrl ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        }`}
-                        placeholder="Enter front ID image URL"
-                      />
-                      {profileErrors.frontImageUrl && (
-                        <p className="text-red-500 text-xs mt-1">{profileErrors.frontImageUrl}</p>
-                      )}
-                    </div>
+                        {/* Temporary Residence */}
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Temporary Residence *</label>
+                          <input type="text" value={profile.temporaryResidence} onChange={(e) => updateProfile(profileIndex, 'temporaryResidence', e.target.value)}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_temporaryResidence`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                            placeholder="Enter temporary residence" />
+                          {profileErrors[`profile${profileIndex}_temporaryResidence`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_temporaryResidence`]}</p>}
+                        </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Back Image URL *
-                      </label>
-                      <input
-                        type="url"
-                        value={identityProfileData.backImageUrl}
-                        onChange={(e) => setIdentityProfileData({
-                          ...identityProfileData,
-                          backImageUrl: e.target.value
-                        })}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          profileErrors.backImageUrl ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        }`}
-                        placeholder="Enter back ID image URL"
-                      />
-                      {profileErrors.backImageUrl && (
-                        <p className="text-red-500 text-xs mt-1">{profileErrors.backImageUrl}</p>
-                      )}
-                    </div>
+                        {/* Citizen ID Number */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Citizen ID Number *</label>
+                          <input type="text" value={profile.citizenIdNumber} onChange={(e) => updateProfile(profileIndex, 'citizenIdNumber', e.target.value)}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_citizenIdNumber`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                            placeholder="Enter citizen ID" />
+                          {profileErrors[`profile${profileIndex}_citizenIdNumber`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_citizenIdNumber`]}</p>}
+                        </div>
 
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Avatar URL
-                      </label>
-                      <input
-                        type="url"
-                        value={identityProfileData.avatarUrl}
-                        onChange={(e) => setIdentityProfileData({
-                          ...identityProfileData,
-                          avatarUrl: e.target.value
-                        })}
-                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700"
-                        placeholder="Enter avatar URL (optional)"
-                      />
-                    </div>
+                        {/* Citizen ID Issued Date */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Citizen ID Issued Date *</label>
+                          <input type="date" value={profile.citizenIdIssuedDate} onChange={(e) => updateProfile(profileIndex, 'citizenIdIssuedDate', e.target.value)}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_citizenIdIssuedDate`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} />
+                          {profileErrors[`profile${profileIndex}_citizenIdIssuedDate`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_citizenIdIssuedDate`]}</p>}
+                        </div>
 
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Notes
-                      </label>
-                      <textarea
-                        value={identityProfileData.notes}
-                        onChange={(e) => setIdentityProfileData({
-                          ...identityProfileData,
-                          notes: e.target.value
-                        })}
-                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700"
-                        rows="3"
-                        placeholder="Additional notes..."
-                      />
+                        {/* Citizen ID Issued Place */}
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Citizen ID Issued Place *</label>
+                          <input type="text" value={profile.citizenIdIssuedPlace} onChange={(e) => updateProfile(profileIndex, 'citizenIdIssuedPlace', e.target.value)}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_citizenIdIssuedPlace`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                            placeholder="Enter place of issue" />
+                          {profileErrors[`profile${profileIndex}_citizenIdIssuedPlace`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_citizenIdIssuedPlace`]}</p>}
+                        </div>
+
+                        {/* Front Image URL */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Front ID Image URL *</label>
+                          <input type="url" value={profile.frontImageUrl} onChange={(e) => updateProfile(profileIndex, 'frontImageUrl', e.target.value)}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_frontImageUrl`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                            placeholder="https://..." />
+                          {profileErrors[`profile${profileIndex}_frontImageUrl`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_frontImageUrl`]}</p>}
+                        </div>
+
+                        {/* Back Image URL */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Back ID Image URL *</label>
+                          <input type="url" value={profile.backImageUrl} onChange={(e) => updateProfile(profileIndex, 'backImageUrl', e.target.value)}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_backImageUrl`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                            placeholder="https://..." />
+                          {profileErrors[`profile${profileIndex}_backImageUrl`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_backImageUrl`]}</p>}
+                        </div>
+
+                        {/* Avatar URL */}
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avatar URL (Optional)</label>
+                          <input type="url" value={profile.avatarUrl} onChange={(e) => updateProfile(profileIndex, 'avatarUrl', e.target.value)}
+                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700" 
+                            placeholder="https://... (optional)" />
+                        </div>
+
+                        {/* Notes */}
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
+                          <textarea value={profile.notes} onChange={(e) => updateProfile(profileIndex, 'notes', e.target.value)}
+                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700" 
+                            rows="2" placeholder="Additional notes (optional)" />
+                        </div>
+
+                        {/* Image Previews */}
+                        {(profile.avatarUrl || profile.frontImageUrl || profile.backImageUrl) && (
+                          <div className="md:col-span-2">
+                            <h6 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">📷 Image Previews</h6>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              {/* Avatar Preview */}
+                              {profile.avatarUrl && (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Avatar</p>
+                                  <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden aspect-square">
+                                    <img
+                                      src={profile.avatarUrl}
+                                      alt="Avatar"
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-400 text-xs">Image not available</div>';
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              {/* Front ID Preview */}
+                              {profile.frontImageUrl && (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Front ID</p>
+                                  <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden aspect-video">
+                                    <img
+                                      src={profile.frontImageUrl}
+                                      alt="Front ID"
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-400 text-xs">Image not available</div>';
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              {/* Back ID Preview */}
+                              {profile.backImageUrl && (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Back ID</p>
+                                  <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden aspect-video">
+                                    <img
+                                      src={profile.backImageUrl}
+                                      alt="Back ID"
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-400 text-xs">Image not available</div>';
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  ))}
 
                   {/* Step 2 Actions */}
                   <div className="flex justify-between mt-6">
@@ -3122,7 +3279,7 @@ export default function ContractsManagementPage() {
                     <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
                       <h5 className="text-md font-medium text-gray-900 dark:text-white mb-4 flex items-center">
                         <span className="mr-2">💧</span>
-                        Water Reading
+                        Water Reading1
                       </h5>
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

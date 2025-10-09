@@ -31,7 +31,9 @@ export default function RentalHistoryPage() {
   const [reviewForm, setReviewForm] = useState({
     rating: 5,
     content: '',
+    imageFile: null
   });
+  const [imagePreview, setImagePreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -64,21 +66,71 @@ export default function RentalHistoryPage() {
     setReviewForm({ rating: 5, content: '' });
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setReviewForm({ ...reviewForm, imageFile: file });
+      
+      // Create temporary preview using base64 Data URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleCloseReviewModal = () => {
     setShowReviewModal(false);
     setSelectedContract(null);
-    setReviewForm({ rating: 5, content: '' });
+    setReviewForm({ rating: 5, content: '', imageFile: null });
+    setImagePreview(null);
   };
 
   const handleSubmitReview = async () => {
     if (!selectedContract) return;
     
+    if (!reviewForm.content.trim()) {
+      alert('Please write your review!');
+      return;
+    }
+
+    if (!reviewForm.imageFile) {
+      alert('Please upload an image for your review!');
+      return;
+    }
+    
     try {
       setSubmitting(true);
-      await reviewService.createReview(selectedContract.id, reviewForm);
-      alert('Review submitted successfully!');
+      
+      // Create FormData for file upload to backend
+      // Backend will upload the file to Filebase IPFS and return IPFS URL
+      const formData = new FormData();
+      formData.append('Rating', reviewForm.rating);
+      formData.append('Content', reviewForm.content);
+      formData.append('ImageUrl', reviewForm.imageFile); // Required field in backend
+      
+      console.log('📤 Submitting review with image:', {
+        rating: reviewForm.rating,
+        contentLength: reviewForm.content.length,
+        imageFileName: reviewForm.imageFile.name
+      });
+      
+      // Backend returns created review with id
+      const createdReview = await reviewService.createReview(selectedContract.id, formData);
+      console.log('✅ Created review:', createdReview);
+      
+      alert('Review submitted successfully! ✅');
       handleCloseReviewModal();
-      loadContracts(); // Reload to update review status
+      
+      // Navigate to the created review detail page
+      if (createdReview && createdReview.id) {
+        console.log('🔀 Navigating to review:', createdReview.id);
+        router.push(`/reviews/${createdReview.id}`);
+      } else {
+        // Fallback: reload contracts if no reviewId returned
+        loadContracts();
+      }
     } catch (error) {
       console.error('Error submitting review:', error);
       alert(error.response?.data?.message || 'Failed to submit review. Please try again.');
@@ -284,7 +336,7 @@ export default function RentalHistoryPage() {
                 {/* Content */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Your Review
+                    Your Review <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={reviewForm.content}
@@ -292,11 +344,44 @@ export default function RentalHistoryPage() {
                     placeholder="Share your experience with this rental..."
                     rows={6}
                     maxLength={1000}
+                    required
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-none"
                   />
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {reviewForm.content.length}/1000 characters
                   </p>
+                </div>
+
+                {/* Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Upload Image <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    required
+                    onChange={handleImageChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Image will be uploaded to Filebase IPFS storage
+                  </p>
+
+                  {/* Image Preview */}
+                  {imagePreview && (
+                    <div className="mt-3 relative h-48 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden border-2 border-blue-500">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={imagePreview}
+                        alt="Review Preview"
+                        className="w-full h-full object-contain"
+                      />
+                      <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                        Preview
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
