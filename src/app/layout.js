@@ -1,7 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import ClientThemeProvider from "@/components/ClientThemeProvider";
 import RoleRedirect from "@/components/RoleRedirect";
-import AIAssistant from "@/components/AIAssistant";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -51,7 +50,6 @@ export default function RootLayout({ children }) {
           <RoleRedirect>
             {children}
           </RoleRedirect>
-          <AIAssistant />
         </ClientThemeProvider>
       </body>
     </html>

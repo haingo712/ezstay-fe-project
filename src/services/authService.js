@@ -433,6 +433,122 @@ class AuthService {
   isAuthenticated() {
     return !!this.getToken();
   }
+
+  // Forgot Password - Step 1: Send OTP to email
+  async forgotPassword(email) {
+    try {
+      console.log("📧 Sending forgot password OTP to:", email);
+      
+      const response = await fetch(`${this.apiUrl}/forgot-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          Email: email,
+        }),
+      });
+
+      const data = await response.json();
+      console.log("📥 Forgot password response:", data);
+      
+      if (response.ok) {
+        return {
+          success: data.success !== false, // Backend may return { success: true/false }
+          message: data.message || "OTP sent to your email successfully!",
+        };
+      } else {
+        return {
+          success: false,
+          message: data.message || "Failed to send OTP. Please try again.",
+        };
+      }
+    } catch (error) {
+      console.error("💥 Forgot password error:", error);
+      return {
+        success: false,
+        message: "Network error. Please try again.",
+      };
+    }
+  }
+
+  // Forgot Password - Step 2: Confirm OTP
+  async confirmOtpForForgotPassword(email, otp) {
+    try {
+      console.log("🔐 Confirming OTP for forgot password:", email);
+      
+      const response = await fetch(`${this.apiUrl}/confirm-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          Email: email,
+          Otp: otp,
+        }),
+      });
+
+      const data = await response.json();
+      console.log("📥 Confirm OTP response:", data);
+      
+      if (response.ok) {
+        return {
+          success: data.success !== false,
+          message: data.message || "OTP verified successfully!",
+        };
+      } else {
+        return {
+          success: false,
+          message: data.message || "Invalid OTP. Please try again.",
+        };
+      }
+    } catch (error) {
+      console.error("💥 Confirm OTP error:", error);
+      return {
+        success: false,
+        message: "Network error. Please try again.",
+      };
+    }
+  }
+
+  // Forgot Password - Step 3: Reset Password
+  async resetPassword(email, newPassword) {
+    try {
+      console.log("🔒 Resetting password for:", email);
+      
+      const response = await fetch(`${this.apiUrl}/reset-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          Email: email,
+          NewPassword: newPassword,
+        }),
+      });
+
+      const data = await response.json();
+      console.log("📥 Reset password response:", data);
+      
+      if (response.ok) {
+        return {
+          success: data.success !== false,
+          message: data.message || "Password reset successfully!",
+        };
+      } else {
+        return {
+          success: false,
+          message: data.message || "Failed to reset password. Please try again.",
+        };
+      }
+    } catch (error) {
+      console.error("💥 Reset password error:", error);
+      return {
+        success: false,
+        message: "Network error. Please try again.",
+      };
+    }
+  }
 }
 
 export default new AuthService();

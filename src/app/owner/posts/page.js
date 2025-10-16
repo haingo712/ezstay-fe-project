@@ -16,67 +16,88 @@ export default function PostsPage() {
   const [showPostModal, setShowPostModal] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [postData, setPostData] = useState({
-    roomId: '',
+    boardingHouseId: '',
+    roomIds: [],
     title: '',
     description: '',
-    contactPhone: ''
+    contactPhone: '',
+    images: []
   });
+  const [boardingHouses, setBoardingHouses] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const loadAvailableRooms = useCallback(async () => {
+  const loadBoardingHouses = useCallback(async () => {
     try {
       if (!user || !user.id) {
-        console.log('No user, skipping room load');
+        console.log('No user, skipping boarding houses load');
         return;
       }
-      setLoadingRooms(true);
+      console.log('🏠 Loading boarding houses...');
       const houses = await boardingHouseService.getAll();
       const ownerHouses = houses.filter(h => h.ownerId === user.id);
-      const allRooms = [];
-      for (const house of ownerHouses) {
-        try {
-          const rooms = await roomService.getByBoardingHouseId(house.id);
-          // Filter only available rooms (roomStatus = 0 or "Available")
-          const availableRooms = rooms.filter(room => 
-            room.roomStatus === 0 || 
-            room.roomStatus === "Available" || 
-            room.roomStatus?.toLowerCase() === "available"
-          );
-          const roomsWithHouse = availableRooms.map(room => ({
-            ...room,
-            houseName: house.houseName,
-            houseId: house.id
-          }));
-          allRooms.push(...roomsWithHouse);
-        } catch (err) {
-          console.error(`Error loading rooms for house ${house.id}:`, err);
-        }
-      }
-      console.log('✅ Loaded available rooms:', allRooms.length, 'rooms');
-      setAvailableRooms(allRooms);
+      console.log('✅ Loaded boarding houses:', ownerHouses.length);
+      setBoardingHouses(ownerHouses);
+    } catch (error) {
+      console.error('Error loading boarding houses:', error);
+    }
+  }, [user]);
+
+  const loadRoomsForHouse = useCallback(async (houseId) => {
+    if (!houseId) {
+      setAvailableRooms([]);
+      return;
+    }
+    try {
+      setLoadingRooms(true);
+      console.log('🚪 Loading rooms for house:', houseId);
+      const rooms = await roomService.getByBoardingHouseId(houseId);
+      // Filter only available rooms (roomStatus = 0 or "Available")
+      const availableRooms = rooms.filter(room => 
+        room.roomStatus === 0 || 
+        room.roomStatus === "Available" || 
+        room.roomStatus?.toLowerCase() === "available"
+      );
+      console.log('✅ Loaded available rooms:', availableRooms.length, 'rooms');
+      setAvailableRooms(availableRooms);
     } catch (error) {
       console.error('Error loading rooms:', error);
+      setAvailableRooms([]);
     } finally {
       setLoadingRooms(false);
     }
-  }, [user]);
+  }, []);
 
   const loadPosts = useCallback(async () => {
     try {
       if (!user || !user.id) {
-        console.log(' No user, skipping posts load');
+        console.log('📋 No user, skipping posts load');
         setLoading(false);
         return;
       }
       setLoading(true);
-      console.log(' Loading posts for owner...');
+      console.log('📋 Loading posts for owner...');
       const response = await rentalPostService.getOwnerPosts();
-      console.log(' Posts response:', response);
+      console.log('📋 Posts response:', response);
+      
+      // Debug: Log first post to check data structure
+      if (response && response.length > 0) {
+        console.log('📋 First post FULL data:', response[0]);
+        console.log('📋 House name:', response[0].houseName);
+        console.log('📋 Room name:', response[0].roomName);
+        console.log('📋 Author name:', response[0].authorName);
+        console.log('📋 Contact phone:', response[0].contactPhone);
+        console.log('📋 Image URLs:', response[0].imageUrls);
+        console.log('📋 boardingHouseId:', response[0].boardingHouseId);
+        console.log('📋 roomId:', response[0].roomId);
+      }
+      
       setPosts(response || []);
     } catch (error) {
-      console.error(' Error loading posts:', error);
+      console.error('❌ Error loading posts:', error);
       setPosts([]);
     } finally {
       setLoading(false);
@@ -90,9 +111,9 @@ export default function PostsPage() {
   useEffect(() => {
     if (mounted && user) {
       loadPosts();
-      loadAvailableRooms();
+      loadBoardingHouses();
     }
-  }, [mounted, user, loadPosts, loadAvailableRooms]);
+  }, [mounted, user, loadPosts, loadBoardingHouses]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('vi-VN', {
@@ -100,6 +121,14 @@ export default function PostsPage() {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
   const getStatusColor = (post) => {
@@ -134,30 +163,40 @@ export default function PostsPage() {
   const handleNewPost = () => {
     setEditingPost(null);
     setPostData({
-      roomId: '',
+      boardingHouseId: '',
+      roomIds: [],
       title: '',
       description: '',
-      contactPhone: user?.phone || ''
+      contactPhone: user?.phone || '',
+      images: []
     });
     setFormErrors({});
+    setImagePreviews([]);
+    setAvailableRooms([]);
     setShowPostModal(true);
   };
 
   const handleEditPost = (post) => {
     setEditingPost(post);
     setPostData({
-      roomId: post.roomId,
+      boardingHouseId: post.boardingHouseId || '',
+      roomIds: post.roomId || [],
       title: post.title,
-      description: post.description,
-      contactPhone: post.contactPhone
+      description: post.content || post.description,
+      contactPhone: post.contactPhone,
+      images: []
     });
     setFormErrors({});
+    setImagePreviews(post.imageUrls || []);
+    if (post.boardingHouseId) {
+      loadRoomsForHouse(post.boardingHouseId);
+    }
     setShowPostModal(true);
   };
 
   const validateForm = () => {
     const errors = {};
-    if (!postData.roomId) errors.roomId = 'Please select a room';
+    if (!postData.boardingHouseId) errors.boardingHouseId = 'Please select a boarding house';
     if (!postData.title.trim()) errors.title = 'Title is required';
     if (!postData.description.trim()) errors.description = 'Description is required';
     if (!postData.contactPhone.trim()) errors.contactPhone = 'Contact phone is required';
@@ -175,7 +214,7 @@ export default function PostsPage() {
         alert('Post updated successfully!');
       } else {
         const response = await rentalPostService.createPost(postData);
-        if (response.success) {
+        if (response.isSuccess) {
           alert(response.message || 'Post created successfully!');
         } else {
           alert(response.message || 'Failed to create post');
@@ -184,7 +223,15 @@ export default function PostsPage() {
       }
       await loadPosts();
       setShowPostModal(false);
-      setPostData({ roomId: '', title: '', description: '', contactPhone: user?.phone || '' });
+      setPostData({ 
+        boardingHouseId: '', 
+        roomIds: [], 
+        title: '', 
+        description: '', 
+        contactPhone: user?.phone || '',
+        images: []
+      });
+      setImagePreviews([]);
     } catch (error) {
       console.error('Error submitting post:', error);
       alert(error.response?.data?.message || 'Failed to submit post');
@@ -207,10 +254,12 @@ export default function PostsPage() {
   const handleDuplicatePost = async (post) => {
     try {
       const duplicatedData = {
-        roomId: post.roomId,
+        boardingHouseId: post.boardingHouseId,
+        roomIds: post.roomId || [],
         title: `${post.title} (Copy)`,
-        description: post.description,
-        contactPhone: post.contactPhone
+        description: post.content || post.description,
+        contactPhone: post.contactPhone,
+        images: []
       };
       await rentalPostService.createPost(duplicatedData);
       await loadPosts();
@@ -219,6 +268,147 @@ export default function PostsPage() {
       console.error('Error duplicating post:', error);
       alert(error.response?.data?.message || 'Failed to duplicate post');
     }
+  };
+
+  const handleImageChange = (e) => {
+    const newFiles = Array.from(e.target.files);
+    
+    if (newFiles.length === 0) return;
+    
+    // Validate file types and size
+    const maxFileSize = 5 * 1024 * 1024; // 5MB
+    const validFiles = newFiles.filter(file => {
+      if (!file.type.startsWith('image/')) return false;
+      if (file.size > maxFileSize) {
+        alert(`${file.name} is too large. Maximum file size is 5MB.`);
+        return false;
+      }
+      return true;
+    });
+    
+    if (validFiles.length === 0) {
+      alert('No valid images selected');
+      return;
+    }
+    
+    if (validFiles.length !== newFiles.length) {
+      alert('Some files were skipped because they are not valid images or too large');
+    }
+    
+    // Limit total images (e.g., max 10)
+    const existingCount = postData.images.length;
+    const maxImages = 10;
+    
+    if (existingCount >= maxImages) {
+      alert(`Maximum ${maxImages} images allowed`);
+      return;
+    }
+    
+    const availableSlots = maxImages - existingCount;
+    const filesToAdd = validFiles.slice(0, availableSlots);
+    
+    if (filesToAdd.length < validFiles.length) {
+      alert(`Only ${filesToAdd.length} images added. Maximum ${maxImages} images allowed.`);
+    }
+    
+    // Add to existing images
+    const updatedImages = [...postData.images, ...filesToAdd];
+    setPostData({ ...postData, images: updatedImages });
+    
+    // Create previews for new files
+    const newPreviews = filesToAdd.map(file => URL.createObjectURL(file));
+    setImagePreviews([...imagePreviews, ...newPreviews]);
+    
+    // Reset input to allow selecting same file again if needed
+    e.target.value = '';
+  };
+
+  const handleRemoveImage = (index) => {
+    const newImages = [...postData.images];
+    newImages.splice(index, 1);
+    setPostData({ ...postData, images: newImages });
+    
+    const newPreviews = [...imagePreviews];
+    URL.revokeObjectURL(newPreviews[index]);
+    newPreviews.splice(index, 1);
+    setImagePreviews(newPreviews);
+  };
+
+  const handleBoardingHouseChange = (houseId) => {
+    setPostData({ 
+      ...postData, 
+      boardingHouseId: houseId,
+      roomIds: [] // Reset selected rooms
+    });
+    if (formErrors.boardingHouseId) {
+      setFormErrors({ ...formErrors, boardingHouseId: '' });
+    }
+    loadRoomsForHouse(houseId);
+  };
+
+  const handleRoomToggle = (roomId) => {
+    const isSelected = postData.roomIds.includes(roomId);
+    let newRoomIds;
+    if (isSelected) {
+      newRoomIds = postData.roomIds.filter(id => id !== roomId);
+    } else {
+      newRoomIds = [...postData.roomIds, roomId];
+    }
+    setPostData({ ...postData, roomIds: newRoomIds });
+  };
+
+  // Drag & Drop handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length === 0) {
+      alert('Please drop image files only');
+      return;
+    }
+
+    // Process dropped images same as file input
+    const existingCount = postData.images.length;
+    const maxImages = 10;
+    
+    if (existingCount >= maxImages) {
+      alert(`Maximum ${maxImages} images allowed`);
+      return;
+    }
+    
+    const availableSlots = maxImages - existingCount;
+    const filesToAdd = imageFiles.slice(0, availableSlots);
+    
+    if (filesToAdd.length < imageFiles.length) {
+      alert(`Only ${filesToAdd.length} images added. Maximum ${maxImages} images allowed.`);
+    }
+    
+    const updatedImages = [...postData.images, ...filesToAdd];
+    setPostData({ ...postData, images: updatedImages });
+    
+    const newPreviews = filesToAdd.map(file => URL.createObjectURL(file));
+    setImagePreviews([...imagePreviews, ...newPreviews]);
   };
 
   if (!mounted) return null;
@@ -342,6 +532,25 @@ export default function PostsPage() {
                 key={post.id}
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700"
               >
+                {/* Images Section */}
+                {post.imageUrls && post.imageUrls.length > 0 && (
+                  <div className="relative h-48 bg-gray-200 dark:bg-gray-700">
+                    <img
+                      src={post.imageUrls[0]}
+                      alt={post.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                      }}
+                    />
+                    {post.imageUrls.length > 1 && (
+                      <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-full">
+                        +{post.imageUrls.length - 1} more
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(post)}`}>
@@ -372,21 +581,47 @@ export default function PostsPage() {
                     {post.title}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-3">
-                    {post.description}
+                    {post.content || post.description}
                   </p>
                   <div className="space-y-2 text-sm">
+                    {/* Author */}
+                    {post.authorName && (
+                      <div className="flex items-center text-gray-600 dark:text-gray-400">
+                        <span className="mr-2">👤</span>
+                        <span className="font-medium">{post.authorName}</span>
+                      </div>
+                    )}
+                    
+                    {/* Boarding House */}
                     <div className="flex items-center text-gray-600 dark:text-gray-400">
-                      <Building className="w-4 h-4 mr-2" />
-                      <span className="font-medium">{post.houseName || 'Unknown House'}</span>
+                      <Building className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span className="font-medium truncate">{post.houseName || 'No house specified'}</span>
                     </div>
+                    
+                    {/* Rooms */}
                     <div className="flex items-center text-gray-600 dark:text-gray-400">
-                      <Home className="w-4 h-4 mr-2" />
-                      <span>{post.roomName || 'Unknown Room'}</span>
+                      <Home className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span className="truncate">{post.roomName || 'All rooms'}</span>
                     </div>
-                    <div className="flex items-center text-gray-600 dark:text-gray-400">
-                      <span> {post.contactPhone}</span>
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-500 mt-3">
+                    
+                    {/* Contact Phone */}
+                    {post.contactPhone && (
+                      <div className="flex items-center text-gray-600 dark:text-gray-400">
+                        <span className="mr-2">📞</span>
+                        <span>{post.contactPhone}</span>
+                      </div>
+                    )}
+                    
+                    {/* Images count */}
+                    {post.imageUrls && post.imageUrls.length > 0 && (
+                      <div className="flex items-center text-gray-600 dark:text-gray-400">
+                        <span className="mr-2">🖼️</span>
+                        <span>{post.imageUrls.length} image{post.imageUrls.length > 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                    
+                    {/* Created date */}
+                    <div className="text-xs text-gray-500 dark:text-gray-500 mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                       Created: {formatDate(post.createdAt)}
                     </div>
                   </div>
@@ -414,8 +649,17 @@ export default function PostsPage() {
                 onClick={() => {
                   setShowPostModal(false);
                   setEditingPost(null);
-                  setPostData({ roomId: '', title: '', description: '', contactPhone: user?.phone || '' });
+                  setPostData({ 
+                    boardingHouseId: '', 
+                    roomIds: [], 
+                    title: '', 
+                    description: '', 
+                    contactPhone: user?.phone || '',
+                    images: []
+                  });
                   setFormErrors({});
+                  setImagePreviews([]);
+                  setAvailableRooms([]);
                 }}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
@@ -424,42 +668,86 @@ export default function PostsPage() {
             </div>
 
             <form onSubmit={handleSubmitPost} className="space-y-6">
-              {/* Room Selection */}
+              {/* Boarding House Selection */}
               <div>
                 <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                   <span className="flex items-center">
-                     Room <span className="text-red-500 ml-1">*</span>
+                    <Building className="w-4 h-4 mr-2" />
+                    Boarding House <span className="text-red-500 ml-1">*</span>
                   </span>
                 </label>
                 <select
-                  value={postData.roomId}
-                  onChange={(e) => {
-                    setPostData({ ...postData, roomId: e.target.value });
-                    if (formErrors.roomId) setFormErrors({ ...formErrors, roomId: '' });
-                  }}
+                  value={postData.boardingHouseId}
+                  onChange={(e) => handleBoardingHouseChange(e.target.value)}
                   className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-white ${
-                    formErrors.roomId ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300 dark:border-gray-600'
+                    formErrors.boardingHouseId ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300 dark:border-gray-600'
                   }`}
-                  disabled={loadingRooms || editingPost}
+                  disabled={editingPost}
                 >
-                  <option value="">
-                    {loadingRooms ? 'Loading rooms...' : 'Select a room'}
-                  </option>
-                  {availableRooms.map((room) => (
-                    <option key={room.id} value={room.id}>
-                      {room.houseName} - {room.roomName}
+                  <option value="">Select a boarding house</option>
+                  {boardingHouses.map((house) => (
+                    <option key={house.id} value={house.id}>
+                      {house.houseName}
                     </option>
                   ))}
                 </select>
-                {formErrors.roomId && (
-                  <p className="mt-2 text-sm text-red-600 dark:text-red-400">{formErrors.roomId}</p>
+                {formErrors.boardingHouseId && (
+                  <p className="mt-2 text-sm text-red-600 dark:text-red-400">{formErrors.boardingHouseId}</p>
                 )}
-                {!loadingRooms && availableRooms.length === 0 && (
+                {boardingHouses.length === 0 && (
                   <p className="mt-2 text-sm text-yellow-600 dark:text-yellow-400">
-                    No rooms available. Please create a boarding house and rooms first.
+                    No boarding houses found. Please create a boarding house first.
                   </p>
                 )}
               </div>
+
+              {/* Room Selection (Multi-select with checkboxes) */}
+              {postData.boardingHouseId && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                    <span className="flex items-center">
+                      <Home className="w-4 h-4 mr-2" />
+                      Select Rooms (Optional - Leave empty for whole house)
+                    </span>
+                  </label>
+                  {loadingRooms ? (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Loading rooms...</p>
+                    </div>
+                  ) : availableRooms.length === 0 ? (
+                    <p className="text-sm text-yellow-600 dark:text-yellow-400 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                      No available rooms in this boarding house.
+                    </p>
+                  ) : (
+                    <div className="border border-gray-300 dark:border-gray-600 rounded-xl p-4 max-h-60 overflow-y-auto bg-white/70 dark:bg-gray-700/70">
+                      <div className="space-y-2">
+                        {availableRooms.map((room) => (
+                          <label
+                            key={room.id}
+                            className="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg cursor-pointer transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={postData.roomIds.includes(room.id)}
+                              onChange={() => handleRoomToggle(room.id)}
+                              className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                            />
+                            <span className="ml-3 text-gray-900 dark:text-white">
+                              {room.roomName} - {room.price?.toLocaleString('vi-VN')} VNĐ/tháng
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    {postData.roomIds.length > 0 
+                      ? `Selected ${postData.roomIds.length} room(s)` 
+                      : 'No rooms selected - post will apply to entire boarding house'}
+                  </p>
+                </div>
+              )}
 
               {/* Title */}
               <div>
@@ -533,6 +821,137 @@ export default function PostsPage() {
                 )}
               </div>
 
+              {/* Image Upload - Multiple Images Support with Drag & Drop */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                  <span className="flex items-center">
+                    📷 Images <span className="text-gray-500 text-xs ml-2">(Optional - Select or drag multiple)</span>
+                  </span>
+                </label>
+                
+                {/* Drag & Drop Zone */}
+                <div
+                  onDragEnter={handleDragEnter}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`relative border-2 border-dashed rounded-xl p-6 transition-all duration-200 ${
+                    isDragging 
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                      : 'border-gray-300 dark:border-gray-600 bg-white/70 dark:bg-gray-700/70'
+                  }`}
+                >
+                  <input
+                    id="image-upload-input"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  
+                  <div className="text-center">
+                    <div className="text-4xl mb-2">
+                      {isDragging ? '📥' : '🖼️'}
+                    </div>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {isDragging ? 'Drop images here' : 'Drag & drop images here'}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                      or
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('image-upload-input').click()}
+                      className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800 font-medium text-sm transition-colors"
+                    >
+                      Browse Files
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-start justify-between gap-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 flex-1">
+                    💡 Drag & drop or click to select multiple images<br/>
+                    Max: 10 images, 5MB each. Recommended: 1200x800px
+                  </p>
+                  {postData.images.length > 0 && (
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded whitespace-nowrap">
+                        {postData.images.length}/10 images
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {formatFileSize(postData.images.reduce((acc, img) => acc + img.size, 0))} total
+                      </span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Image Previews */}
+                {imagePreviews.length > 0 && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Selected Images ({imagePreviews.length})
+                      </p>
+                      <div className="flex gap-2">
+                        {imagePreviews.length < 10 && (
+                          <button
+                            type="button"
+                            onClick={() => document.getElementById('image-upload-input').click()}
+                            className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                          >
+                            + Add More
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPostData({ ...postData, images: [] });
+                            imagePreviews.forEach(preview => URL.revokeObjectURL(preview));
+                            setImagePreviews([]);
+                          }}
+                          className="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative group">
+                          <div className="relative aspect-square">
+                            <img
+                              src={preview}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-full object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600"
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all rounded-lg flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(index)}
+                                className="opacity-0 group-hover:opacity-100 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-all transform scale-90 group-hover:scale-100 shadow-lg"
+                                title="Remove image"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            {/* File size badge */}
+                            {postData.images[index] && (
+                              <div className="absolute bottom-1 left-1 bg-black bg-opacity-70 text-white text-xs px-2 py-0.5 rounded">
+                                {formatFileSize(postData.images[index].size)}
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-1 truncate">
+                            {postData.images[index]?.name || `Image ${index + 1}`}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Buttons */}
               <div className="flex space-x-4 pt-4">
                 <button
@@ -540,8 +959,17 @@ export default function PostsPage() {
                   onClick={() => {
                     setShowPostModal(false);
                     setEditingPost(null);
-                    setPostData({ roomId: '', title: '', description: '', contactPhone: user?.phone || '' });
+                    setPostData({ 
+                      boardingHouseId: '', 
+                      roomIds: [], 
+                      title: '', 
+                      description: '', 
+                      contactPhone: user?.phone || '',
+                      images: []
+                    });
                     setFormErrors({});
+                    setImagePreviews([]);
+                    setAvailableRooms([]);
                   }}
                   className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
                 >

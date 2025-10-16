@@ -11,9 +11,16 @@ class RoomService {
       const response = await roomAPI.getById(roomId);
       console.log("✅ Room details fetched successfully:", response);
       
-      // Map roomName to name for frontend compatibility
-      if (response && response.roomName && !response.name) {
-        response.name = response.roomName;
+      // Normalize room data: convert PascalCase to camelCase for frontend
+      if (response) {
+        return {
+          ...response,
+          imageUrl: response.ImageUrl || response.imageUrl,
+          roomName: response.RoomName || response.roomName,
+          roomStatus: response.RoomStatus !== undefined ? response.RoomStatus : response.roomStatus,
+          houseId: response.HouseId || response.houseId,
+          name: response.RoomName || response.roomName || response.name // For compatibility
+        };
       }
       
       return response;
@@ -81,17 +88,27 @@ class RoomService {
         throw lastError;
       }
       
-      // Handle different response formats
+      // Handle different response formats and normalize data
+      let rooms = [];
       if (Array.isArray(response)) {
-        return response;
+        rooms = response;
       } else if (response && response.data && Array.isArray(response.data)) {
-        return response.data;
+        rooms = response.data;
       } else if (response && response.isSuccess && Array.isArray(response.result)) {
-        return response.result;
+        rooms = response.result;
       } else {
         console.warn("⚠️ Unexpected response format, returning empty array");
         return [];
       }
+      
+      // Normalize room data: convert PascalCase to camelCase for frontend
+      return rooms.map(room => ({
+        ...room,
+        imageUrl: room.ImageUrl || room.imageUrl, // Map PascalCase to camelCase
+        roomName: room.RoomName || room.roomName,
+        roomStatus: room.RoomStatus !== undefined ? room.RoomStatus : room.roomStatus,
+        houseId: room.HouseId || room.houseId
+      }));
     } catch (error) {
       console.error(`❌ Error fetching rooms for house ${houseId}:`, error);
       if (error.response && error.response.status === 404) {
@@ -129,9 +146,18 @@ class RoomService {
         
         // Backend returns: { isSuccess: true, message: "...", data: {...} }
         if (response && response.isSuccess) {
-          console.log("📦 Created room data:", response.data);
-          console.log("🖼️ Filebase IPFS URL:", response.data?.imageUrl);
-          return response.data || response.result || response;
+          const roomData = response.data || response.result || response;
+          console.log("📦 Created room data:", roomData);
+          console.log("🖼️ Filebase IPFS URL:", roomData?.ImageUrl || roomData?.imageUrl);
+          
+          // Normalize response data
+          return {
+            ...roomData,
+            imageUrl: roomData.ImageUrl || roomData.imageUrl,
+            roomName: roomData.RoomName || roomData.roomName,
+            roomStatus: roomData.RoomStatus !== undefined ? roomData.RoomStatus : roomData.roomStatus,
+            houseId: roomData.HouseId || roomData.houseId
+          };
         }
         
         return response;
@@ -202,9 +228,18 @@ class RoomService {
         
         // Backend returns: { isSuccess: true, message: "...", data: {...} }
         if (response && response.isSuccess) {
-          console.log("📦 Updated room data:", response.data);
-          console.log("🖼️ Filebase IPFS URL:", response.data?.imageUrl);
-          return response.data || response.result || response;
+          const roomData = response.data || response.result || response;
+          console.log("📦 Updated room data:", roomData);
+          console.log("🖼️ Filebase IPFS URL:", roomData?.ImageUrl || roomData?.imageUrl);
+          
+          // Normalize response data
+          return {
+            ...roomData,
+            imageUrl: roomData.ImageUrl || roomData.imageUrl,
+            roomName: roomData.RoomName || roomData.roomName,
+            roomStatus: roomData.RoomStatus !== undefined ? roomData.RoomStatus : roomData.roomStatus,
+            houseId: roomData.HouseId || roomData.houseId
+          };
         }
         
         return response;

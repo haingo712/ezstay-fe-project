@@ -159,6 +159,13 @@ export default function Navbar() {
                         Profile
                       </Link>
                       <Link
+                        href="/chat"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        My Chats
+                      </Link>
+                      <Link
                         href="/profile/rental-history"
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                         onClick={() => setIsUserMenuOpen(false)}
