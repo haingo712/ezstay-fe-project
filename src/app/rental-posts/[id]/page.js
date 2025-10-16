@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 import rentalPostService from '@/services/rentalPostService';
 import reviewService from '@/services/reviewService';
 import { 
@@ -19,17 +20,20 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import ChatDialog from '@/components/ChatDialog';
 import Image from 'next/image';
 
 export default function RentalPostDetailPage() {
   const params = useParams();
   const router = useRouter();
   const postId = params.id;
+  const { isAuthenticated, user } = useAuth();
 
   const [post, setPost] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [showChatDialog, setShowChatDialog] = useState(false);
 
   useEffect(() => {
     if (postId) {
@@ -325,15 +329,51 @@ export default function RentalPostDetailPage() {
                 </div>
               </div>
 
-              <button className="w-full mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                Contact Owner
-              </button>
+              <div className="space-y-3 mt-6">
+                {isAuthenticated ? (
+                  <>
+                    <button 
+                      onClick={() => setShowChatDialog(true)}
+                      className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      Chat with Owner
+                    </button>
+                    
+                    <button className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      Call Owner
+                    </button>
+                  </>
+                ) : (
+                  <div className="space-y-3">
+                    <button 
+                      onClick={() => router.push('/login')}
+                      className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      Login to Chat
+                    </button>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                      Please login to contact the owner
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <Footer />
+      
+      {/* Chat Dialog */}
+      <ChatDialog 
+        isOpen={showChatDialog}
+        onClose={() => setShowChatDialog(false)}
+        postId={postId}
+        postTitle={post?.title}
+        ownerName={post?.authorName}
+      />
     </div>
   );
 }

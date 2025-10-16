@@ -113,6 +113,47 @@ const contractService = {
       console.error('Error adding dependent:', error);
       throw error;
     }
+  },
+
+  // Upload contract images (scanned contract)
+  uploadContractImages: async (contractId, files) => {
+    try {
+      const formData = new FormData();
+      
+      // Backend expects [FromForm] List<IFormFile> request
+      files.forEach((file) => {
+        formData.append('request', file);
+      });
+      
+      console.log("📤 Uploading contract images:", {
+        contractId,
+        fileCount: files.length,
+        fileNames: files.map(f => f.name)
+      });
+      
+      // Use putFormData instead of put for FormData
+      const response = await api.putFormData(`/api/Contract/${contractId}/upload-image`, formData);
+      
+      console.log("✅ Upload successful:", response);
+      return response.data || response;
+    } catch (error) {
+      console.error('❌ Error uploading contract images:', error);
+      console.error('Error details:', error.response?.data);
+      throw error;
+    }
+  },
+
+  // Delete contract image (if needed in future)
+  deleteContractImage: async (contractId, imageUrl) => {
+    try {
+      const response = await api.delete(`/api/Contract/${contractId}/image`, {
+        data: { imageUrl }
+      });
+      return response.data || response;
+    } catch (error) {
+      console.error('Error deleting contract image:', error);
+      throw error;
+    }
   }
 };
 

@@ -23,7 +23,7 @@ export default function ContractsManagementPage() {
   const [selectedContract, setSelectedContract] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showCreateContractModal, setShowCreateContractModal] = useState(false);
-  const [modalType, setModalType] = useState(''); // 'view', 'edit', 'delete', 'cancel', 'extend', 'addDependent'
+  const [modalType, setModalType] = useState(''); // 'view', 'edit', 'delete', 'cancel', 'extend', 'uploadImages'
   const [editData, setEditData] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -33,25 +33,11 @@ export default function ContractsManagementPage() {
   const [extendDate, setExtendDate] = useState("");
   const [processingAction, setProcessingAction] = useState(false);
 
-  // Add Dependent states - matching backend CreateIdentityProfileDto
-  const [dependentData, setDependentData] = useState({
-    fullName: "",
-    dateOfBirth: "",
-    phoneNumber: "",
-    email: "",
-    provinceId: "",
-    wardId: "",
-    address: "",
-    temporaryResidence: "",
-    citizenIdNumber: "",
-    citizenIdIssuedDate: "",
-    citizenIdIssuedPlace: "",
-    notes: "",
-    avatarUrl: "",
-    frontImageUrl: "",
-    backImageUrl: ""
-  });
-  const [dependentErrors, setDependentErrors] = useState({});
+  // Upload Contract Images states
+  const [contractImages, setContractImages] = useState([]);
+  const [contractImagePreviews, setContractImagePreviews] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   // New contract creation states
   const [createStep, setCreateStep] = useState(1); // 1: contract, 2: identity profile, 3: utility readings
@@ -123,11 +109,6 @@ export default function ContractsManagementPage() {
   const [wards, setWards] = useState([]);
   const [wardsByProfile, setWardsByProfile] = useState({}); // Store wards for each profile: { profileIndex: [...wards] }
   const [addressLoading, setAddressLoading] = useState(false);
-
-  // Dependent address selection states
-  const [selectedDependentProvince, setSelectedDependentProvince] = useState("");
-  const [selectedDependentWard, setSelectedDependentWard] = useState("");
-  const [dependentWards, setDependentWards] = useState([]);
   const [vietnamProvinces, setVietnamProvinces] = useState([]);
 
   useEffect(() => {
@@ -469,35 +450,24 @@ export default function ContractsManagementPage() {
     updateProfile(profileIndex, 'wardId', wardCode);
   };
 
-  // Handler to update wards when province changes in dependent form
-  useEffect(() => {
-    console.log("🔍 Debug - dependentData.provinceId:", dependentData.provinceId);
-    console.log("🔍 Debug - vietnamProvinces length:", vietnamProvinces.length);
-    
-    if (dependentData.provinceId) {
-      // Convert provinceId to number for comparison since JSON has numeric codes
-      const provinceCode = parseInt(dependentData.provinceId);
-      const selectedProvince = vietnamProvinces.find(p => p.code === provinceCode);
-      
-      console.log("🔍 Debug - searching for province code:", provinceCode);
-      console.log("🔍 Debug - found province:", selectedProvince?.name);
-      
-      if (selectedProvince) {
-        setDependentWards(selectedProvince.wards || []);
-        console.log("🏘️ Dependent Wards updated:", selectedProvince.wards?.length, "wards");
-      } else {
-        console.log("❌ Province not found, clearing wards");
-        setDependentWards([]);
-      }
-    } else {
-      console.log("🔍 No provinceId selected, clearing wards");
-      setDependentWards([]);
-    }
-  }, [dependentData.provinceId, vietnamProvinces]);
-
   const handleViewContract = (contract) => {
     setSelectedContract(contract);
     setModalType('view');
+    setShowModal(true);
+  };
+
+  // Simple edit modal - chỉ edit basic fields
+  const handleSimpleEditContract = (contract) => {
+    console.log("✏️ Opening simple edit modal for:", contract.id);
+    setSelectedContract(contract);
+    setEditData({
+      checkinDate: contract.checkinDate || "",
+      checkoutDate: contract.checkoutDate || "",
+      depositAmount: contract.depositAmount || 0,
+      numberOfOccupants: contract.numberOfOccupants || 1,
+      notes: contract.notes || ""
+    });
+    setModalType('edit');
     setShowModal(true);
   };
 
@@ -651,30 +621,100 @@ export default function ContractsManagementPage() {
     setShowModal(true);
   };
 
-  const handleAddDependent = (contract) => {
+  // Upload Contract Images handler
+  const handleUploadContractImages = (contract) => {
     setSelectedContract(contract);
-    // Reset dependent form data
-    setDependentData({
-      fullName: "",
-      dateOfBirth: "",
-      phoneNumber: "",
-      email: "",
-      provinceId: "",
-      wardId: "",
-      address: "",
-      temporaryResidence: "",
-      citizenIdNumber: "",
-      citizenIdIssuedDate: "",
-      citizenIdIssuedPlace: "",
-      notes: "",
-      avatarUrl: "",
-      frontImageUrl: "",
-      backImageUrl: ""
-    });
-    setDependentErrors({});
-    setWards([]); // Reset wards for address selection
-    setModalType('addDependent');
+    setContractImages([]);
+    setContractImagePreviews([]);
+    setUploadProgress(0);
+    setModalType('uploadImages');
     setShowModal(true);
+  };
+
+  const handleContractImageSelect = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setContractImages(files);
+    
+    // Generate previews using URL.createObjectURL (more efficient and reliable)
+    const previews = files.map(file => URL.createObjectURL(file));
+    setContractImagePreviews(previews);
+    
+    console.log("📷 Selected", files.length, "images for upload");
+  };
+
+  const handleRemoveContractImage = (index) => {
+    // Cleanup the object URL
+    const urlToRevoke = contractImagePreviews[index];
+    if (urlToRevoke && urlToRevoke.startsWith('blob:')) {
+      URL.revokeObjectURL(urlToRevoke);
+    }
+    
+    setContractImages(prev => prev.filter((_, i) => i !== index));
+    setContractImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleConfirmUploadImages = async () => {
+    if (contractImages.length === 0) {
+      toast.error("Please select at least one image");
+      return;
+    }
+
+    console.log("📤 Starting upload process:", {
+      contractId: selectedContract.id,
+      filesCount: contractImages.length,
+      fileDetails: contractImages.map(f => ({
+        name: f.name,
+        size: f.size,
+        type: f.type
+      }))
+    });
+
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      const result = await contractService.uploadContractImages(selectedContract.id, contractImages);
+      console.log("✅ Upload result:", result);
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
+      await fetchData(); // Refresh data
+      
+      // Cleanup object URLs
+      contractImagePreviews.forEach(url => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
+      });
+      
+      setTimeout(() => {
+        setShowModal(false);
+        setContractImages([]);
+        setContractImagePreviews([]);
+        setUploadProgress(0);
+        toast.success("Contract images uploaded successfully!");
+      }, 500);
+    } catch (error) {
+      console.error("❌ Upload error:", error);
+      console.error("❌ Error response:", error.response?.data);
+      toast.error("Error uploading contract images: " + (error.response?.data?.message || error.message || "Unknown error"));
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   // Contract creation functions
@@ -1036,67 +1076,64 @@ export default function ContractsManagementPage() {
     }
   };
 
-  const validateDependentData = () => {
-    const errors = {};
-    
-    if (!dependentData.fullName.trim()) errors.fullName = "Full name is required";
-    if (!dependentData.dateOfBirth) errors.dateOfBirth = "Date of birth is required";
-    if (!dependentData.phoneNumber.trim()) errors.phoneNumber = "Phone number is required";
-    if (!dependentData.provinceId) errors.provinceId = "Please select a province";
-    if (!dependentData.wardId) errors.wardId = "Please select a ward";
-    if (!dependentData.address.trim()) errors.address = "Address is required";
-    if (!dependentData.temporaryResidence.trim()) errors.temporaryResidence = "Temporary residence is required";
-    if (!dependentData.citizenIdNumber.trim()) errors.citizenIdNumber = "Citizen ID number is required";
-    if (!dependentData.citizenIdIssuedDate) errors.citizenIdIssuedDate = "Citizen ID issued date is required";
-    if (!dependentData.citizenIdIssuedPlace.trim()) errors.citizenIdIssuedPlace = "Citizen ID issued place is required";
-    if (!dependentData.frontImageUrl.trim()) errors.frontImageUrl = "Front ID image URL is required";
-    if (!dependentData.backImageUrl.trim()) errors.backImageUrl = "Back ID image URL is required";
-
-    setDependentErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleConfirmAddDependent = async () => {
-    if (!validateDependentData()) {
-      return;
-    }
-
-    // Check if adding this dependent would exceed numberOfOccupants
-    const currentDependents = selectedContract.identityProfiles?.length || 0;
-    const maxOccupants = selectedContract.numberOfOccupants || 1;
-    
-    if (currentDependents >= maxOccupants) {
-      alert(`Cannot add more dependents. Maximum occupants allowed: ${maxOccupants}`);
+  const handleConfirmEdit = async () => {
+    if (!editData || !selectedContract) {
+      toast.error("No data to update");
       return;
     }
 
     try {
       setProcessingAction(true);
-      await contractService.addDependent(selectedContract.id, dependentData);
+      
+      // Backend requires FULL contract data including profiles and utility readings
+      const updateData = {
+        roomId: selectedContract.roomId,
+        checkinDate: editData.checkinDate,
+        checkoutDate: editData.checkoutDate,
+        depositAmount: parseFloat(editData.depositAmount) || 0,
+        notes: editData.notes || "",
+        
+        // Include existing profiles
+        profilesInContract: (selectedContract.identityProfiles || []).map(profile => ({
+          fullName: profile.fullName,
+          dateOfBirth: profile.dateOfBirth,
+          phoneNumber: profile.phoneNumber,
+          email: profile.email || "",
+          address: profile.address,
+          provinceId: profile.provinceId,
+          districtId: profile.districtId,
+          wardId: profile.wardId,
+          temporaryResidence: profile.temporaryResidence,
+          citizenIdNumber: profile.citizenIdNumber,
+          citizenIdIssuedDate: profile.citizenIdIssuedDate,
+          citizenIdIssuedPlace: profile.citizenIdIssuedPlace,
+          frontImageUrl: profile.frontImageUrl,
+          backImageUrl: profile.backImageUrl
+        })),
+        
+        // Include existing utility readings
+        electricityReading: {
+          readingValue: selectedContract.utilityReadings?.find(r => r.utilityType === "Electricity")?.readingValue || 0,
+          readingDate: selectedContract.utilityReadings?.find(r => r.utilityType === "Electricity")?.readingDate || new Date().toISOString(),
+          utilityType: "Electricity"
+        },
+        waterReading: {
+          readingValue: selectedContract.utilityReadings?.find(r => r.utilityType === "Water")?.readingValue || 0,
+          readingDate: selectedContract.utilityReadings?.find(r => r.utilityType === "Water")?.readingDate || new Date().toISOString(),
+          utilityType: "Water"
+        }
+      };
+
+      console.log("✏️ Updating contract with full data:", selectedContract.id, updateData);
+      
+      await contractService.update(selectedContract.id, updateData);
       await fetchData(); // Refresh data
       setShowModal(false);
-      // Reset form
-      setDependentData({
-        fullName: "",
-        dateOfBirth: "",
-        phoneNumber: "",
-        email: "",
-        provinceId: "",
-        wardId: "",
-        address: "",
-        temporaryResidence: "",
-        citizenIdNumber: "",
-        citizenIdIssuedDate: "",
-        citizenIdIssuedPlace: "",
-        notes: "",
-        avatarUrl: "",
-        frontImageUrl: "",
-        backImageUrl: ""
-      });
-      alert("Dependent added successfully!");
+      setEditData({});
+      toast.success("Contract updated successfully!");
     } catch (error) {
-      console.error("Error adding dependent:", error);
-      alert("Error adding dependent: " + (error.message || "Unknown error"));
+      console.error("❌ Error updating contract:", error);
+      toast.error("Error updating contract: " + (error.response?.data?.message || error.message || "Unknown error"));
     } finally {
       setProcessingAction(false);
     }
@@ -1382,6 +1419,102 @@ export default function ContractsManagementPage() {
     });
     yPos += 10;
 
+    // Check if we need a new page for remaining articles
+    if (yPos > 200) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    // Article 9: Force Majeure
+    doc.setFont(undefined, 'bold');
+    doc.text('ARTICLE 9: FORCE MAJEURE', 20, yPos);
+    yPos += 10;
+    
+    doc.setFont(undefined, 'normal');
+    const forceMajeureText = 'Force majeure circumstances are defined as events beyond the control of either party, including but not limited to natural disasters (earthquakes, floods, fires), war, riots, epidemics, government orders, or other unforeseen events that prevent contract performance. In case of force majeure:';
+    const forceMajeureLines = doc.splitTextToSize(forceMajeureText, 170);
+    doc.text(forceMajeureLines, 20, yPos);
+    yPos += forceMajeureLines.length * 7 + 7;
+    
+    const forceMajeureClauses = [
+      'The affected party must immediately notify the other party in writing within 7 days.',
+      'Both parties shall cooperate to minimize damages and find appropriate solutions.',
+      'If force majeure lasts more than 30 days, either party may terminate the contract without penalty.',
+      'Rental fees will be prorated for the period the house cannot be used due to force majeure.',
+      'The security deposit shall be returned to Party B within 30 days after termination.'
+    ];
+    
+    forceMajeureClauses.forEach(clause => {
+      const clauseLines = doc.splitTextToSize(clause, 165);
+      doc.text(clauseLines, 25, yPos);
+      yPos += clauseLines.length * 7 + 3;
+    });
+    yPos += 10;
+
+    // Article 10: Notices and Communications
+    doc.setFont(undefined, 'bold');
+    doc.text('ARTICLE 10: NOTICES AND COMMUNICATIONS', 20, yPos);
+    yPos += 10;
+    
+    doc.setFont(undefined, 'normal');
+    const noticesText = 'All notices, requests, and communications between the parties shall be made in writing and delivered through the following methods:';
+    const noticesLines = doc.splitTextToSize(noticesText, 170);
+    doc.text(noticesLines, 20, yPos);
+    yPos += noticesLines.length * 7 + 7;
+    
+    const noticesClauses = [
+      'Direct delivery with signed acknowledgment receipt.',
+      'Registered mail with return receipt to the addresses stated in this contract.',
+      'Email to the registered email addresses of both parties.',
+      'Notices are considered received: immediately if hand-delivered, 3 working days after posting if by mail, or upon confirmation if by email.',
+      'Any change in contact information must be notified to the other party within 5 working days.'
+    ];
+    
+    noticesClauses.forEach(clause => {
+      const clauseLines = doc.splitTextToSize(clause, 165);
+      doc.text(clauseLines, 25, yPos);
+      yPos += clauseLines.length * 7 + 3;
+    });
+    yPos += 10;
+
+    // Check if we need a new page for appendices
+    if (yPos > 210) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    // Appendices Section
+    doc.setFont(undefined, 'bold');
+    doc.text('APPENDICES', 20, yPos);
+    doc.line(20, yPos + 2, 70, yPos + 2);
+    yPos += 10;
+    
+    doc.setFont(undefined, 'normal');
+    doc.text('This contract includes the following appendices as integral parts:', 20, yPos);
+    yPos += 10;
+    
+    const appendices = [
+      'Appendix 1: Detailed list of furniture and equipment in the leased room',
+      'Appendix 2: Initial utility meter readings (electricity, water)',
+      'Appendix 3: Room condition inspection report with photographs',
+      'Appendix 4: House rules and regulations',
+      'Appendix 5: Payment schedule and bank account details',
+      'Appendix 6: Emergency contact information'
+    ];
+    
+    appendices.forEach((appendix, index) => {
+      doc.text(`${index + 1}. ${appendix}`, 25, yPos);
+      yPos += 7;
+    });
+    yPos += 10;
+
+    // Final Statement
+    doc.setFont(undefined, 'italic');
+    const finalStatement = 'The parties hereby acknowledge that they have read, understood, and agreed to all terms and conditions set forth in this contract and its appendices. The parties execute this contract voluntarily without coercion.';
+    const finalLines = doc.splitTextToSize(finalStatement, 170);
+    doc.text(finalLines, 20, yPos);
+    yPos += finalLines.length * 7 + 15;
+
     // Signatures
     if (yPos > 220) {
       doc.addPage();
@@ -1389,30 +1522,68 @@ export default function ContractsManagementPage() {
     }
     
     doc.setFont(undefined, 'bold');
-    doc.text('SIGNATURES', 20, yPos);
-    doc.line(20, yPos + 5, 190, yPos + 5);
-    yPos += 20;
+    doc.setFontSize(12);
+    doc.text('SIGNATURES OF THE PARTIES', 105, yPos, { align: 'center' });
+    doc.line(20, yPos + 3, 190, yPos + 3);
+    yPos += 15;
     
-    doc.setFont(undefined, 'normal');
-    doc.text('Party A (Lessor)', 30, yPos);
-    doc.text('Party B (Lessee)', 130, yPos);
-    yPos += 30;
-    
-    doc.text('_____________________', 30, yPos);
-    doc.text('_____________________', 130, yPos);
+    // Create two columns for signatures
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.text('PARTY A (LESSOR)', 55, yPos, { align: 'center' });
+    doc.text('PARTY B (LESSEE)', 155, yPos, { align: 'center' });
     yPos += 10;
     
-    doc.text('EZStay Management', 30, yPos);
-    doc.text(tenant.fullName || 'Tenant Name', 130, yPos);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+    doc.text('EZStay Property Management', 55, yPos, { align: 'center' });
+    doc.text(tenant.fullName || 'Tenant Name', 155, yPos, { align: 'center' });
+    yPos += 7;
+    
+    doc.text('Ho Chi Minh City, Vietnam', 55, yPos, { align: 'center' });
+    doc.text(tenant.address ? (tenant.address.length > 30 ? tenant.address.substring(0, 27) + '...' : tenant.address) : 'Address', 155, yPos, { align: 'center' });
+    yPos += 7;
+    
+    doc.text('Phone: +84 xxx xxx xxx', 55, yPos, { align: 'center' });
+    doc.text(`Phone: ${tenant.phoneNumber || 'N/A'}`, 155, yPos, { align: 'center' });
     yPos += 20;
     
-    doc.text(`Date: ${new Date().toLocaleDateString('en-GB')}`, 30, yPos);
-    doc.text(`Date: ${new Date().toLocaleDateString('en-GB')}`, 130, yPos);
-
-    // Footer
+    // Signature lines
+    doc.setFont(undefined, 'italic');
+    doc.text('(Signature and seal)', 55, yPos, { align: 'center' });
+    doc.text('(Signature)', 155, yPos, { align: 'center' });
+    yPos += 15;
+    
+    // Signature boxes
+    doc.rect(30, yPos, 50, 30);
+    doc.rect(130, yPos, 50, 30);
+    yPos += 35;
+    
+    // Names under signature boxes
+    doc.setFont(undefined, 'normal');
     doc.setFontSize(10);
-    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 105, 280, { align: 'center' });
-    doc.text('EZStay - Property Management System', 105, 285, { align: 'center' });
+    doc.text('___________________________', 55, yPos, { align: 'center' });
+    doc.text('___________________________', 155, yPos, { align: 'center' });
+    yPos += 7;
+    
+    doc.text('Representative Name', 55, yPos, { align: 'center' });
+    doc.text(tenant.fullName || 'Tenant Name', 155, yPos, { align: 'center' });
+    yPos += 10;
+    
+    // Date of signing
+    const signingDate = new Date().toLocaleDateString('en-GB');
+    doc.text(`Date: ${signingDate}`, 55, yPos, { align: 'center' });
+    doc.text(`Date: ${signingDate}`, 155, yPos, { align: 'center' });
+    yPos += 20;
+
+    // Footer on last page
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'italic');
+    const footerY = 280;
+    doc.text('_______________________________________________________________________________', 105, footerY - 5, { align: 'center' });
+    doc.text(`Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString('en-GB')}`, 105, footerY, { align: 'center' });
+    doc.text('EZStay - Professional Property Management System', 105, footerY + 5, { align: 'center' });
+    doc.text('This is a legally binding document. Please retain for your records.', 105, footerY + 10, { align: 'center' });
 
     // Save the PDF
     doc.save(`Contract-${contract.id?.slice(0, 8) || 'unknown'}.pdf`);
@@ -1483,23 +1654,24 @@ export default function ContractsManagementPage() {
     yPos += 10;
     
     doc.setFont(undefined, 'normal');
-    const article1Text = `Party A agrees to lease Party B the room "${contract.roomName || 'N/A'}" according to the property management system. The room is fully furnished and ready for residential use.`;
+    const article1Text = `Party A agrees to lease Party B the room "${contract.roomName || 'N/A'}" according to the property management system. The room is fully furnished and ready for residential use. Equipment and facilities are specifically listed in the minutes of handover between the two parties.`;
     const article1Lines = doc.splitTextToSize(article1Text, 170);
     doc.text(article1Lines, 20, yPos);
     yPos += article1Lines.length * 7 + 10;
     
-    // Add more articles as preview
+    // Article 2
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 2: DURATION OF THE LEASE', 20, yPos);
     yPos += 10;
     
     doc.setFont(undefined, 'normal');
     const durationMonths = Math.round((checkoutDate - checkinDate) / (1000 * 60 * 60 * 24 * 30));
-    const article2Text = `Duration: ${durationMonths} months, commencing on ${checkinDate.toLocaleDateString('en-GB')} and ending on ${checkoutDate.toLocaleDateString('en-GB')}. After the duration, the two parties will renegotiate the rental fee.`;
+    const article2Text = `Duration of the lease: ${durationMonths} months, commencing on ${checkinDate.toLocaleDateString('en-GB')} and ending on ${checkoutDate.toLocaleDateString('en-GB')}. After the duration, the two parties will renegotiate the rental fee, and Party B will be given priority to sign a new contract.`;
     const article2Lines = doc.splitTextToSize(article2Text, 170);
     doc.text(article2Lines, 20, yPos);
     yPos += article2Lines.length * 7 + 10;
     
+    // Article 3
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 3: RENTAL FEE, SECURITY DEPOSIT AND PAYMENT METHOD', 20, yPos);
     yPos += 10;
@@ -1507,50 +1679,166 @@ export default function ContractsManagementPage() {
     doc.setFont(undefined, 'normal');
     const monthlyRent = contract.roomDetails?.price || 'TBD';
     const depositAmount = contract.depositAmount || 0;
-    const article3Text = `Rental fee: ${monthlyRent} VND/month. Security deposit: ${depositAmount} VND. Payment method: Party B will pay Party A the rent on monthly basis. Payment is not later than 05 days of each month.`;
+    const article3Text = `Rental fee: ${monthlyRent} VND/month. Party B will pay Party A an amount of security deposit: ${depositAmount} VND. This amount will be returned by Party A to Party B after the contract liquidation and after deduction of expenses for electricity, water, and repair of the house and furniture damaged by Party B during the period of usage (if any). Payment method: Party B will pay Party A the rent on monthly basis. Payment is not later than 05 days of each month.`;
     const article3Lines = doc.splitTextToSize(article3Text, 170);
     doc.text(article3Lines, 20, yPos);
     yPos += article3Lines.length * 7 + 10;
 
-    // Article 4 - Summary
+    // Check if we need a new page
+    if (yPos > 250) {
+      doc.addPage();
+      yPos = 20;
+    }
+    
+    // Article 4
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 4: RESPONSIBILITIES OF THE TWO PARTIES', 20, yPos);
     yPos += 10;
     
     doc.setFont(undefined, 'normal');
-    const responsibilitiesText = 'Both parties agree to fulfill their obligations as outlined in the full contract, including timely rent payment, property maintenance, and adherence to all terms and conditions.';
-    const responsibilitiesLines = doc.splitTextToSize(responsibilitiesText, 170);
-    doc.text(responsibilitiesLines, 20, yPos);
-    yPos += responsibilitiesLines.length * 7 + 10;
+    doc.text('1/ Party A\'s responsibilities:', 20, yPos);
+    yPos += 7;
+    const partyAResponsibilities = [
+      'Ensuring and undertaking that the house is owned by Party A, Party A has full rights to lease it.',
+      'Handing over the house, its equipment and facilities to Party B on the effective date of the contract.',
+      'Supporting and creating favorable conditions for Party B to register temporary residence when Party B has a need to register.',
+      'Ensuring the full and exclusive use rights for Party B.'
+    ];
+    
+    partyAResponsibilities.forEach(resp => {
+      const respLines = doc.splitTextToSize(resp, 165);
+      doc.text(respLines, 25, yPos);
+      yPos += respLines.length * 7 + 3;
+    });
+    yPos += 5;
+    
+    doc.text('2/ Party B\'s responsibilities:', 20, yPos);
+    yPos += 7;
+    const partyBResponsibilities = [
+      'Using the house for the right purpose as agreed.',
+      'Paying the rent on time according to the agreed method.',
+      'If terminating the contract before its expiration, Party B will lose the security deposit.',
+      'Paying costs of electricity, water and telephone on time as required on invoices.',
+      'Being entitled to use the house fully and separately during the lease term.',
+      'Not being allowed to use the house to organize illegal activities.'
+    ];
+    
+    partyBResponsibilities.forEach(resp => {
+      const respLines = doc.splitTextToSize(resp, 165);
+      doc.text(respLines, 25, yPos);
+      yPos += respLines.length * 7 + 3;
+    });
+    yPos += 10;
 
-    // Additional articles summary
+    // Check if we need a new page
+    if (yPos > 240) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    // Article 5
     doc.setFont(undefined, 'bold');
-    doc.text('ADDITIONAL PROVISIONS', 20, yPos);
+    doc.text('ARTICLE 5: THE TWO PARTIES UNDERTAKE:', 20, yPos);
     yPos += 10;
     
     doc.setFont(undefined, 'normal');
-    const additionalText = 'This contract includes comprehensive terms covering contract termination conditions, general provisions, and legal obligations as per Vietnamese law. Full details available in the complete contract document.';
-    const additionalLines = doc.splitTextToSize(additionalText, 170);
-    doc.text(additionalLines, 20, yPos);
-    yPos += additionalLines.length * 7 + 15;
+    const article5Terms = [
+      'Performing the right content of the contract.',
+      'The personal information written in this contract is true.',
+      'Entering into the contract is completely voluntary, not forced or treated.',
+      'Expenses incurred during the course of contract performance shall be borne by the party generating the expenses.'
+    ];
+    
+    article5Terms.forEach(term => {
+      const termLines = doc.splitTextToSize(term, 165);
+      doc.text(termLines, 25, yPos);
+      yPos += termLines.length * 7 + 3;
+    });
+    yPos += 10;
+
+    // Check if we need a new page
+    if (yPos > 240) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    // Article 6
+    doc.setFont(undefined, 'bold');
+    doc.text('ARTICLE 6: TERMINATION AND EXTENSION OF CONTRACT', 20, yPos);
+    yPos += 10;
+    
+    doc.setFont(undefined, 'normal');
+    const article6Text = `Either party has the right to terminate this contract before the expiration date by notifying the other party at least 30 days in advance. In case Party B terminates the contract early, the security deposit will be forfeited. In case Party A terminates the contract early without legitimate reason, Party A must compensate Party B an amount equivalent to the security deposit.`;
+    const article6Lines = doc.splitTextToSize(article6Text, 170);
+    doc.text(article6Lines, 20, yPos);
+    yPos += article6Lines.length * 7 + 10;
+
+    // Check if we need a new page
+    if (yPos > 240) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    // Article 7
+    doc.setFont(undefined, 'bold');
+    doc.text('ARTICLE 7: DISPUTE RESOLUTION', 20, yPos);
+    yPos += 10;
+    
+    doc.setFont(undefined, 'normal');
+    const article7Text = `Any disputes arising during the implementation of this contract shall be resolved through negotiation between the two parties. If no agreement can be reached, the dispute shall be settled by the competent court in accordance with the law of Vietnam.`;
+    const article7Lines = doc.splitTextToSize(article7Text, 170);
+    doc.text(article7Lines, 20, yPos);
+    yPos += article7Lines.length * 7 + 10;
+
+    // Check if we need a new page
+    if (yPos > 240) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    // Article 8
+    doc.setFont(undefined, 'bold');
+    doc.text('ARTICLE 8: FORCE MAJEURE', 20, yPos);
+    yPos += 10;
+    
+    doc.setFont(undefined, 'normal');
+    const article8Text = `In the event of force majeure (natural disasters, fires, epidemics, wars, or other events beyond the control of both parties), both parties shall be exempt from liability for breach of contract. The affected party must immediately notify the other party and take all necessary measures to minimize damage. The two parties will negotiate to find the most appropriate solution.`;
+    const article8Lines = doc.splitTextToSize(article8Text, 170);
+    doc.text(article8Lines, 20, yPos);
+    yPos += article8Lines.length * 7 + 10;
 
     // Preview notice
+    if (yPos > 240) {
+      doc.addPage();
+      yPos = 20;
+    }
+
     doc.setFont(undefined, 'bold');
     doc.setFontSize(10);
-    const previewNotice = '*** THIS IS A PREVIEW DOCUMENT - FOR FULL CONTRACT TERMS, PLEASE GENERATE THE COMPLETE PDF ***';
+    doc.setTextColor(255, 0, 0); // Red color
+    const previewNotice = '*** THIS IS A PREVIEW DOCUMENT ***';
     doc.text(previewNotice, 105, yPos, { align: 'center' });
+    yPos += 7;
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0); // Black color
+    doc.setFont(undefined, 'italic');
+    doc.text('For full contract terms including Articles 9-10, appendices, and signatures,', 105, yPos, { align: 'center' });
+    yPos += 5;
+    doc.text('please generate the complete PDF using the "Generate PDF" button.', 105, yPos, { align: 'center' });
     
     // Open preview in new window
     const pdfDataUri = doc.output('datauristring');
     const newWindow = window.open();
-    newWindow.document.write(`
-      <iframe 
-        width='100%' 
-        height='100%' 
-        src='${pdfDataUri}'
-        frameborder='0'>
-      </iframe>
-    `);
+    if (newWindow) {
+      newWindow.document.write(`
+        <iframe 
+          width='100%' 
+          height='100%' 
+          src='${pdfDataUri}'
+          frameborder='0'>
+        </iframe>
+      `);
+    }
   };
 
   const filteredContracts = contracts.filter(contract => {
@@ -1699,7 +1987,7 @@ export default function ContractsManagementPage() {
                       View
                     </button>
                     <button
-                      onClick={() => handleEditContract(contract)}
+                      onClick={() => handleSimpleEditContract(contract)}
                       className="px-3 py-1 text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-200 text-sm font-medium"
                     >
                       Edit
@@ -1737,13 +2025,13 @@ export default function ContractsManagementPage() {
                       </button>
                     )}
                     
-                    {/* Add Dependent - Only for Active contracts and when numberOfOccupants > 1 */}
-                    {contract.contractStatus === 'Active' && contract.numberOfOccupants > 1 && (
+                    {/* Upload Contract Images - For Pending and Active contracts */}
+                    {(contract.contractStatus === 'Pending' || contract.contractStatus === 'Active') && (
                       <button
-                        onClick={() => handleAddDependent(contract)}
+                        onClick={() => handleUploadContractImages(contract)}
                         className="px-3 py-1 text-cyan-600 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-200 text-sm font-medium"
                       >
-                        Add Dependent
+                        Upload Images
                       </button>
                     )}
                     
@@ -1773,34 +2061,25 @@ export default function ContractsManagementPage() {
                   {modalType === 'delete' && 'Delete Contract'}
                   {modalType === 'cancel' && 'Cancel Contract'}
                   {modalType === 'extend' && 'Extend Contract'}
-                  {modalType === 'addDependent' && 'Add Dependent'}
+                  {modalType === 'uploadImages' && 'Upload Contract Images'}
                 </h3>
                 <button
                   onClick={() => {
                     setShowModal(false);
                     setCancelReason("");
                     setExtendDate("");
-                    setDependentData({
-                      fullName: "",
-                      dateOfBirth: "",
-                      phoneNumber: "",
-                      email: "",
-                      provinceId: "",
-                      wardId: "",
-                      address: "",
-                      temporaryResidence: "",
-                      citizenIdNumber: "",
-                      citizenIdIssuedDate: "",
-                      citizenIdIssuedPlace: "",
-                      notes: "",
-                      avatarUrl: "",
-                      frontImageUrl: "",
-                      backImageUrl: ""
+                    
+                    // Cleanup object URLs to prevent memory leaks
+                    contractImagePreviews.forEach(url => {
+                      if (url.startsWith('blob:')) {
+                        URL.revokeObjectURL(url);
+                      }
                     });
-                    setDependentErrors({});
-                    setSelectedDependentProvince("");
-                    setSelectedDependentWard("");
-                    setDependentWards([]);
+                    
+                    setContractImages([]);
+                    setContractImagePreviews([]);
+                    setUploadProgress(0);
+                    setIsUploading(false);
                     setProcessingAction(false);
                   }}
                   className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -2000,6 +2279,57 @@ export default function ContractsManagementPage() {
                       ))}
                     </div>
                   )}
+
+                  {/* Contract Images Section */}
+                  {selectedContract.contractImage && selectedContract.contractImage.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-600 pb-2">
+                        📄 Contract Images
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {selectedContract.contractImage.map((imageUrl, index) => (
+                          <div key={index} className="relative group">
+                            <div className="aspect-[4/3] rounded-lg overflow-hidden border-2 border-gray-300 dark:border-gray-600 shadow-md hover:shadow-xl transition-shadow">
+                              <img
+                                src={imageUrl}
+                                alt={`Contract Image ${index + 1}`}
+                                className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-200"
+                                onClick={() => window.open(imageUrl, '_blank')}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                              <div className="hidden w-full h-full items-center justify-center bg-gray-100 dark:bg-gray-700">
+                                <div className="text-center p-4">
+                                  <svg className="w-12 h-12 mx-auto text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">Image not available</p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="absolute top-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+                              Page {index + 1}
+                            </div>
+                            <div className="mt-2 text-center">
+                              <button
+                                onClick={() => window.open(imageUrl, '_blank')}
+                                className="text-sm text-cyan-600 dark:text-cyan-400 hover:underline"
+                              >
+                                🔍 View Full Size
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <p className="text-sm text-blue-700 dark:text-blue-200">
+                          <strong>ℹ️ Note:</strong> These are the scanned images of the signed contract. Click on any image to view it in full size.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -2181,381 +2511,170 @@ export default function ContractsManagementPage() {
                 </div>
               )}
 
-              {modalType === 'addDependent' && selectedContract && (
+              {modalType === 'uploadImages' && selectedContract && (
                 <div className="py-2">
                   <div className="text-center mb-4">
-                    <div className="text-4xl mb-2">👥</div>
+                    <div className="text-4xl mb-2">�</div>
                     <h4 className="text-base font-medium text-gray-900 dark:text-white mb-1">
-                      Add Dependent to Contract
+                      Upload Contract Images
                     </h4>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       #{selectedContract.id?.slice(0, 8)} - {selectedContract.roomName}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Current: {selectedContract.identityProfiles?.length || 1} / {selectedContract.numberOfOccupants} occupants
+                      Status: {selectedContract.contractStatus}
                     </p>
                   </div>
                   
                   <div className="space-y-4">
-                    {/* Basic Information */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Full Name *
-                        </label>
-                        <input
-                          type="text"
-                          value={dependentData.fullName}
-                          onChange={(e) => setDependentData({ ...dependentData, fullName: e.target.value })}
-                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                            dependentErrors.fullName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                          }`}
-                          placeholder="Enter full name"
-                        />
-                        {dependentErrors.fullName && (
-                          <p className="text-red-500 text-xs mt-1">{dependentErrors.fullName}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Citizen ID Number *
-                        </label>
-                        <input
-                          type="text"
-                          value={dependentData.citizenIdNumber}
-                          onChange={(e) => setDependentData({ ...dependentData, citizenIdNumber: e.target.value })}
-                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                            dependentErrors.citizenIdNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                          }`}
-                          placeholder="Enter citizen ID number"
-                        />
-                        {dependentErrors.citizenIdNumber && (
-                          <p className="text-red-500 text-xs mt-1">{dependentErrors.citizenIdNumber}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Date of Birth *
-                        </label>
-                        <input
-                          type="date"
-                          value={dependentData.dateOfBirth}
-                          onChange={(e) => setDependentData({ ...dependentData, dateOfBirth: e.target.value })}
-                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                            dependentErrors.dateOfBirth ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                          }`}
-                        />
-                        {dependentErrors.dateOfBirth && (
-                          <p className="text-red-500 text-xs mt-1">{dependentErrors.dateOfBirth}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Phone Number *
-                        </label>
-                        <input
-                          type="tel"
-                          value={dependentData.phoneNumber}
-                          onChange={(e) => setDependentData({ ...dependentData, phoneNumber: e.target.value })}
-                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                            dependentErrors.phoneNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                          }`}
-                          placeholder="Enter phone number"
-                        />
-                        {dependentErrors.phoneNumber && (
-                          <p className="text-red-500 text-xs mt-1">{dependentErrors.phoneNumber}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          value={dependentData.email}
-                          onChange={(e) => setDependentData({ ...dependentData, email: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          placeholder="Enter email address"
-                        />
-                      </div>
+                    {/* File Upload Area */}
+                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-cyan-500 dark:hover:border-cyan-400 transition-colors bg-gray-50 dark:bg-gray-700/30">
+                      <input
+                        type="file"
+                        id="contract-images"
+                        multiple
+                        accept="image/*"
+                        onChange={handleContractImageSelect}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="contract-images"
+                        className="cursor-pointer flex flex-col items-center"
+                      >
+                        <svg
+                          className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                          />
+                        </svg>
+                        <p className="text-base text-gray-600 dark:text-gray-400 mb-2">
+                          <span className="font-semibold text-cyan-600 dark:text-cyan-400">
+                            Click to upload
+                          </span>{' '}
+                          or drag and drop
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          PNG, JPG, JPEG up to 10MB each
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                          Multiple files supported
+                        </p>
+                      </label>
                     </div>
 
-                    {/* ID Card Information */}
-                    <div className="border-t border-gray-200 dark:border-gray-600 pt-3">
-                      <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">ID Card Information</h5>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Citizen ID Issue Date *
-                          </label>
-                          <input
-                            type="date"
-                            value={dependentData.citizenIdIssuedDate}
-                            onChange={(e) => setDependentData({ ...dependentData, citizenIdIssuedDate: e.target.value })}
-                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                              dependentErrors.citizenIdIssuedDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
-                          />
-                          {dependentErrors.citizenIdIssuedDate && (
-                            <p className="text-red-500 text-xs mt-1">{dependentErrors.citizenIdIssuedDate}</p>
-                          )}
+                    {contractImages.length > 0 && (
+                      <div className="flex items-center justify-between p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
+                        <div className="flex items-center">
+                          <svg className="w-5 h-5 text-cyan-600 dark:text-cyan-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span className="text-sm font-medium text-cyan-700 dark:text-cyan-300">
+                            {contractImages.length} file(s) selected
+                          </span>
                         </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Citizen ID Issue Place *
-                          </label>
-                          <input
-                            type="text"
-                            value={dependentData.citizenIdIssuedPlace}
-                            onChange={(e) => setDependentData({ ...dependentData, citizenIdIssuedPlace: e.target.value })}
-                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                              dependentErrors.citizenIdIssuedPlace ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
-                            placeholder="Enter issue place"
-                          />
-                          {dependentErrors.citizenIdIssuedPlace && (
-                            <p className="text-red-500 text-xs mt-1">{dependentErrors.citizenIdIssuedPlace}</p>
-                          )}
-                        </div>
+                        <button
+                          onClick={() => {
+                            setContractImages([]);
+                            setContractImagePreviews([]);
+                          }}
+                          className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium transition-colors"
+                        >
+                          Clear All
+                        </button>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Address Information */}
-                    <div className="border-t border-gray-200 dark:border-gray-600 pt-3">
-                      <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Address Information</h5>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Province *
-                          </label>
-                          <select
-                            value={dependentData.provinceId}
-                            onChange={(e) => {
-                              console.log("🔍 Province changed to:", e.target.value);
-                              setDependentData({ ...dependentData, provinceId: e.target.value, wardId: "" });
-                            }}
-                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                              dependentErrors.provinceId ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
-                          >
-                            <option value="">Select province</option>
-                            {vietnamProvinces.map((province) => (
-                              <option key={province.code} value={province.code}>
-                                {province.name}
-                              </option>
-                            ))}
-                          </select>
-                          {dependentErrors.provinceId && (
-                            <p className="text-red-500 text-xs mt-1">{dependentErrors.provinceId}</p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Ward *
-                          </label>
-                          <select
-                            value={dependentData.wardId}
-                            onChange={(e) => setDependentData({ ...dependentData, wardId: e.target.value })}
-                            disabled={!dependentData.provinceId}
-                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-600 ${
-                              dependentErrors.wardId ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
-                          >
-                            <option value="">Select ward</option>
-                            {dependentWards.map((ward) => (
-                              <option key={ward.code} value={ward.code}>
-                                {ward.name}
-                              </option>
-                            ))}
-                          </select>
-                          {dependentErrors.wardId && (
-                            <p className="text-red-500 text-xs mt-1">{dependentErrors.wardId}</p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Address *
-                          </label>
-                          <input
-                            type="text"
-                            value={dependentData.address}
-                            onChange={(e) => setDependentData({ ...dependentData, address: e.target.value })}
-                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                              dependentErrors.address ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
-                            placeholder="Enter address"
-                          />
-                          {dependentErrors.address && (
-                            <p className="text-red-500 text-xs mt-1">{dependentErrors.address}</p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Temporary Residence *
-                          </label>
-                          <input
-                            type="text"
-                            value={dependentData.temporaryResidence}
-                            onChange={(e) => setDependentData({ ...dependentData, temporaryResidence: e.target.value })}
-                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                              dependentErrors.temporaryResidence ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
-                            placeholder="Enter temporary residence"
-                          />
-                          {dependentErrors.temporaryResidence && (
-                            <p className="text-red-500 text-xs mt-1">{dependentErrors.temporaryResidence}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Image URLs */}
-                    <div className="border-t border-gray-200 dark:border-gray-600 pt-3">
-                      <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">ID Document Images</h5>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Front ID Image URL *
-                          </label>
-                          <input
-                            type="url"
-                            value={dependentData.frontImageUrl}
-                            onChange={(e) => setDependentData({ ...dependentData, frontImageUrl: e.target.value })}
-                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                              dependentErrors.frontImageUrl ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
-                            placeholder="Enter front image URL"
-                          />
-                          {dependentErrors.frontImageUrl && (
-                            <p className="text-red-500 text-xs mt-1">{dependentErrors.frontImageUrl}</p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Back ID Image URL *
-                          </label>
-                          <input
-                            type="url"
-                            value={dependentData.backImageUrl}
-                            onChange={(e) => setDependentData({ ...dependentData, backImageUrl: e.target.value })}
-                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                              dependentErrors.backImageUrl ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
-                            placeholder="Enter back image URL"
-                          />
-                          {dependentErrors.backImageUrl && (
-                            <p className="text-red-500 text-xs mt-1">{dependentErrors.backImageUrl}</p>
-                          )}
-                        </div>
-
-                        <div className="md:col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Avatar URL (Optional)
-                          </label>
-                          <input
-                            type="url"
-                            value={dependentData.avatarUrl}
-                            onChange={(e) => setDependentData({ ...dependentData, avatarUrl: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            placeholder="Enter avatar URL (optional)"
-                          />
-                        </div>
-
-                        <div className="md:col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Notes (Optional)
-                          </label>
-                          <textarea
-                            value={dependentData.notes}
-                            onChange={(e) => setDependentData({ ...dependentData, notes: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            rows="2"
-                            placeholder="Enter additional notes (optional)"
-                          />
-                        </div>
-
-                        {/* Image Previews for Dependent */}
-                        {(dependentData.avatarUrl || dependentData.frontImageUrl || dependentData.backImageUrl) && (
-                          <div className="md:col-span-2">
-                            <h6 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">📷 Image Previews</h6>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                              {/* Avatar Preview */}
-                              {dependentData.avatarUrl && (
-                                <div>
-                                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Avatar</p>
-                                  <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden aspect-square">
-                                    <img
-                                      src={dependentData.avatarUrl}
-                                      alt="Avatar"
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        e.target.style.display = 'none';
-                                        e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-400 text-xs">Image not available</div>';
-                                      }}
+                    {contractImagePreviews.length > 0 && (
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Preview</h5>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-80 overflow-y-auto p-1">
+                          {contractImagePreviews.map((preview, index) => (
+                            <div
+                              key={index}
+                              className="relative group aspect-square rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600 hover:border-cyan-500 dark:hover:border-cyan-400 transition-colors shadow-sm"
+                            >
+                              <img
+                                src={preview}
+                                alt={`Contract page ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-opacity flex items-center justify-center">
+                                <button
+                                  onClick={() => handleRemoveContractImage(index)}
+                                  className="opacity-0 group-hover:opacity-100 bg-red-500 hover:bg-red-600 text-white rounded-full p-2.5 transition-all transform hover:scale-110 shadow-lg"
+                                  title="Remove image"
+                                >
+                                  <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                                     />
-                                  </div>
-                                </div>
-                              )}
-                              {/* Front ID Preview */}
-                              {dependentData.frontImageUrl && (
-                                <div>
-                                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Front ID</p>
-                                  <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden aspect-video">
-                                    <img
-                                      src={dependentData.frontImageUrl}
-                                      alt="Front ID"
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        e.target.style.display = 'none';
-                                        e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-400 text-xs">Image not available</div>';
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              )}
-                              {/* Back ID Preview */}
-                              {dependentData.backImageUrl && (
-                                <div>
-                                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Back ID</p>
-                                  <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden aspect-video">
-                                    <img
-                                      src={dependentData.backImageUrl}
-                                      alt="Back ID"
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        e.target.style.display = 'none';
-                                        e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-400 text-xs">Image not available</div>';
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              )}
+                                  </svg>
+                                </button>
+                              </div>
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white text-xs py-2 px-2 text-center">
+                                <span className="font-medium">Page {index + 1}</span>
+                                <span className="text-gray-300 text-[10px] block">{contractImages[index]?.name?.substring(0, 20)}...</span>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="p-3 bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-lg">
+                    )}
+
+                    {isUploading && uploadProgress > 0 && (
+                      <div className="space-y-2 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <div className="flex justify-between items-center text-sm">
+                          <div className="flex items-center">
+                            <svg className="animate-spin h-5 w-5 text-cyan-600 dark:text-cyan-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">Uploading...</span>
+                          </div>
+                          <span className="text-cyan-600 dark:text-cyan-400 font-bold">{uploadProgress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3 overflow-hidden">
+                          <div
+                            className="bg-gradient-to-r from-cyan-500 to-blue-500 h-3 rounded-full transition-all duration-300 ease-out"
+                            style={{ width: `${uploadProgress}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">Please wait...</p>
+                      </div>
+                    )}
+
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                       <div className="flex">
                         <div className="flex-shrink-0">
-                          <svg className="h-4 w-4 text-cyan-400 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                          <svg className="h-5 w-5 text-blue-500 dark:text-blue-400 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                           </svg>
                         </div>
-                        <div className="ml-2">
-                          <p className="text-xs text-cyan-700 dark:text-cyan-200">
-                            <strong>Note:</strong> This will create a new identity profile for the contract. Ensure all information is accurate.
+                        <div className="ml-3">
+                          <h5 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-1">Important Information</h5>
+                          <p className="text-sm text-blue-700 dark:text-blue-200">
+                            Upload scanned images of the <strong>signed contract</strong>. Once uploaded:
                           </p>
+                          <ul className="list-disc list-inside text-sm text-blue-700 dark:text-blue-200 mt-2 space-y-1 ml-2">
+                            <li>Contract status → <strong className="text-green-600 dark:text-green-400">Active</strong></li>
+                            <li>Room status → <strong className="text-orange-600 dark:text-orange-400">Occupied</strong></li>
+                            <li>Tenant will be notified</li>
+                          </ul>
                         </div>
                       </div>
                     </div>
@@ -2569,33 +2688,35 @@ export default function ContractsManagementPage() {
                     setShowModal(false);
                     setCancelReason("");
                     setExtendDate("");
-                    setDependentData({
-                      fullName: "",
-                      dateOfBirth: "",
-                      phoneNumber: "",
-                      email: "",
-                      provinceId: "",
-                      wardId: "",
-                      address: "",
-                      temporaryResidence: "",
-                      citizenIdNumber: "",
-                      citizenIdIssuedDate: "",
-                      citizenIdIssuedPlace: "",
-                      notes: "",
-                      avatarUrl: "",
-                      frontImageUrl: "",
-                      backImageUrl: ""
-                    });
-                    setDependentErrors({});
-                    setSelectedDependentProvince("");
-                    setSelectedDependentWard("");
-                    setDependentWards([]);
+                    setContractImages([]);
+                    setContractImagePreviews([]);
+                    setUploadProgress(0);
+                    setIsUploading(false);
                     setProcessingAction(false);
                   }}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lng text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancel
                 </button>
+                {modalType === 'edit' && (
+                  <button
+                    onClick={handleConfirmEdit}
+                    disabled={processingAction}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                  >
+                    {processingAction ? (
+                      <span className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Updating...
+                      </span>
+                    ) : (
+                      'Update Contract'
+                    )}
+                  </button>
+                )}
                 {modalType === 'delete' && (
                   <button
                     onClick={handleConfirmDelete}
@@ -2642,22 +2763,22 @@ export default function ContractsManagementPage() {
                     )}
                   </button>
                 )}
-                {modalType === 'addDependent' && (
+                {modalType === 'uploadImages' && (
                   <button
-                    onClick={handleConfirmAddDependent}
-                    disabled={processingAction}
+                    onClick={handleConfirmUploadImages}
+                    disabled={isUploading || contractImages.length === 0}
                     className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                   >
-                    {processingAction ? (
+                    {isUploading ? (
                       <span className="flex items-center">
                         <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Adding Dependent...
+                        Uploading {uploadProgress}%
                       </span>
                     ) : (
-                      'Add Dependent'
+                      'Upload Contract Images'
                     )}
                   </button>
                 )}

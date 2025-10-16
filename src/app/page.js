@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import Features from '../components/Features';
@@ -16,16 +17,16 @@ export default function Home() {
   return (
     <RoleBasedRedirect>
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors">
-      <Navbar />
-      <Hero />
-      <SearchBar />
-      <LatestPosts />
-      <Stats />
-      <HowItWorks />
-      <Features />
-      <CustomerReviews />
-      <FAQ />
-      <Footer />
+        <Navbar />
+        <Hero />
+        <SearchBar />
+        <LatestPosts />
+        <Stats />
+        <HowItWorks />
+        <Features />
+        <CustomerReviews />
+        <FAQ />
+        <Footer />
       </div>
     </RoleBasedRedirect>
   );
