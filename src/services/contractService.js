@@ -115,6 +115,19 @@ const contractService = {
     }
   },
 
+  // Get identity profiles for a contract
+  getIdentityProfiles: async (contractId) => {
+    try {
+      console.log("🔍 Fetching identity profiles for contract:", contractId);
+      const response = await api.get(`/api/IdentityProfile/contract/${contractId}`);
+      console.log("✅ Identity profiles fetched:", response);
+      return response.data || response;
+    } catch (error) {
+      console.error('Error fetching identity profiles:', error);
+      return [];
+    }
+  },
+
   // Upload contract images (scanned contract)
   uploadContractImages: async (contractId, files) => {
     try {

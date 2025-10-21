@@ -7,6 +7,177 @@ import { useAuth } from "@/hooks/useAuth";
 import AddressSelector from "@/components/AddressSelector";
 import vietnamAddressService from "@/services/vietnamAddressService";
 
+// Image Gallery Component for Boarding House - 3 Thumbnails Layout
+function ImageCarousel({ images, houseName }) {
+  const [showGallery, setShowGallery] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(0);
+
+  // Fallback image if no images
+  const displayImages = images && images.length > 0 ? images : ["/image.png"];
+  const hasMultipleImages = displayImages.length > 1 && displayImages[0] !== "/image.png";
+
+  return (
+    <>
+      {/* 3-Image Thumbnail Layout */}
+      <div className="relative h-48 bg-gray-200 dark:bg-gray-700">
+        {!hasMultipleImages ? (
+          // Single image or placeholder
+          <div 
+            className="w-full h-full cursor-pointer"
+            onClick={() => setShowGallery(true)}
+          >
+            <img
+              src={displayImages[0]}
+              alt={houseName}
+              className="w-full h-full object-cover hover:opacity-90 transition-opacity"
+            />
+          </div>
+        ) : (
+          // 3-thumbnail grid layout
+          <div className="flex h-full gap-1">
+            {/* Large image - Left side (60% width) */}
+            <div 
+              className="w-[60%] h-full cursor-pointer overflow-hidden group"
+              onClick={() => {
+                setSelectedImage(0);
+                setShowGallery(true);
+              }}
+            >
+              <img
+                src={displayImages[0]}
+                alt={`${houseName} - 1`}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+
+            {/* Right side - 2 small images stacked (40% width) */}
+            <div className="flex-1 flex flex-col gap-1">
+              {/* Small image 1 */}
+              <div 
+                className="h-1/2 cursor-pointer overflow-hidden group"
+                onClick={() => {
+                  setSelectedImage(1);
+                  setShowGallery(true);
+                }}
+              >
+                <img
+                  src={displayImages[1]}
+                  alt={`${houseName} - 2`}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+
+              {/* Small image 2 with overlay (if more images) */}
+              <div 
+                className="h-1/2 cursor-pointer overflow-hidden group relative"
+                onClick={() => {
+                  setSelectedImage(2);
+                  setShowGallery(true);
+                }}
+              >
+                <img
+                  src={displayImages[2] || displayImages[1]}
+                  alt={`${houseName} - 3`}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                
+                {/* Overlay with "+N more" if there are more than 3 images */}
+                {displayImages.length > 3 && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center group-hover:bg-black/70 transition-colors">
+                    <div className="text-white text-center">
+                      <svg className="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <div className="text-lg font-bold">+{displayImages.length - 3}</div>
+                      <div className="text-xs">more photos</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Image counter badge */}
+        {hasMultipleImages && (
+          <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center z-10">
+            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+            </svg>
+            {displayImages.length} photos
+          </div>
+        )}
+      </div>
+
+      {/* Gallery Modal - Grid Layout */}
+      {showGallery && (
+        <div
+          className="fixed inset-0 bg-black/95 z-50 overflow-y-auto"
+          onClick={() => setShowGallery(false)}
+        >
+          <div className="min-h-screen p-4 pb-20">
+            {/* Header with close button */}
+            <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-sm -mx-4 px-4 py-3 mb-4 flex items-center justify-between">
+              <div className="text-white">
+                <h3 className="font-semibold text-lg">{houseName}</h3>
+                <p className="text-sm text-gray-300">{displayImages.length} photos</p>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowGallery(false);
+                }}
+                className="text-white hover:text-gray-300 p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Grid of all images */}
+            <div 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {displayImages.map((img, idx) => (
+                <div
+                  key={idx}
+                  className={`relative group cursor-pointer rounded-lg overflow-hidden ${
+                    selectedImage === idx ? 'ring-4 ring-blue-500' : ''
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedImage(idx);
+                  }}
+                >
+                  <img
+                    src={img}
+                    alt={`${houseName} - Photo ${idx + 1}`}
+                    className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  
+                  {/* Image number badge */}
+                  <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                    {idx + 1} / {displayImages.length}
+                  </div>
+
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <svg className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                    </svg>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function BoardingHousesPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [mounted, setMounted] = useState(false);
@@ -28,6 +199,10 @@ export default function BoardingHousesPage() {
   });
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  
+  // Image upload states
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
 
   useEffect(() => { 
     setMounted(true); 
@@ -103,29 +278,115 @@ export default function BoardingHousesPage() {
     return Object.keys(errors).length === 0;
   };
 
+  // Handle image selection
+  const handleImageSelect = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    // Validate file types
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const invalidFiles = files.filter(file => !validTypes.includes(file.type));
+    
+    if (invalidFiles.length > 0) {
+      alert(`Invalid file types: ${invalidFiles.map(f => f.name).join(', ')}. Please upload only image files.`);
+      return;
+    }
+
+    // Add new files to existing selection
+    setSelectedImages(prev => [...prev, ...files]);
+
+    // Create previews
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviews(prev => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Remove selected image
+  const removeImage = (index) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleCreate = async () => {
     if (!validateForm()) return;
     
     try {
       setSubmitting(true);
-      // Send data in format that backend expects
-      const payload = { 
-        ownerId: user.id, 
-        houseName: houseData.houseName, 
-        description: houseData.description,
-        location: {
-          provinceId: houseData.addressData.provinceCode?.toString() || '',
-          provinceName: houseData.addressData.provinceName || '',
-          communeId: houseData.addressData.wardCode?.toString() || '',
-          communeName: houseData.addressData.wardName || '',
-          addressDetail: houseData.addressData.address || ''
+      
+      // Validate required fields before submission
+      if (!houseData.addressData.provinceCode) {
+        alert('Please select a province');
+        setSubmitting(false);
+        return;
+      }
+      if (!houseData.addressData.wardCode) {
+        alert('Please select a ward');
+        setSubmitting(false);
+        return;
+      }
+      if (!houseData.addressData.address) {
+        alert('Please enter detailed address');
+        setSubmitting(false);
+        return;
+      }
+      
+      // Create FormData for multipart/form-data submission
+      const formData = new FormData();
+      
+      // Add house data fields
+      formData.append('HouseName', houseData.houseName.trim());
+      
+      // Description is optional
+      if (houseData.description && houseData.description.trim()) {
+        formData.append('Description', houseData.description.trim());
+      }
+      
+      // Add Location fields - ASP.NET Core supports nested object binding with dot notation
+      // Must match CreateHouseLocationDTO properties exactly
+      formData.append('Location.ProvinceId', houseData.addressData.provinceCode.toString());
+      formData.append('Location.CommuneId', houseData.addressData.wardCode.toString());
+      formData.append('Location.AddressDetail', houseData.addressData.address.trim());
+      
+      // Add images - ONLY if files are selected
+      // IMPORTANT: Do NOT append empty Files array - backend expects IFormFileCollection? (nullable)
+      if (selectedImages && selectedImages.length > 0) {
+        selectedImages.forEach((file, index) => {
+          console.log(`📎 Adding file ${index + 1}:`, file.name, file.type, file.size, 'bytes');
+          // Append each file to 'Files' collection
+          formData.append('Files', file);
+        });
+      }
+      // If no images, do NOT append 'Files' key at all - let it be null in backend
+      
+      console.log("📤 Creating boarding house with FormData");
+      console.log("📸 Number of images:", selectedImages.length);
+      console.log("📋 FormData entries:");
+      const formDataEntries = [];
+      for (let pair of formData.entries()) {
+        if (pair[1] instanceof File) {
+          const entry = `${pair[0]} => File: ${pair[1].name}, ${pair[1].type}, ${pair[1].size} bytes`;
+          console.log(entry);
+          formDataEntries.push(entry);
+        } else {
+          const entry = `${pair[0]} => ${pair[1]}`;
+          console.log(entry);
+          formDataEntries.push(entry);
         }
-      };
-      console.log("📤 Creating boarding house with payload:", payload);
-      const res = await boardingHouseAPI.create(payload);
+      }
+      
+      console.log("📋 All FormData keys:", Array.from(formData.keys()));
+      
+      const res = await boardingHouseAPI.create(formData);
+      console.log("✅ Create response:", res);
+      
       if (res && res.isSuccess !== false) { 
-        alert('Boarding house created'); 
+        alert(`Boarding house created successfully${selectedImages.length > 0 ? ` with ${selectedImages.length} image(s)` : ''}!`); 
         setShowModal(false); 
+        // Reset form
         setHouseData({ 
           houseName: '', 
           description: '',
@@ -137,11 +398,43 @@ export default function BoardingHousesPage() {
             address: ''
           }
         }); 
+        setSelectedImages([]);
+        setImagePreviews([]);
         setFormErrors({});
         fetchBoardingHouses(); 
       }
-      else alert('Create failed: ' + (res?.message || JSON.stringify(res)));
-    } catch (e) { console.error(e); alert('API error creating boarding house: ' + (e.message || e)); }
+      else {
+        alert('Create failed: ' + (res?.message || JSON.stringify(res)));
+      }
+    } catch (e) { 
+      console.error("❌ Create error:", e); 
+      console.error("❌ Error response:", e.response);
+      console.error("❌ Error response data:", e.response?.data);
+      console.error("❌ Error status:", e.response?.status);
+      console.error("❌ Error config:", e.config);
+      
+      let errorMessage = 'API error creating boarding house:\n';
+      if (e.response?.data?.message) {
+        errorMessage += e.response.data.message;
+      } else if (e.response?.data?.title) {
+        errorMessage += e.response.data.title;
+        if (e.response?.data?.errors) {
+          // ASP.NET validation errors
+          errorMessage += '\n\nValidation errors:';
+          Object.entries(e.response.data.errors).forEach(([field, msgs]) => {
+            errorMessage += `\n- ${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`;
+          });
+        }
+      } else if (e.response?.data) {
+        errorMessage += JSON.stringify(e.response.data);
+      } else if (e.message) {
+        errorMessage += e.message;
+      } else {
+        errorMessage += 'Unknown error';
+      }
+      
+      alert(errorMessage);
+    }
     finally { setSubmitting(false); }
   };
 
@@ -151,23 +444,39 @@ export default function BoardingHousesPage() {
     
     try {
       setSubmitting(true);
-      // Send data in format that backend expects
-      const payload = { 
-        houseName: houseData.houseName, 
-        description: houseData.description,
-        location: {
-          provinceId: houseData.addressData.provinceCode?.toString() || '',
-          provinceName: houseData.addressData.provinceName || '',
-          communeId: houseData.addressData.wardCode?.toString() || '',
-          communeName: houseData.addressData.wardName || '',
-          addressDetail: houseData.addressData.address || ''
-        }
-      };
-      const res = await boardingHouseAPI.update(editingHouse.id, payload);
+      
+      // Create FormData for multipart/form-data submission
+      const formData = new FormData();
+      
+      // Add house data fields
+      formData.append('HouseName', houseData.houseName);
+      if (houseData.description) {
+        formData.append('Description', houseData.description);
+      }
+      
+      // Add location fields (only required fields: ProvinceId, CommuneId, AddressDetail)
+      formData.append('Location.ProvinceId', houseData.addressData.provinceCode?.toString() || '');
+      formData.append('Location.CommuneId', houseData.addressData.wardCode?.toString() || '');
+      formData.append('Location.AddressDetail', houseData.addressData.address || '');
+      
+      // Add images (backend expects IFormFileCollection Files)
+      selectedImages.forEach((file) => {
+        formData.append('Files', file);
+      });
+      
+      console.log("📤 Updating boarding house with FormData");
+      console.log("📸 Number of images:", selectedImages.length);
+      console.log("📋 FormData contents:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+      
+      const res = await boardingHouseAPI.update(editingHouse.id, formData);
       if (res && res.isSuccess !== false) { 
-        alert('Boarding house updated'); 
+        alert(`Boarding house updated successfully${selectedImages.length > 0 ? ` with ${selectedImages.length} new image(s)` : ''}!`); 
         setShowModal(false); 
         setEditingHouse(null); 
+        // Reset form
         setHouseData({ 
           houseName: '', 
           description: '',
@@ -179,11 +488,17 @@ export default function BoardingHousesPage() {
             address: ''
           }
         }); 
+        setSelectedImages([]);
+        setImagePreviews([]);
         setFormErrors({});
         fetchBoardingHouses(); 
       }
       else alert('Update failed: ' + (res?.message || JSON.stringify(res)));
-    } catch (e) { console.error(e); alert('API error updating boarding house: ' + (e.message || e)); }
+    } catch (e) { 
+      console.error("❌ Update error:", e); 
+      console.error("❌ Error response:", e.response?.data);
+      alert('API error updating boarding house: ' + (e.response?.data?.message || e.message || e)); 
+    }
     finally { setSubmitting(false); }
   };
 
@@ -313,7 +628,7 @@ export default function BoardingHousesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {boardingHouses.map((house) => (
               <div key={house.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                <div className="relative"><img src="/image.png" alt={house.houseName} className="w-full h-48 object-cover"/></div>
+                <ImageCarousel images={house.imageUrls} houseName={house.houseName} />
                 <div className="p-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{house.houseName}</h3>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mb-2 line-clamp-2">{house.description}</p>
@@ -377,6 +692,8 @@ export default function BoardingHousesPage() {
                       address: ''
                     }
                   }); 
+                  setSelectedImages([]);
+                  setImagePreviews([]);
                   setFormErrors({});
                 }}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -454,6 +771,83 @@ export default function BoardingHousesPage() {
                 </div>
               </div>
               
+              {/* Image Upload Section */}
+              <div className="relative">
+                <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                  <span className="flex items-center">
+                    📸 Boarding House Images
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Upload multiple images of your boarding house (optional)</p>
+                
+                {/* File Input */}
+                <div className="relative">
+                  <input
+                    type="file"
+                    id="houseImages"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="houseImages"
+                    className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-all bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  >
+                    <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Click to select images</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">PNG, JPG, GIF, WEBP up to 10MB each</p>
+                  </label>
+                </div>
+
+                {/* Image Previews */}
+                {imagePreviews.length > 0 && (
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={preview}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-600"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-2 right-2 p-1 bg-red-600 hover:bg-red-700 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                        <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+                          {selectedImages[index]?.name}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {selectedImages.length > 0 && (
+                  <div className="mt-3 flex items-center justify-between">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <span className="font-semibold">{selectedImages.length}</span> image(s) selected
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedImages([]);
+                        setImagePreviews([]);
+                      }}
+                      className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                )}
+              </div>
+              
               {/* Location Section - Using AddressSelector */}
               {/* Frontend collects address data, Backend processes and creates/updates location */}
               <div className="relative">
@@ -497,6 +891,8 @@ export default function BoardingHousesPage() {
                         address: ''
                       }
                     }); 
+                    setSelectedImages([]);
+                    setImagePreviews([]);
                     setFormErrors({});
                   }} 
                   className="px-6 py-3 border-2 border-gray-300 dark:border-gray-500 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200 font-semibold flex items-center"
