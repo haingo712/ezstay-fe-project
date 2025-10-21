@@ -183,8 +183,10 @@ export const boardingHouseAPI = {
     // The backend endpoint /owner extracts ownerId from JWT token automatically
     return api.get('/api/BoardingHouses/owner');
   },
-  create: (data) => api.post('/api/BoardingHouses', data),
-  update: (id, data) => api.put(`/api/BoardingHouses/${id}`, data),
+  // Create with FormData (supports multiple image upload)
+  create: (formData) => api.postFormData('/api/BoardingHouses', formData),
+  // Update with FormData (supports multiple image upload)
+  update: (id, formData) => api.putFormData(`/api/BoardingHouses/${id}`, formData),
   delete: (id) => api.delete(`/api/BoardingHouses/${id}`)
 };
 

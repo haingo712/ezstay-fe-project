@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import contractService from "@/services/contractService";
 import roomService from "@/services/roomService";
@@ -16,6 +16,9 @@ export default function ContractsManagementPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   
   const houseId = params.id; // Get boarding house ID from URL
+  
+  // Ref to track if we're loading profiles from backend (edit mode)
+  const isLoadingProfilesRef = useRef(false);
 
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -23,8 +26,7 @@ export default function ContractsManagementPage() {
   const [selectedContract, setSelectedContract] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showCreateContractModal, setShowCreateContractModal] = useState(false);
-  const [modalType, setModalType] = useState(''); // 'view', 'edit', 'delete', 'cancel', 'extend', 'uploadImages'
-  const [editData, setEditData] = useState({});
+  const [modalType, setModalType] = useState(''); // 'view', 'delete', 'cancel', 'extend', 'uploadImages' (edit removed - use 3-step modal)
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -128,9 +130,18 @@ export default function ContractsManagementPage() {
   }, []);
 
   // Auto-generate profiles array when numberOfOccupants changes
+  // BUT: Don't auto-adjust in Edit mode - user manually manages profiles
   useEffect(() => {
     const count = parseInt(contractData.numberOfOccupants) || 1;
     console.log('👥 Number of Occupants changed:', count);
+    console.log('📝 Modal type:', modalType);
+    
+    // SKIP auto-adjustment if we're in edit mode and profiles are being loaded from backend
+    // This prevents overwriting loaded profile data from backend
+    if (modalType === 'edit' && isLoadingProfilesRef.current) {
+      console.log('⏭️ SKIPPING profile auto-adjustment - in edit mode with loaded profiles');
+      return;
+    }
     
     setProfiles(currentProfiles => {
       console.log('📊 Current profiles before update:', currentProfiles.length);
@@ -174,7 +185,7 @@ export default function ContractsManagementPage() {
       
       return currentProfiles;
     });
-  }, [contractData.numberOfOccupants]);
+  }, [contractData.numberOfOccupants, modalType]); // Removed profiles.length to fix React error
 
   const fetchData = async () => {
     if (!user || !user.id) {
@@ -315,29 +326,79 @@ export default function ContractsManagementPage() {
     }
   };
 
-  // Search Identity Profile by phone number
-  const [searchingPhone, setSearchingPhone] = useState({});
+  // Search Identity Profile by Citizen ID (CCCD)
+  const [searchingCCCD, setSearchingCCCD] = useState({});
   
-  const searchIdentityProfileByPhone = async (profileIndex, phoneNumber) => {
-    if (!phoneNumber || phoneNumber.trim().length < 8) {
-      toast.error('Please enter a valid phone number');
+  const searchIdentityProfileByCCCD = async (profileIndex, citizenId) => {
+    if (!citizenId || citizenId.trim().length < 9) {
+      toast.error('Please enter a valid citizen ID (9-12 digits)');
       return;
     }
 
-    setSearchingPhone(prev => ({ ...prev, [profileIndex]: true }));
+    setSearchingCCCD(prev => ({ ...prev, [profileIndex]: true }));
     
     try {
-      console.log('🔍 Searching User by phone:', phoneNumber);
+      console.log('🔍 Searching User by Citizen ID:', citizenId);
+      console.log('🔍 Citizen ID length:', citizenId.length);
       
-      // Call correct API endpoint
-      const response = await api.get(`/api/User/searchphone/${phoneNumber}`);
-      console.log('📦 API Response:', response);
+      // TEMPORARY: Test direct API call bypassing gateway
+      const directApiUrl = `https://localhost:7211/api/User/search-cccd/${citizenId}`;
+      const gatewayUrl = `/api/User/search-cccd/${citizenId}`;
       
-      // Backend returns object directly (no wrapper)
-      const userData = response;
+      console.log('🔍 Gateway URL:', gatewayUrl);
+      console.log('🔍 Direct API URL:', directApiUrl);
       
-      if (userData && userData.id) {
-        console.log('✅ Found User:', userData);
+      // Try gateway first
+      console.log('📡 Calling via API Gateway...');
+      const response = await api.get(gatewayUrl);
+      console.log('📦 Full API Response:', response);
+      console.log('📦 Response type:', typeof response);
+      console.log('📦 Response value:', response);
+      console.log('📦 Response length (if string):', typeof response === 'string' ? response.length : 'N/A');
+      
+      // Check for empty response (204 No Content)
+      if (!response || response === '' || (typeof response === 'string' && response.trim() === '')) {
+        console.log('❌ Empty response - likely 204 No Content or user not found');
+        toast.warning('No user found with this Citizen ID. Please verify the ID is correct.');
+        return;
+      }
+      
+      console.log('📦 Response keys:', Object.keys(response || {}));
+      
+      // Parse if response is string (API Gateway may return stringified JSON)
+      let userData = response;
+      if (typeof response === 'string') {
+        console.log('⚠️ Response is string, parsing JSON...');
+        console.log('📝 String to parse:', response.substring(0, 100)); // First 100 chars
+        try {
+          userData = JSON.parse(response);
+          console.log('✅ Parsed JSON successfully');
+        } catch (e) {
+          console.error('❌ Failed to parse JSON:', e);
+          console.error('❌ Raw response:', response);
+          toast.error('Invalid response from server. Please try again.');
+          return;
+        }
+      }
+      
+      console.log('📦 userData type:', typeof userData);
+      console.log('📦 userData.id:', userData?.id);
+      console.log('📦 userData.userId:', userData?.userId);
+      console.log('� userData.fullName:', userData?.fullName);
+      
+      console.log('🔍 userData assigned:', userData);
+      console.log('🔍 Check condition:', !userData, !userData?.id);
+      
+      if (!userData || !userData.id) {
+        console.log('❌ No user found - userData is null or missing id');
+        console.log('❌ userData value:', userData);
+        console.log('❌ userData.id value:', userData?.id);
+        toast.warning('No user found with this Citizen ID. Please check the ID and try again.');
+        return;
+      }
+      
+      console.log('✅ Found User:', userData);
+      console.log('✅ Full user data:', JSON.stringify(userData, null, 2));
         
         // Find province to load wards dropdown
         let wardsForProvince = [];
@@ -360,51 +421,55 @@ export default function ContractsManagementPage() {
           const newProfiles = [...currentProfiles];
           newProfiles[profileIndex] = {
             ...newProfiles[profileIndex],
-            // User ID
-            userId: userData.userId || userData.id || null,
+            // User ID - try both camelCase and PascalCase
+            userId: userData.userId || userData.UserId || userData.id || userData.Id || null,
             // Personal info
-            fullName: userData.fullName || '',
-            dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split('T')[0] : '',
-            phoneNumber: userData.phone || phoneNumber,
-            email: userData.email || '',
+            fullName: userData.fullName || userData.FullName || '',
+            dateOfBirth: (userData.dateOfBirth || userData.DateOfBirth) ? (userData.dateOfBirth || userData.DateOfBirth).split('T')[0] : '',
+            phoneNumber: userData.phone || userData.Phone || '',
+            email: userData.email || userData.Email || '',
             // Address with names from backend
-            provinceId: userData.provinceId || '',
-            provinceName: userData.provinceName || '',
-            wardId: userData.wardId || '',
-            wardName: userData.wardName || '',
-            address: userData.detailAddress || '',
-            temporaryResidence: userData.temporaryResidence || '',
-            // Citizen ID
-            citizenIdNumber: userData.citizenIdNumber || '',
-            citizenIdIssuedDate: userData.citizenIdIssuedDate ? userData.citizenIdIssuedDate.split('T')[0] : '',
-            citizenIdIssuedPlace: userData.citizenIdIssuedPlace || '',
+            provinceId: userData.provinceId || userData.ProvinceId || '',
+            provinceName: userData.provinceName || userData.ProvinceName || '',
+            wardId: userData.wardId || userData.WardId || '',
+            wardName: userData.wardName || userData.WardName || '',
+            address: userData.detailAddress || userData.DetailAddress || '',
+            temporaryResidence: userData.temporaryResidence || userData.TemporaryResidence || '',
+            // Citizen ID - keep the searched value
+            citizenIdNumber: userData.citizenIdNumber || userData.CitizenIdNumber || citizenId,
+            citizenIdIssuedDate: (userData.citizenIdIssuedDate || userData.CitizenIdIssuedDate) ? (userData.citizenIdIssuedDate || userData.CitizenIdIssuedDate).split('T')[0] : '',
+            citizenIdIssuedPlace: userData.citizenIdIssuedPlace || userData.CitizenIdIssuedPlace || '',
             // Images and notes
-            avatarUrl: userData.avatar || '',
-            frontImageUrl: userData.frontImageUrl || '',
-            backImageUrl: userData.backImageUrl || '',
-            notes: userData.bio || ''
+            avatarUrl: userData.avatar || userData.Avatar || '',
+            frontImageUrl: userData.frontImageUrl || userData.FrontImageUrl || '',
+            backImageUrl: userData.backImageUrl || userData.BackImageUrl || '',
+            notes: userData.bio || userData.Bio || ''
           };
           
           console.log('✅ Profile auto-filled:', newProfiles[profileIndex]);
+          console.log('✅ Full profile data:', JSON.stringify(newProfiles[profileIndex], null, 2));
           return newProfiles;
         });
         
         toast.success(`Profile auto-filled for ${userData.fullName}!`);
-      } else {
-        console.log('❌ No user found');
-        toast.info('No user found with this phone number');
-      }
+        
     } catch (error) {
       console.error('❌ Error searching user:', error);
+      console.error('❌ Error response:', error.response);
+      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error data:', error.response?.data);
+      
       if (error.response?.status === 404) {
-        toast.info('No user found with this phone number');
+        toast.info('No user found with this Citizen ID');
+      } else if (error.response?.status === 204) {
+        toast.warning('No user found with this Citizen ID. The ID may not exist in database.');
       } else if (error.response?.status === 401) {
         toast.error('Unauthorized. Please login again.');
       } else {
-        toast.error('Failed to search user');
+        toast.error('Failed to search user. Please try again.');
       }
     } finally {
-      setSearchingPhone(prev => ({ ...prev, [profileIndex]: false }));
+      setSearchingCCCD(prev => ({ ...prev, [profileIndex]: false }));
     }
   };
 
@@ -455,22 +520,7 @@ export default function ContractsManagementPage() {
     setModalType('view');
     setShowModal(true);
   };
-
-  // Simple edit modal - chỉ edit basic fields
-  const handleSimpleEditContract = (contract) => {
-    console.log("✏️ Opening simple edit modal for:", contract.id);
-    setSelectedContract(contract);
-    setEditData({
-      checkinDate: contract.checkinDate || "",
-      checkoutDate: contract.checkoutDate || "",
-      depositAmount: contract.depositAmount || 0,
-      numberOfOccupants: contract.numberOfOccupants || 1,
-      notes: contract.notes || ""
-    });
-    setModalType('edit');
-    setShowModal(true);
-  };
-
+  // Edit Contract - Opens the full 3-step modal with all contract details
   const handleEditContract = async (contract) => {
     console.log("✏️ Opening edit contract modal for:", contract.id);
     console.log("📋 Contract data received:", contract);
@@ -480,6 +530,10 @@ export default function ContractsManagementPage() {
       console.log("🔄 Fetching full contract details...");
       const fullContract = await contractService.getById(contract.id);
       console.log("✅ Full contract data fetched:", fullContract);
+      console.log("✅ Full contract JSON:", JSON.stringify(fullContract, null, 2));
+      console.log("✅ All keys in fullContract:", Object.keys(fullContract));
+      console.log("✅ identityProfiles field:", fullContract.identityProfiles);
+      console.log("✅ IdentityProfiles field (PascalCase):", fullContract.IdentityProfiles);
       
       setSelectedContract(fullContract);
       
@@ -520,40 +574,104 @@ export default function ContractsManagementPage() {
         numberOfOccupants: fullContract.numberOfOccupants
       });
     
-      // Populate identity profile if exists
-      if (fullContract.identityProfiles && fullContract.identityProfiles.length > 0) {
-        const profile = fullContract.identityProfiles[0]; // Get first profile
-        console.log("👤 Identity profile found:", profile);
+      // Try to get identity profiles from multiple sources
+      console.log("🔄 Looking for identity profiles...");
+      console.log("📋 contract.identityProfiles:", contract.identityProfiles);
+      console.log("📋 fullContract.identityProfiles:", fullContract.identityProfiles);
+      
+      // Use identity profiles from contract object (already loaded in list)
+      let identityProfiles = contract.identityProfiles || fullContract.identityProfiles || [];
+      
+      // If not found, try fetching from dedicated API
+      if (!identityProfiles || identityProfiles.length === 0) {
+        console.log("🔄 Identity profiles not in contract object, fetching from API...");
+        try {
+          identityProfiles = await contractService.getIdentityProfiles(contract.id);
+          console.log("✅ Identity profiles fetched from API:", identityProfiles);
+        } catch (error) {
+          console.error("❌ Error fetching identity profiles from API:", error);
+          identityProfiles = [];
+        }
+      }
+      
+      console.log("✅ Final identity profiles to use:", identityProfiles);
+      console.log("✅ Identity profiles JSON:", JSON.stringify(identityProfiles, null, 2));
+      
+      // Populate identity profiles array (support multiple profiles)
+      if (identityProfiles && identityProfiles.length > 0) {
+        console.log("👤 Identity profiles found:", identityProfiles.length);
+        console.log("👤 Raw profile data from backend:", JSON.stringify(identityProfiles, null, 2));
+        console.log("👤 First profile keys:", Object.keys(identityProfiles[0]));
         
-        setIdentityProfileData({
-          fullName: profile.fullName || "",
-          dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.split('T')[0] : "",
-          phoneNumber: profile.phoneNumber || "",
-          email: profile.email || "",
-          provinceId: profile.provinceId || "",
-          wardId: profile.wardId || "",
-          address: profile.address || "",
-          temporaryResidence: profile.temporaryResidence || "",
-          citizenIdNumber: profile.citizenIdNumber || "",
-          citizenIdIssuedDate: profile.citizenIdIssuedDate ? profile.citizenIdIssuedDate.split('T')[0] : "",
-          citizenIdIssuedPlace: profile.citizenIdIssuedPlace || "",
-          notes: profile.notes || "",
-          avatarUrl: profile.avatarUrl || "",
-          frontImageUrl: profile.frontImageUrl || "",
-          backImageUrl: profile.backImageUrl || ""
+        // Map all profiles from backend to frontend format
+        // Try both camelCase and PascalCase to handle different API responses
+        const mappedProfiles = identityProfiles.map((profile, idx) => {
+          console.log(`👤 Mapping profile ${idx}:`, profile);
+          
+          return {
+            userId: profile.userId || profile.UserId || null,
+            fullName: profile.fullName || profile.FullName || "",
+            dateOfBirth: (profile.dateOfBirth || profile.DateOfBirth) ? (profile.dateOfBirth || profile.DateOfBirth).split('T')[0] : "",
+            phoneNumber: profile.phoneNumber || profile.PhoneNumber || "",
+            email: profile.email || profile.Email || "",
+            provinceId: profile.provinceId || profile.ProvinceId || "",
+            districtId: profile.districtId || profile.DistrictId || "",
+            wardId: profile.wardId || profile.WardId || "",
+            address: profile.address || profile.Address || "",
+            temporaryResidence: profile.temporaryResidence || profile.TemporaryResidence || "",
+            citizenIdNumber: profile.citizenIdNumber || profile.CitizenIdNumber || "",
+            citizenIdIssuedDate: (profile.citizenIdIssuedDate || profile.CitizenIdIssuedDate) ? (profile.citizenIdIssuedDate || profile.CitizenIdIssuedDate).split('T')[0] : "",
+            citizenIdIssuedPlace: profile.citizenIdIssuedPlace || profile.CitizenIdIssuedPlace || "",
+            notes: profile.notes || profile.Notes || "",
+            avatarUrl: profile.avatarUrl || profile.AvatarUrl || "",
+            frontImageUrl: profile.frontImageUrl || profile.FrontImageUrl || "",
+            backImageUrl: profile.backImageUrl || profile.BackImageUrl || ""
+          };
         });
         
-        // Load wards for the selected province
-        if (profile.provinceId) {
-          const provinceCode = parseInt(profile.provinceId);
+        console.log("✅ Mapped profiles result:", JSON.stringify(mappedProfiles, null, 2));
+        
+        setProfiles(mappedProfiles);
+        isLoadingProfilesRef.current = true; // Mark that we've loaded profiles from backend
+        console.log("✅ Profiles populated:", mappedProfiles.length, "profile(s)");
+        
+        // Load wards for the first profile's province (for initial display)
+        if (mappedProfiles[0].provinceId) {
+          const provinceCode = parseInt(mappedProfiles[0].provinceId);
           const selectedProvince = provinces.find(p => p.code === provinceCode);
           if (selectedProvince) {
             setWards(selectedProvince.wards || []);
-            console.log("🏘️ Wards loaded for province:", provinceCode, "count:", selectedProvince.wards?.length);
+            console.log("🏘️ Wards loaded for first profile province:", provinceCode, "count:", selectedProvince.wards?.length);
           }
         }
       } else {
         console.log("⚠️ No identity profiles found for this contract");
+        // Generate empty profiles based on numberOfOccupants
+        const emptyProfiles = [];
+        const occupantCount = fullContract.numberOfOccupants || 1;
+        for (let i = 0; i < occupantCount; i++) {
+          emptyProfiles.push({
+            userId: null,
+            fullName: "",
+            dateOfBirth: "",
+            phoneNumber: "",
+            email: "",
+            provinceId: "",
+            districtId: "",
+            wardId: "",
+            address: "",
+            temporaryResidence: "",
+            citizenIdNumber: "",
+            citizenIdIssuedDate: "",
+            citizenIdIssuedPlace: "",
+            notes: "",
+            avatarUrl: "",
+            frontImageUrl: "",
+            backImageUrl: ""
+          });
+        }
+        setProfiles(emptyProfiles);
+        isLoadingProfilesRef.current = true;
       }
       
       // Populate utility readings if exists
@@ -1076,68 +1194,7 @@ export default function ContractsManagementPage() {
     }
   };
 
-  const handleConfirmEdit = async () => {
-    if (!editData || !selectedContract) {
-      toast.error("No data to update");
-      return;
-    }
-
-    try {
-      setProcessingAction(true);
-      
-      // Backend requires FULL contract data including profiles and utility readings
-      const updateData = {
-        roomId: selectedContract.roomId,
-        checkinDate: editData.checkinDate,
-        checkoutDate: editData.checkoutDate,
-        depositAmount: parseFloat(editData.depositAmount) || 0,
-        notes: editData.notes || "",
-        
-        // Include existing profiles
-        profilesInContract: (selectedContract.identityProfiles || []).map(profile => ({
-          fullName: profile.fullName,
-          dateOfBirth: profile.dateOfBirth,
-          phoneNumber: profile.phoneNumber,
-          email: profile.email || "",
-          address: profile.address,
-          provinceId: profile.provinceId,
-          districtId: profile.districtId,
-          wardId: profile.wardId,
-          temporaryResidence: profile.temporaryResidence,
-          citizenIdNumber: profile.citizenIdNumber,
-          citizenIdIssuedDate: profile.citizenIdIssuedDate,
-          citizenIdIssuedPlace: profile.citizenIdIssuedPlace,
-          frontImageUrl: profile.frontImageUrl,
-          backImageUrl: profile.backImageUrl
-        })),
-        
-        // Include existing utility readings
-        electricityReading: {
-          readingValue: selectedContract.utilityReadings?.find(r => r.utilityType === "Electricity")?.readingValue || 0,
-          readingDate: selectedContract.utilityReadings?.find(r => r.utilityType === "Electricity")?.readingDate || new Date().toISOString(),
-          utilityType: "Electricity"
-        },
-        waterReading: {
-          readingValue: selectedContract.utilityReadings?.find(r => r.utilityType === "Water")?.readingValue || 0,
-          readingDate: selectedContract.utilityReadings?.find(r => r.utilityType === "Water")?.readingDate || new Date().toISOString(),
-          utilityType: "Water"
-        }
-      };
-
-      console.log("✏️ Updating contract with full data:", selectedContract.id, updateData);
-      
-      await contractService.update(selectedContract.id, updateData);
-      await fetchData(); // Refresh data
-      setShowModal(false);
-      setEditData({});
-      toast.success("Contract updated successfully!");
-    } catch (error) {
-      console.error("❌ Error updating contract:", error);
-      toast.error("Error updating contract: " + (error.response?.data?.message || error.message || "Unknown error"));
-    } finally {
-      setProcessingAction(false);
-    }
-  };
+  // handleConfirmEdit REMOVED - Edit now uses the full 3-step modal via handleCreateContract
 
   const handleCreateContractSuccess = async () => {
     // Close the modal
@@ -1881,7 +1938,10 @@ export default function ContractsManagementPage() {
           </div>
           <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0">
             <button
-              onClick={() => setShowCreateContractModal(true)}
+              onClick={() => {
+                isLoadingProfilesRef.current = false; // Reset ref for create mode
+                setShowCreateContractModal(true);
+              }}
               className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1987,7 +2047,7 @@ export default function ContractsManagementPage() {
                       View
                     </button>
                     <button
-                      onClick={() => handleSimpleEditContract(contract)}
+                      onClick={() => handleEditContract(contract)}
                       className="px-3 py-1 text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-200 text-sm font-medium"
                     >
                       Edit
@@ -2057,7 +2117,6 @@ export default function ContractsManagementPage() {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {modalType === 'view' && 'Contract Details'}
-                  {modalType === 'edit' && 'Edit Contract'}
                   {modalType === 'delete' && 'Delete Contract'}
                   {modalType === 'cancel' && 'Cancel Contract'}
                   {modalType === 'extend' && 'Extend Contract'}
@@ -2333,60 +2392,7 @@ export default function ContractsManagementPage() {
                 </div>
               )}
 
-              {modalType === 'edit' && selectedContract && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Check-in Date</label>
-                      <input
-                        type="date"
-                        value={editData.checkinDate ? editData.checkinDate.split('T')[0] : ''}
-                        onChange={(e) => setEditData({...editData, checkinDate: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Check-out Date</label>
-                      <input
-                        type="date"
-                        value={editData.checkoutDate ? editData.checkoutDate.split('T')[0] : ''}
-                        onChange={(e) => setEditData({...editData, checkoutDate: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Deposit Amount</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={editData.depositAmount || ''}
-                        onChange={(e) => setEditData({...editData, depositAmount: parseFloat(e.target.value)})}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Number of Occupants</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={editData.numberOfOccupants || ''}
-                        onChange={(e) => setEditData({...editData, numberOfOccupants: parseInt(e.target.value)})}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
-                    <textarea
-                      value={editData.notes || ''}
-                      onChange={(e) => setEditData({...editData, notes: e.target.value})}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-              )}
+              {/* Simple Edit Modal - REMOVED - Use 3-step modal instead via handleEditContract */}
 
               {modalType === 'delete' && selectedContract && (
                 <div className="text-center py-4">
@@ -2698,25 +2704,7 @@ export default function ContractsManagementPage() {
                 >
                   Cancel
                 </button>
-                {modalType === 'edit' && (
-                  <button
-                    onClick={handleConfirmEdit}
-                    disabled={processingAction}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
-                  >
-                    {processingAction ? (
-                      <span className="flex items-center">
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Updating...
-                      </span>
-                    ) : (
-                      'Update Contract'
-                    )}
-                  </button>
-                )}
+                {/* Edit button removed - use 3-step modal instead */}
                 {modalType === 'delete' && (
                   <button
                     onClick={handleConfirmDelete}
@@ -2804,6 +2792,7 @@ export default function ContractsManagementPage() {
                     setCreateStep(1);
                     setModalType(''); // Reset modal type
                     setCurrentEditingRoomId(null); // Reset current editing room
+                    isLoadingProfilesRef.current = false; // Reset ref
                     // Re-fetch rooms to remove edit mode filter
                     fetchRooms();
                   }}
@@ -3025,10 +3014,16 @@ export default function ContractsManagementPage() {
               )}
 
               {/* Step 2: Identity Profiles (All Occupants) */}
+              {/* Step 2: Identity Profile */}
               {createStep === 2 && (
                 <div>
+                  {/* Debug logging */}
+                  {console.log("🔍 Step 2 - Current profiles state:", profiles)}
+                  {console.log("🔍 Step 2 - Profiles count:", profiles.length)}
+                  {console.log("🔍 Step 2 - Modal type:", modalType)}
+                  
                   <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    � Identity Profiles for All Occupants ({profiles.length} {profiles.length === 1 ? 'person' : 'people'})
+                    👥 Identity Profiles for All Occupants ({profiles.length} {profiles.length === 1 ? 'person' : 'people'})
                   </h4>
 
                   {/* Loop through all profiles */}
@@ -3041,6 +3036,57 @@ export default function ContractsManagementPage() {
                         Profile {profileIndex + 1} of {profiles.length}
                         {profileIndex === 0 && <span className="ml-2 text-sm text-blue-600 dark:text-blue-400">(Representative)</span>}
                       </h5>
+
+                      {/* SEARCH CCCD - AT TOP OF FORM */}
+                      <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <label className="block text-sm font-semibold text-blue-700 dark:text-blue-300 mb-3">
+                          🔍 Quick Search by Citizen ID (CCCD/CMND)
+                          <span className="ml-2 text-xs font-normal text-blue-600 dark:text-blue-400">(Enter CCCD to auto-fill all fields)</span>
+                        </label>
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            value={profile.citizenIdNumber || ''} 
+                            onChange={(e) => updateProfile(profileIndex, 'citizenIdNumber', e.target.value)}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                searchIdentityProfileByCCCD(profileIndex, profile.citizenIdNumber);
+                              }
+                            }}
+                            className="flex-1 p-3 border border-blue-300 dark:border-blue-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700" 
+                            placeholder="Enter Citizen ID (9-18 digits)" 
+                            maxLength="18"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => searchIdentityProfileByCCCD(profileIndex, profile.citizenIdNumber)}
+                            disabled={searchingCCCD[profileIndex] || !profile.citizenIdNumber || profile.citizenIdNumber.length < 9}
+                            className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                            title="Search existing profile by Citizen ID"
+                          >
+                            {searchingCCCD[profileIndex] ? (
+                              <>
+                                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Searching...
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                Search Profile
+                              </>
+                            )}
+                          </button>
+                        </div>
+                        <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                          💡 Tip: Press Enter or click Search to find and auto-fill profile information
+                        </p>
+                      </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Full Name */}
@@ -3060,48 +3106,16 @@ export default function ContractsManagementPage() {
                           {profileErrors[`profile${profileIndex}_dateOfBirth`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_dateOfBirth`]}</p>}
                         </div>
 
-                        {/* Phone Number with Search */}
+                        {/* Phone Number - Now without search button */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Phone Number * 
-                            <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">(Search to auto-fill)</span>
-                          </label>
-                          <div className="flex gap-2">
-                            <input 
-                              type="tel" 
-                              value={profile.phoneNumber} 
-                              onChange={(e) => updateProfile(profileIndex, 'phoneNumber', e.target.value)}
-                              onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  searchIdentityProfileByPhone(profileIndex, profile.phoneNumber);
-                                }
-                              }}
-                              className={`flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_phoneNumber`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
-                              placeholder="Enter phone number" 
-                            />
-                            <button
-                              type="button"
-                              onClick={() => searchIdentityProfileByPhone(profileIndex, profile.phoneNumber)}
-                              disabled={searchingPhone[profileIndex] || !profile.phoneNumber}
-                              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                              title="Search existing profile by phone"
-                            >
-                              {searchingPhone[profileIndex] ? (
-                                <>
-                                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                  </svg>
-                                  Searching...
-                                </>
-                              ) : (
-                                <>
-                                  🔍 Search
-                                </>
-                              )}
-                            </button>
-                          </div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number *</label>
+                          <input 
+                            type="tel" 
+                            value={profile.phoneNumber} 
+                            onChange={(e) => updateProfile(profileIndex, 'phoneNumber', e.target.value)}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_phoneNumber`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                            placeholder="Enter phone number" 
+                          />
                           {profileErrors[`profile${profileIndex}_phoneNumber`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_phoneNumber`]}</p>}
                         </div>
 
@@ -3343,7 +3357,7 @@ export default function ContractsManagementPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Price (VND/kWh) - Optional
+                            Price (VND/kWh)
                           </label>
                           <input
                             type="number"
@@ -3431,7 +3445,7 @@ export default function ContractsManagementPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Price (VND/m³) - Optional
+                            Price (VND/m³)
                           </label>
                           <input
                             type="number"

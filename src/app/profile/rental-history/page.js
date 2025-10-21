@@ -95,10 +95,11 @@ export default function RentalHistoryPage() {
       return;
     }
 
-    if (!reviewForm.imageFile) {
-      alert('Please upload an image for your review!');
-      return;
-    }
+    // Image is now optional
+    // if (!reviewForm.imageFile) {
+    //   alert('Please upload an image for your review!');
+    //   return;
+    // }
     
     try {
       setSubmitting(true);
@@ -108,7 +109,11 @@ export default function RentalHistoryPage() {
       const formData = new FormData();
       formData.append('Rating', reviewForm.rating);
       formData.append('Content', reviewForm.content);
-      formData.append('ImageUrl', reviewForm.imageFile); // Required field in backend
+      
+      // Only append image if user uploaded one (optional)
+      if (reviewForm.imageFile) {
+        formData.append('ImageUrl', reviewForm.imageFile);
+      }
       
       console.log('📤 Submitting review with image:', {
         rating: reviewForm.rating,
