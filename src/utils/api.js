@@ -310,7 +310,26 @@ export const reviewAPI = {
   getReplyByReviewId: (reviewId) => api.get(`/api/ReviewReply/review/${reviewId}`),
   createReviewReply: (reviewId, formData) => api.postFormData(`/api/ReviewReply/${reviewId}`, formData),
   updateReviewReply: (id, formData) => api.putFormData(`/api/ReviewReply/${id}`, formData),
-  deleteReviewReply: (id) => api.delete(`/api/ReviewReply/${id}`)
+  deleteReviewReply: (id) => api.delete(`/api/ReviewReply/${id}`),
+
+  // Review Report Management
+  getAllReviewReports: (odataParams = {}) => {
+    const queryParams = new URLSearchParams();
+
+    if (odataParams.$filter) queryParams.append('$filter', odataParams.$filter);
+    if (odataParams.$orderby) queryParams.append('$orderby', odataParams.$orderby);
+    if (odataParams.$top) queryParams.append('$top', odataParams.$top);
+    if (odataParams.$skip) queryParams.append('$skip', odataParams.$skip);
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/api/ReviewReport?${queryString}` : '/api/ReviewReport';
+
+    return api.get(endpoint);
+  },
+  getReviewReportById: (reviewId) => api.get(`/api/ReviewReport/${reviewId}`),
+  createReviewReport: (reviewId, formData) => api.postFormData(`/api/ReviewReport/${reviewId}`, formData),
+  updateReviewReport: (reviewId, formData) => api.putFormData(`/api/ReviewReport/${reviewId}`, formData),
+  updateReviewReportStatus: (reportId, data) => api.put(`/api/ReviewReport/status/${reportId}`, data)
 };
 
 export default api;

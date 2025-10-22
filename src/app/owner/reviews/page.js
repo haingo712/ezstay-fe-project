@@ -17,10 +17,15 @@ export default function OwnerReviewsPage() {
   const [responseData, setResponseData] = useState({ content: '', image: null });
   const [submitting, setSubmitting] = useState(false);
 
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportData, setReportData] = useState({ reason: '', images: [] });
+  const [reviewReports, setReviewReports] = useState({});
+
   useEffect(() => {
     setMounted(true);
     loadReviews();
     loadReviewReplies();
+    loadReviewReports();
   }, []);
 
   const loadReviews = async () => {
@@ -48,6 +53,18 @@ export default function OwnerReviewsPage() {
       setReviewReplies(repliesMap);
     } catch (err) {
       console.error('Error loading review replies:', err);
+    }
+  };
+
+  const loadReviewReports = async () => {
+    try {
+      const response = await reviewAPI.getAllReviewReports();
+      const reports = response.value || response || [];
+      const reportsMap = {};
+      reports.forEach(report => { reportsMap[report.reviewId] = report; });
+      setReviewReports(reportsMap);
+    } catch (err) {
+      console.error('Error loading review reports:', err);
     }
   };
 
@@ -142,6 +159,59 @@ export default function OwnerReviewsPage() {
     } catch (err) {
       console.error('Error deleting reply:', err);
       setError('Không thể xóa phản hồi. Vui lòng thử lại.');
+    }
+  };
+
+  const handleOpenReportModal = (review) => {
+    const existingReport = reviewReports[review.id];
+    setSelectedReview(review);
+    setReportData({ reason: existingReport?.reason || '', images: [] });
+    setShowReportModal(true);
+  };
+
+  const handleReportFileChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    setReportData(prev => ({ ...prev, images: files }));
+  };
+
+  const handleSubmitReport = async (e) => {
+    e.preventDefault();
+    if (!reportData.reason.trim()) {
+      alert('Vui lòng nhập lý do báo cáo');
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('Reason', reportData.reason);
+      if (reportData.images && reportData.images.length > 0) {
+        reportData.images.forEach((image) => {
+          formData.append('Images', image);
+        });
+      }
+
+      const existingReport = reviewReports[selectedReview.id];
+      if (existingReport) {
+        await reviewAPI.updateReviewReport(selectedReview.id, formData);
+        setSuccess('Cập nhật báo cáo thành công!');
+      } else {
+        await reviewAPI.createReviewReport(selectedReview.id, formData);
+        setSuccess('Gửi báo cáo thành công!');
+      }
+
+      await loadReviewReports();
+      setShowReportModal(false);
+      setSelectedReview(null);
+      setReportData({ reason: '', images: [] });
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      console.error('Error submitting report:', err);
+      setError(err.message || 'Không thể gửi báo cáo. Vui lòng thử lại.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -269,11 +339,10 @@ export default function OwnerReviewsPage() {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === tab.key
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.key
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                    }`}
                 >
                   {tab.label}
                   <span className="ml-2 py-0.5 px-2 rounded-full text-xs bg-gray-100 dark:bg-gray-700">{tab.count}</span>
@@ -293,7 +362,11 @@ export default function OwnerReviewsPage() {
           ) : (
             filteredReviews.map((review) => {
               const reply = reviewReplies[review.id];
+              const report = reviewReports[review.id];
               const hasReply = !!reply;
+              const hasReport = !!report;
+              // backend may serialize boolean as IsHidden or isHidden
+              const isHidden = review.isHidden ?? review.IsHidden ?? false;
 
               return (
                 <div key={review.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
@@ -308,6 +381,22 @@ export default function OwnerReviewsPage() {
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(hasReply)}`}>
                             {hasReply ? '✓ Đã phản hồi' : '⏳ Chưa phản hồi'}
                           </span>
+                          {hasReport && (
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${report.status === 0 ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                              report.status === 1 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                              }`}>
+                              {report.status === 0 ? '⚠️ Đang xử lý báo cáo' :
+                                report.status === 1 ? '✓ Báo cáo đã duyệt' :
+                                  '✗ Báo cáo bị từ chối'}
+                            </span>
+                          )}
+
+                          {isHidden && (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                              🔒 Ẩn
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           Room ID: {review.roomId} | Contract ID: {review.contractId}
@@ -331,15 +420,26 @@ export default function OwnerReviewsPage() {
 
                   <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
                     <p className="text-sm text-gray-500 dark:text-gray-400">{formatDate(review.createdAt)}</p>
-                    <button
-                      onClick={() => handleOpenResponseModal(review)}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                      </svg>
-                      {hasReply ? 'Chỉnh Sửa Phản Hồi' : 'Phản Hồi'}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleOpenReportModal(review)}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        {hasReport ? 'Xem Báo Cáo' : 'Báo Cáo'}
+                      </button>
+                      <button
+                        onClick={() => handleOpenResponseModal(review)}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                        {hasReply ? 'Chỉnh Sửa Phản Hồi' : 'Phản Hồi'}
+                      </button>
+                    </div>
                   </div>
 
                   {reply && (
@@ -441,6 +541,122 @@ export default function OwnerReviewsPage() {
                       reviewReplies[selectedReview.id] ? 'Cập Nhật' : 'Gửi Phản Hồi'
                     )}
                   </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {showReportModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  {reviewReports[selectedReview.id] ? 'Xem Báo Cáo' : 'Báo Cáo Đánh Giá'}
+                </h3>
+              </div>
+
+              <form onSubmit={handleSubmitReport} className="p-6">
+                <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="flex items-center mb-2">
+                    {renderStars(selectedReview.rating)}
+                    <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">{selectedReview.rating}/5</span>
+                  </div>
+                  <p className="text-gray-700 dark:text-gray-300">{selectedReview.content}</p>
+                  {selectedReview.imageUrl && (
+                    <div className="mt-4">
+                      <img src={selectedReview.imageUrl} alt="Review" className="rounded-lg max-w-md" onError={(e) => { e.target.style.display = 'none'; }} />
+                    </div>
+                  )}
+                </div>
+
+                {reviewReports[selectedReview.id] && (
+                  <div className="mb-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border-l-4 border-orange-500">
+                    <p className="text-sm font-medium text-orange-900 dark:text-orange-200 mb-2">
+                      Trạng thái: {
+                        reviewReports[selectedReview.id].status === 0 ? '⏳ Đang chờ xử lý' :
+                          reviewReports[selectedReview.id].status === 1 ? '✓ Đã duyệt' :
+                            '✗ Đã từ chối'
+                      }
+                    </p>
+                    {reviewReports[selectedReview.id].rejectReason && (
+                      <p className="text-sm text-red-600 dark:text-red-400 mt-2">
+                        <strong>Lý do từ chối:</strong> {reviewReports[selectedReview.id].rejectReason}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Lý do báo cáo <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={reportData.reason}
+                    onChange={(e) => setReportData(prev => ({ ...prev, reason: e.target.value }))}
+                    rows={5}
+                    required
+                    disabled={reviewReports[selectedReview.id]?.status === 0}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
+                    placeholder="Nhập lý do báo cáo đánh giá này (ví dụ: nội dung không phù hợp, spam, thông tin sai lệch...)"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Tối đa 1000 ký tự
+                  </p>
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Hình ảnh minh chứng (Tùy chọn)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleReportFileChange}
+                    disabled={reviewReports[selectedReview.id]?.status === 0}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Có thể chọn nhiều hình ảnh
+                  </p>
+                  {reviewReports[selectedReview.id]?.images && reviewReports[selectedReview.id].images.length > 0 && (
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                      {reviewReports[selectedReview.id].images.map((img, idx) => (
+                        <img key={idx} src={img} alt={`Report ${idx + 1}`} className="rounded-lg w-full h-24 object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowReportModal(false);
+                      setSelectedReview(null);
+                      setReportData({ reason: '', images: [] });
+                    }}
+                    className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                  >
+                    {reviewReports[selectedReview.id] ? 'Đóng' : 'Hủy'}
+                  </button>
+                  {!reviewReports[selectedReview.id] || reviewReports[selectedReview.id].status !== 0 ? (
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {submitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                          Đang gửi...
+                        </>
+                      ) : (
+                        reviewReports[selectedReview.id] ? 'Cập Nhật Báo Cáo' : 'Gửi Báo Cáo'
+                      )}
+                    </button>
+                  ) : null}
                 </div>
               </form>
             </div>
