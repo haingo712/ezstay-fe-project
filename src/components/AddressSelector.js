@@ -2,15 +2,17 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import vietnamAddressService from '@/services/vietnamAddressService';
+import { useTranslation } from '@/hooks/useTranslation';
 
-const AddressSelector = ({ 
-  value = {}, 
-  onChange, 
+const AddressSelector = ({
+  value = {},
+  onChange,
   disabled = false,
   required = false,
   errors = {},
-  className = '' 
+  className = ''
 }) => {
+  const { t } = useTranslation();
   const [provinces, setProvinces] = useState([]);
   const [wards, setWards] = useState([]);
   const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
@@ -57,7 +59,7 @@ const AddressSelector = ({
   const handleProvinceChange = useCallback((e) => {
     const provinceCode = parseInt(e.target.value);
     const selectedProvince = provinces.find(p => p.code === provinceCode);
-    
+
     onChange({
       ...value,
       provinceCode: provinceCode || null,
@@ -70,7 +72,7 @@ const AddressSelector = ({
   const handleWardChange = useCallback((e) => {
     const wardCode = parseInt(e.target.value);
     const selectedWard = wards.find(w => w.code === wardCode);
-    
+
     onChange({
       ...value,
       wardCode: wardCode || null,
@@ -86,9 +88,8 @@ const AddressSelector = ({
   }, [value, onChange]);
 
   // Consistent styling với login page và rooms page
-  const baseInputClass = `w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 font-medium ${
-    disabled ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed text-gray-500 dark:text-gray-400' : 'hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm'
-  }`;
+  const baseInputClass = `w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 font-medium ${disabled ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed text-gray-500 dark:text-gray-400' : 'hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm'
+    }`;
 
   const getInputClass = (fieldName) => {
     const hasError = errors[fieldName];
@@ -104,7 +105,7 @@ const AddressSelector = ({
       <div className="relative">
         <label className={labelClass}>
           <span className="flex items-center">
-            🏙️ Province/City {required && <span className="text-red-500 ml-1">*</span>}
+            🏙️ {t('profile.province')} {required && <span className="text-red-500 ml-1">*</span>}
           </span>
         </label>
         <div className="relative">
@@ -115,7 +116,7 @@ const AddressSelector = ({
             className={getInputClass('province')}
           >
             <option value="" className="text-gray-500 dark:text-gray-400">
-              {isLoadingProvinces ? '🔄 Loading provinces...' : '📍 Select province/city'}
+              {isLoadingProvinces ? `🔄 ${t('common.loading')}` : `📍 ${t('profile.selectProvince')}`}
             </option>
             {provinces.map((province) => (
               <option key={province.code} value={province.code} className="text-gray-900 dark:text-white">
@@ -138,7 +139,7 @@ const AddressSelector = ({
       <div className="relative">
         <label className={labelClass}>
           <span className="flex items-center">
-            🏘️ Ward/Commune {required && <span className="text-red-500 ml-1">*</span>}
+            🏘️ {t('profile.ward')} {required && <span className="text-red-500 ml-1">*</span>}
           </span>
         </label>
         <div className="relative">
@@ -149,11 +150,11 @@ const AddressSelector = ({
             className={getInputClass('ward')}
           >
             <option value="" className="text-gray-500 dark:text-gray-400">
-              {isLoadingWards 
-                ? '🔄 Loading wards...' 
-                : value.provinceCode 
-                  ? '📍 Select ward/commune' 
-                  : '👆 Select province/city first'
+              {isLoadingWards
+                ? `🔄 ${t('common.loading')}`
+                : value.provinceCode
+                  ? `📍 ${t('profile.selectWard')}`
+                  : `👆 ${t('profile.selectProvince')}`
               }
             </option>
             {wards.map((ward) => (
@@ -177,7 +178,7 @@ const AddressSelector = ({
       <div className="relative">
         <label className={labelClass}>
           <span className="flex items-center">
-            🏠 Detailed Address {required && <span className="text-red-500 ml-1">*</span>}
+            🏠 {t('profile.detailAddress')} {required && <span className="text-red-500 ml-1">*</span>}
           </span>
         </label>
         <div className="relative">
@@ -185,7 +186,7 @@ const AddressSelector = ({
             value={value.address || ''}
             onChange={handleAddressChange}
             disabled={disabled}
-            placeholder="Enter house number, street name... (E.g.: 123 Tran Hung Dao Street)"
+            placeholder={t('profile.detailAddress')}
             rows={3}
             className={`${getInputClass('address')} resize-none`}
           />
@@ -206,7 +207,7 @@ const AddressSelector = ({
         <div className="relative">
           <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
             <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              📍 Selected Address
+              📍 {t('profile.address')}
             </h4>
             <div className="bg-white dark:bg-gray-700 rounded-lg px-3 py-2 border border-gray-100 dark:border-gray-600">
               <p className="text-sm text-gray-800 dark:text-gray-200">

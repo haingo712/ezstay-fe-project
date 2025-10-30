@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 import paymentService from '@/services/paymentService';
 import { paymentAPI } from '@/utils/api';
 
 export default function BankAccountPage() {
     const { user } = useAuth();
     const router = useRouter();
+    const { t } = useTranslation();
 
     const [loading, setLoading] = useState(true);
     const [bankAccounts, setBankAccounts] = useState([]);
@@ -224,7 +226,7 @@ export default function BankAccountPage() {
                 <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                        <p className="mt-4 text-gray-600 dark:text-gray-400">Đang tải tài khoản ngân hàng...</p>
+                        <p className="mt-4 text-gray-600 dark:text-gray-400">{t('bankAccount.loading')}</p>
                     </div>
                 </div>
             </ProtectedRoute>
@@ -249,10 +251,10 @@ export default function BankAccountPage() {
                                 </button>
                                 <div>
                                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                                        💳 Bank Account
+                                        💳 {t('bankAccount.title')}
                                     </h1>
                                     <p className="text-gray-600 dark:text-gray-400 mt-1">
-                                        Quản lý tài khoản ngân hàng để nhận thanh toán
+                                        {t('bankAccount.subtitle')}
                                     </p>
                                 </div>
                             </div>
@@ -265,7 +267,7 @@ export default function BankAccountPage() {
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                     </svg>
-                                    Thêm Tài Khoản
+                                    {t('bankAccount.addAccount')}
                                 </button>
                             )}
 
@@ -277,7 +279,7 @@ export default function BankAccountPage() {
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                     </svg>
-                                    Thêm Tài Khoản Mới
+                                    {t('bankAccount.addNewAccount')}
                                 </button>
                             )}
                         </div>
@@ -313,19 +315,19 @@ export default function BankAccountPage() {
                     {showForm && (
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
                             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-                                {isEditing ? 'Chỉnh Sửa Tài Khoản' : 'Thêm Tài Khoản Mới'}
+                                {isEditing ? t('bankAccount.editAccount') : t('bankAccount.addNewAccount')}
                             </h2>
 
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 {/* Bank Name */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Ngân Hàng <span className="text-red-500">*</span>
+                                        {t('bankAccount.bank')} <span className="text-red-500">*</span>
                                     </label>
                                     {loadingBanks ? (
                                         <div className="flex items-center justify-center py-3 border border-gray-300 dark:border-gray-600 rounded-lg">
                                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                                            <span className="ml-2 text-gray-600 dark:text-gray-400">Đang tải danh sách ngân hàng...</span>
+                                            <span className="ml-2 text-gray-600 dark:text-gray-400">{t('bankAccount.loadingBanks')}</span>
                                         </div>
                                     ) : (
                                         <select
@@ -335,7 +337,7 @@ export default function BankAccountPage() {
                                             required
                                             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                                         >
-                                            <option value="">-- Chọn Ngân Hàng --</option>
+                                            <option value="">{t('bankAccount.selectBank')}</option>
                                             {availableBanks.map((bank) => (
                                                 <option key={bank.id} value={bank.bankName}>
                                                     {bank.fullName} ({bank.bankName})
@@ -348,7 +350,7 @@ export default function BankAccountPage() {
                                 {/* Account Number */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Số Tài Khoản <span className="text-red-500">*</span>
+                                        {t('bankAccount.accountNumber')} <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="text"
@@ -356,7 +358,7 @@ export default function BankAccountPage() {
                                         value={formData.accountNumber}
                                         onChange={handleInputChange}
                                         required
-                                        placeholder="Nhập số tài khoản"
+                                        placeholder={t('bankAccount.accountNumberPlaceholder')}
                                         className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                                     />
                                 </div>
@@ -364,14 +366,14 @@ export default function BankAccountPage() {
                                 {/* Description */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Mô Tả (Tùy chọn)
+                                        {t('bankAccount.description')}
                                     </label>
                                     <textarea
                                         name="description"
                                         value={formData.description}
                                         onChange={handleInputChange}
                                         rows={3}
-                                        placeholder="Nhập mô tả hoặc ghi chú"
+                                        placeholder={t('bankAccount.descriptionPlaceholder')}
                                         className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                                     />
                                 </div>
@@ -388,7 +390,7 @@ export default function BankAccountPage() {
                                             className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                         />
                                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                            Kích hoạt tài khoản (hiển thị cho khách thuê)
+                                            {t('bankAccount.setAsActive')}
                                         </span>
                                     </label>
                                 </div>
@@ -400,7 +402,7 @@ export default function BankAccountPage() {
                                         onClick={handleCancel}
                                         className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
                                     >
-                                        Hủy
+                                        {t('bankAccount.cancel')}
                                     </button>
                                     <button
                                         type="submit"
@@ -410,10 +412,10 @@ export default function BankAccountPage() {
                                         {loading ? (
                                             <>
                                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                                Đang lưu...
+                                                {t('bankAccount.saving')}
                                             </>
                                         ) : (
-                                            isEditing ? 'Cập Nhật' : 'Tạo Tài Khoản'
+                                            isEditing ? t('common.update') : t('bankAccount.save')
                                         )}
                                     </button>
                                 </div>
@@ -428,13 +430,13 @@ export default function BankAccountPage() {
                                 {/* Search Input */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        🔍 Tìm kiếm
+                                        🔍 {t('bankAccount.searchFilter')}
                                     </label>
                                     <input
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="Tìm theo tên ngân hàng, số tài khoản..."
+                                        placeholder={t('bankAccount.searchPlaceholder')}
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                                     />
                                 </div>
@@ -452,7 +454,7 @@ export default function BankAccountPage() {
                                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                                 }`}
                                         >
-                                            Tất cả ({bankAccounts.length})
+                                            {t('bankAccount.all')} ({bankAccounts.length})
                                         </button>
                                         <button
                                             onClick={() => setFilterStatus('active')}
@@ -461,7 +463,7 @@ export default function BankAccountPage() {
                                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                                 }`}
                                         >
-                                            Hoạt động ({bankAccounts.filter(a => a.isActive).length})
+                                            {t('bankAccount.active')} ({bankAccounts.filter(a => a.isActive).length})
                                         </button>
                                         <button
                                             onClick={() => setFilterStatus('inactive')}
@@ -470,7 +472,7 @@ export default function BankAccountPage() {
                                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                                 }`}
                                         >
-                                            Không hoạt động ({bankAccounts.filter(a => !a.isActive).length})
+                                            {t('bankAccount.inactive')} ({bankAccounts.filter(a => !a.isActive).length})
                                         </button>
                                     </div>
                                 </div>
@@ -478,7 +480,7 @@ export default function BankAccountPage() {
 
                             {/* Results count */}
                             <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                                Hiển thị <span className="font-semibold text-blue-600 dark:text-blue-400">{filteredAccounts.length}</span> / {bankAccounts.length} tài khoản
+                                {t('bankAccount.showingAccounts')} <span className="font-semibold text-blue-600 dark:text-blue-400">{filteredAccounts.length}</span> {t('bankAccount.of')} {bankAccounts.length} {t('bankAccount.accounts')}
                             </div>
                         </div>
                     )}
@@ -503,7 +505,7 @@ export default function BankAccountPage() {
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                 </svg>
-                                                Chỉnh Sửa
+                                                {t('bankAccount.edit')}
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(account)}
@@ -512,7 +514,7 @@ export default function BankAccountPage() {
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
-                                                Xóa
+                                                {t('bankAccount.delete')}
                                             </button>
                                         </div>
                                     </div>
@@ -522,7 +524,7 @@ export default function BankAccountPage() {
                                         <div className="space-y-6">
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                                    Số Tài Khoản
+                                                    {t('bankAccount.accountNumber')}
                                                 </label>
                                                 <p className="text-lg font-mono font-semibold text-gray-900 dark:text-white">
                                                     {account.accountNumber}
@@ -532,7 +534,7 @@ export default function BankAccountPage() {
                                             {account.description && (
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                                        Mô Tả
+                                                        {t('bankAccount.description')}
                                                     </label>
                                                     <p className="text-gray-700 dark:text-gray-300">
                                                         {account.description}
@@ -542,7 +544,7 @@ export default function BankAccountPage() {
 
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                                                    Trạng Thái
+                                                    {t('bankAccount.status')}
                                                 </label>
                                                 <div className="flex items-center gap-3">
                                                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${account.isActive
@@ -551,7 +553,7 @@ export default function BankAccountPage() {
                                                         }`}>
                                                         <span className={`w-2 h-2 rounded-full mr-2 ${account.isActive ? 'bg-green-500' : 'bg-red-500'
                                                             }`}></span>
-                                                        {account.isActive ? 'Đang hoạt động' : 'Không hoạt động'}
+                                                        {account.isActive ? t('bankAccount.active') : t('bankAccount.inactive')}
                                                     </span>
 
                                                     {/* Toggle Switch */}
@@ -571,9 +573,9 @@ export default function BankAccountPage() {
 
                                             <div className="pt-4 border-t dark:border-gray-700">
                                                 <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                                                    <p>Ngày tạo: {new Date(account.createdAt).toLocaleString('vi-VN')}</p>
+                                                    <p>{t('bankAccount.createdAt')}: {new Date(account.createdAt).toLocaleString('vi-VN')}</p>
                                                     {account.updatedAt && (
-                                                        <p>Cập nhật: {new Date(account.updatedAt).toLocaleString('vi-VN')}</p>
+                                                        <p>{t('bankAccount.updatedAt')}: {new Date(account.updatedAt).toLocaleString('vi-VN')}</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -583,7 +585,7 @@ export default function BankAccountPage() {
                                         <div className="flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-700/30 rounded-lg p-6">
                                             <div className="text-center mb-4">
                                                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                    Mã QR Thanh Toán
+                                                    {t('bankAccount.qrCode')}
                                                 </p>
                                             </div>
                                             {account.imageQR ? (
@@ -600,11 +602,11 @@ export default function BankAccountPage() {
                                                 </div>
                                             ) : (
                                                 <div className="w-48 h-48 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
-                                                    <p className="text-gray-500 dark:text-gray-400">Không có QR Code</p>
+                                                    <p className="text-gray-500 dark:text-gray-400">{t('bankAccount.noQrCode')}</p>
                                                 </div>
                                             )}
                                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
-                                                Khách hàng có thể quét mã này để thanh toán
+                                                {t('bankAccount.scanToTransfer')}
                                             </p>
                                         </div>
                                     </div>
@@ -623,10 +625,10 @@ export default function BankAccountPage() {
                                     </svg>
                                 </div>
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                                    Không tìm thấy tài khoản
+                                    {t('bankAccount.noFilterResults')}
                                 </h3>
                                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                                    Không có tài khoản nào phù hợp với bộ lọc của bạn
+                                    {t('bankAccount.noFilterResultsDesc')}
                                 </p>
                                 <button
                                     onClick={() => {
@@ -638,7 +640,7 @@ export default function BankAccountPage() {
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
-                                    Xóa bộ lọc
+                                    {t('common.clearFilter')}
                                 </button>
                             </div>
                         </div>
@@ -654,10 +656,10 @@ export default function BankAccountPage() {
                                     </svg>
                                 </div>
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                                    Chưa có tài khoản ngân hàng
+                                    {t('bankAccount.noAccountsFound')}
                                 </h3>
                                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                                    Thêm tài khoản ngân hàng để bắt đầu nhận thanh toán từ khách hàng
+                                    {t('bankAccount.noAccountsFoundDesc')}
                                 </p>
                                 <button
                                     onClick={() => setShowForm(true)}
@@ -666,7 +668,7 @@ export default function BankAccountPage() {
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                     </svg>
-                                    Thêm Tài Khoản Ngân Hàng
+                                    {t('bankAccount.addAccount')}
                                 </button>
                             </div>
                         </div>
