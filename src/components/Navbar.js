@@ -15,12 +15,12 @@ export default function Navbar() {
 
   // Get user role from user object or default to guest
   const userRole = user?.role || "guest";
-  
+
   // Get email from various possible JWT claim locations
-  const userEmail = user?.email || 
-                    user?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
-                    "Guest User";
-  
+  const userEmail = user?.email ||
+    user?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
+    "Guest User";
+
   // Debug logging
   console.log("Navbar - User:", user);
   console.log("Navbar - UserRole:", userRole, "Type:", typeof userRole);
@@ -172,6 +172,15 @@ export default function Navbar() {
                       >
                         Rental History
                       </Link>
+
+                      <Link
+                        href="/bills"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        My Bills
+                      </Link>
+
                       <Link
                         href={getUserDashboardLink()}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"

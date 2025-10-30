@@ -104,6 +104,11 @@ const QuickAction = ({ icon, title, description, color, onClick }) => {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
       </svg>
     ),
+    payment: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
     chart: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -121,6 +126,7 @@ const QuickAction = ({ icon, title, description, color, onClick }) => {
     blue: 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400',
     green: 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400',
     purple: 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400',
+    indigo: 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400',
     yellow: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400',
     gray: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
   };
@@ -227,8 +233,8 @@ const RoomList = ({ houseId }) => {
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-medium text-gray-900 dark:text-white">{room.name}</h4>
             <span className={`px-2 py-1 text-xs rounded-full ${room.isAvailable
-                ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                : 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+              ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+              : 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
               }`}>
               {room.isAvailable ? 'Vacant' : 'Rented'}
             </span>
@@ -673,6 +679,13 @@ export default function OwnerDashboard() {
                     description="Manage payment account"
                     color="purple"
                     onClick={() => router.push('/owner/bank-account')}
+                  />
+                  <QuickAction
+                    icon="payment"
+                    title="Payment Management"
+                    description="Track transactions"
+                    color="indigo"
+                    onClick={() => router.push('/owner/payment-management')}
                   />
                   <QuickAction
                     icon="chart"

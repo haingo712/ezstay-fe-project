@@ -256,17 +256,17 @@ export const paymentAPI = {
     if (odataParams.$count !== undefined) queryParams.append('$count', odataParams.$count);
 
     const queryString = queryParams.toString();
-    const endpoint = queryString ? `/api/Payment/getAll?${queryString}` : '/api/Payment/getAll';
+    const endpoint = queryString ? `/api/BankAccount/getAll?${queryString}` : '/api/BankAccount/getAll';
 
     return api.get(endpoint);
   },
-  getBankAccountById: (id) => api.get(`/api/Payment/bank-account/${id}`),
-  createBankAccount: (data) => api.post('/api/Payment/bank-account', data),
-  updateBankAccount: (id, data) => api.put(`/api/Payment/bank-account/${id}`, data),
-  deleteBankAccount: (id) => api.delete(`/api/Payment/bank-account/${id}`),
+  getBankAccountById: (id) => api.get(`/api/BankAccount/bank-account/${id}`),
+  createBankAccount: (data) => api.post('/api/BankAccount/bank-account', data),
+  updateBankAccount: (id, data) => api.put(`/api/BankAccount/bank-account/${id}`, data),
+  deleteBankAccount: (id) => api.delete(`/api/BankAccount/bank-account/${id}`),
 
   // Transactions
-  getTransactions: () => api.get('/api/Payment/transactions')
+  getTransactions: () => api.get('/api/BankAccount/transactions')
 };
 
 // Review API
@@ -330,6 +330,63 @@ export const reviewAPI = {
   createReviewReport: (reviewId, formData) => api.postFormData(`/api/ReviewReport/${reviewId}`, formData),
   updateReviewReport: (reviewId, formData) => api.putFormData(`/api/ReviewReport/${reviewId}`, formData),
   updateReviewReportStatus: (reportId, data) => api.put(`/api/ReviewReport/status/${reportId}`, data)
+};
+
+// Utility Bill API
+export const utilityBillAPI = {
+  // Get bills for tenant (Guest User)
+  getTenantBills: (odataParams = {}) => {
+    const queryParams = new URLSearchParams();
+
+    if (odataParams.$filter) queryParams.append('$filter', odataParams.$filter);
+    if (odataParams.$orderby) queryParams.append('$orderby', odataParams.$orderby);
+    if (odataParams.$top) queryParams.append('$top', odataParams.$top);
+    if (odataParams.$skip) queryParams.append('$skip', odataParams.$skip);
+    if (odataParams.$count !== undefined) queryParams.append('$count', odataParams.$count);
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/api/UtilityBills/tenant?${queryString}` : '/api/UtilityBills/tenant';
+
+    return api.get(endpoint);
+  },
+
+  // Get bills for owner
+  getOwnerBills: (odataParams = {}) => {
+    const queryParams = new URLSearchParams();
+
+    if (odataParams.$filter) queryParams.append('$filter', odataParams.$filter);
+    if (odataParams.$orderby) queryParams.append('$orderby', odataParams.$orderby);
+    if (odataParams.$top) queryParams.append('$top', odataParams.$top);
+    if (odataParams.$skip) queryParams.append('$skip', odataParams.$skip);
+    if (odataParams.$count !== undefined) queryParams.append('$count', odataParams.$count);
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/api/UtilityBills/owner?${queryString}` : '/api/UtilityBills/owner';
+
+    return api.get(endpoint);
+  },
+
+  // Get bill by ID
+  getBillById: (billId) => api.get(`/api/UtilityBills/${billId}`),
+
+  // Generate bill for room (Owner only)
+  generateBill: (roomId, tenantId = null) => {
+    const endpoint = tenantId
+      ? `/api/UtilityBills/generate/${roomId}?tenantId=${tenantId}`
+      : `/api/UtilityBills/generate/${roomId}`;
+    return api.post(endpoint, {});
+  },
+
+  // Update bill (Owner only)
+  updateBill: (billId, formData) => api.putFormData(`/api/UtilityBills/${billId}`, formData),
+
+  // Mark bill as paid
+  markAsPaid: (billId, paymentMethod) =>
+    api.put(`/api/UtilityBills/${billId}/pay`, { paymentMethod }),
+
+  // Cancel bill (Owner only)
+  cancelBill: (billId, cancelNote) =>
+    api.put(`/api/UtilityBills/${billId}/cancel`, { cancelNote })
 };
 
 export default api;
