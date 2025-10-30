@@ -71,8 +71,10 @@ export default function BillPaymentPage() {
             console.log('🏦 Loading bank accounts for owner:', ownerId);
             console.log('🏦 Full bill data:', bill);
 
-            // Use apiFetch from utils/api.js for consistent API calls
-            const endpoint = `/api/BankAccount/owner/${ownerId}`;
+            // Gọi endpoint mới với amount để backend generate QR có số tiền
+            const amount = bill.amount;
+            const description = `Thanh toán hóa đơn ${billId.substring(0, 8).toUpperCase()}`;
+            const endpoint = `/api/BankAccount/owner/${ownerId}/bankAccountActive?amount=${amount}&description=${encodeURIComponent(description)}`;
             console.log('🏦 API endpoint:', endpoint);
 
             const data = await apiFetch(endpoint, {
@@ -81,7 +83,7 @@ export default function BillPaymentPage() {
 
             console.log('🏦 Bank accounts data:', data);
 
-            // Handle different response formats
+            // Handle different response formats (OData returns data in 'value' property)
             const accounts = data.value || data.data || data || [];
             console.log('🏦 Parsed accounts:', accounts);
 
