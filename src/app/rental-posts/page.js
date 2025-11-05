@@ -7,7 +7,8 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import RoleBasedRedirect from '../../components/RoleBasedRedirect';
 import { rentalPostService } from '@/services/rentalPostService';
-import { Building, Home, Calendar, Search, Filter } from 'lucide-react';
+import favoritePostService from '@/services/favoritePostService';
+import { Building, Home, Calendar, Search, Filter, Heart } from 'lucide-react';
 
 export default function RentalPostsPage() {
   const [posts, setPosts] = useState([]);
@@ -15,6 +16,8 @@ export default function RentalPostsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [favorites, setFavorites] = useState([]);
+  const [favoriteLoading, setFavoriteLoading] = useState({});
   const router = useRouter();
   const { isAuthenticated } = useAuth();
 
@@ -23,13 +26,45 @@ export default function RentalPostsPage() {
   }, []);
 
   useEffect(() => {
+    if (isAuthenticated) {
+      loadFavorites();
+    } else {
+      setFavorites([]);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
     filterPosts();
   }, [searchTerm, statusFilter, posts]);
+
+  const loadFavorites = async () => {
+    try {
+      const response = await favoritePostService.getMyFavorites();
+      setFavorites(Array.isArray(response) ? response : []);
+    } catch (error) {
+      console.error('Failed to load favorites:', error);
+      setFavorites([]);
+    }
+  };
 
   const loadPosts = async () => {
     try {
       setLoading(true);
       const allPosts = await rentalPostService.getAllForUser();
+      
+      // Debug: Log để kiểm tra authorName
+      console.log('📋 Posts loaded:', allPosts.length);
+      if (allPosts.length > 0) {
+        console.log('📋 Sample post with author:', {
+          id: allPosts[0].id,
+          title: allPosts[0].title,
+          authorId: allPosts[0].authorId,
+          authorName: allPosts[0].authorName,
+          houseName: allPosts[0].houseName,
+          roomName: allPosts[0].roomName
+        });
+      }
+      
       // Sort by newest first
       const sortedPosts = allPosts.sort((a, b) => 
         new Date(b.createdAt) - new Date(a.createdAt)
@@ -85,6 +120,39 @@ export default function RentalPostsPage() {
     if (post.isApproved === 0) return { text: 'Rejected', class: 'bg-red-100 text-red-800' };
     return { text: 'Available', class: 'bg-green-100 text-green-800' };
   };
+
+  const handleToggleFavorite = async (postId, event) => {
+    event.stopPropagation();
+
+    if (!isAuthenticated) {
+      alert('Vui lòng đăng nhập để lưu bài viết yêu thích!');
+      router.push('/login');
+      return;
+    }
+
+    const currentFavorite = favorites.find((favorite) => favorite.postId === postId);
+
+    try {
+      setFavoriteLoading((prev) => ({ ...prev, [postId]: true }));
+
+      if (currentFavorite) {
+        await favoritePostService.removeFavorite(currentFavorite.id);
+        setFavorites((prev) => prev.filter((favorite) => favorite.id !== currentFavorite.id));
+        return;
+      }
+
+  const createdFavorite = await favoritePostService.addFavorite(postId);
+  const favoriteRecord = createdFavorite?.id ? createdFavorite : { id: `${Date.now()}-${postId}`, postId };
+      setFavorites((prev) => [...prev, favoriteRecord]);
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+      alert('Không thể cập nhật yêu thích. Vui lòng thử lại.');
+    } finally {
+      setFavoriteLoading((prev) => ({ ...prev, [postId]: false }));
+    }
+  };
+
+  const isFavorited = (postId) => favoritePostService.isFavorited(postId, favorites);
 
   const handleViewDetails = (postId) => {
     router.push(`/rental-posts/${postId}`);
@@ -191,6 +259,22 @@ export default function RentalPostsPage() {
                           alt={post.title}
                           className="w-full h-full object-cover"
                         />
+
+                        <button
+                          onClick={(event) => handleToggleFavorite(post.id, event)}
+                          disabled={favoriteLoading[post.id]}
+                          className="absolute top-4 left-4 p-2 bg-white dark:bg-gray-900/80 rounded-full shadow-lg transition-transform hover:scale-110 disabled:opacity-60"
+                          title={isFavorited(post.id) ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
+                        >
+                          <Heart
+                            className={`w-5 h-5 ${
+                              isFavorited(post.id)
+                                ? 'fill-red-500 text-red-500'
+                                : 'text-gray-400'
+                            }`}
+                          />
+                        </button>
+
                         <div className="absolute top-4 right-4">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${status.class}`}>
                             {status.text}
@@ -224,18 +308,18 @@ export default function RentalPostsPage() {
                           </div>
                         </div>
 
-                        {/* Author */}
+                        {/* Author & Contact */}
                         <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm">
-                              {post.authorName ? post.authorName[0].toUpperCase() : 'A'}
+                          <div className="flex items-center flex-1 min-w-0">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg flex-shrink-0">
+                              {post.authorName ? post.authorName[0].toUpperCase() : '?'}
                             </div>
-                            <div className="ml-2">
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                {post.authorName || 'Anonymous'}
+                            <div className="ml-3 min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate" title={post.authorName || 'Unknown Author'}>
+                                👤 {post.authorName || 'Unknown Author'}
                               </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                📞 {post.contactPhone}
+                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate" title={post.contactPhone}>
+                                📞 {post.contactPhone || 'No phone'}
                               </p>
                             </div>
                           </div>

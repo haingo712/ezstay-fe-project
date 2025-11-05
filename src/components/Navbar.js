@@ -47,6 +47,10 @@ export default function Navbar() {
       { href: "/about", label: t('nav.about') },
     ];
 
+    if (isAuthenticated) {
+      baseItems.splice(2, 0, { href: "/favorites", label: "Favorites" });
+    }
+
     return baseItems;
   };
 

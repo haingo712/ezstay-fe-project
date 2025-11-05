@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import rentalPostService from '@/services/rentalPostService';
 import reviewService from '@/services/reviewService';
+import boardingHouseService from '@/services/boardingHouseService';
 import { 
   Building2, 
   MapPin, 
@@ -32,44 +33,101 @@ export default function RentalPostDetailPage() {
   const [post, setPost] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [reviewsLoading, setReviewsLoading] = useState(true);
   const [showChatDialog, setShowChatDialog] = useState(false);
+  const [groupByRoom, setGroupByRoom] = useState(false);
+  const [userNames, setUserNames] = useState({});
+  const [houseLocation, setHouseLocation] = useState(null);
 
   useEffect(() => {
     if (postId) {
       loadPost();
-      loadReviews();
     }
   }, [postId]);
 
   const loadPost = async () => {
     try {
       setLoading(true);
-      const response = await rentalPostService.getPostById(postId);
-      console.log('Post detail:', response);
-      setPost(response.data || response);
+      const postData = await rentalPostService.getPostById(postId);
+      console.log('📋 Post detail:', postData);
+      
+      setPost(postData);
+      
+      // Fetch boarding house location if boardingHouseId exists
+      if (postData.boardingHouseId) {
+        fetchHouseLocation(postData.boardingHouseId);
+      }
+      
+      // BE RentalPostsAPI returns reviews in post.Reviews (already normalized to camelCase)
+      const reviewsData = postData.reviews || [];
+      console.log('📝 Reviews from BE:', reviewsData);
+      setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+      
+      // Fetch userNames for all reviews
+      if (Array.isArray(reviewsData) && reviewsData.length > 0) {
+        fetchUserNames(reviewsData);
+      }
     } catch (error) {
-      console.error('Error loading post:', error);
+      console.error('❌ Error loading post:', error);
       alert('Failed to load post details');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadReviews = async () => {
+  // Fetch boarding house location from BoardingHouse API
+  const fetchHouseLocation = async (boardingHouseId) => {
     try {
-      setReviewsLoading(true);
-      const response = await reviewService.getReviewsByPostId(postId);
-      console.log('Reviews:', response);
+      console.log('🏠 Fetching boarding house location:', boardingHouseId);
+      const houseData = await boardingHouseService.getById(boardingHouseId);
+      console.log('✅ House data:', houseData);
       
-      // Backend returns ApiResponse with data field
-      const reviewsData = response.data || response.value || response || [];
-      setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+      // Extract location data
+      const location = houseData?.location || houseData?.Location;
+      if (location) {
+        setHouseLocation({
+          fullAddress: location.fullAddress || location.FullAddress || '',
+          provinceName: location.provinceName || location.ProvinceName || '',
+          communeName: location.communeName || location.CommuneName || '',
+          addressDetail: location.addressDetail || location.AddressDetail || ''
+        });
+        console.log('✅ Location loaded:', location);
+      }
     } catch (error) {
-      console.error('Error loading reviews:', error);
-      setReviews([]);
-    } finally {
-      setReviewsLoading(false);
+      console.error('❌ Error fetching house location:', error);
+    }
+  };
+
+  // Fetch user names from Account API
+  const fetchUserNames = async (reviewsList) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const uniqueUserIds = [...new Set(reviewsList.map(r => r.userId))];
+      const namesMap = {};
+
+      await Promise.all(
+        uniqueUserIds.map(async (userId) => {
+          try {
+            const response = await fetch(`https://localhost:7000/api/Accounts/${userId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+              const userData = await response.json();
+              namesMap[userId] = userData?.fullName || userData?.FullName || 'Unknown User';
+            } else {
+              namesMap[userId] = 'Unknown User';
+            }
+          } catch (err) {
+            namesMap[userId] = 'Unknown User';
+          }
+        })
+      );
+
+      setUserNames(namesMap);
+      console.log('✅ User names loaded:', namesMap);
+    } catch (error) {
+      console.error('❌ Error loading user names:', error);
     }
   };
 
@@ -113,6 +171,22 @@ export default function RentalPostDetailPage() {
     if (reviews.length === 0) return 0;
     const sum = reviews.reduce((acc, review) => acc + review.rating, 0);
     return (sum / reviews.length).toFixed(1);
+  };
+
+  // Group reviews by roomId
+  const groupReviewsByRoom = () => {
+    if (reviews.length === 0) return {};
+    
+    const grouped = reviews.reduce((acc, review) => {
+      const roomId = review.roomId || 'unknown';
+      if (!acc[roomId]) {
+        acc[roomId] = [];
+      }
+      acc[roomId].push(review);
+      return acc;
+    }, {});
+    
+    return grouped;
   };
 
   if (loading) {
@@ -190,6 +264,23 @@ export default function RentalPostDetailPage() {
                 {post.title}
               </h1>
 
+              {/* Address highlight */}
+              {houseLocation && houseLocation.fullAddress && (
+                <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-start gap-3">
+                    <MapPin className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                        📍 Location
+                      </p>
+                      <p className="font-semibold text-gray-900 dark:text-white text-base">
+                        {houseLocation.fullAddress}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center gap-4 mb-6 text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
@@ -214,26 +305,41 @@ export default function RentalPostDetailPage() {
 
             {/* Reviews Section */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Reviews
+              <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <MessageSquare className="h-7 w-7 text-blue-600" />
+                  Room Reviews
                 </h2>
                 {reviews.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                    <span className="text-xl font-bold text-gray-900 dark:text-white">
-                      {calculateAverageRating()}
-                    </span>
-                    <span className="text-gray-600 dark:text-gray-400">
-                      ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
-                    </span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 bg-yellow-50 dark:bg-yellow-900/20 px-4 py-2 rounded-lg">
+                      <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                      <span className="text-xl font-bold text-gray-900 dark:text-white">
+                        {calculateAverageRating()}
+                      </span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        ({reviews.length})
+                      </span>
+                    </div>
+                    
+                    {/* Toggle Group by Room */}
+                    {Object.keys(groupReviewsByRoom()).length > 1 && (
+                      <button
+                        onClick={() => setGroupByRoom(!groupByRoom)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                      >
+                        <Building2 className="h-4 w-4" />
+                        {groupByRoom ? 'Show All' : 'Group by Room'}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
 
-              {reviewsLoading ? (
+              {loading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Loading reviews...</p>
                 </div>
               ) : reviews.length === 0 ? (
                 <div className="text-center py-12">
@@ -244,37 +350,134 @@ export default function RentalPostDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {reviews.map((review) => (
-                    <div
-                      key={review.id}
-                      className="border-b border-gray-200 dark:border-gray-700 last:border-0 pb-6 last:pb-0"
-                    >
-                      <div className="flex items-start gap-4">
-                        {/* Avatar */}
-                        <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                          <User className="h-6 w-6 text-white" />
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="font-semibold text-gray-900 dark:text-white">
-                              {review.userName || 'Anonymous'}
-                            </span>
-                            <StarRating rating={review.rating} />
-                          </div>
-                          
-                          <p className="text-gray-700 dark:text-gray-300 mb-2">
-                            {review.content}
-                          </p>
-                          
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
-                            {new Date(review.createdAt).toLocaleDateString()}
+                  {groupByRoom ? (
+                    // Group by Room View
+                    Object.entries(groupReviewsByRoom()).map(([roomId, roomReviews]) => (
+                      <div key={roomId} className="border-2 border-blue-200 dark:border-blue-800 rounded-xl p-5 bg-blue-50/30 dark:bg-blue-900/10">
+                        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-blue-300 dark:border-blue-700">
+                          <Building2 className="h-5 w-5 text-blue-600" />
+                          <h3 className="font-bold text-lg text-gray-900 dark:text-white">
+                            Room ID: {roomId.substring(0, 13)}...
+                          </h3>
+                          <span className="ml-auto bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-sm font-semibold">
+                            {roomReviews.length} {roomReviews.length === 1 ? 'review' : 'reviews'}
                           </span>
                         </div>
+                        <div className="space-y-4">
+                          {roomReviews.map((review) => (
+                            <div
+                              key={review.id}
+                              className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600 hover:shadow-md transition-shadow"
+                            >
+                              <div className="flex items-start gap-4">
+                                <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
+                                  <span className="text-white font-bold text-base">
+                                    {userNames[review.userId] ? userNames[review.userId][0].toUpperCase() : '?'}
+                                  </span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-3 mb-2">
+                                    <div className="flex-1 min-w-0">
+                                      <span className="font-bold text-gray-900 dark:text-white text-base block truncate">
+                                        {userNames[review.userId] || 'Loading...'}
+                                      </span>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <StarRating rating={review.rating} />
+                                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-0.5 rounded">
+                                          {review.rating}/5
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <p className="text-gray-800 dark:text-gray-200 mb-2 leading-relaxed text-sm">
+                                    {review.content}
+                                  </p>
+                                  {review.imageUrl && review.imageUrl !== '' && (
+                                    <div className="mb-2">
+                                      <img 
+                                        src={review.imageUrl} 
+                                        alt="Review" 
+                                        className="rounded-lg max-h-48 w-auto object-cover border-2 border-gray-200 dark:border-gray-600 shadow-md"
+                                      />
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                                    <Calendar className="h-3 w-3" />
+                                    <span>{new Date(review.createdAt).toLocaleDateString('vi-VN', { 
+                                      year: 'numeric', 
+                                      month: 'short', 
+                                      day: 'numeric' 
+                                    })}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    // Flat List View
+                    reviews.map((review) => (
+                      <div
+                        key={review.id}
+                        className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-700/50 dark:to-blue-900/20 rounded-lg p-5 border border-gray-200 dark:border-gray-600 hover:shadow-lg transition-all duration-200"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="h-14 w-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg border-2 border-white dark:border-gray-700">
+                            <span className="text-white font-bold text-lg">
+                              {userNames[review.userId] ? userNames[review.userId][0].toUpperCase() : '?'}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-3 mb-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-bold text-gray-900 dark:text-white truncate text-lg">
+                                    {userNames[review.userId] || 'Loading...'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <StarRating rating={review.rating} />
+                                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-0.5 rounded">
+                                    {review.rating}/5
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <p className="text-gray-800 dark:text-gray-200 mb-3 leading-relaxed text-base">
+                              {review.content}
+                            </p>
+                            {review.imageUrl && review.imageUrl !== '' && (
+                              <div className="mb-3">
+                                <img 
+                                  src={review.imageUrl} 
+                                  alt="Review" 
+                                  className="rounded-lg max-h-64 w-auto object-cover border-2 border-gray-200 dark:border-gray-600 shadow-md"
+                                />
+                              </div>
+                            )}
+                            <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 bg-white/50 dark:bg-gray-800/50 px-3 py-2 rounded-md">
+                              <div className="flex items-center gap-1.5">
+                                <Calendar className="h-3.5 w-3.5" />
+                                <span className="font-medium">{new Date(review.createdAt).toLocaleDateString('vi-VN', { 
+                                  year: 'numeric', 
+                                  month: 'long', 
+                                  day: 'numeric' 
+                                })}</span>
+                              </div>
+                              {review.roomId && (
+                                <div className="flex items-center gap-1.5 border-l border-gray-300 dark:border-gray-600 pl-4">
+                                  <Building2 className="h-3.5 w-3.5 text-blue-600" />
+                                  <span className="font-medium">Room: {review.roomId.substring(0, 8)}...</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </div>
@@ -327,6 +530,35 @@ export default function RentalPostDetailPage() {
                     </p>
                   </div>
                 </div>
+
+                {/* Address Section */}
+                {houseLocation && houseLocation.fullAddress && (
+                  <div className="flex items-start gap-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <MapPin className="h-5 w-5 text-red-500 mt-1 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Address</p>
+                      <p className="font-medium text-gray-900 dark:text-white leading-relaxed">
+                        {houseLocation.fullAddress}
+                      </p>
+                      {(houseLocation.provinceName || houseLocation.communeName) && (
+                        <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                          {houseLocation.communeName && (
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium">📍</span>
+                              <span>{houseLocation.communeName}</span>
+                            </div>
+                          )}
+                          {houseLocation.provinceName && (
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium">🌍</span>
+                              <span>{houseLocation.provinceName}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3 mt-6">
