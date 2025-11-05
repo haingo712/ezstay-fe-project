@@ -10,17 +10,19 @@ import FaceRegistrationModal from "@/components/FaceRegistrationModal";
 import profileService from "@/services/profileService";
 import otpService from "@/services/otpService";
 import AuthService from "@/services/authService";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function ProfilePage() {
   const { user, isAuthenticated, refreshUserInfo } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
   // Profile state
   const [profileExists, setProfileExists] = useState(false); // Track if profile already exists
-  
+
   // Form state - enhanced to match backend structure
   const [profile, setProfile] = useState({
     email: "",
@@ -47,7 +49,7 @@ export default function ProfilePage() {
   // Avatar upload state
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState("");
-  
+
   // CCCD image upload state
   const [frontImageFile, setFrontImageFile] = useState(null);
   const [frontImagePreview, setFrontImagePreview] = useState("");
@@ -111,18 +113,18 @@ export default function ProfilePage() {
   const loadProfile = async () => {
     try {
       setLoading(true);
-      
+
       console.log("🔍 Current user object:", user);
-      
+
       // First, fetch account info to get email, phone, fullName
       let accountInfo = null;
       const userId = user?.id || user?.sub || user?.userId;
-      
+
       if (userId) {
         console.log("👤 Fetching account info for userId:", userId);
         const accountResponse = await AuthService.getAccountInfo(userId);
         console.log("📥 Account response:", accountResponse);
-        
+
         if (accountResponse.success) {
           accountInfo = accountResponse.data;
           console.log("✅ Account info loaded:", accountInfo);
@@ -132,14 +134,14 @@ export default function ProfilePage() {
       } else {
         console.warn("⚠️ No userId found in user object:", user);
       }
-      
+
       const profileData = await profileService.getProfile();
-      
+
       console.log("🔍 ===== PROFILE DATA DEBUG =====");
       console.log("🔍 Raw profile data from API:", JSON.stringify(profileData, null, 2));
       console.log("🔍 Profile data type:", typeof profileData);
       console.log("🔍 Profile data keys:", profileData ? Object.keys(profileData) : 'null');
-      
+
       if (profileData) {
         console.log("📄 Profile loaded from backend");
         console.log("📄 All fields check:", {
@@ -160,9 +162,9 @@ export default function ProfilePage() {
           frontImageUrl: profileData.frontImageUrl,
           backImageUrl: profileData.backImageUrl
         });
-        
+
         setProfileExists(true); // Profile exists
-        
+
         // Map backend response (camelCase format) to frontend state
         // Priority: Profile data > Account info > Token data
         const newProfileState = {
@@ -172,8 +174,8 @@ export default function ProfilePage() {
           avatar: profileData.avatar || "",
           gender: profileService.getGenderText(profileData.gender) || "Male",
           bio: profileData.bio || "",
-          detailAddress: profileData.detailAddress || "", 
-          dateOfBirth: profileData.dateOfBirth ? 
+          detailAddress: profileData.detailAddress || "",
+          dateOfBirth: profileData.dateOfBirth ?
             new Date(profileData.dateOfBirth).toISOString().split('T')[0] : "",
           // Address: backend uses provinceId/wardId and provinceName/wardName (camelCase)
           provinceId: (profileData.provinceId || "").toString(),
@@ -185,11 +187,11 @@ export default function ProfilePage() {
           backImageUrl: profileData.backImageUrl || "",
           temporaryResidence: profileData.temporaryResidence || "",
           citizenIdNumber: profileData.citizenIdNumber || "",
-          citizenIdIssuedDate: profileData.citizenIdIssuedDate ? 
+          citizenIdIssuedDate: profileData.citizenIdIssuedDate ?
             new Date(profileData.citizenIdIssuedDate).toISOString().split('T')[0] : "",
           citizenIdIssuedPlace: profileData.citizenIdIssuedPlace || ""
         };
-        
+
         console.log("🖼️ IMAGE URLS DEBUG:");
         console.log("  - Backend frontImageUrl:", profileData.frontImageUrl);
         console.log("  - Backend backImageUrl:", profileData.backImageUrl);
@@ -198,9 +200,9 @@ export default function ProfilePage() {
         console.log("  - Mapped backImageUrl:", newProfileState.backImageUrl);
         console.log("  - Mapped avatar:", newProfileState.avatar);
         console.log("✅ New profile state to set:", JSON.stringify(newProfileState, null, 2));
-        
+
         setProfile(newProfileState);
-        
+
         console.log("✅ Profile state updated successfully");
       } else {
         console.log("📝 Profile not found, user needs to create one");
@@ -235,7 +237,7 @@ export default function ProfilePage() {
     const file = e.target.files[0];
     if (file) {
       setAvatarFile(file);
-      
+
       // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -250,7 +252,7 @@ export default function ProfilePage() {
     const file = e.target.files[0];
     if (file) {
       setFrontImageFile(file);
-      
+
       // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -265,7 +267,7 @@ export default function ProfilePage() {
     const file = e.target.files[0];
     if (file) {
       setBackImageFile(file);
-      
+
       // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -387,7 +389,7 @@ export default function ProfilePage() {
 
     try {
       setChangingPassword(true);
-      
+
       // Get token from localStorage
       const token = localStorage.getItem("authToken") || localStorage.getItem("ezstay_token");
       if (!token) {
@@ -447,7 +449,7 @@ export default function ProfilePage() {
       }
 
       setPasswordSuccess(successMessage);
-      
+
       // Clear form
       setPasswordData({
         oldPassword: "",
@@ -498,7 +500,7 @@ export default function ProfilePage() {
       console.log("📷 Front CCCD file:", frontImageFile);
       console.log("📷 Back CCCD file:", backImageFile);
       console.log("📝 Profile exists:", profileExists);
-      
+
       // Add avatar file to profileData ONLY if new file selected
       // Backend expects IFormFile, not string URL
       // If no new file - DON'T send field, backend will keep existing avatar
@@ -510,7 +512,7 @@ export default function ProfilePage() {
         // DON'T send avatar field - backend will keep existing avatar
         console.log("ℹ️ No new avatar file - backend will keep existing avatar");
       }
-      
+
       // Add CCCD image files to profileData ONLY if new files selected
       // Backend expects IFormFile, not string URL
       // If no new file - DON'T send field, backend will keep existing URL
@@ -523,7 +525,7 @@ export default function ProfilePage() {
         // Backend will keep existing URL if field is not sent (null check)
         console.log("ℹ️ No new front CCCD file - backend will keep existing image");
       }
-      
+
       if (backImageFile) {
         console.log("📤 Will send back CCCD image file to backend...");
         profileData.backImageUrl = backImageFile; // Send IFormFile
@@ -533,17 +535,17 @@ export default function ProfilePage() {
         // Backend will keep existing URL if field is not sent (null check)
         console.log("ℹ️ No new back CCCD file - backend will keep existing image");
       }
-      
+
       let result;
       const wasNewProfile = !profileExists;
-      
+
       if (!profileExists) {
         // POST: Create new profile (first time)
         console.log("📝 Creating new profile...");
         result = await profileService.createProfile(profileData);
         console.log("📥 Profile created:", result);
         setSuccess("Profile created successfully! Reloading...");
-        
+
         // Wait a bit for backend to process
         await new Promise(resolve => setTimeout(resolve, 300));
       } else {
@@ -553,29 +555,29 @@ export default function ProfilePage() {
         console.log("📥 Profile updated:", result);
         setSuccess("Profile updated successfully! Reloading...");
       }
-      
+
       // Reload profile data to reflect changes
       console.log("🔄 Reloading profile to get latest data...");
       await loadProfile();
-      
+
       // Clear file states after successful save
       setAvatarFile(null);
       setFrontImageFile(null);
       setFrontImagePreview("");
       setBackImageFile(null);
       setBackImagePreview("");
-      
+
       // Update success message after reload
       if (wasNewProfile) {
         setSuccess("✅ Profile created and loaded successfully!");
       } else {
         setSuccess("✅ Profile updated successfully!");
       }
-      
+
       // Refresh user info in auth context to update navbar avatar
       console.log("🔄 Refreshing user info for navbar...");
       await refreshUserInfo(true); // Pass true to load avatar
-      
+
       console.log("🔄 Profile operation complete");
     } catch (err) {
       console.error("❌ Profile error:", err);
@@ -584,12 +586,12 @@ export default function ProfilePage() {
         response: err.response,
         stack: err.stack
       });
-      
+
       // Display detailed error message
-      const errorMsg = err.message || 
-                      err.response?.data?.message ||
-                      err.response?.data?.title ||
-                      "Failed to save profile. Please check console for details.";
+      const errorMsg = err.message ||
+        err.response?.data?.message ||
+        err.response?.data?.title ||
+        "Failed to save profile. Please check console for details.";
       setError(errorMsg);
     } finally {
       setLoading(false);
@@ -609,13 +611,13 @@ export default function ProfilePage() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              ← Back
+              ← {t('common.back')}
             </button>
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-              Profile Settings
+              {t('profile.myProfile')}
             </h1>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
-              Manage your personal information and preferences
+              {t('profile.personalInfo')}
             </p>
           </div>
 
@@ -637,7 +639,7 @@ export default function ProfilePage() {
             {/* Avatar Section */}
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
               <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
-                Profile Picture
+                {t('profile.avatar')}
               </h2>
               <div className="flex items-center space-x-6">
                 <div className="relative">
@@ -683,7 +685,7 @@ export default function ProfilePage() {
                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      Choose Avatar Image
+                      {t('profile.uploadAvatar')}
                     </label>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       JPG, PNG, or GIF. Max file size 2MB.
@@ -700,10 +702,10 @@ export default function ProfilePage() {
               {/* Face Registration Button */}
               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">
-                  Face Recognition
+                  {t('profile.faceRegistration')}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Register your face for quick and secure login using facial recognition
+                  {t('profile.registerFace')}
                 </p>
                 <button
                   type="button"
@@ -714,17 +716,17 @@ export default function ProfilePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
-                  Register Face
+                  {t('profile.registerFace')}
                 </button>
               </div>
 
               {/* Change Password Button */}
               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">
-                  Security
+                  {t('profile.settings')}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Update your password to keep your account secure
+                  {t('profile.changePassword')}
                 </p>
                 <button
                   type="button"
@@ -734,7 +736,7 @@ export default function ProfilePage() {
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                   </svg>
-                  Change Password
+                  {t('profile.changePassword')}
                 </button>
               </div>
             </div>
@@ -742,58 +744,52 @@ export default function ProfilePage() {
             {/* Basic Information */}
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
               <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
-                Basic Information
+                {t('profile.personalInfo')}
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Full Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Full Name <span className="text-red-500">*</span>
+                    {t('profile.fullName')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="fullName"
                     value={profile.fullName}
                     onChange={handleInputChange}
-                    placeholder="Enter your full name"
+                    placeholder={t('profile.fullName')}
                     required
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    {profileExists ? "Full name from your profile" : "Enter your full name"}
-                  </p>
                 </div>
 
                 {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Email <span className="text-red-500">*</span>
+                    {t('auth.email')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
                     name="email"
                     value={profile.email}
                     onChange={handleInputChange}
-                    placeholder="Enter your email"
+                    placeholder={t('auth.email')}
                     required
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    {profileExists ? "Email from your profile" : "Enter your email"}
-                  </p>
                 </div>
 
                 {/* Phone */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Phone Number <span className="text-red-500">*</span>
+                    {t('profile.phone')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
                     name="phone"
                     value={profile.phone}
                     onChange={handleInputChange}
-                    placeholder="Enter your phone number"
+                    placeholder={t('profile.phone')}
                     required
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
@@ -805,7 +801,7 @@ export default function ProfilePage() {
                 {/* Gender */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Gender
+                    {t('profile.gender')}
                   </label>
                   <select
                     name="gender"
@@ -813,9 +809,9 @@ export default function ProfilePage() {
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
+                    <option value="Male">{t('profile.male')}</option>
+                    <option value="Female">{t('profile.female')}</option>
+                    <option value="Other">{t('profile.other')}</option>
                   </select>
                 </div>
               </div>
@@ -823,7 +819,7 @@ export default function ProfilePage() {
               {/* Date of Birth */}
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Date of Birth
+                  {t('profile.dateOfBirth')}
                 </label>
                 <input
                   type="date"
@@ -837,7 +833,7 @@ export default function ProfilePage() {
               {/* Address Selector */}
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Address
+                  {t('profile.address')}
                 </label>
                 <AddressSelector
                   value={{
@@ -855,14 +851,14 @@ export default function ProfilePage() {
               {/* Bio */}
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Bio
+                  {t('profile.bio')}
                 </label>
                 <textarea
                   name="bio"
                   value={profile.bio}
                   onChange={handleInputChange}
                   rows={4}
-                  placeholder="Tell us about yourself..."
+                  placeholder={t('profile.bio')}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
                 />
               </div>
@@ -871,20 +867,20 @@ export default function ProfilePage() {
             {/* Citizen ID Information (CCCD) - Optional */}
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
               <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
-                Citizen ID Information (Optional)
+                {t('profile.citizenId')}
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Citizen ID Number */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Citizen ID Number (CCCD)
+                    {t('profile.citizenIdNumber')}
                   </label>
                   <input
                     type="text"
                     name="citizenIdNumber"
                     value={profile.citizenIdNumber}
                     onChange={handleInputChange}
-                    placeholder="e.g., 001234567890"
+                    placeholder={t('profile.citizenIdNumber')}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -892,7 +888,7 @@ export default function ProfilePage() {
                 {/* Citizen ID Issued Date */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Issued Date
+                    {t('profile.citizenIdIssuedDate')}
                   </label>
                   <input
                     type="date"
@@ -906,14 +902,14 @@ export default function ProfilePage() {
                 {/* Citizen ID Issued Place */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Issued Place
+                    {t('profile.citizenIdIssuedPlace')}
                   </label>
                   <input
                     type="text"
                     name="citizenIdIssuedPlace"
                     value={profile.citizenIdIssuedPlace}
                     onChange={handleInputChange}
-                    placeholder="e.g., Cục Cảnh sát ĐKQL cư trú và DLQG về dân cư"
+                    placeholder={t('profile.citizenIdIssuedPlace')}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -921,14 +917,14 @@ export default function ProfilePage() {
                 {/* Temporary Residence */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Temporary Residence Address
+                    {t('profile.temporaryResidence')}
                   </label>
                   <input
                     type="text"
                     name="temporaryResidence"
                     value={profile.temporaryResidence}
                     onChange={handleInputChange}
-                    placeholder="Enter temporary residence address if different from current address"
+                    placeholder={t('profile.temporaryResidence')}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -936,7 +932,7 @@ export default function ProfilePage() {
                 {/* Front Image Upload */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Front ID Image
+                    {t('profile.frontImage')}
                   </label>
                   <input
                     type="file"
@@ -952,7 +948,7 @@ export default function ProfilePage() {
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    Choose Front Image
+                    {t('profile.uploadImage')}
                   </label>
                   {frontImageFile && (
                     <p className="mt-2 text-sm text-green-600 dark:text-green-400">
@@ -969,7 +965,7 @@ export default function ProfilePage() {
                 {/* Back Image Upload */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Back ID Image
+                    {t('profile.backImage')}
                   </label>
                   <input
                     type="file"
@@ -985,7 +981,7 @@ export default function ProfilePage() {
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    Choose Back Image
+                    {t('profile.uploadImage')}
                   </label>
                   {backImageFile && (
                     <p className="mt-2 text-sm text-green-600 dark:text-green-400">
@@ -1048,14 +1044,14 @@ export default function ProfilePage() {
                 onClick={() => router.back()}
                 className="px-8 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={loading}
                 className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg"
               >
-                {loading ? "Saving..." : profileExists ? "Update Profile" : "Create Profile"}
+                {loading ? t('profile.updating') : profileExists ? t('profile.updateProfile') : t('profile.createProfile')}
               </button>
             </div>
           </form>
