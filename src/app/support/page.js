@@ -1,9 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import RoleBasedRedirect from "@/components/RoleBasedRedirect";
+import aiAssistantService from "@/services/aiAssistantService";
+
+const WELCOME_MESSAGE = {
+  id: "welcome",
+  type: "bot",
+  message: "Hello! I am EZStay virtual assistant. How can I help you?",
+  timestamp: new Date().toISOString(),
+};
 
 export default function SupportPage() {
   const [activeTab, setActiveTab] = useState("contact");
@@ -15,16 +22,10 @@ export default function SupportPage() {
     message: "",
     category: "general",
   });
-  const [chatMessages, setChatMessages] = useState([
-    {
-      id: 1,
-      type: "bot",
-      message: "Hello! I am EZStay virtual assistant. How can I help you?",
-      timestamp: new Date(),
-    },
-  ]);
+  const [chatMessages, setChatMessages] = useState([WELCOME_MESSAGE]);
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [conversationId, setConversationId] = useState(null);
 
   const faqData = [
     {
@@ -72,6 +73,58 @@ export default function SupportPage() {
     "How to post listings?",
   ];
 
+  const generateMessageId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const formatTimestamp = (value) => {
+    if (!value) return "";
+    const dateValue = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(dateValue.getTime())) return "";
+    return dateValue.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const appendMessage = (message) => {
+    setChatMessages((prev) => [...prev, message]);
+  };
+
+  const sendChatMessage = async (rawMessage) => {
+    const trimmed = rawMessage.trim();
+    if (!trimmed) return;
+
+    appendMessage({
+      id: generateMessageId(),
+      type: "user",
+      message: trimmed,
+      timestamp: new Date().toISOString(),
+    });
+
+    setChatInput("");
+    setIsTyping(true);
+
+    try {
+      const response = await aiAssistantService.sendMessage(conversationId, trimmed);
+      setConversationId(response?.conversation_id || null);
+      appendMessage({
+        id: generateMessageId(),
+        type: "bot",
+        message: response?.answer || "I could not generate a response just now.",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      const fallback = error?.message || "Assistant is currently unavailable.";
+      appendMessage({
+        id: generateMessageId(),
+        type: "bot",
+        message: fallback,
+        timestamp: new Date().toISOString(),
+      });
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
   const handleContactSubmit = (e) => {
     e.preventDefault();
     // Handle contact form submission
@@ -86,60 +139,15 @@ export default function SupportPage() {
     });
   };
 
-  const handleChatSubmit = (e) => {
+  const handleChatSubmit = async (e) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
-
-    // Add user message
-    const userMessage = {
-      id: chatMessages.length + 1,
-      type: "user",
-      message: chatInput,
-      timestamp: new Date(),
-    };
-    setChatMessages((prev) => [...prev, userMessage]);
-    setChatInput("");
-    setIsTyping(true);
-
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponse = getBotResponse(chatInput);
-      const botMessage = {
-        id: chatMessages.length + 2,
-        type: "bot",
-        message: botResponse,
-        timestamp: new Date(),
-      };
-      setChatMessages((prev) => [...prev, botMessage]);
-      setIsTyping(false);
-    }, 1500);
+    if (isTyping || !chatInput.trim()) return;
+    await sendChatMessage(chatInput);
   };
 
-  const getBotResponse = (input) => {
-    const lowerInput = input.toLowerCase();
-
-    if (lowerInput.includes("find room") || lowerInput.includes("search")) {
-      return "To find suitable rooms, you can:\n1. Use the search bar on the homepage\n2. Filter by area, price, size\n3. View details and contact landlords\n\nDo you need more help?";
-    }
-
-    if (lowerInput.includes("contact") || lowerInput.includes("landlord")) {
-      return 'To contact landlords:\n1. View room details\n2. Click "Contact Landlord"\n3. Fill out the form or call directly\n\nNote: You need to register an account to view contact information.';
-    }
-
-    if (lowerInput.includes("register") || lowerInput.includes("account")) {
-      return 'To register an account:\n1. Click "Sign Up" in the top right\n2. Choose role (tenant/landlord)\n3. Fill in information and confirm email\n\nWould you like to register now?';
-    }
-
-    if (lowerInput.includes("fee") || lowerInput.includes("price")) {
-      return "About service fees:\n- Free for room seekers\n- Landlords have flexible service packages\n- Contact us for detailed pricing\n\nDo you have any other questions?";
-    }
-
-    return "Thank you for contacting us! I didn't quite understand your question. You can:\n1. Choose suggested questions below\n2. Check the FAQ section\n3. Send a support form for detailed consultation\n\nHow else can I help you?";
-  };
-
-  const handleQuickQuestion = (question) => {
-    setChatInput(question);
-    handleChatSubmit({ preventDefault: () => {} });
+  const handleQuickQuestion = async (question) => {
+    if (isTyping) return;
+    await sendChatMessage(question);
   };
 
   return (
@@ -168,12 +176,16 @@ export default function SupportPage() {
           >
             📧 Contact Support
           </button>
-          <Link
-            href="/"
-            className="px-6 py-3 font-medium border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-600 dark:hover:border-blue-400 transition-colors"
+          <button
+            onClick={() => setActiveTab("chat")}
+            className={`px-6 py-3 font-medium border-b-2 transition-colors ${
+              activeTab === "chat"
+                ? "border-blue-600 text-blue-600 dark:text-blue-400"
+                : "border-transparent text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+            }`}
           >
             🤖 AI Assistant
-          </Link>
+          </button>
           <button
             onClick={() => setActiveTab("faq")}
             className={`px-6 py-3 font-medium border-b-2 transition-colors ${
@@ -326,7 +338,7 @@ export default function SupportPage() {
 
         {/* Chat Tab */}
         {activeTab === "chat" && (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto space-y-6">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
               <div className="bg-blue-600 dark:bg-blue-800 text-white p-4">
                 <h2 className="text-xl font-bold">EZStay Virtual Assistant</h2>
@@ -359,10 +371,7 @@ export default function SupportPage() {
                             : "text-gray-500 dark:text-gray-400"
                         }`}
                       >
-                        {message.timestamp.toLocaleTimeString("en-US", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {formatTimestamp(message.timestamp)}
                       </p>
                     </div>
                   </div>
