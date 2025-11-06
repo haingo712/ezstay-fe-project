@@ -74,7 +74,7 @@ export default function StaffLayout({ children }) {
       name: "Amenity Management",
       href: "/staff/amenity-management",
       icon: (
-        <svg 
+        <svg
           className="w-5 h-5"
           fill="none"
           stroke="currentColor"
@@ -99,6 +99,25 @@ export default function StaffLayout({ children }) {
             strokeLinejoin="round"
             strokeWidth={2}
             d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "Notifications",
+      href: "/staff/notifications",
+      icon: (
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
           />
         </svg>
       ),
@@ -157,9 +176,8 @@ export default function StaffLayout({ children }) {
         <div className="flex pt-4" style={{ height: "calc(100vh - 1rem)" }}>
           {/* Sidebar */}
           <div
-            className={`fixed top-16 left-0 bottom-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-lg transform ${
-              sidebarOpen ? "translate-x-0" : "-translate-x-full"
-            } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:top-0 lg:h-full`}
+            className={`fixed top-16 left-0 bottom-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-lg transform ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+              } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:top-0 lg:h-full`}
           >
             <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -191,11 +209,10 @@ export default function StaffLayout({ children }) {
                   <li key={item.name}>
                     <Link
                       href={item.href}
-                      className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                        isActive(item.href)
+                      className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${isActive(item.href)
                           ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
                           : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
-                      }`}
+                        }`}
                       onClick={() => setSidebarOpen(false)}
                     >
                       <span className="mr-3">{item.icon}</span>

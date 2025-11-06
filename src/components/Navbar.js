@@ -1,6 +1,77 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { apiFetch } from "@/utils/api";
+// Chuông thông báo dùng cho mọi user
+function GlobalNotificationBell() {
+  const [notifications, setNotifications] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef();
+  // Đánh dấu đã đọc notification
+  async function markNotificationAsRead(id) {
+    try {
+      await apiFetch(`/api/Notification/mark-read/${id}`, { method: "PUT" });
+    } catch { }
+  }
+  // Refetch mỗi lần mở dropdown
+  useEffect(() => {
+    if (!showDropdown) return;
+    async function fetchNotifications() {
+      try {
+        const data = await apiFetch("/api/Notification/by-role");
+        setNotifications(Array.isArray(data) ? data : []);
+      } catch { }
+    }
+    fetchNotifications();
+  }, [showDropdown]);
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        className="relative p-2 rounded-full hover:bg-blue-100 dark:hover:bg-gray-700 focus:outline-none"
+        onClick={() => setShowDropdown((v) => !v)}
+        title="Xem thông báo"
+      >
+        <svg className="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.243a2 2 0 0 1-3.714 0M21 19H3m16-2V9a7 7 0 1 0-14 0v8a2 2 0 0 1-2 2h16a2 2 0 0 1-2-2Z" />
+        </svg>
+        {notifications.some(n => !n.isRead) && (
+          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+        )}
+      </button>
+      {showDropdown && (
+        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-gray-800 shadow-lg rounded-lg p-2 z-50">
+          <div className="font-bold mb-2 text-blue-700">Thông báo mới</div>
+          {notifications.length === 0 && <div className="text-gray-500 text-sm">Không có thông báo.</div>}
+          <ul>
+            {notifications.slice(0, 10).map(n => (
+              <li
+                key={n.id}
+                className={
+                  `mb-2 p-2 rounded hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer` +
+                  (n.isRead ? '' : ' border-l-4 border-blue-500')
+                }
+                onClick={async () => {
+                  if (!n.isRead) {
+                    await markNotificationAsRead(n.id);
+                    setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, isRead: true } : item));
+                  }
+                }}
+              >
+                <div className="font-semibold text-blue-700 dark:text-blue-300 text-sm">{n.title}</div>
+                <div className="text-gray-700 dark:text-gray-200 text-xs">{n.message}</div>
+                <div className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString()}</div>
+                {!n.isRead && (
+                  <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">Mới</span>
+                )}
+              </li>
+            ))}
+          </ul>
+          {/* Không có nút Xem tất cả */}
+        </div>
+      )}
+    </div>
+  );
+}
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
@@ -15,12 +86,12 @@ export default function Navbar() {
 
   // Get user role from user object or default to guest
   const userRole = user?.role || "guest";
-  
+
   // Get email from various possible JWT claim locations
-  const userEmail = user?.email || 
-                    user?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
-                    "Guest User";
-  
+  const userEmail = user?.email ||
+    user?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
+    "Guest User";
+
   // Debug logging
   console.log("Navbar - User:", user);
   console.log("Navbar - UserRole:", userRole, "Type:", typeof userRole);
@@ -96,6 +167,8 @@ export default function Navbar() {
 
             {/* Right side actions */}
             <div className="flex items-center space-x-4">
+              {/* Chuông thông báo */}
+              <GlobalNotificationBell />
               {/* Theme Toggle Button */}
               <button
                 onClick={toggleTheme}
@@ -178,6 +251,13 @@ export default function Navbar() {
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         Dashboard
+                      </Link>
+                      <Link
+                        href="/register-owner"
+                        className="block w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        🏠 Đăng ký Owner
                       </Link>
                       <button
                         onClick={handleLogout}

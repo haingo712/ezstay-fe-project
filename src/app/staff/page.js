@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { apiFetch } from '@/utils/api';
 
 export default function StaffDashboard() {
   const [mounted, setMounted] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
 
   const [dashboardData] = useState({
     stats: {
@@ -145,7 +148,59 @@ export default function StaffDashboard() {
 
   useEffect(() => {
     setMounted(true);
+    fetchNotifications();
   }, []);
+
+  // Fetch notifications
+  const fetchNotifications = async () => {
+    try {
+      setLoadingNotifications(true);
+      const data = await apiFetch('/api/Notification/by-role');
+      // Lấy 5 thông báo mới nhất
+      setNotifications((data || []).slice(0, 5));
+    } catch (err) {
+      console.error('Lỗi khi tải thông báo:', err);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  // Đánh dấu đã đọc
+  const handleMarkAsRead = async (id) => {
+    try {
+      await apiFetch(`/api/Notification/mark-read/${id}`, {
+        method: 'PUT'
+      });
+      // Cập nhật UI
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      );
+    } catch (err) {
+      console.error('Lỗi khi đánh dấu đã đọc:', err);
+    }
+  };
+
+  // Format thời gian
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Vừa xong';
+    if (diffMins < 60) return `${diffMins} phút trước`;
+    if (diffHours < 24) return `${diffHours} giờ trước`;
+    if (diffDays < 7) return `${diffDays} ngày trước`;
+
+    return date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
 
   const getActivityIcon = (type) => {
     switch (type) {
@@ -288,6 +343,81 @@ export default function StaffDashboard() {
         </div>
       </div>
 
+      {/* Notifications Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">📬 Thông báo</h2>
+              {notifications.filter(n => !n.isRead).length > 0 && (
+                <span className="px-2 py-1 text-xs font-medium bg-red-600 text-white rounded-full">
+                  {notifications.filter(n => !n.isRead).length} mới
+                </span>
+              )}
+            </div>
+            <Link
+              href="/staff/notifications"
+              className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium"
+            >
+              Xem tất cả →
+            </Link>
+          </div>
+        </div>
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
+          {loadingNotifications ? (
+            <div className="p-8 text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-purple-600 border-t-transparent"></div>
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Đang tải...</p>
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+              <p className="text-xl mb-2">📭</p>
+              <p>Không có thông báo nào</p>
+            </div>
+          ) : (
+            notifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer ${!notification.isRead ? 'bg-blue-50 dark:bg-blue-900/10' : ''
+                  }`}
+                onClick={() => !notification.isRead && handleMarkAsRead(notification.id)}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                        {notification.title}
+                      </h3>
+                      {!notification.isRead && (
+                        <span className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full"></span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                      🕒 {formatDate(notification.createdAt)}
+                    </p>
+                  </div>
+                  {!notification.isRead && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMarkAsRead(notification.id);
+                      }}
+                      className="flex-shrink-0 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                      title="Đánh dấu đã đọc"
+                    >
+                      Đánh dấu đã đọc
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
       {/* Secondary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
@@ -356,9 +486,9 @@ export default function StaffDashboard() {
                         User: {activity.user}
                       </span>
                       <span className={`px-2 py-1 text-xs rounded-full ${activity.action === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                          activity.action === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                            activity.action === 'reported' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
-                              'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                        activity.action === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                          activity.action === 'reported' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                            'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
                         }`}>
                         {activity.action}
                       </span>
@@ -464,7 +594,7 @@ export default function StaffDashboard() {
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full ${issue.severity === 'high' ? 'bg-red-500' :
-                        issue.severity === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                      issue.severity === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
                       }`}></div>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
                       {issue.issue}

@@ -18,7 +18,7 @@ export default function SystemOverviewPage() {
   const loadData = async () => {
     try {
       const accounts = await userManagementService.getAllAccounts();
-      
+
       if (Array.isArray(accounts)) {
         setStats({
           users: accounts.filter(a => a.roleId === 1),
@@ -167,7 +167,7 @@ export default function SystemOverviewPage() {
               <div className="border-l-4 border-purple-500 pl-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Activity Rate</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {(([...stats.users, ...stats.owners, ...stats.staff].filter(a => a.isActive).length / 
+                  {(([...stats.users, ...stats.owners, ...stats.staff].filter(a => a.isActive).length /
                     ([...stats.users, ...stats.owners, ...stats.staff].length)) * 100 || 0).toFixed(1)}%
                 </p>
               </div>
