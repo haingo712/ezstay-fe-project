@@ -1,68 +1,214 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from "react";
+import notificationService from "@/services/notificationService";
 
-export default function NotificationsPage() {
-  const [notifications] = useState([
-    {
-      id: 1,
-      type: 'user',
-      title: 'New User Registration',
-      message: 'User "John Doe" has registered',
-      time: '5 minutes ago',
-      read: false,
-      icon: '👤'
-    },
-    {
-      id: 2,
-      type: 'payment',
-      title: 'Payment Received',
-      message: 'Payment of 5,000,000 VND received',
-      time: '1 hour ago',
-      read: false,
-      icon: '💰'
-    },
-    {
-      id: 3,
-      type: 'system',
-      title: 'System Update',
-      message: 'System maintenance scheduled',
-      time: '2 hours ago',
-      read: true,
-      icon: '⚙️'
-    },
-    {
-      id: 4,
-      type: 'review',
-      title: 'New Review Posted',
-      message: 'A user posted a 5-star review',
-      time: '3 hours ago',
-      read: true,
-      icon: '⭐'
-    },
-    {
-      id: 5,
-      type: 'alert',
-      title: 'Suspicious Activity',
-      message: 'Multiple failed login attempts detected',
-      time: '5 hours ago',
-      read: false,
-      icon: '⚠️'
-    }
-  ]);
+export default function AdminNotificationsPage() {
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filter, setFilter] = useState("all"); // all, read, unread
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
+  const [notificationTypes, setNotificationTypes] = useState([]);
+  const [roles, setRoles] = useState([]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Form state for creating notification
+  const [formData, setFormData] = useState({
+    notificationType: 0, // System
+    title: "",
+    message: "",
+    targetRole: null, // null = individual, or role number for broadcast
+    scheduledTime: "",
+  });
 
-  const getNotificationColor = (type) => {
-    switch (type) {
-      case 'user': return 'blue';
-      case 'payment': return 'green';
-      case 'system': return 'purple';
-      case 'review': return 'orange';
-      case 'alert': return 'red';
-      default: return 'gray';
+  useEffect(() => {
+    fetchNotifications();
+    fetchNotificationTypes();
+    fetchRoles();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const data = await notificationService.getAllNotifications();
+      console.log("📬 Notification data received:", data);
+      
+      // Safely handle data - ensure it's an array
+      if (Array.isArray(data)) {
+        // Sort by createdAt (newest first)
+        const sorted = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setNotifications(sorted);
+        setError(null);
+      } else {
+        console.warn("⚠️ Data is not an array:", data);
+        setNotifications([]);
+        setError(null); // No error, just empty list
+      }
+    } catch (err) {
+      console.error("❌ Error fetching notifications:", err);
+      setError("Failed to load notifications. Please try again.");
+      setNotifications([]); // Set empty array on error
+    } finally {
+      setLoading(false);
     }
   };
+
+  const fetchNotificationTypes = async () => {
+    try {
+      const types = await notificationService.getNotificationTypes();
+      console.log("🔔 Notification types:", types);
+      setNotificationTypes(Array.isArray(types) ? types : []);
+    } catch (err) {
+      console.error("❌ Failed to fetch notification types:", err);
+      setNotificationTypes([]);
+    }
+  };
+
+  const fetchRoles = async () => {
+    try {
+      const rolesData = await notificationService.getAllRoles();
+      console.log("👥 Roles data:", rolesData);
+      setRoles(Array.isArray(rolesData) ? rolesData : []);
+    } catch (err) {
+      console.error("❌ Failed to fetch roles:", err);
+      setRoles([]);
+    }
+  };
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      await notificationService.markAsRead(id);
+      // Update local state
+      setNotifications(
+        notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      );
+    } catch (err) {
+      alert("Failed to mark notification as read");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this notification?")) return;
+    try {
+      await notificationService.deleteNotification(id);
+      setNotifications(notifications.filter((n) => n.id !== id));
+      if (selectedNotification?.id === id) {
+        setShowDetailModal(false);
+        setSelectedNotification(null);
+      }
+    } catch (err) {
+      alert("Failed to delete notification");
+    }
+  };
+
+  const handleCreateNotification = async (e) => {
+    e.preventDefault();
+    try {
+      if (formData.targetRole !== null) {
+        // Create by role (broadcast)
+        const payload = {
+          notificationType: parseInt(formData.notificationType),
+          title: formData.title,
+          message: formData.message,
+          targetRole: parseInt(formData.targetRole),
+          scheduledTime: formData.scheduledTime || null,
+        };
+        
+        if (formData.scheduledTime) {
+          await notificationService.scheduleNotification(payload);
+          alert("Notification scheduled successfully!");
+        } else {
+          await notificationService.createNotificationByRole(payload);
+          alert("Notification sent to all users with the selected role!");
+        }
+      } else {
+        // Create individual notification
+        const payload = {
+          notificationType: parseInt(formData.notificationType),
+          title: formData.title,
+          message: formData.message,
+        };
+        await notificationService.createNotification(payload);
+        alert("Notification created successfully!");
+      }
+
+      setShowCreateModal(false);
+      setFormData({
+        notificationType: 0,
+        title: "",
+        message: "",
+        targetRole: null,
+        scheduledTime: "",
+      });
+      fetchNotifications();
+    } catch (err) {
+      alert("Failed to create notification. " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleViewDetail = (notification) => {
+    setSelectedNotification(notification);
+    setShowDetailModal(true);
+    if (!notification.isRead) {
+      handleMarkAsRead(notification.id);
+    }
+  };
+
+  const filteredNotifications = notifications.filter((n) => {
+    if (filter === "read") return n.isRead;
+    if (filter === "unread") return !n.isRead;
+    return true;
+  });
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const getNotificationTypeLabel = (type) => {
+    const types = {
+      0: "System",
+      1: "Promotion",
+      2: "Warning",
+      3: "Owner Register",
+      System: "System",
+      Promotion: "Promotion",
+      Warning: "Warning",
+      OwnerRegister: "Owner Register",
+    };
+    return types[type] || type;
+  };
+
+  const getNotificationTypeColor = (type) => {
+    const colors = {
+      0: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      1: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      2: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+      3: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+      System: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      Promotion: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      Warning: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+      OwnerRegister: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    };
+    return colors[type] || "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+  };
+
+  const getRoleLabel = (roleNum) => {
+    const roleMap = {
+      1: "User",
+      2: "Owner",
+      3: "Staff",
+      4: "Admin",
+    };
+    return roleMap[roleNum] || "Unknown";
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -11,21 +11,25 @@ const normalizePostData = (post) => {
   
   // Parse imageUrls if it's a JSON string inside an array
   let imageUrls = post.imageUrls || post.ImageUrls;
+  console.log('📥 Raw imageUrls:', imageUrls);
+  
   if (Array.isArray(imageUrls) && imageUrls.length > 0 && typeof imageUrls[0] === 'string') {
     try {
       // Check if first item is a JSON string like: "{\"urls\":[...]}"
       const parsed = JSON.parse(imageUrls[0]);
       if (parsed.urls && Array.isArray(parsed.urls)) {
         imageUrls = parsed.urls;
+        console.log('✅ Parsed imageUrls:', imageUrls);
       }
     } catch (e) {
       // If parsing fails, keep original array
-      console.log('ℹ️ imageUrls is already in correct format');
+      console.log('ℹ️ imageUrls is already in correct format or not parseable');
     }
   }
   
   const normalized = {
-    id: post.id || post.Id || post._id,
+    ...post,
+    id: post.id || post.Id,
     roomId: post.roomId || post.RoomId,
     authorId: post.authorId || post.AuthorId,
     boardingHouseId: post.boardingHouseId || post.BoardingHouseId,

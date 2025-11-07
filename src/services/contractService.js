@@ -169,16 +169,31 @@ const contractService = {
     }
   },
 
-  // Alias for getById - for signature flow
-  getContractById: async (id) => {
+  // Digital Signature Management
+  // Add signatures to contract (Owner and Tenant)
+  addSignatures: async (contractId, ownerSignature, tenantSignature) => {
     try {
-      console.log('🔍 Fetching contract by ID:', id);
-      const response = await api.get(`/api/Contract/${id}`);
-      console.log('✅ Contract fetched:', response);
+      console.log("📝 Adding signatures to contract:", contractId);
+      const response = await api.put(`/api/Contract/${contractId}/signatures`, {
+        ownerSignature,
+        tenantSignature
+      });
+      console.log("✅ Signatures added successfully");
       return response.data || response;
     } catch (error) {
-      console.error('❌ Error fetching contract by ID:', error);
+      console.error('Error adding signatures:', error);
       throw error;
+    }
+  },
+
+  // Get signatures for a contract
+  getSignatures: async (contractId) => {
+    try {
+      const response = await api.get(`/api/Contract/${contractId}/signatures`);
+      return response.data || response;
+    } catch (error) {
+      console.error('Error fetching signatures:', error);
+      return null;
     }
   }
 };
