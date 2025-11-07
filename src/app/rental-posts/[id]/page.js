@@ -246,18 +246,46 @@ export default function RentalPostDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Post Card */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-              {/* Image */}
-              <div className="relative h-64 md:h-96 rounded-lg overflow-hidden mb-6">
-                <Image
-                  src="/image.png"
-                  alt={post.title}
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute top-4 right-4">
-                  {getStatusBadge(post.postStatus)}
+              {/* Images Gallery */}
+              {post.imageUrls && post.imageUrls.length > 0 ? (
+                <div className="mb-6">
+                  {/* Main Image */}
+                  <div className="relative h-64 md:h-96 rounded-lg overflow-hidden mb-4">
+                    <Image
+                      src={post.imageUrls[0]}
+                      alt={post.title}
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute top-4 right-4">
+                      {getStatusBadge(post.postStatus)}
+                    </div>
+                  </div>
+                  
+                  {/* Thumbnail Images */}
+                  {post.imageUrls.length > 1 && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {post.imageUrls.slice(1).map((imageUrl, index) => (
+                        <div key={index} className="relative h-20 rounded-lg overflow-hidden">
+                          <Image
+                            src={imageUrl}
+                            alt={`${post.title} - Image ${index + 2}`}
+                            fill
+                            className="object-cover hover:scale-110 transition-transform cursor-pointer"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
+              ) : (
+                <div className="relative h-64 md:h-96 rounded-lg overflow-hidden mb-6 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                  <Building2 className="h-20 w-20 text-gray-400" />
+                  <div className="absolute top-4 right-4">
+                    {getStatusBadge(post.postStatus)}
+                  </div>
+                </div>
+              )}
 
               {/* Title & Info */}
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">

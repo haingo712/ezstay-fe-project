@@ -8,6 +8,8 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import api from "@/utils/api";
 import { toast } from "react-toastify";
+import SignatureCanvas from "@/components/SignatureCanvas";
+import { generateContractPDF as generatePDF, previewContractPDF as previewPDF, downloadContractPDF } from "@/utils/contractPDFGenerator";
 
 
 export default function ContractsManagementPage() {
@@ -40,6 +42,12 @@ export default function ContractsManagementPage() {
   const [contractImagePreviews, setContractImagePreviews] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Digital Signature states
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [ownerSignature, setOwnerSignature] = useState(null);
+  const [tenantSignature, setTenantSignature] = useState(null);
+  const [savingSignatures, setSavingSignatures] = useState(false);
 
   // New contract creation states
   const [createStep, setCreateStep] = useState(1); // 1: contract, 2: identity profile, 3: utility readings
@@ -1204,697 +1212,100 @@ export default function ContractsManagementPage() {
     alert("Contract created successfully!");
   };
 
-  const generateContractPDF = (contract) => {
-    const doc = new jsPDF();
-    
-    // Get tenant information from identity profiles
-    const tenant = contract.identityProfiles?.[0] || {};
-    const checkinDate = contract.checkinDate ? new Date(contract.checkinDate) : new Date();
-    const checkoutDate = contract.checkoutDate ? new Date(contract.checkoutDate) : new Date();
-    
-    // Header - Vietnam Republic format
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.text('SOCIALIST REPUBLIC OF VIETNAM', 105, 20, { align: 'center' });
-    doc.text('Independence – Freedom – Happiness', 105, 30, { align: 'center' });
-    
-    // Divider line
-    doc.line(75, 35, 135, 35);
-    
-    // Contract title
-    doc.setFontSize(18);
-    doc.text('HOUSE LEASE CONTRACT', 105, 50, { align: 'center' });
-    
-    // Contract basic info
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'normal');
-    let yPos = 70;
-    
-    doc.text(`Contract No: ${contract.id?.slice(0, 8) || 'N/A'}`, 20, yPos);
-    yPos += 10;
-    doc.text(`Date: ${new Date().toLocaleDateString('en-GB')}`, 20, yPos);
-    yPos += 15;
-    
-    // Parties information
-    doc.setFont(undefined, 'bold');
-    doc.text('THE CONTRACTING PARTIES:', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    doc.text('Party A (Lessor): EZStay Property Management', 20, yPos);
-    yPos += 7;
-    doc.text('Address: Ho Chi Minh City, Vietnam', 20, yPos);
-    yPos += 7;
-    doc.text('Phone: +84 xxx xxx xxx', 20, yPos);
-    yPos += 10;
-    
-    doc.text(`Party B (Lessee): ${tenant.fullName || 'N/A'}`, 20, yPos);
-    yPos += 7;
-    doc.text(`Address: ${tenant.address || 'N/A'}`, 20, yPos);
-    yPos += 7;
-    doc.text(`Phone: ${tenant.phoneNumber || 'N/A'}`, 20, yPos);
-    yPos += 7;
-    doc.text(`Citizen ID: ${tenant.citizenIdNumber || 'N/A'}`, 20, yPos);
-    yPos += 15;
-    
-    // Introduction
-    const introText = 'After discussion, the two parties have mutually agreed to enter into the house lease contract with the following agreement:';
-    const introLines = doc.splitTextToSize(introText, 170);
-    doc.text(introLines, 20, yPos);
-    yPos += introLines.length * 7 + 10;
-    
-    // Article 1
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 1: THE HOUSE FOR LEASE, PURPOSES OF USE', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    const article1Text = `Party A agrees to lease Party B the room "${contract.roomName || 'N/A'}" according to the property management system. The room is fully furnished and ready for residential use. Equipment and facilities are specifically listed in the minutes of handover between the two parties.`;
-    const article1Lines = doc.splitTextToSize(article1Text, 170);
-    doc.text(article1Lines, 20, yPos);
-    yPos += article1Lines.length * 7 + 10;
-    
-    // Article 2
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 2: DURATION OF THE LEASE', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    const durationMonths = Math.round((checkoutDate - checkinDate) / (1000 * 60 * 60 * 24 * 30));
-    const article2Text = `Duration of the lease: ${durationMonths} months, commencing on ${checkinDate.toLocaleDateString('en-GB')} and ending on ${checkoutDate.toLocaleDateString('en-GB')}. After the duration, the two parties will renegotiate the rental fee, and Party B will be given priority to sign a new contract.`;
-    const article2Lines = doc.splitTextToSize(article2Text, 170);
-    doc.text(article2Lines, 20, yPos);
-    yPos += article2Lines.length * 7 + 10;
-    
-    // Article 3
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 3: RENTAL FEE, SECURITY DEPOSIT AND PAYMENT METHOD', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    const monthlyRent = contract.roomDetails?.price || 'TBD';
-    const depositAmount = contract.depositAmount || 0;
-    const article3Text = `Rental fee: ${monthlyRent} VND/month. Party B will pay Party A an amount of security deposit: ${depositAmount} VND. This amount will be returned by Party A to Party B after the contract liquidation and after deduction of expenses for electricity, water, and repair of the house and furniture damaged by Party B during the period of usage (if any). Payment method: Party B will pay Party A the rent on monthly basis. Payment is not later than 05 days of each month.`;
-    const article3Lines = doc.splitTextToSize(article3Text, 170);
-    doc.text(article3Lines, 20, yPos);
-    yPos += article3Lines.length * 7 + 10;
-
-    // Check if we need a new page
-    if (yPos > 250) {
-      doc.addPage();
-      yPos = 20;
+  // Wrapper functions for PDF generation with signatures and complete data
+  const generateContractPDF = async (contract) => {
+    try {
+      console.log('📄 Preparing contract PDF with complete data...');
+      
+      // Fetch signatures
+      let signatures = null;
+      try {
+        signatures = await contractService.getSignatures(contract.id);
+      } catch (error) {
+        console.log('No signatures found, will generate PDF without signatures');
+      }
+      
+      // Enrich contract with room details if not already present
+      let enrichedContract = { ...contract };
+      if (contract.roomId && !contract.roomDetails) {
+        try {
+          const roomDetails = await roomService.getById(contract.roomId);
+          enrichedContract.roomDetails = roomDetails;
+          enrichedContract.roomName = roomDetails?.name || roomDetails?.roomName || contract.roomName;
+          console.log('✅ Room details fetched for PDF:', roomDetails);
+        } catch (error) {
+          console.error('❌ Error fetching room details for PDF:', error);
+        }
+      }
+      
+      // Fetch identity profiles if not already present
+      if (!enrichedContract.identityProfiles || enrichedContract.identityProfiles.length === 0) {
+        console.log('🔍 Identity profiles not found in contract, fetching...');
+        try {
+          const profiles = await contractService.getIdentityProfiles(contract.id);
+          if (profiles && profiles.length > 0) {
+            enrichedContract.identityProfiles = profiles;
+            console.log('✅ Identity profiles fetched for PDF:', profiles);
+          } else {
+            console.warn('⚠️ No identity profiles found for this contract');
+          }
+        } catch (error) {
+          console.error('❌ Error fetching identity profiles for PDF:', error);
+        }
+      }
+      
+      downloadContractPDF(enrichedContract, signatures?.ownerSignature || null, signatures?.tenantSignature || null);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      // Fallback: generate with available data
+      downloadContractPDF(contract, null, null);
     }
-    
-    // Article 4
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 4: RESPONSIBILITIES OF THE TWO PARTIES', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    doc.text('1/ Party A\'s responsibilities:', 20, yPos);
-    yPos += 7;
-    const partyAResponsibilities = [
-      'Ensuring and undertaking that the house is owned by Party A, Party A has full rights to lease it.',
-      'Handing over the house, its equipment and facilities to Party B on the effective date of the contract.',
-      'Supporting and creating favorable conditions for Party B to register temporary residence when Party B has a need to register.',
-      'Ensuring the full and exclusive use rights for Party B.',
-      'Undertaking to comply with the rent agreement under this contract during the lease term.',
-      'If terminating the contract before its expiration, Party A must return the security deposit to Party B and make compensation equal to the deposit amount, except for force majeure cases as prescribed by the law.',
-      'Before the expiry of the lease contract, Party A must notify Party B at least 01 (one) month in advance so that Party B arranges to re-sign the contract or liquidate the contract as agreed.',
-      'Receiving the rent in full and on time as agreed.'
-    ];
-    
-    partyAResponsibilities.forEach(resp => {
-      const respLines = doc.splitTextToSize(resp, 170);
-      doc.text(respLines, 20, yPos);
-      yPos += respLines.length * 7 + 3;
-    });
-    yPos += 5;
-    
-    doc.text('2/ Party B\'s responsibilities:', 20, yPos);
-    yPos += 7;
-    const partyBResponsibilities = [
-      'Using the house for the right purpose as agreed.',
-      'Paying the rent on time according to the agreed method.',
-      'If terminating the contract before its expiration, Party B will lose the security deposit.',
-      'Paying costs of electricity, water and telephone on time as required on invoices, Party B is responsible for discontinuance of facilities due to delayed payment.',
-      'Being entitled to use the house fully and separately during the lease term.',
-      'Using the house for the right purpose.',
-      'Taking responsibility for compensating for damage or loss compared to the status list attached to this contract. Maintaining and being responsible for Party B\'s belongings and damage caused to the third party when using the leased house.',
-      'When the contract ends or the contract is terminated before the lease term, Party B is responsible for returning the house to Party A within 60 days.',
-      'Being responsible under the law for all activities during the residential period.',
-      'Not being allowed to use the house to organize illegal activities, harbor items prohibited by the State, and violators of the law.',
-      'Being allowed to repair the house in accordance with its use needs, with the consent of Party A but without changes in the structure and architecture of the house.',
-      'Before the expiry of the lease contract, Party B must notify Party A at least 01 (one) month in advance so that Party A can arrange to re-sign the contract or liquidate the contract as agreed.'
-    ];
-    
-    partyBResponsibilities.forEach(resp => {
-      const respLines = doc.splitTextToSize(resp, 170);
-      doc.text(respLines, 20, yPos);
-      yPos += respLines.length * 7 + 3;
-    });
-    yPos += 10;
-
-    // Check if we need a new page
-    if (yPos > 250) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    // Article 5
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 5: THE TWO PARTIES UNDERTAKE:', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    const article5Terms = [
-      'Performing the right content of the contract.',
-      'The personal information written in this contract is true.',
-      'Entering into the contract is completely voluntary, not forced or treated.',
-      'Expenses incurred during the course of contract performance (electricity, water, telephone, internet, amounts payable to budgets, and other expenses) shall be borne by the party generating the expenses.',
-      'Party A: At the time of signing this contract, the house for lease is not in the state of dispute and not seized to ensure judgment execution. The information about the house is true.',
-      'If a dispute arises or a breach of contract occurs, both parties will discuss and agree in the spirit of negotiation and solidarity. If the parties fail to reach an agreement, they may ask a competent authority for settlement.',
-      'All attached lists and contract appendices are an inseparable and legally valid part of this contract.',
-      'At the end of the contract, in case either party wants to extend the contract, the party must notify the other in writing at least one month in advance.',
-      'In the course of contract performance, the two parties undertake not to unilaterally terminate the contract. If Party A unilaterally terminates the contract, Party A must return Party B\'s deposit amount to Party B, and at the same time compensate Party B with an amount equal to the deposit paid by Party B to Party A. Conversely, if Party B unilaterally terminates the contract, Party B will lose the deposit amount paid to Party A.'
-    ];
-    
-    article5Terms.forEach(term => {
-      const termLines = doc.splitTextToSize(term, 170);
-      doc.text(termLines, 20, yPos);
-      yPos += termLines.length * 7 + 3;
-    });
-    yPos += 10;
-
-    // Check if we need a new page
-    if (yPos > 220) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    // Article 6
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 6: UNILATERAL TERMINATION OF THE CONTRACT', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    doc.text('Party A has the right to unilaterally terminate the contract performance when Party B commits any of the following acts:', 20, yPos);
-    yPos += 10;
-    
-    const partyATermination = [
-      'Not paying the rent as agreed.',
-      'Deliberately damaging the house.',
-      'Seriously affecting environmental sanitation, fire protection safety, security and order.'
-    ];
-    
-    partyATermination.forEach(term => {
-      const termLines = doc.splitTextToSize(term, 170);
-      doc.text(termLines, 20, yPos);
-      yPos += termLines.length * 7 + 3;
-    });
-    yPos += 5;
-    
-    doc.text('Party B has the right to unilaterally terminate the lease contract performance when the lessor commits any of the following acts:', 20, yPos);
-    yPos += 10;
-    
-    const partyBTermination = [
-      'Increasing the rent at variance with the agreement.',
-      'Causing difficulties or hindering Party B\'s business activities during the lease period.',
-      'Issues related to ownership and disputes of the house.'
-    ];
-    
-    partyBTermination.forEach(term => {
-      const termLines = doc.splitTextToSize(term, 170);
-      doc.text(termLines, 20, yPos);
-      yPos += termLines.length * 7 + 3;
-    });
-    yPos += 10;
-
-    // Check if we need a new page
-    if (yPos > 240) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    // Article 7
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 7: CONTRACT TERMINATION', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    doc.text('The contract will be terminated in the following cases:', 20, yPos);
-    yPos += 10;
-    
-    const terminationCases = [
-      'The lease term has expired;',
-      'The leased house must be demolished due to serious damage that may make the house collapse or due to the implementation of the State\'s construction planning.'
-    ];
-    
-    terminationCases.forEach(term => {
-      const termLines = doc.splitTextToSize(term, 170);
-      doc.text(termLines, 20, yPos);
-      yPos += termLines.length * 7 + 3;
-    });
-    yPos += 10;
-
-    // Article 8
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 8: GENERAL PROVISIONS', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    const generalProvisions = [
-      'All changes of this contract are valid only in writing and signed by both parties.',
-      'In the course of contract performance, the two parties undertake to fully fulfill their obligations; if a dispute arises, they will negotiate and resolve it by themselves on the principle of mutual benefits; if the parties cannot resolve the problem, it will be settled by a competent court.',
-      `This contract consists of multiple pages and is made into multiple originals of equal legal validity, each party keeps copies. This contract takes effect from the time Party A receives the security deposit and the rent of the first month in ${new Date().getFullYear()}.`
-    ];
-    
-    generalProvisions.forEach(provision => {
-      const provisionLines = doc.splitTextToSize(provision, 170);
-      doc.text(provisionLines, 20, yPos);
-      yPos += provisionLines.length * 7 + 5;
-    });
-    yPos += 10;
-
-    // Check if we need a new page for remaining articles
-    if (yPos > 200) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    // Article 9: Force Majeure
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 9: FORCE MAJEURE', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    const forceMajeureText = 'Force majeure circumstances are defined as events beyond the control of either party, including but not limited to natural disasters (earthquakes, floods, fires), war, riots, epidemics, government orders, or other unforeseen events that prevent contract performance. In case of force majeure:';
-    const forceMajeureLines = doc.splitTextToSize(forceMajeureText, 170);
-    doc.text(forceMajeureLines, 20, yPos);
-    yPos += forceMajeureLines.length * 7 + 7;
-    
-    const forceMajeureClauses = [
-      'The affected party must immediately notify the other party in writing within 7 days.',
-      'Both parties shall cooperate to minimize damages and find appropriate solutions.',
-      'If force majeure lasts more than 30 days, either party may terminate the contract without penalty.',
-      'Rental fees will be prorated for the period the house cannot be used due to force majeure.',
-      'The security deposit shall be returned to Party B within 30 days after termination.'
-    ];
-    
-    forceMajeureClauses.forEach(clause => {
-      const clauseLines = doc.splitTextToSize(clause, 165);
-      doc.text(clauseLines, 25, yPos);
-      yPos += clauseLines.length * 7 + 3;
-    });
-    yPos += 10;
-
-    // Article 10: Notices and Communications
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 10: NOTICES AND COMMUNICATIONS', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    const noticesText = 'All notices, requests, and communications between the parties shall be made in writing and delivered through the following methods:';
-    const noticesLines = doc.splitTextToSize(noticesText, 170);
-    doc.text(noticesLines, 20, yPos);
-    yPos += noticesLines.length * 7 + 7;
-    
-    const noticesClauses = [
-      'Direct delivery with signed acknowledgment receipt.',
-      'Registered mail with return receipt to the addresses stated in this contract.',
-      'Email to the registered email addresses of both parties.',
-      'Notices are considered received: immediately if hand-delivered, 3 working days after posting if by mail, or upon confirmation if by email.',
-      'Any change in contact information must be notified to the other party within 5 working days.'
-    ];
-    
-    noticesClauses.forEach(clause => {
-      const clauseLines = doc.splitTextToSize(clause, 165);
-      doc.text(clauseLines, 25, yPos);
-      yPos += clauseLines.length * 7 + 3;
-    });
-    yPos += 10;
-
-    // Check if we need a new page for appendices
-    if (yPos > 210) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    // Appendices Section
-    doc.setFont(undefined, 'bold');
-    doc.text('APPENDICES', 20, yPos);
-    doc.line(20, yPos + 2, 70, yPos + 2);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    doc.text('This contract includes the following appendices as integral parts:', 20, yPos);
-    yPos += 10;
-    
-    const appendices = [
-      'Appendix 1: Detailed list of furniture and equipment in the leased room',
-      'Appendix 2: Initial utility meter readings (electricity, water)',
-      'Appendix 3: Room condition inspection report with photographs',
-      'Appendix 4: House rules and regulations',
-      'Appendix 5: Payment schedule and bank account details',
-      'Appendix 6: Emergency contact information'
-    ];
-    
-    appendices.forEach((appendix, index) => {
-      doc.text(`${index + 1}. ${appendix}`, 25, yPos);
-      yPos += 7;
-    });
-    yPos += 10;
-
-    // Final Statement
-    doc.setFont(undefined, 'italic');
-    const finalStatement = 'The parties hereby acknowledge that they have read, understood, and agreed to all terms and conditions set forth in this contract and its appendices. The parties execute this contract voluntarily without coercion.';
-    const finalLines = doc.splitTextToSize(finalStatement, 170);
-    doc.text(finalLines, 20, yPos);
-    yPos += finalLines.length * 7 + 15;
-
-    // Signatures
-    if (yPos > 220) {
-      doc.addPage();
-      yPos = 20;
-    }
-    
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(12);
-    doc.text('SIGNATURES OF THE PARTIES', 105, yPos, { align: 'center' });
-    doc.line(20, yPos + 3, 190, yPos + 3);
-    yPos += 15;
-    
-    // Create two columns for signatures
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(11);
-    doc.text('PARTY A (LESSOR)', 55, yPos, { align: 'center' });
-    doc.text('PARTY B (LESSEE)', 155, yPos, { align: 'center' });
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(10);
-    doc.text('EZStay Property Management', 55, yPos, { align: 'center' });
-    doc.text(tenant.fullName || 'Tenant Name', 155, yPos, { align: 'center' });
-    yPos += 7;
-    
-    doc.text('Ho Chi Minh City, Vietnam', 55, yPos, { align: 'center' });
-    doc.text(tenant.address ? (tenant.address.length > 30 ? tenant.address.substring(0, 27) + '...' : tenant.address) : 'Address', 155, yPos, { align: 'center' });
-    yPos += 7;
-    
-    doc.text('Phone: +84 xxx xxx xxx', 55, yPos, { align: 'center' });
-    doc.text(`Phone: ${tenant.phoneNumber || 'N/A'}`, 155, yPos, { align: 'center' });
-    yPos += 20;
-    
-    // Signature lines
-    doc.setFont(undefined, 'italic');
-    doc.text('(Signature and seal)', 55, yPos, { align: 'center' });
-    doc.text('(Signature)', 155, yPos, { align: 'center' });
-    yPos += 15;
-    
-    // Signature boxes
-    doc.rect(30, yPos, 50, 30);
-    doc.rect(130, yPos, 50, 30);
-    yPos += 35;
-    
-    // Names under signature boxes
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(10);
-    doc.text('___________________________', 55, yPos, { align: 'center' });
-    doc.text('___________________________', 155, yPos, { align: 'center' });
-    yPos += 7;
-    
-    doc.text('Representative Name', 55, yPos, { align: 'center' });
-    doc.text(tenant.fullName || 'Tenant Name', 155, yPos, { align: 'center' });
-    yPos += 10;
-    
-    // Date of signing
-    const signingDate = new Date().toLocaleDateString('en-GB');
-    doc.text(`Date: ${signingDate}`, 55, yPos, { align: 'center' });
-    doc.text(`Date: ${signingDate}`, 155, yPos, { align: 'center' });
-    yPos += 20;
-
-    // Footer on last page
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'italic');
-    const footerY = 280;
-    doc.text('_______________________________________________________________________________', 105, footerY - 5, { align: 'center' });
-    doc.text(`Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString('en-GB')}`, 105, footerY, { align: 'center' });
-    doc.text('EZStay - Professional Property Management System', 105, footerY + 5, { align: 'center' });
-    doc.text('This is a legally binding document. Please retain for your records.', 105, footerY + 10, { align: 'center' });
-
-    // Save the PDF
-    doc.save(`Contract-${contract.id?.slice(0, 8) || 'unknown'}.pdf`);
   };
 
-  const previewContractPDF = (contract) => {
-    const doc = new jsPDF();
-    
-    // Get tenant information from identity profiles
-    const tenant = contract.identityProfiles?.[0] || {};
-    const checkinDate = contract.checkinDate ? new Date(contract.checkinDate) : new Date();
-    const checkoutDate = contract.checkoutDate ? new Date(contract.checkoutDate) : new Date();
-    
-    // Header - Vietnam Republic format
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.text('SOCIALIST REPUBLIC OF VIETNAM', 105, 20, { align: 'center' });
-    doc.text('Independence – Freedom – Happiness', 105, 30, { align: 'center' });
-    
-    // Divider line
-    doc.line(75, 35, 135, 35);
-    
-    // Contract title with PREVIEW
-    doc.setFontSize(18);
-    doc.text('HOUSE LEASE CONTRACT (PREVIEW)', 105, 50, { align: 'center' });
-    
-    // Contract basic info
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'normal');
-    let yPos = 70;
-    
-    doc.text(`Contract No: ${contract.id?.slice(0, 8) || 'N/A'}`, 20, yPos);
-    yPos += 10;
-    doc.text(`Date: ${new Date().toLocaleDateString('en-GB')}`, 20, yPos);
-    yPos += 15;
-    
-    // Parties information
-    doc.setFont(undefined, 'bold');
-    doc.text('THE CONTRACTING PARTIES:', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    doc.text('Party A (Lessor): EZStay Property Management', 20, yPos);
-    yPos += 7;
-    doc.text('Address: Ho Chi Minh City, Vietnam', 20, yPos);
-    yPos += 7;
-    doc.text('Phone: +84 xxx xxx xxx', 20, yPos);
-    yPos += 10;
-    
-    doc.text(`Party B (Lessee): ${tenant.fullName || 'N/A'}`, 20, yPos);
-    yPos += 7;
-    doc.text(`Address: ${tenant.address || 'N/A'}`, 20, yPos);
-    yPos += 7;
-    doc.text(`Phone: ${tenant.phoneNumber || 'N/A'}`, 20, yPos);
-    yPos += 7;
-    doc.text(`Citizen ID: ${tenant.citizenIdNumber || 'N/A'}`, 20, yPos);
-    yPos += 15;
-    
-    // Introduction
-    const introText = 'After discussion, the two parties have mutually agreed to enter into the house lease contract with the following agreement:';
-    const introLines = doc.splitTextToSize(introText, 170);
-    doc.text(introLines, 20, yPos);
-    yPos += introLines.length * 7 + 10;
-    
-    // Article 1
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 1: THE HOUSE FOR LEASE, PURPOSES OF USE', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    const article1Text = `Party A agrees to lease Party B the room "${contract.roomName || 'N/A'}" according to the property management system. The room is fully furnished and ready for residential use. Equipment and facilities are specifically listed in the minutes of handover between the two parties.`;
-    const article1Lines = doc.splitTextToSize(article1Text, 170);
-    doc.text(article1Lines, 20, yPos);
-    yPos += article1Lines.length * 7 + 10;
-    
-    // Article 2
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 2: DURATION OF THE LEASE', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    const durationMonths = Math.round((checkoutDate - checkinDate) / (1000 * 60 * 60 * 24 * 30));
-    const article2Text = `Duration of the lease: ${durationMonths} months, commencing on ${checkinDate.toLocaleDateString('en-GB')} and ending on ${checkoutDate.toLocaleDateString('en-GB')}. After the duration, the two parties will renegotiate the rental fee, and Party B will be given priority to sign a new contract.`;
-    const article2Lines = doc.splitTextToSize(article2Text, 170);
-    doc.text(article2Lines, 20, yPos);
-    yPos += article2Lines.length * 7 + 10;
-    
-    // Article 3
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 3: RENTAL FEE, SECURITY DEPOSIT AND PAYMENT METHOD', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    const monthlyRent = contract.roomDetails?.price || 'TBD';
-    const depositAmount = contract.depositAmount || 0;
-    const article3Text = `Rental fee: ${monthlyRent} VND/month. Party B will pay Party A an amount of security deposit: ${depositAmount} VND. This amount will be returned by Party A to Party B after the contract liquidation and after deduction of expenses for electricity, water, and repair of the house and furniture damaged by Party B during the period of usage (if any). Payment method: Party B will pay Party A the rent on monthly basis. Payment is not later than 05 days of each month.`;
-    const article3Lines = doc.splitTextToSize(article3Text, 170);
-    doc.text(article3Lines, 20, yPos);
-    yPos += article3Lines.length * 7 + 10;
-
-    // Check if we need a new page
-    if (yPos > 250) {
-      doc.addPage();
-      yPos = 20;
-    }
-    
-    // Article 4
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 4: RESPONSIBILITIES OF THE TWO PARTIES', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    doc.text('1/ Party A\'s responsibilities:', 20, yPos);
-    yPos += 7;
-    const partyAResponsibilities = [
-      'Ensuring and undertaking that the house is owned by Party A, Party A has full rights to lease it.',
-      'Handing over the house, its equipment and facilities to Party B on the effective date of the contract.',
-      'Supporting and creating favorable conditions for Party B to register temporary residence when Party B has a need to register.',
-      'Ensuring the full and exclusive use rights for Party B.'
-    ];
-    
-    partyAResponsibilities.forEach(resp => {
-      const respLines = doc.splitTextToSize(resp, 165);
-      doc.text(respLines, 25, yPos);
-      yPos += respLines.length * 7 + 3;
-    });
-    yPos += 5;
-    
-    doc.text('2/ Party B\'s responsibilities:', 20, yPos);
-    yPos += 7;
-    const partyBResponsibilities = [
-      'Using the house for the right purpose as agreed.',
-      'Paying the rent on time according to the agreed method.',
-      'If terminating the contract before its expiration, Party B will lose the security deposit.',
-      'Paying costs of electricity, water and telephone on time as required on invoices.',
-      'Being entitled to use the house fully and separately during the lease term.',
-      'Not being allowed to use the house to organize illegal activities.'
-    ];
-    
-    partyBResponsibilities.forEach(resp => {
-      const respLines = doc.splitTextToSize(resp, 165);
-      doc.text(respLines, 25, yPos);
-      yPos += respLines.length * 7 + 3;
-    });
-    yPos += 10;
-
-    // Check if we need a new page
-    if (yPos > 240) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    // Article 5
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 5: THE TWO PARTIES UNDERTAKE:', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    const article5Terms = [
-      'Performing the right content of the contract.',
-      'The personal information written in this contract is true.',
-      'Entering into the contract is completely voluntary, not forced or treated.',
-      'Expenses incurred during the course of contract performance shall be borne by the party generating the expenses.'
-    ];
-    
-    article5Terms.forEach(term => {
-      const termLines = doc.splitTextToSize(term, 165);
-      doc.text(termLines, 25, yPos);
-      yPos += termLines.length * 7 + 3;
-    });
-    yPos += 10;
-
-    // Check if we need a new page
-    if (yPos > 240) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    // Article 6
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 6: TERMINATION AND EXTENSION OF CONTRACT', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    const article6Text = `Either party has the right to terminate this contract before the expiration date by notifying the other party at least 30 days in advance. In case Party B terminates the contract early, the security deposit will be forfeited. In case Party A terminates the contract early without legitimate reason, Party A must compensate Party B an amount equivalent to the security deposit.`;
-    const article6Lines = doc.splitTextToSize(article6Text, 170);
-    doc.text(article6Lines, 20, yPos);
-    yPos += article6Lines.length * 7 + 10;
-
-    // Check if we need a new page
-    if (yPos > 240) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    // Article 7
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 7: DISPUTE RESOLUTION', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    const article7Text = `Any disputes arising during the implementation of this contract shall be resolved through negotiation between the two parties. If no agreement can be reached, the dispute shall be settled by the competent court in accordance with the law of Vietnam.`;
-    const article7Lines = doc.splitTextToSize(article7Text, 170);
-    doc.text(article7Lines, 20, yPos);
-    yPos += article7Lines.length * 7 + 10;
-
-    // Check if we need a new page
-    if (yPos > 240) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    // Article 8
-    doc.setFont(undefined, 'bold');
-    doc.text('ARTICLE 8: FORCE MAJEURE', 20, yPos);
-    yPos += 10;
-    
-    doc.setFont(undefined, 'normal');
-    const article8Text = `In the event of force majeure (natural disasters, fires, epidemics, wars, or other events beyond the control of both parties), both parties shall be exempt from liability for breach of contract. The affected party must immediately notify the other party and take all necessary measures to minimize damage. The two parties will negotiate to find the most appropriate solution.`;
-    const article8Lines = doc.splitTextToSize(article8Text, 170);
-    doc.text(article8Lines, 20, yPos);
-    yPos += article8Lines.length * 7 + 10;
-
-    // Preview notice
-    if (yPos > 240) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(255, 0, 0); // Red color
-    const previewNotice = '*** THIS IS A PREVIEW DOCUMENT ***';
-    doc.text(previewNotice, 105, yPos, { align: 'center' });
-    yPos += 7;
-    doc.setFontSize(9);
-    doc.setTextColor(0, 0, 0); // Black color
-    doc.setFont(undefined, 'italic');
-    doc.text('For full contract terms including Articles 9-10, appendices, and signatures,', 105, yPos, { align: 'center' });
-    yPos += 5;
-    doc.text('please generate the complete PDF using the "Generate PDF" button.', 105, yPos, { align: 'center' });
-    
-    // Open preview in new window
-    const pdfDataUri = doc.output('datauristring');
-    const newWindow = window.open();
-    if (newWindow) {
-      newWindow.document.write(`
-        <iframe 
-          width='100%' 
-          height='100%' 
-          src='${pdfDataUri}'
-          frameborder='0'>
-        </iframe>
-      `);
+  const previewContractPDF = async (contract) => {
+    try {
+      console.log('👁️ Preparing contract preview with complete data...');
+      
+      // Fetch signatures
+      let signatures = null;
+      try {
+        signatures = await contractService.getSignatures(contract.id);
+      } catch (error) {
+        console.log('No signatures found, will preview PDF without signatures');
+      }
+      
+      // Enrich contract with room details if not already present
+      let enrichedContract = { ...contract };
+      if (contract.roomId && !contract.roomDetails) {
+        try {
+          const roomDetails = await roomService.getById(contract.roomId);
+          enrichedContract.roomDetails = roomDetails;
+          enrichedContract.roomName = roomDetails?.name || roomDetails?.roomName || contract.roomName;
+          console.log('✅ Room details fetched for preview:', roomDetails);
+        } catch (error) {
+          console.error('❌ Error fetching room details for preview:', error);
+        }
+      }
+      
+      // Fetch identity profiles if not already present
+      if (!enrichedContract.identityProfiles || enrichedContract.identityProfiles.length === 0) {
+        console.log('🔍 Identity profiles not found in contract, fetching...');
+        try {
+          const profiles = await contractService.getIdentityProfiles(contract.id);
+          if (profiles && profiles.length > 0) {
+            enrichedContract.identityProfiles = profiles;
+            console.log('✅ Identity profiles fetched for preview:', profiles);
+          } else {
+            console.warn('⚠️ No identity profiles found for this contract');
+          }
+        } catch (error) {
+          console.error('❌ Error fetching identity profiles for preview:', error);
+        }
+      }
+      previewPDF(enrichedContract, signatures?.ownerSignature || null, signatures?.tenantSignature || null);
+    } catch (error) {
+      console.error('Error previewing PDF:', error);
+      previewPDF(contract, null, null);
     }
   };
 

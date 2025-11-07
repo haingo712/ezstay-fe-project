@@ -17,6 +17,9 @@ export default function LatestPosts() {
     try {
       setLoading(true);
       const allPosts = await rentalPostService.getAllForUser();
+      console.log('📦 All posts loaded:', allPosts);
+      console.log('🖼️ Sample post imageUrls:', allPosts[0]?.imageUrls);
+      
       // Get 9 latest posts (sort by createdAt desc)
       const sortedPosts = allPosts
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -97,11 +100,22 @@ export default function LatestPosts() {
               >
                 {/* Image */}
                 <div className="relative h-48 bg-gradient-to-br from-blue-500 to-purple-600">
-                  <img
-                    src="/image.png"
-                    alt={post.title}
-                    className="w-full h-full object-cover"
-                  />
+                  {post.imageUrls && post.imageUrls.length > 0 ? (
+                    <img
+                      src={post.imageUrls[0]}
+                      alt={post.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback to placeholder on error
+                        e.target.style.display = 'none';
+                        e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg></div>';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Building className="w-16 h-16 text-white" />
+                    </div>
+                  )}
                   <div className="absolute top-4 right-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${status.class}`}>
                       {status.text}

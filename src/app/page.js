@@ -10,6 +10,7 @@ import SearchBar from '../components/SearchBar';
 import CustomerReviews from '../components/CustomerReviews';
 import HowItWorks from '../components/HowItWorks';
 import LatestPosts from '../components/LatestPosts';
+import TopRankedHouses from '../components/TopRankedHouses';
 import FAQ from '../components/FAQ';
 import RoleBasedRedirect from '../components/RoleBasedRedirect';
 
@@ -20,6 +21,7 @@ export default function Home() {
         <Navbar />
         <Hero />
         <SearchBar />
+        <TopRankedHouses />
         <LatestPosts />
         <Stats />
         <HowItWorks />
