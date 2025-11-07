@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import contractService from "@/services/contractService";
 import roomService from "@/services/roomService";
+import otpService from "@/services/otpService";
 import { useAuth } from "@/hooks/useAuth";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
@@ -14,9 +15,9 @@ export default function ContractsManagementPage() {
   const router = useRouter();
   const params = useParams();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
-  
+
   const houseId = params.id; // Get boarding house ID from URL
-  
+
   // Ref to track if we're loading profiles from backend (edit mode)
   const isLoadingProfilesRef = useRef(false);
 
@@ -26,9 +27,25 @@ export default function ContractsManagementPage() {
   const [selectedContract, setSelectedContract] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showCreateContractModal, setShowCreateContractModal] = useState(false);
-  const [modalType, setModalType] = useState(''); // 'view', 'delete', 'cancel', 'extend', 'uploadImages' (edit removed - use 3-step modal)
+  const [modalType, setModalType] = useState(''); // 'view', 'delete', 'cancel', 'extend', 'uploadImages', 'signature'
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Signature Setting states
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [signatureStep, setSignatureStep] = useState(1); // 1: signature setting, 2: OTP verification
+  const [signatureTab, setSignatureTab] = useState('manual'); // 'draw', 'file', 'manual'
+  const [signatureName, setSignatureName] = useState('');
+  const [signaturePhone, setSignaturePhone] = useState('');
+  const [signaturePreview, setSignaturePreview] = useState('');
+  const [signatureFile, setSignatureFile] = useState(null);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpTimer, setOtpTimer] = useState(300); // 5 minutes in seconds
+  const [canResendOtp, setCanResendOtp] = useState(false);
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   // Cancel and Extend contract states
   const [cancelReason, setCancelReason] = useState("");
@@ -44,7 +61,7 @@ export default function ContractsManagementPage() {
   // New contract creation states
   const [createStep, setCreateStep] = useState(1); // 1: contract, 2: identity profile, 3: utility readings
   const [creatingContract, setCreatingContract] = useState(false);
-  
+
   // Contract form data
   const [contractData, setContractData] = useState({
     roomId: "", // Will be selected
@@ -100,7 +117,7 @@ export default function ContractsManagementPage() {
     }
   });
   const [utilityErrors, setUtilityErrors] = useState({});
-  
+
   // Rooms data
   const [rooms, setRooms] = useState([]);
   const [roomsLoading, setRoomsLoading] = useState(false);
@@ -129,29 +146,46 @@ export default function ContractsManagementPage() {
     fetchProvinces();
   }, []);
 
+  // OTP Timer countdown
+  useEffect(() => {
+    let interval;
+    if (signatureStep === 2 && otpTimer > 0) {
+      interval = setInterval(() => {
+        setOtpTimer((prev) => {
+          if (prev <= 1) {
+            setCanResendOtp(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [signatureStep, otpTimer]);
+
   // Auto-generate profiles array when numberOfOccupants changes
   // BUT: Don't auto-adjust in Edit mode - user manually manages profiles
   useEffect(() => {
     const count = parseInt(contractData.numberOfOccupants) || 1;
     console.log('👥 Number of Occupants changed:', count);
     console.log('📝 Modal type:', modalType);
-    
+
     // SKIP auto-adjustment if we're in edit mode and profiles are being loaded from backend
     // This prevents overwriting loaded profile data from backend
     if (modalType === 'edit' && isLoadingProfilesRef.current) {
       console.log('⏭️ SKIPPING profile auto-adjustment - in edit mode with loaded profiles');
       return;
     }
-    
+
     setProfiles(currentProfiles => {
       console.log('📊 Current profiles before update:', currentProfiles.length);
-      
+
       // If count hasn't changed, don't update anything to preserve data
       if (currentProfiles.length === count) {
         console.log('✅ Profiles count matches, no change needed - preserving existing data');
         return currentProfiles; // Return SAME reference to prevent re-render
       }
-      
+
       if (currentProfiles.length < count) {
         // Add more profiles - PRESERVE existing profiles
         const newProfiles = [...currentProfiles];
@@ -182,7 +216,7 @@ export default function ContractsManagementPage() {
         console.log('➖ Removing profiles, new total:', count);
         return currentProfiles.slice(0, count);
       }
-      
+
       return currentProfiles;
     });
   }, [contractData.numberOfOccupants, modalType]); // Removed profiles.length to fix React error
@@ -196,11 +230,11 @@ export default function ContractsManagementPage() {
     try {
       setLoading(true);
       console.log("📄 Fetching contracts for owner:", user.id);
-      
+
       // Fetch contracts for this owner (no need to pass user.id since it's from JWT token)
       const contractsResponse = await contractService.getByOwnerId();
       console.log("📄 Contracts fetched:", contractsResponse);
-      
+
       // Enrich contracts with room information
       const enrichedContracts = await Promise.all(
         (contractsResponse || []).map(async (contract) => {
@@ -224,10 +258,10 @@ export default function ContractsManagementPage() {
           }
         })
       );
-      
+
       console.log("📄 Enriched contracts:", enrichedContracts);
       setContracts(enrichedContracts);
-      
+
     } catch (error) {
       console.error("❌ Error fetching contracts:", error);
       setContracts([]);
@@ -245,28 +279,28 @@ export default function ContractsManagementPage() {
     try {
       setRoomsLoading(true);
       console.log("🏠 Fetching rooms for house ID:", houseId);
-      
+
       // Fetch rooms for this specific boarding house
       const roomsResponse = await roomService.getByBoardingHouseId(houseId);
       console.log("🏠 Rooms fetched:", roomsResponse);
-      
+
       // Filter only available rooms (roomStatus = 0)
       // BUT: Include current editing room even if not available
       const availableRooms = (roomsResponse || []).filter(room => {
-        const isAvailable = room.roomStatus === 0 || 
-                           room.roomStatus === "Available" || 
-                           room.roomStatus?.toLowerCase() === "available";
+        const isAvailable = room.roomStatus === 0 ||
+          room.roomStatus === "Available" ||
+          room.roomStatus?.toLowerCase() === "available";
         const isCurrentEditingRoom = currentEditingRoomId && room.id === currentEditingRoomId;
-        
+
         return isAvailable || isCurrentEditingRoom;
       });
-      
+
       console.log("✅ Available rooms filtered:", availableRooms.length, "out of", roomsResponse.length);
       if (currentEditingRoomId) {
         console.log("📌 Including current editing room:", currentEditingRoomId);
       }
       setRooms(availableRooms);
-      
+
     } catch (error) {
       console.error("❌ Error fetching rooms:", error);
       setRooms([]);
@@ -279,7 +313,7 @@ export default function ContractsManagementPage() {
     try {
       setAddressLoading(true);
       console.log("🏛️ Fetching provinces...");
-      
+
       // Fetch provinces data from public folder
       const response = await fetch('/data/vietnam-provinces.json');
       const provincesData = await response.json();
@@ -287,7 +321,7 @@ export default function ContractsManagementPage() {
       console.log("🏛️ First province sample:", provincesData[0]);
       setProvinces(provincesData || []);
       setVietnamProvinces(provincesData || []); // Also set for dependent form
-      
+
     } catch (error) {
       console.error("❌ Error fetching provinces:", error);
       setProvinces([]);
@@ -302,7 +336,7 @@ export default function ContractsManagementPage() {
     console.log(`📝 Updating profile ${profileIndex} - ${field}:`, value);
     console.log(`📋 Current profiles array:`, profiles);
     console.log(`📋 Profile BEFORE update:`, profiles[profileIndex]);
-    
+
     setProfiles(currentProfiles => {
       console.log(`🔄 Inside setProfiles callback - currentProfiles:`, currentProfiles);
       const newProfiles = [...currentProfiles];
@@ -314,7 +348,7 @@ export default function ContractsManagementPage() {
       console.log(`✅ New profiles array:`, newProfiles);
       return newProfiles;
     });
-    
+
     // Clear profile-specific errors
     const errorKey = `profile${profileIndex}_${field}`;
     if (profileErrors[errorKey]) {
@@ -328,7 +362,7 @@ export default function ContractsManagementPage() {
 
   // Search Identity Profile by Citizen ID (CCCD)
   const [searchingCCCD, setSearchingCCCD] = useState({});
-  
+
   const searchIdentityProfileByCCCD = async (profileIndex, citizenId) => {
     if (!citizenId || citizenId.trim().length < 9) {
       toast.error('Please enter a valid citizen ID (9-12 digits)');
@@ -336,18 +370,18 @@ export default function ContractsManagementPage() {
     }
 
     setSearchingCCCD(prev => ({ ...prev, [profileIndex]: true }));
-    
+
     try {
       console.log('🔍 Searching User by Citizen ID:', citizenId);
       console.log('🔍 Citizen ID length:', citizenId.length);
-      
+
       // TEMPORARY: Test direct API call bypassing gateway
       const directApiUrl = `https://localhost:7211/api/User/search-cccd/${citizenId}`;
       const gatewayUrl = `/api/User/search-cccd/${citizenId}`;
-      
+
       console.log('🔍 Gateway URL:', gatewayUrl);
       console.log('🔍 Direct API URL:', directApiUrl);
-      
+
       // Try gateway first
       console.log('📡 Calling via API Gateway...');
       const response = await api.get(gatewayUrl);
@@ -355,16 +389,16 @@ export default function ContractsManagementPage() {
       console.log('📦 Response type:', typeof response);
       console.log('📦 Response value:', response);
       console.log('📦 Response length (if string):', typeof response === 'string' ? response.length : 'N/A');
-      
+
       // Check for empty response (204 No Content)
       if (!response || response === '' || (typeof response === 'string' && response.trim() === '')) {
         console.log('❌ Empty response - likely 204 No Content or user not found');
         toast.warning('No user found with this Citizen ID. Please verify the ID is correct.');
         return;
       }
-      
+
       console.log('📦 Response keys:', Object.keys(response || {}));
-      
+
       // Parse if response is string (API Gateway may return stringified JSON)
       let userData = response;
       if (typeof response === 'string') {
@@ -380,15 +414,15 @@ export default function ContractsManagementPage() {
           return;
         }
       }
-      
+
       console.log('📦 userData type:', typeof userData);
       console.log('📦 userData.id:', userData?.id);
       console.log('📦 userData.userId:', userData?.userId);
       console.log('� userData.fullName:', userData?.fullName);
-      
+
       console.log('🔍 userData assigned:', userData);
       console.log('🔍 Check condition:', !userData, !userData?.id);
-      
+
       if (!userData || !userData.id) {
         console.log('❌ No user found - userData is null or missing id');
         console.log('❌ userData value:', userData);
@@ -396,69 +430,69 @@ export default function ContractsManagementPage() {
         toast.warning('No user found with this Citizen ID. Please check the ID and try again.');
         return;
       }
-      
+
       console.log('✅ Found User:', userData);
       console.log('✅ Full user data:', JSON.stringify(userData, null, 2));
-        
-        // Find province to load wards dropdown
-        let wardsForProvince = [];
-        if (userData.provinceId) {
-          const selectedProvince = provinces.find(p => p.code.toString() === userData.provinceId.toString());
-          if (selectedProvince) {
-            wardsForProvince = selectedProvince.wards || [];
-            console.log('🏛️ Found province:', selectedProvince.name, 'with', wardsForProvince.length, 'wards');
-            
-            // Update wards dropdown for this profile
-            setWardsByProfile(prev => ({
-              ...prev,
-              [profileIndex]: wardsForProvince
-            }));
-          }
+
+      // Find province to load wards dropdown
+      let wardsForProvince = [];
+      if (userData.provinceId) {
+        const selectedProvince = provinces.find(p => p.code.toString() === userData.provinceId.toString());
+        if (selectedProvince) {
+          wardsForProvince = selectedProvince.wards || [];
+          console.log('🏛️ Found province:', selectedProvince.name, 'with', wardsForProvince.length, 'wards');
+
+          // Update wards dropdown for this profile
+          setWardsByProfile(prev => ({
+            ...prev,
+            [profileIndex]: wardsForProvince
+          }));
         }
-        
-        // Map backend fields to form fields and auto-fill
-        setProfiles(currentProfiles => {
-          const newProfiles = [...currentProfiles];
-          newProfiles[profileIndex] = {
-            ...newProfiles[profileIndex],
-            // User ID - try both camelCase and PascalCase
-            userId: userData.userId || userData.UserId || userData.id || userData.Id || null,
-            // Personal info
-            fullName: userData.fullName || userData.FullName || '',
-            dateOfBirth: (userData.dateOfBirth || userData.DateOfBirth) ? (userData.dateOfBirth || userData.DateOfBirth).split('T')[0] : '',
-            phoneNumber: userData.phone || userData.Phone || '',
-            email: userData.email || userData.Email || '',
-            // Address with names from backend
-            provinceId: userData.provinceId || userData.ProvinceId || '',
-            provinceName: userData.provinceName || userData.ProvinceName || '',
-            wardId: userData.wardId || userData.WardId || '',
-            wardName: userData.wardName || userData.WardName || '',
-            address: userData.detailAddress || userData.DetailAddress || '',
-            temporaryResidence: userData.temporaryResidence || userData.TemporaryResidence || '',
-            // Citizen ID - keep the searched value
-            citizenIdNumber: userData.citizenIdNumber || userData.CitizenIdNumber || citizenId,
-            citizenIdIssuedDate: (userData.citizenIdIssuedDate || userData.CitizenIdIssuedDate) ? (userData.citizenIdIssuedDate || userData.CitizenIdIssuedDate).split('T')[0] : '',
-            citizenIdIssuedPlace: userData.citizenIdIssuedPlace || userData.CitizenIdIssuedPlace || '',
-            // Images and notes
-            avatarUrl: userData.avatar || userData.Avatar || '',
-            frontImageUrl: userData.frontImageUrl || userData.FrontImageUrl || '',
-            backImageUrl: userData.backImageUrl || userData.BackImageUrl || '',
-            notes: userData.bio || userData.Bio || ''
-          };
-          
-          console.log('✅ Profile auto-filled:', newProfiles[profileIndex]);
-          console.log('✅ Full profile data:', JSON.stringify(newProfiles[profileIndex], null, 2));
-          return newProfiles;
-        });
-        
-        toast.success(`Profile auto-filled for ${userData.fullName}!`);
-        
+      }
+
+      // Map backend fields to form fields and auto-fill
+      setProfiles(currentProfiles => {
+        const newProfiles = [...currentProfiles];
+        newProfiles[profileIndex] = {
+          ...newProfiles[profileIndex],
+          // User ID - try both camelCase and PascalCase
+          userId: userData.userId || userData.UserId || userData.id || userData.Id || null,
+          // Personal info
+          fullName: userData.fullName || userData.FullName || '',
+          dateOfBirth: (userData.dateOfBirth || userData.DateOfBirth) ? (userData.dateOfBirth || userData.DateOfBirth).split('T')[0] : '',
+          phoneNumber: userData.phone || userData.Phone || '',
+          email: userData.email || userData.Email || '',
+          // Address with names from backend
+          provinceId: userData.provinceId || userData.ProvinceId || '',
+          provinceName: userData.provinceName || userData.ProvinceName || '',
+          wardId: userData.wardId || userData.WardId || '',
+          wardName: userData.wardName || userData.WardName || '',
+          address: userData.detailAddress || userData.DetailAddress || '',
+          temporaryResidence: userData.temporaryResidence || userData.TemporaryResidence || '',
+          // Citizen ID - keep the searched value
+          citizenIdNumber: userData.citizenIdNumber || userData.CitizenIdNumber || citizenId,
+          citizenIdIssuedDate: (userData.citizenIdIssuedDate || userData.CitizenIdIssuedDate) ? (userData.citizenIdIssuedDate || userData.CitizenIdIssuedDate).split('T')[0] : '',
+          citizenIdIssuedPlace: userData.citizenIdIssuedPlace || userData.CitizenIdIssuedPlace || '',
+          // Images and notes
+          avatarUrl: userData.avatar || userData.Avatar || '',
+          frontImageUrl: userData.frontImageUrl || userData.FrontImageUrl || '',
+          backImageUrl: userData.backImageUrl || userData.BackImageUrl || '',
+          notes: userData.bio || userData.Bio || ''
+        };
+
+        console.log('✅ Profile auto-filled:', newProfiles[profileIndex]);
+        console.log('✅ Full profile data:', JSON.stringify(newProfiles[profileIndex], null, 2));
+        return newProfiles;
+      });
+
+      toast.success(`Profile auto-filled for ${userData.fullName}!`);
+
     } catch (error) {
       console.error('❌ Error searching user:', error);
       console.error('❌ Error response:', error.response);
       console.error('❌ Error status:', error.response?.status);
       console.error('❌ Error data:', error.response?.data);
-      
+
       if (error.response?.status === 404) {
         toast.info('No user found with this Citizen ID');
       } else if (error.response?.status === 204) {
@@ -477,7 +511,7 @@ export default function ContractsManagementPage() {
     console.log("🏛️ Province selected for profile", profileIndex, ":", provinceCode, "type:", typeof provinceCode);
     console.log("🏛️ Total provinces:", provinces.length);
     console.log("🏛️ First province sample:", provinces[0]);
-    
+
     // Update provinceId in profile
     updateProfile(profileIndex, 'provinceId', provinceCode);
     updateProfile(profileIndex, 'wardId', ''); // Reset ward when province changes
@@ -490,7 +524,7 @@ export default function ContractsManagementPage() {
       }
       return match;
     });
-    
+
     if (selectedProvince) {
       console.log("🏘️ Setting wards for profile", profileIndex, ":", selectedProvince.wards?.length, "wards");
       setWardsByProfile(prev => {
@@ -524,7 +558,7 @@ export default function ContractsManagementPage() {
   const handleEditContract = async (contract) => {
     console.log("✏️ Opening edit contract modal for:", contract.id);
     console.log("📋 Contract data received:", contract);
-    
+
     try {
       // Fetch full contract details to ensure we have all data
       console.log("🔄 Fetching full contract details...");
@@ -534,26 +568,26 @@ export default function ContractsManagementPage() {
       console.log("✅ All keys in fullContract:", Object.keys(fullContract));
       console.log("✅ identityProfiles field:", fullContract.identityProfiles);
       console.log("✅ IdentityProfiles field (PascalCase):", fullContract.IdentityProfiles);
-      
+
       setSelectedContract(fullContract);
-      
+
       // Set current editing room ID so it can be included in room dropdown
       const editingRoomId = fullContract.roomId;
       setCurrentEditingRoomId(editingRoomId);
       console.log("🔑 Set current editing room ID:", editingRoomId);
-      
+
       // Fetch rooms and manually include editing room if needed
       const roomsResponse = await roomService.getByBoardingHouseId(houseId);
       const availableRooms = (roomsResponse || []).filter(room => {
-        const isAvailable = room.roomStatus === 0 || 
-                           room.roomStatus === "Available" || 
-                           room.roomStatus?.toLowerCase() === "available";
+        const isAvailable = room.roomStatus === 0 ||
+          room.roomStatus === "Available" ||
+          room.roomStatus?.toLowerCase() === "available";
         const isEditingRoom = editingRoomId && room.id === editingRoomId;
         return isAvailable || isEditingRoom;
       });
       console.log("✅ Rooms loaded for edit (including current):", availableRooms.length);
       setRooms(availableRooms);
-      
+
       // Populate contract data from existing contract
       setContractData({
         tenantId: fullContract.tenantId || "",
@@ -564,7 +598,7 @@ export default function ContractsManagementPage() {
         numberOfOccupants: fullContract.numberOfOccupants || 1,
         notes: fullContract.notes || ""
       });
-      
+
       console.log("📝 Contract data populated:", {
         tenantId: fullContract.tenantId,
         roomId: fullContract.roomId,
@@ -573,15 +607,15 @@ export default function ContractsManagementPage() {
         depositAmount: fullContract.depositAmount,
         numberOfOccupants: fullContract.numberOfOccupants
       });
-    
+
       // Try to get identity profiles from multiple sources
       console.log("🔄 Looking for identity profiles...");
       console.log("📋 contract.identityProfiles:", contract.identityProfiles);
       console.log("📋 fullContract.identityProfiles:", fullContract.identityProfiles);
-      
+
       // Use identity profiles from contract object (already loaded in list)
       let identityProfiles = contract.identityProfiles || fullContract.identityProfiles || [];
-      
+
       // If not found, try fetching from dedicated API
       if (!identityProfiles || identityProfiles.length === 0) {
         console.log("🔄 Identity profiles not in contract object, fetching from API...");
@@ -593,21 +627,21 @@ export default function ContractsManagementPage() {
           identityProfiles = [];
         }
       }
-      
+
       console.log("✅ Final identity profiles to use:", identityProfiles);
       console.log("✅ Identity profiles JSON:", JSON.stringify(identityProfiles, null, 2));
-      
+
       // Populate identity profiles array (support multiple profiles)
       if (identityProfiles && identityProfiles.length > 0) {
         console.log("👤 Identity profiles found:", identityProfiles.length);
         console.log("👤 Raw profile data from backend:", JSON.stringify(identityProfiles, null, 2));
         console.log("👤 First profile keys:", Object.keys(identityProfiles[0]));
-        
+
         // Map all profiles from backend to frontend format
         // Try both camelCase and PascalCase to handle different API responses
         const mappedProfiles = identityProfiles.map((profile, idx) => {
           console.log(`👤 Mapping profile ${idx}:`, profile);
-          
+
           return {
             userId: profile.userId || profile.UserId || null,
             fullName: profile.fullName || profile.FullName || "",
@@ -628,13 +662,13 @@ export default function ContractsManagementPage() {
             backImageUrl: profile.backImageUrl || profile.BackImageUrl || ""
           };
         });
-        
+
         console.log("✅ Mapped profiles result:", JSON.stringify(mappedProfiles, null, 2));
-        
+
         setProfiles(mappedProfiles);
         isLoadingProfilesRef.current = true; // Mark that we've loaded profiles from backend
         console.log("✅ Profiles populated:", mappedProfiles.length, "profile(s)");
-        
+
         // Load wards for the first profile's province (for initial display)
         if (mappedProfiles[0].provinceId) {
           const provinceCode = parseInt(mappedProfiles[0].provinceId);
@@ -673,14 +707,14 @@ export default function ContractsManagementPage() {
         setProfiles(emptyProfiles);
         isLoadingProfilesRef.current = true;
       }
-      
+
       // Populate utility readings if exists
       if (fullContract.utilityReadings && fullContract.utilityReadings.length > 0) {
         console.log("⚡ Utility readings found:", fullContract.utilityReadings);
-        
+
         const electricityReading = fullContract.utilityReadings.find(r => r.utilityType === 0 || r.utilityType === "Electricity");
         const waterReading = fullContract.utilityReadings.find(r => r.utilityType === 1 || r.utilityType === "Water");
-        
+
         setUtilityReadingData({
           electricityReading: {
             price: electricityReading?.price?.toString() || "",
@@ -693,7 +727,7 @@ export default function ContractsManagementPage() {
             currentIndex: waterReading?.currentIndex?.toString() || ""
           }
         });
-        
+
         console.log("⚡ Utility data populated:", {
           electricity: electricityReading?.currentIndex,
           water: waterReading?.currentIndex
@@ -701,14 +735,14 @@ export default function ContractsManagementPage() {
       } else {
         console.log("⚠️ No utility readings found for this contract");
       }
-      
+
       // Set modal type and open modal
       setModalType('edit');
       setCreateStep(1); // Start from step 1
       setShowCreateContractModal(true);
-      
+
       console.log("✅ Edit modal opened successfully");
-      
+
     } catch (error) {
       console.error("❌ Error fetching contract details:", error);
       alert("Error loading contract details: " + (error.message || "Unknown error"));
@@ -754,11 +788,11 @@ export default function ContractsManagementPage() {
     if (files.length === 0) return;
 
     setContractImages(files);
-    
+
     // Generate previews using URL.createObjectURL (more efficient and reliable)
     const previews = files.map(file => URL.createObjectURL(file));
     setContractImagePreviews(previews);
-    
+
     console.log("📷 Selected", files.length, "images for upload");
   };
 
@@ -768,7 +802,7 @@ export default function ContractsManagementPage() {
     if (urlToRevoke && urlToRevoke.startsWith('blob:')) {
       URL.revokeObjectURL(urlToRevoke);
     }
-    
+
     setContractImages(prev => prev.filter((_, i) => i !== index));
     setContractImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
@@ -806,19 +840,19 @@ export default function ContractsManagementPage() {
 
       const result = await contractService.uploadContractImages(selectedContract.id, contractImages);
       console.log("✅ Upload result:", result);
-      
+
       clearInterval(progressInterval);
       setUploadProgress(100);
-      
+
       await fetchData(); // Refresh data
-      
+
       // Cleanup object URLs
       contractImagePreviews.forEach(url => {
         if (url.startsWith('blob:')) {
           URL.revokeObjectURL(url);
         }
       });
-      
+
       setTimeout(() => {
         setShowModal(false);
         setContractImages([]);
@@ -838,7 +872,7 @@ export default function ContractsManagementPage() {
   // Contract creation functions
   const validateContractStep = () => {
     const errors = {};
-    
+
     if (!contractData.roomId) errors.roomId = "Please select a room";
     if (!contractData.checkinDate) errors.checkinDate = "Check-in date is required";
     if (!contractData.checkoutDate) errors.checkoutDate = "Check-out date is required";
@@ -846,7 +880,7 @@ export default function ContractsManagementPage() {
     if (contractData.numberOfOccupants < 1 || contractData.numberOfOccupants > 9) {
       errors.numberOfOccupants = "Number of occupants must be between 1 and 9";
     }
-    
+
     // Date validation
     if (contractData.checkinDate && contractData.checkoutDate) {
       const checkin = new Date(contractData.checkinDate);
@@ -862,7 +896,7 @@ export default function ContractsManagementPage() {
 
   const validateProfileStep = () => {
     const errors = {};
-    
+
     // Validate all profiles in the array
     profiles.forEach((profile, index) => {
       if (!profile.fullName.trim()) errors[`profile${index}_fullName`] = "Full name is required";
@@ -890,12 +924,12 @@ export default function ContractsManagementPage() {
 
   const validateUtilityStep = () => {
     const errors = {};
-    
+
     // Validate electricity reading
     if (!utilityReadingData.electricityReading.currentIndex || parseFloat(utilityReadingData.electricityReading.currentIndex) < 0) {
       errors.electricityCurrentIndex = "Electricity current index is required and must be >= 0";
     }
-    
+
     // Validate water reading
     if (!utilityReadingData.waterReading.currentIndex || parseFloat(utilityReadingData.waterReading.currentIndex) < 0) {
       errors.waterCurrentIndex = "Water current index is required and must be >= 0";
@@ -905,7 +939,7 @@ export default function ContractsManagementPage() {
     if (utilityReadingData.electricityReading.price && parseFloat(utilityReadingData.electricityReading.price) < 0) {
       errors.electricityPrice = "Electricity price must be >= 0";
     }
-    
+
     if (utilityReadingData.waterReading.price && parseFloat(utilityReadingData.waterReading.price) < 0) {
       errors.waterPrice = "Water price must be >= 0";
     }
@@ -914,7 +948,7 @@ export default function ContractsManagementPage() {
     if (utilityReadingData.electricityReading.note && utilityReadingData.electricityReading.note.length > 100) {
       errors.electricityNote = "Electricity note cannot exceed 100 characters";
     }
-    
+
     if (utilityReadingData.waterReading.note && utilityReadingData.waterReading.note.length > 100) {
       errors.waterNote = "Water note cannot exceed 100 characters";
     }
@@ -925,17 +959,17 @@ export default function ContractsManagementPage() {
 
   const validateAllSteps = () => {
     console.log("🔍 Validating all steps before creating contract...");
-    
+
     const contractValid = validateContractStep();
     const profileValid = validateProfileStep();
     const utilityValid = validateUtilityStep();
-    
+
     console.log("📋 Validation results:", {
       contract: contractValid,
       profile: profileValid,
       utility: utilityValid
     });
-    
+
     return contractValid && profileValid && utilityValid;
   };
 
@@ -1034,7 +1068,7 @@ export default function ContractsManagementPage() {
       console.log("- ProfilesInContract:", requestData.ProfilesInContract);
       console.log("- ElectricityReading:", requestData.ElectricityReading);
       console.log("- WaterReading:", requestData.WaterReading);
-      
+
       let result;
       if (isEditMode) {
         console.log("📝 Updating contract ID:", selectedContract.id);
@@ -1043,9 +1077,9 @@ export default function ContractsManagementPage() {
         console.log("✨ Creating new contract");
         result = await contractService.create(requestData);
       }
-      
+
       alert(`Contract ${isEditMode ? 'updated' : 'created'} successfully with ${profiles.length} identity profile(s) and utility readings!`);
-      
+
       // Reset form and close modal
       setShowCreateContractModal(false);
       setCreateStep(1);
@@ -1090,7 +1124,7 @@ export default function ContractsManagementPage() {
           currentIndex: ""
         }
       });
-      
+
       // Refresh contracts list and rooms
       await fetchData();
       await fetchRooms(); // Re-fetch rooms to get updated availability
@@ -1103,7 +1137,7 @@ export default function ContractsManagementPage() {
         data: error.response?.data,
         message: error.message
       });
-      
+
       // Show detailed error message
       let errorMessage = `Error ${isEditMode ? 'updating' : 'creating'} contract: `;
       if (error.response?.status === 400) {
@@ -1123,7 +1157,7 @@ export default function ContractsManagementPage() {
       } else {
         errorMessage += error.message || error;
       }
-      
+
       alert(errorMessage);
     } finally {
       setCreatingContract(false);
@@ -1173,7 +1207,7 @@ export default function ContractsManagementPage() {
 
     const currentEndDate = new Date(selectedContract.checkoutDate);
     const newEndDate = new Date(extendDate);
-    
+
     if (newEndDate <= currentEndDate) {
       alert("New end date must be after the current end date");
       return;
@@ -1194,6 +1228,271 @@ export default function ContractsManagementPage() {
     }
   };
 
+  // Signature Modal Handlers
+  const handleOpenSignatureModal = async (contract) => {
+    try {
+      console.log('📝 Opening signature modal for contract:', contract?.id);
+
+      // Fetch full contract details from backend
+      const contractId = contract?.id || contract?.Id;
+      if (!contractId) {
+        toast.error('Không tìm thấy ID hợp đồng');
+        return;
+      }
+
+      console.log('🔍 Fetching contract details for ID:', contractId);
+      const fullContract = await contractService.getContractById(contractId);
+      console.log('✅ Contract details loaded:', fullContract);
+
+      setSelectedContract(fullContract);
+      setShowSignatureModal(true);
+      setSignatureStep(1); // Reset to step 1
+      setSignatureName(user?.fullName || user?.name || '');
+      setSignaturePhone(user?.phone || user?.phoneNumber || '');
+      setSignaturePreview('');
+      setOtpCode('');
+      setOtpTimer(300);
+      setCanResendOtp(false);
+
+      // Update URL to reflect contract ID
+      router.push(`/owner/boarding-houses/${houseId}/contracts?contractId=${contractId}`, undefined, { shallow: true });
+
+    } catch (error) {
+      console.error('❌ Error loading contract:', error);
+      toast.error('Không thể tải thông tin hợp đồng');
+    }
+  };
+
+  const handleCloseSignatureModal = () => {
+    setShowSignatureModal(false);
+    setSignatureStep(1);
+    setSignatureName('');
+    setSignaturePhone('');
+    setSignaturePreview('');
+    setOtpCode('');
+    setOtpTimer(300);
+    setCanResendOtp(false);
+    setSelectedContract(null);
+  };
+
+  // Handle Save signature and proceed to OTP step
+  const handleSaveSignature = async () => {
+    if (!signaturePreview) {
+      toast.error('Vui lòng tạo chữ ký trước khi lưu');
+      return;
+    }
+
+    if (!signatureName.trim()) {
+      toast.error('Vui lòng nhập họ tên');
+      return;
+    }
+
+    try {
+      setSendingOtp(true);
+      console.log('📝 Saving signature and sending OTP...');
+
+      // Get user email from contract or current user
+      const userEmail = selectedContract?.identityProfiles?.[0]?.email ||
+        selectedContract?.identityProfiles?.[0]?.Email ||
+        user?.email ||
+        user?.Email;
+
+      if (!userEmail) {
+        toast.error('Không tìm thấy email người dùng');
+        setSendingOtp(false);
+        return;
+      }
+
+      // Get contract ID
+      const contractId = selectedContract?.id || selectedContract?.Id;
+      if (!contractId) {
+        toast.error('Không tìm thấy thông tin hợp đồng');
+        setSendingOtp(false);
+        return;
+      }
+
+      console.log('📧 Sending OTP to email:', userEmail);
+      console.log('📝 Contract ID:', contractId);
+
+      // Send OTP via MailAPI (backend will generate and send OTP)
+      await otpService.sendVerificationOtp(userEmail, null, contractId);
+      console.log('✅ OTP request sent to backend');
+
+      // Note: Backend generates OTP, stores it in DB, and sends email
+      // Frontend will verify OTP through backend API
+
+      // Save signature data temporarily
+      sessionStorage.setItem('pendingSignature', JSON.stringify({
+        contractId,
+        signatureName,
+        signaturePreview,
+        signatureTab,
+        email: userEmail,
+        timestamp: Date.now()
+      }));
+
+      toast.success(`Mã OTP đã được gửi đến email ${userEmail}`);
+
+      // Close modal and navigate to OTP verification page
+      setShowSignatureModal(false);
+      router.push(`/owner/contracts/${contractId}/signature?email=${encodeURIComponent(userEmail)}&boardingHouseId=${houseId}`);
+
+    } catch (error) {
+      console.error('❌ Error sending OTP:', error);
+      toast.error('Lỗi khi gửi mã OTP. Vui lòng thử lại.');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  // Handle Resend OTP
+  const handleResendOtp = async () => {
+    try {
+      setSendingOtp(true);
+      console.log('📝 Resending OTP to:', signaturePhone);
+
+      // TODO: Call API to resend OTP
+      // const response = await api.post('/api/signature/resend-otp', {
+      //   contractId: selectedContract.id,
+      //   phoneNumber: signaturePhone
+      // });
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      setOtpTimer(300); // Reset timer to 5 minutes
+      setCanResendOtp(false);
+      toast.success('Mã OTP mới đã được gửi');
+
+    } catch (error) {
+      console.error('❌ Error resending OTP:', error);
+      toast.error('Lỗi khi gửi lại mã OTP. Vui lòng thử lại.');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  // Handle Confirm OTP and complete signature
+  const handleConfirmSignature = async () => {
+    if (!otpCode.trim()) {
+      toast.error('Vui lòng nhập mã OTP');
+      return;
+    }
+
+    if (otpCode.length !== 6) {
+      toast.error('Mã OTP phải có 6 chữ số');
+      return;
+    }
+
+    try {
+      setVerifyingOtp(true);
+      console.log('✅ Verifying OTP:', otpCode);
+
+      // Get pending signature data
+      const pendingData = sessionStorage.getItem('pendingSignature');
+      if (!pendingData) {
+        toast.error('Không tìm thấy thông tin chữ ký');
+        return;
+      }
+
+      const signatureData = JSON.parse(pendingData);
+      const userEmail = signatureData.email;
+
+      // Verify OTP with backend
+      try {
+        const result = await otpService.verifyContractOtp(userEmail, otpCode);
+        console.log('✅ OTP verified by backend:', result);
+      } catch (apiError) {
+        console.error('❌ Backend verification failed:', apiError);
+        toast.error('Mã OTP không đúng hoặc đã hết hạn');
+        setVerifyingOtp(false);
+        return;
+      }
+
+      // TODO: Call API to save signature to contract
+      // await api.post('/api/Contract/add-signature', {
+      //   contractId: signatureData.contractId,
+      //   signatureName: signatureData.signatureName,
+      //   signatureImage: signatureData.signaturePreview,
+      //   signatureType: signatureData.signatureTab
+      // });
+
+      // Clear stored data
+      otpService.clearOtp(userEmail);
+      sessionStorage.removeItem('pendingSignature');
+
+      toast.success('Chữ ký điện tử đã được lưu thành công!');
+      handleCloseSignatureModal();
+      await fetchData(); // Refresh contracts list
+
+    } catch (error) {
+      console.error('❌ Error verifying OTP:', error);
+      toast.error('Có lỗi xảy ra. Vui lòng thử lại.');
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  const generateManualSignature = () => {
+    if (!signatureName.trim()) {
+      toast.error('Please enter your full name');
+      return;
+    }
+
+    // Generate signature preview with unique code
+    const uniqueCode = Math.random().toString(36).substring(2, 15).toUpperCase();
+    setSignaturePreview(`Được ký bởi/ Signed by:\n${signatureName}\n${uniqueCode}`);
+  };
+
+  const handleSignatureFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setSignatureFile(file);
+        setSignaturePreview(event.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Canvas Drawing Functions
+  const startDrawing = (e) => {
+    if (!canvasRef.current) return;
+    setIsDrawing(true);
+    const ctx = canvasRef.current.getContext('2d');
+    const rect = canvasRef.current.getBoundingClientRect();
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing || !canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    const rect = canvasRef.current.getBoundingClientRect();
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    if (!canvasRef.current) return;
+    setIsDrawing(false);
+    const dataUrl = canvasRef.current.toDataURL();
+    setSignaturePreview(dataUrl);
+  };
+
+  const clearCanvas = () => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    setSignaturePreview('');
+  };
+
   // handleConfirmEdit REMOVED - Edit now uses the full 3-step modal via handleCreateContract
 
   const handleCreateContractSuccess = async () => {
@@ -1206,40 +1505,40 @@ export default function ContractsManagementPage() {
 
   const generateContractPDF = (contract) => {
     const doc = new jsPDF();
-    
+
     // Get tenant information from identity profiles
     const tenant = contract.identityProfiles?.[0] || {};
     const checkinDate = contract.checkinDate ? new Date(contract.checkinDate) : new Date();
     const checkoutDate = contract.checkoutDate ? new Date(contract.checkoutDate) : new Date();
-    
+
     // Header - Vietnam Republic format
     doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
     doc.text('SOCIALIST REPUBLIC OF VIETNAM', 105, 20, { align: 'center' });
     doc.text('Independence – Freedom – Happiness', 105, 30, { align: 'center' });
-    
+
     // Divider line
     doc.line(75, 35, 135, 35);
-    
+
     // Contract title
     doc.setFontSize(18);
     doc.text('HOUSE LEASE CONTRACT', 105, 50, { align: 'center' });
-    
+
     // Contract basic info
     doc.setFontSize(12);
     doc.setFont(undefined, 'normal');
     let yPos = 70;
-    
+
     doc.text(`Contract No: ${contract.id?.slice(0, 8) || 'N/A'}`, 20, yPos);
     yPos += 10;
     doc.text(`Date: ${new Date().toLocaleDateString('en-GB')}`, 20, yPos);
     yPos += 15;
-    
+
     // Parties information
     doc.setFont(undefined, 'bold');
     doc.text('THE CONTRACTING PARTIES:', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     doc.text('Party A (Lessor): EZStay Property Management', 20, yPos);
     yPos += 7;
@@ -1247,7 +1546,7 @@ export default function ContractsManagementPage() {
     yPos += 7;
     doc.text('Phone: +84 xxx xxx xxx', 20, yPos);
     yPos += 10;
-    
+
     doc.text(`Party B (Lessee): ${tenant.fullName || 'N/A'}`, 20, yPos);
     yPos += 7;
     doc.text(`Address: ${tenant.address || 'N/A'}`, 20, yPos);
@@ -1256,41 +1555,41 @@ export default function ContractsManagementPage() {
     yPos += 7;
     doc.text(`Citizen ID: ${tenant.citizenIdNumber || 'N/A'}`, 20, yPos);
     yPos += 15;
-    
+
     // Introduction
     const introText = 'After discussion, the two parties have mutually agreed to enter into the house lease contract with the following agreement:';
     const introLines = doc.splitTextToSize(introText, 170);
     doc.text(introLines, 20, yPos);
     yPos += introLines.length * 7 + 10;
-    
+
     // Article 1
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 1: THE HOUSE FOR LEASE, PURPOSES OF USE', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     const article1Text = `Party A agrees to lease Party B the room "${contract.roomName || 'N/A'}" according to the property management system. The room is fully furnished and ready for residential use. Equipment and facilities are specifically listed in the minutes of handover between the two parties.`;
     const article1Lines = doc.splitTextToSize(article1Text, 170);
     doc.text(article1Lines, 20, yPos);
     yPos += article1Lines.length * 7 + 10;
-    
+
     // Article 2
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 2: DURATION OF THE LEASE', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     const durationMonths = Math.round((checkoutDate - checkinDate) / (1000 * 60 * 60 * 24 * 30));
     const article2Text = `Duration of the lease: ${durationMonths} months, commencing on ${checkinDate.toLocaleDateString('en-GB')} and ending on ${checkoutDate.toLocaleDateString('en-GB')}. After the duration, the two parties will renegotiate the rental fee, and Party B will be given priority to sign a new contract.`;
     const article2Lines = doc.splitTextToSize(article2Text, 170);
     doc.text(article2Lines, 20, yPos);
     yPos += article2Lines.length * 7 + 10;
-    
+
     // Article 3
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 3: RENTAL FEE, SECURITY DEPOSIT AND PAYMENT METHOD', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     const monthlyRent = contract.roomDetails?.price || 'TBD';
     const depositAmount = contract.depositAmount || 0;
@@ -1304,12 +1603,12 @@ export default function ContractsManagementPage() {
       doc.addPage();
       yPos = 20;
     }
-    
+
     // Article 4
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 4: RESPONSIBILITIES OF THE TWO PARTIES', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     doc.text('1/ Party A\'s responsibilities:', 20, yPos);
     yPos += 7;
@@ -1323,14 +1622,14 @@ export default function ContractsManagementPage() {
       'Before the expiry of the lease contract, Party A must notify Party B at least 01 (one) month in advance so that Party B arranges to re-sign the contract or liquidate the contract as agreed.',
       'Receiving the rent in full and on time as agreed.'
     ];
-    
+
     partyAResponsibilities.forEach(resp => {
       const respLines = doc.splitTextToSize(resp, 170);
       doc.text(respLines, 20, yPos);
       yPos += respLines.length * 7 + 3;
     });
     yPos += 5;
-    
+
     doc.text('2/ Party B\'s responsibilities:', 20, yPos);
     yPos += 7;
     const partyBResponsibilities = [
@@ -1347,7 +1646,7 @@ export default function ContractsManagementPage() {
       'Being allowed to repair the house in accordance with its use needs, with the consent of Party A but without changes in the structure and architecture of the house.',
       'Before the expiry of the lease contract, Party B must notify Party A at least 01 (one) month in advance so that Party A can arrange to re-sign the contract or liquidate the contract as agreed.'
     ];
-    
+
     partyBResponsibilities.forEach(resp => {
       const respLines = doc.splitTextToSize(resp, 170);
       doc.text(respLines, 20, yPos);
@@ -1365,7 +1664,7 @@ export default function ContractsManagementPage() {
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 5: THE TWO PARTIES UNDERTAKE:', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     const article5Terms = [
       'Performing the right content of the contract.',
@@ -1378,7 +1677,7 @@ export default function ContractsManagementPage() {
       'At the end of the contract, in case either party wants to extend the contract, the party must notify the other in writing at least one month in advance.',
       'In the course of contract performance, the two parties undertake not to unilaterally terminate the contract. If Party A unilaterally terminates the contract, Party A must return Party B\'s deposit amount to Party B, and at the same time compensate Party B with an amount equal to the deposit paid by Party B to Party A. Conversely, if Party B unilaterally terminates the contract, Party B will lose the deposit amount paid to Party A.'
     ];
-    
+
     article5Terms.forEach(term => {
       const termLines = doc.splitTextToSize(term, 170);
       doc.text(termLines, 20, yPos);
@@ -1396,33 +1695,33 @@ export default function ContractsManagementPage() {
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 6: UNILATERAL TERMINATION OF THE CONTRACT', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     doc.text('Party A has the right to unilaterally terminate the contract performance when Party B commits any of the following acts:', 20, yPos);
     yPos += 10;
-    
+
     const partyATermination = [
       'Not paying the rent as agreed.',
       'Deliberately damaging the house.',
       'Seriously affecting environmental sanitation, fire protection safety, security and order.'
     ];
-    
+
     partyATermination.forEach(term => {
       const termLines = doc.splitTextToSize(term, 170);
       doc.text(termLines, 20, yPos);
       yPos += termLines.length * 7 + 3;
     });
     yPos += 5;
-    
+
     doc.text('Party B has the right to unilaterally terminate the lease contract performance when the lessor commits any of the following acts:', 20, yPos);
     yPos += 10;
-    
+
     const partyBTermination = [
       'Increasing the rent at variance with the agreement.',
       'Causing difficulties or hindering Party B\'s business activities during the lease period.',
       'Issues related to ownership and disputes of the house.'
     ];
-    
+
     partyBTermination.forEach(term => {
       const termLines = doc.splitTextToSize(term, 170);
       doc.text(termLines, 20, yPos);
@@ -1440,16 +1739,16 @@ export default function ContractsManagementPage() {
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 7: CONTRACT TERMINATION', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     doc.text('The contract will be terminated in the following cases:', 20, yPos);
     yPos += 10;
-    
+
     const terminationCases = [
       'The lease term has expired;',
       'The leased house must be demolished due to serious damage that may make the house collapse or due to the implementation of the State\'s construction planning.'
     ];
-    
+
     terminationCases.forEach(term => {
       const termLines = doc.splitTextToSize(term, 170);
       doc.text(termLines, 20, yPos);
@@ -1461,14 +1760,14 @@ export default function ContractsManagementPage() {
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 8: GENERAL PROVISIONS', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     const generalProvisions = [
       'All changes of this contract are valid only in writing and signed by both parties.',
       'In the course of contract performance, the two parties undertake to fully fulfill their obligations; if a dispute arises, they will negotiate and resolve it by themselves on the principle of mutual benefits; if the parties cannot resolve the problem, it will be settled by a competent court.',
       `This contract consists of multiple pages and is made into multiple originals of equal legal validity, each party keeps copies. This contract takes effect from the time Party A receives the security deposit and the rent of the first month in ${new Date().getFullYear()}.`
     ];
-    
+
     generalProvisions.forEach(provision => {
       const provisionLines = doc.splitTextToSize(provision, 170);
       doc.text(provisionLines, 20, yPos);
@@ -1486,13 +1785,13 @@ export default function ContractsManagementPage() {
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 9: FORCE MAJEURE', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     const forceMajeureText = 'Force majeure circumstances are defined as events beyond the control of either party, including but not limited to natural disasters (earthquakes, floods, fires), war, riots, epidemics, government orders, or other unforeseen events that prevent contract performance. In case of force majeure:';
     const forceMajeureLines = doc.splitTextToSize(forceMajeureText, 170);
     doc.text(forceMajeureLines, 20, yPos);
     yPos += forceMajeureLines.length * 7 + 7;
-    
+
     const forceMajeureClauses = [
       'The affected party must immediately notify the other party in writing within 7 days.',
       'Both parties shall cooperate to minimize damages and find appropriate solutions.',
@@ -1500,7 +1799,7 @@ export default function ContractsManagementPage() {
       'Rental fees will be prorated for the period the house cannot be used due to force majeure.',
       'The security deposit shall be returned to Party B within 30 days after termination.'
     ];
-    
+
     forceMajeureClauses.forEach(clause => {
       const clauseLines = doc.splitTextToSize(clause, 165);
       doc.text(clauseLines, 25, yPos);
@@ -1512,13 +1811,13 @@ export default function ContractsManagementPage() {
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 10: NOTICES AND COMMUNICATIONS', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     const noticesText = 'All notices, requests, and communications between the parties shall be made in writing and delivered through the following methods:';
     const noticesLines = doc.splitTextToSize(noticesText, 170);
     doc.text(noticesLines, 20, yPos);
     yPos += noticesLines.length * 7 + 7;
-    
+
     const noticesClauses = [
       'Direct delivery with signed acknowledgment receipt.',
       'Registered mail with return receipt to the addresses stated in this contract.',
@@ -1526,7 +1825,7 @@ export default function ContractsManagementPage() {
       'Notices are considered received: immediately if hand-delivered, 3 working days after posting if by mail, or upon confirmation if by email.',
       'Any change in contact information must be notified to the other party within 5 working days.'
     ];
-    
+
     noticesClauses.forEach(clause => {
       const clauseLines = doc.splitTextToSize(clause, 165);
       doc.text(clauseLines, 25, yPos);
@@ -1545,11 +1844,11 @@ export default function ContractsManagementPage() {
     doc.text('APPENDICES', 20, yPos);
     doc.line(20, yPos + 2, 70, yPos + 2);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     doc.text('This contract includes the following appendices as integral parts:', 20, yPos);
     yPos += 10;
-    
+
     const appendices = [
       'Appendix 1: Detailed list of furniture and equipment in the leased room',
       'Appendix 2: Initial utility meter readings (electricity, water)',
@@ -1558,7 +1857,7 @@ export default function ContractsManagementPage() {
       'Appendix 5: Payment schedule and bank account details',
       'Appendix 6: Emergency contact information'
     ];
-    
+
     appendices.forEach((appendix, index) => {
       doc.text(`${index + 1}. ${appendix}`, 25, yPos);
       yPos += 7;
@@ -1577,56 +1876,56 @@ export default function ContractsManagementPage() {
       doc.addPage();
       yPos = 20;
     }
-    
+
     doc.setFont(undefined, 'bold');
     doc.setFontSize(12);
     doc.text('SIGNATURES OF THE PARTIES', 105, yPos, { align: 'center' });
     doc.line(20, yPos + 3, 190, yPos + 3);
     yPos += 15;
-    
+
     // Create two columns for signatures
     doc.setFont(undefined, 'bold');
     doc.setFontSize(11);
     doc.text('PARTY A (LESSOR)', 55, yPos, { align: 'center' });
     doc.text('PARTY B (LESSEE)', 155, yPos, { align: 'center' });
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     doc.setFontSize(10);
     doc.text('EZStay Property Management', 55, yPos, { align: 'center' });
     doc.text(tenant.fullName || 'Tenant Name', 155, yPos, { align: 'center' });
     yPos += 7;
-    
+
     doc.text('Ho Chi Minh City, Vietnam', 55, yPos, { align: 'center' });
     doc.text(tenant.address ? (tenant.address.length > 30 ? tenant.address.substring(0, 27) + '...' : tenant.address) : 'Address', 155, yPos, { align: 'center' });
     yPos += 7;
-    
+
     doc.text('Phone: +84 xxx xxx xxx', 55, yPos, { align: 'center' });
     doc.text(`Phone: ${tenant.phoneNumber || 'N/A'}`, 155, yPos, { align: 'center' });
     yPos += 20;
-    
+
     // Signature lines
     doc.setFont(undefined, 'italic');
     doc.text('(Signature and seal)', 55, yPos, { align: 'center' });
     doc.text('(Signature)', 155, yPos, { align: 'center' });
     yPos += 15;
-    
+
     // Signature boxes
     doc.rect(30, yPos, 50, 30);
     doc.rect(130, yPos, 50, 30);
     yPos += 35;
-    
+
     // Names under signature boxes
     doc.setFont(undefined, 'normal');
     doc.setFontSize(10);
     doc.text('___________________________', 55, yPos, { align: 'center' });
     doc.text('___________________________', 155, yPos, { align: 'center' });
     yPos += 7;
-    
+
     doc.text('Representative Name', 55, yPos, { align: 'center' });
     doc.text(tenant.fullName || 'Tenant Name', 155, yPos, { align: 'center' });
     yPos += 10;
-    
+
     // Date of signing
     const signingDate = new Date().toLocaleDateString('en-GB');
     doc.text(`Date: ${signingDate}`, 55, yPos, { align: 'center' });
@@ -1648,40 +1947,40 @@ export default function ContractsManagementPage() {
 
   const previewContractPDF = (contract) => {
     const doc = new jsPDF();
-    
+
     // Get tenant information from identity profiles
     const tenant = contract.identityProfiles?.[0] || {};
     const checkinDate = contract.checkinDate ? new Date(contract.checkinDate) : new Date();
     const checkoutDate = contract.checkoutDate ? new Date(contract.checkoutDate) : new Date();
-    
+
     // Header - Vietnam Republic format
     doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
     doc.text('SOCIALIST REPUBLIC OF VIETNAM', 105, 20, { align: 'center' });
     doc.text('Independence – Freedom – Happiness', 105, 30, { align: 'center' });
-    
+
     // Divider line
     doc.line(75, 35, 135, 35);
-    
+
     // Contract title with PREVIEW
     doc.setFontSize(18);
     doc.text('HOUSE LEASE CONTRACT (PREVIEW)', 105, 50, { align: 'center' });
-    
+
     // Contract basic info
     doc.setFontSize(12);
     doc.setFont(undefined, 'normal');
     let yPos = 70;
-    
+
     doc.text(`Contract No: ${contract.id?.slice(0, 8) || 'N/A'}`, 20, yPos);
     yPos += 10;
     doc.text(`Date: ${new Date().toLocaleDateString('en-GB')}`, 20, yPos);
     yPos += 15;
-    
+
     // Parties information
     doc.setFont(undefined, 'bold');
     doc.text('THE CONTRACTING PARTIES:', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     doc.text('Party A (Lessor): EZStay Property Management', 20, yPos);
     yPos += 7;
@@ -1689,7 +1988,7 @@ export default function ContractsManagementPage() {
     yPos += 7;
     doc.text('Phone: +84 xxx xxx xxx', 20, yPos);
     yPos += 10;
-    
+
     doc.text(`Party B (Lessee): ${tenant.fullName || 'N/A'}`, 20, yPos);
     yPos += 7;
     doc.text(`Address: ${tenant.address || 'N/A'}`, 20, yPos);
@@ -1698,41 +1997,41 @@ export default function ContractsManagementPage() {
     yPos += 7;
     doc.text(`Citizen ID: ${tenant.citizenIdNumber || 'N/A'}`, 20, yPos);
     yPos += 15;
-    
+
     // Introduction
     const introText = 'After discussion, the two parties have mutually agreed to enter into the house lease contract with the following agreement:';
     const introLines = doc.splitTextToSize(introText, 170);
     doc.text(introLines, 20, yPos);
     yPos += introLines.length * 7 + 10;
-    
+
     // Article 1
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 1: THE HOUSE FOR LEASE, PURPOSES OF USE', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     const article1Text = `Party A agrees to lease Party B the room "${contract.roomName || 'N/A'}" according to the property management system. The room is fully furnished and ready for residential use. Equipment and facilities are specifically listed in the minutes of handover between the two parties.`;
     const article1Lines = doc.splitTextToSize(article1Text, 170);
     doc.text(article1Lines, 20, yPos);
     yPos += article1Lines.length * 7 + 10;
-    
+
     // Article 2
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 2: DURATION OF THE LEASE', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     const durationMonths = Math.round((checkoutDate - checkinDate) / (1000 * 60 * 60 * 24 * 30));
     const article2Text = `Duration of the lease: ${durationMonths} months, commencing on ${checkinDate.toLocaleDateString('en-GB')} and ending on ${checkoutDate.toLocaleDateString('en-GB')}. After the duration, the two parties will renegotiate the rental fee, and Party B will be given priority to sign a new contract.`;
     const article2Lines = doc.splitTextToSize(article2Text, 170);
     doc.text(article2Lines, 20, yPos);
     yPos += article2Lines.length * 7 + 10;
-    
+
     // Article 3
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 3: RENTAL FEE, SECURITY DEPOSIT AND PAYMENT METHOD', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     const monthlyRent = contract.roomDetails?.price || 'TBD';
     const depositAmount = contract.depositAmount || 0;
@@ -1746,12 +2045,12 @@ export default function ContractsManagementPage() {
       doc.addPage();
       yPos = 20;
     }
-    
+
     // Article 4
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 4: RESPONSIBILITIES OF THE TWO PARTIES', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     doc.text('1/ Party A\'s responsibilities:', 20, yPos);
     yPos += 7;
@@ -1761,14 +2060,14 @@ export default function ContractsManagementPage() {
       'Supporting and creating favorable conditions for Party B to register temporary residence when Party B has a need to register.',
       'Ensuring the full and exclusive use rights for Party B.'
     ];
-    
+
     partyAResponsibilities.forEach(resp => {
       const respLines = doc.splitTextToSize(resp, 165);
       doc.text(respLines, 25, yPos);
       yPos += respLines.length * 7 + 3;
     });
     yPos += 5;
-    
+
     doc.text('2/ Party B\'s responsibilities:', 20, yPos);
     yPos += 7;
     const partyBResponsibilities = [
@@ -1779,7 +2078,7 @@ export default function ContractsManagementPage() {
       'Being entitled to use the house fully and separately during the lease term.',
       'Not being allowed to use the house to organize illegal activities.'
     ];
-    
+
     partyBResponsibilities.forEach(resp => {
       const respLines = doc.splitTextToSize(resp, 165);
       doc.text(respLines, 25, yPos);
@@ -1797,7 +2096,7 @@ export default function ContractsManagementPage() {
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 5: THE TWO PARTIES UNDERTAKE:', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     const article5Terms = [
       'Performing the right content of the contract.',
@@ -1805,7 +2104,7 @@ export default function ContractsManagementPage() {
       'Entering into the contract is completely voluntary, not forced or treated.',
       'Expenses incurred during the course of contract performance shall be borne by the party generating the expenses.'
     ];
-    
+
     article5Terms.forEach(term => {
       const termLines = doc.splitTextToSize(term, 165);
       doc.text(termLines, 25, yPos);
@@ -1823,7 +2122,7 @@ export default function ContractsManagementPage() {
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 6: TERMINATION AND EXTENSION OF CONTRACT', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     const article6Text = `Either party has the right to terminate this contract before the expiration date by notifying the other party at least 30 days in advance. In case Party B terminates the contract early, the security deposit will be forfeited. In case Party A terminates the contract early without legitimate reason, Party A must compensate Party B an amount equivalent to the security deposit.`;
     const article6Lines = doc.splitTextToSize(article6Text, 170);
@@ -1840,7 +2139,7 @@ export default function ContractsManagementPage() {
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 7: DISPUTE RESOLUTION', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     const article7Text = `Any disputes arising during the implementation of this contract shall be resolved through negotiation between the two parties. If no agreement can be reached, the dispute shall be settled by the competent court in accordance with the law of Vietnam.`;
     const article7Lines = doc.splitTextToSize(article7Text, 170);
@@ -1857,7 +2156,7 @@ export default function ContractsManagementPage() {
     doc.setFont(undefined, 'bold');
     doc.text('ARTICLE 8: FORCE MAJEURE', 20, yPos);
     yPos += 10;
-    
+
     doc.setFont(undefined, 'normal');
     const article8Text = `In the event of force majeure (natural disasters, fires, epidemics, wars, or other events beyond the control of both parties), both parties shall be exempt from liability for breach of contract. The affected party must immediately notify the other party and take all necessary measures to minimize damage. The two parties will negotiate to find the most appropriate solution.`;
     const article8Lines = doc.splitTextToSize(article8Text, 170);
@@ -1882,7 +2181,7 @@ export default function ContractsManagementPage() {
     doc.text('For full contract terms including Articles 9-10, appendices, and signatures,', 105, yPos, { align: 'center' });
     yPos += 5;
     doc.text('please generate the complete PDF using the "Generate PDF" button.', 105, yPos, { align: 'center' });
-    
+
     // Open preview in new window
     const pdfDataUri = doc.output('datauristring');
     const newWindow = window.open();
@@ -1900,14 +2199,14 @@ export default function ContractsManagementPage() {
 
   const filteredContracts = contracts.filter(contract => {
     const tenantName = contract.identityProfiles?.[0]?.fullName || '';
-    const matchesSearch = 
+    const matchesSearch =
       contract.tenantId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contract.roomName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contract.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tenantName.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === "all" || contract.contractStatus === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -1993,7 +2292,7 @@ export default function ContractsManagementPage() {
               No contracts found
             </h3>
             <p className="text-gray-500 dark:text-gray-400">
-              {contracts.length === 0 
+              {contracts.length === 0
                 ? "No contracts have been created for this house yet."
                 : "No contracts match your current filters."
               }
@@ -2009,13 +2308,12 @@ export default function ContractsManagementPage() {
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                         Contract #{contract.id?.slice(0, 8) || 'N/A'}
                       </h3>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        contract.contractStatus === 'Active' 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          : contract.contractStatus === 'Expired'
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${contract.contractStatus === 'Active'
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                        : contract.contractStatus === 'Expired'
                           ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                           : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                      }`}>
+                        }`}>
                         {contract.contractStatus || 'Unknown'}
                       </span>
                     </div>
@@ -2025,8 +2323,8 @@ export default function ContractsManagementPage() {
                       </div>
                       <div>
                         <strong>Tenant:</strong> {
-                          contract.identityProfiles?.[0]?.fullName || 
-                          contract.tenantId || 
+                          contract.identityProfiles?.[0]?.fullName ||
+                          contract.tenantId ||
                           'N/A'
                         }
                       </div>
@@ -2064,7 +2362,7 @@ export default function ContractsManagementPage() {
                     >
                       Print PDF
                     </button>
-                    
+
                     {/* Cancel Contract - Only for Active contracts */}
                     {contract.contractStatus === 'Active' && (
                       <button
@@ -2074,7 +2372,7 @@ export default function ContractsManagementPage() {
                         Cancel Contract
                       </button>
                     )}
-                    
+
                     {/* Extend Contract - Only for Active contracts */}
                     {contract.contractStatus === 'Active' && (
                       <button
@@ -2084,7 +2382,16 @@ export default function ContractsManagementPage() {
                         Extend Contract
                       </button>
                     )}
-                    
+
+                    {/* Add Signature Button */}
+                    <button
+                      onClick={() => handleOpenSignatureModal(contract)}
+                      className="px-3 py-1 text-pink-600 hover:text-pink-800 dark:text-pink-400 dark:hover:text-pink-200 text-sm font-medium"
+                      title="Add electronic signature"
+                    >
+                      ✍️ Signature
+                    </button>
+
                     {/* Upload Contract Images - For Pending and Active contracts */}
                     {(contract.contractStatus === 'Pending' || contract.contractStatus === 'Active') && (
                       <button
@@ -2094,7 +2401,7 @@ export default function ContractsManagementPage() {
                         Upload Images
                       </button>
                     )}
-                    
+
                     <button
                       onClick={() => handleDeleteContract(contract)}
                       className="px-3 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-sm font-medium"
@@ -2127,14 +2434,14 @@ export default function ContractsManagementPage() {
                     setShowModal(false);
                     setCancelReason("");
                     setExtendDate("");
-                    
+
                     // Cleanup object URLs to prevent memory leaks
                     contractImagePreviews.forEach(url => {
                       if (url.startsWith('blob:')) {
                         URL.revokeObjectURL(url);
                       }
                     });
-                    
+
                     setContractImages([]);
                     setContractImagePreviews([]);
                     setUploadProgress(0);
@@ -2260,7 +2567,7 @@ export default function ContractsManagementPage() {
                               <span className="font-medium text-gray-700 dark:text-gray-300">Temporary Residence:</span>
                               <span className="ml-2 text-gray-900 dark:text-white">{profile.temporaryResidence || 'N/A'}</span>
                             </div>
-                            
+
                             {/* Province and Ward Information */}
                             <div>
                               <span className="font-medium text-gray-700 dark:text-gray-300">Province ID:</span>
@@ -2279,9 +2586,9 @@ export default function ContractsManagementPage() {
                                   {profile.frontImageUrl && (
                                     <div className="flex-1">
                                       <p className="text-xs text-gray-500 mb-1">Front</p>
-                                      <img 
-                                        src={profile.frontImageUrl} 
-                                        alt="Front ID" 
+                                      <img
+                                        src={profile.frontImageUrl}
+                                        alt="Front ID"
                                         className="w-full h-32 object-cover rounded border"
                                         onError={(e) => {
                                           e.target.style.display = 'none';
@@ -2294,9 +2601,9 @@ export default function ContractsManagementPage() {
                                   {profile.backImageUrl && (
                                     <div className="flex-1">
                                       <p className="text-xs text-gray-500 mb-1">Back</p>
-                                      <img 
-                                        src={profile.backImageUrl} 
-                                        alt="Back ID" 
+                                      <img
+                                        src={profile.backImageUrl}
+                                        alt="Back ID"
                                         className="w-full h-32 object-cover rounded border"
                                         onError={(e) => {
                                           e.target.style.display = 'none';
@@ -2314,9 +2621,9 @@ export default function ContractsManagementPage() {
                             {profile.avatarUrl && (
                               <div>
                                 <span className="font-medium text-gray-700 dark:text-gray-300 block mb-2">Avatar:</span>
-                                <img 
-                                  src={profile.avatarUrl} 
-                                  alt="Avatar" 
+                                <img
+                                  src={profile.avatarUrl}
+                                  alt="Avatar"
                                   className="w-20 h-20 object-cover rounded-full border"
                                   onError={(e) => {
                                     e.target.style.display = 'none';
@@ -2420,7 +2727,7 @@ export default function ContractsManagementPage() {
                       Tenant: {selectedContract.identityProfiles?.[0]?.fullName || selectedContract.tenantId}
                     </p>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -2435,7 +2742,7 @@ export default function ContractsManagementPage() {
                         required
                       />
                     </div>
-                    
+
                     <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
                       <div className="flex">
                         <div className="flex-shrink-0">
@@ -2445,7 +2752,7 @@ export default function ContractsManagementPage() {
                         </div>
                         <div className="ml-3">
                           <p className="text-sm text-amber-700 dark:text-amber-200">
-                            <strong>Warning:</strong> Cancelling this contract will change its status to "Terminated". 
+                            <strong>Warning:</strong> Cancelling this contract will change its status to "Terminated".
                             This action cannot be undone.
                           </p>
                         </div>
@@ -2469,7 +2776,7 @@ export default function ContractsManagementPage() {
                       Tenant: {selectedContract.identityProfiles?.[0]?.fullName || selectedContract.tenantId}
                     </p>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -2492,12 +2799,12 @@ export default function ContractsManagementPage() {
                           value={extendDate}
                           onChange={(e) => setExtendDate(e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          min={selectedContract.checkoutDate ? new Date(new Date(selectedContract.checkoutDate).getTime() + 24*60*60*1000).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+                          min={selectedContract.checkoutDate ? new Date(new Date(selectedContract.checkoutDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
                           required
                         />
                       </div>
                     </div>
-                    
+
                     <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                       <div className="flex">
                         <div className="flex-shrink-0">
@@ -2507,7 +2814,7 @@ export default function ContractsManagementPage() {
                         </div>
                         <div className="ml-3">
                           <p className="text-sm text-blue-700 dark:text-blue-200">
-                            <strong>Note:</strong> Extending the contract will update the end date. 
+                            <strong>Note:</strong> Extending the contract will update the end date.
                             The tenant will be notified of the extension.
                           </p>
                         </div>
@@ -2531,7 +2838,7 @@ export default function ContractsManagementPage() {
                       Status: {selectedContract.contractStatus}
                     </p>
                   </div>
-                  
+
                   <div className="space-y-4">
                     {/* File Upload Area */}
                     <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-cyan-500 dark:hover:border-cyan-400 transition-colors bg-gray-50 dark:bg-gray-700/30">
@@ -2805,25 +3112,20 @@ export default function ContractsManagementPage() {
               {/* Progress Steps */}
               <div className="mb-6">
                 <div className="flex items-center">
-                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                    createStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
-                  }`}>
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${createStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                    }`}>
                     1
                   </div>
-                  <div className={`flex-1 h-1 mx-4 ${
-                    createStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'
-                  }`}></div>
-                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                    createStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
-                  }`}>
+                  <div className={`flex-1 h-1 mx-4 ${createStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}></div>
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${createStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                    }`}>
                     2
                   </div>
-                  <div className={`flex-1 h-1 mx-4 ${
-                    createStep >= 3 ? 'bg-blue-600' : 'bg-gray-300'
-                  }`}></div>
-                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                    createStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
-                  }`}>
+                  <div className={`flex-1 h-1 mx-4 ${createStep >= 3 ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}></div>
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${createStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                    }`}>
                     3
                   </div>
                 </div>
@@ -2864,9 +3166,8 @@ export default function ContractsManagementPage() {
                               roomId: e.target.value
                             });
                           }}
-                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                            contractErrors.roomId ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                          }`}
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${contractErrors.roomId ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            }`}
                         >
                           <option value="">Select a room...</option>
                           {rooms.map((room) => (
@@ -2900,9 +3201,8 @@ export default function ContractsManagementPage() {
                           ...contractData,
                           checkinDate: e.target.value
                         })}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          contractErrors.checkinDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        }`}
+                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${contractErrors.checkinDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                          }`}
                       />
                       {contractErrors.checkinDate && (
                         <p className="text-red-500 text-xs mt-1">{contractErrors.checkinDate}</p>
@@ -2920,9 +3220,8 @@ export default function ContractsManagementPage() {
                           ...contractData,
                           checkoutDate: e.target.value
                         })}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          contractErrors.checkoutDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        }`}
+                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${contractErrors.checkoutDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                          }`}
                       />
                       {contractErrors.checkoutDate && (
                         <p className="text-red-500 text-xs mt-1">{contractErrors.checkoutDate}</p>
@@ -2942,9 +3241,8 @@ export default function ContractsManagementPage() {
                           ...contractData,
                           depositAmount: e.target.value
                         })}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          contractErrors.depositAmount ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        }`}
+                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${contractErrors.depositAmount ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                          }`}
                         placeholder="0"
                       />
                       {contractErrors.depositAmount && (
@@ -2965,9 +3263,8 @@ export default function ContractsManagementPage() {
                           ...contractData,
                           numberOfOccupants: e.target.value
                         })}
-                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                          contractErrors.numberOfOccupants ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                        }`}
+                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${contractErrors.numberOfOccupants ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                          }`}
                         placeholder="1"
                       />
                       {contractErrors.numberOfOccupants && (
@@ -3021,7 +3318,7 @@ export default function ContractsManagementPage() {
                   {console.log("🔍 Step 2 - Current profiles state:", profiles)}
                   {console.log("🔍 Step 2 - Profiles count:", profiles.length)}
                   {console.log("🔍 Step 2 - Modal type:", modalType)}
-                  
+
                   <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                     👥 Identity Profiles for All Occupants ({profiles.length} {profiles.length === 1 ? 'person' : 'people'})
                   </h4>
@@ -3044,9 +3341,9 @@ export default function ContractsManagementPage() {
                           <span className="ml-2 text-xs font-normal text-blue-600 dark:text-blue-400">(Enter CCCD to auto-fill all fields)</span>
                         </label>
                         <div className="flex gap-2">
-                          <input 
-                            type="text" 
-                            value={profile.citizenIdNumber || ''} 
+                          <input
+                            type="text"
+                            value={profile.citizenIdNumber || ''}
                             onChange={(e) => updateProfile(profileIndex, 'citizenIdNumber', e.target.value)}
                             onKeyPress={(e) => {
                               if (e.key === 'Enter') {
@@ -3054,8 +3351,8 @@ export default function ContractsManagementPage() {
                                 searchIdentityProfileByCCCD(profileIndex, profile.citizenIdNumber);
                               }
                             }}
-                            className="flex-1 p-3 border border-blue-300 dark:border-blue-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700" 
-                            placeholder="Enter Citizen ID (9-18 digits)" 
+                            className="flex-1 p-3 border border-blue-300 dark:border-blue-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700"
+                            placeholder="Enter Citizen ID (9-18 digits)"
                             maxLength="18"
                           />
                           <button
@@ -3093,7 +3390,7 @@ export default function ContractsManagementPage() {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name *</label>
                           <input type="text" value={profile.fullName} onChange={(e) => updateProfile(profileIndex, 'fullName', e.target.value)}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_fullName`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_fullName`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                             placeholder="Enter full name" />
                           {profileErrors[`profile${profileIndex}_fullName`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_fullName`]}</p>}
                         </div>
@@ -3109,12 +3406,12 @@ export default function ContractsManagementPage() {
                         {/* Phone Number - Now without search button */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number *</label>
-                          <input 
-                            type="tel" 
-                            value={profile.phoneNumber} 
+                          <input
+                            type="tel"
+                            value={profile.phoneNumber}
                             onChange={(e) => updateProfile(profileIndex, 'phoneNumber', e.target.value)}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_phoneNumber`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
-                            placeholder="Enter phone number" 
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_phoneNumber`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+                            placeholder="Enter phone number"
                           />
                           {profileErrors[`profile${profileIndex}_phoneNumber`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_phoneNumber`]}</p>}
                         </div>
@@ -3123,7 +3420,7 @@ export default function ContractsManagementPage() {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
                           <input type="email" value={profile.email} onChange={(e) => updateProfile(profileIndex, 'email', e.target.value)}
-                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700" 
+                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700"
                             placeholder="Enter email (optional)" />
                         </div>
 
@@ -3147,7 +3444,7 @@ export default function ContractsManagementPage() {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ward *</label>
                           <select value={profile.wardId} onChange={(e) => handleWardChange(profileIndex, e.target.value)}
-                            disabled={!profile.provinceId} 
+                            disabled={!profile.provinceId}
                             className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_wardId`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} ${!profile.provinceId ? 'opacity-50 cursor-not-allowed' : ''}`}>
                             <option value="">{!profile.provinceId ? 'Select province first...' : 'Select ward...'}</option>
                             {(wardsByProfile[profileIndex] || []).map((w) => <option key={w.code} value={String(w.code)}>{w.name}</option>)}
@@ -3159,7 +3456,7 @@ export default function ContractsManagementPage() {
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address *</label>
                           <input type="text" value={profile.address} onChange={(e) => updateProfile(profileIndex, 'address', e.target.value)}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_address`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_address`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                             placeholder="Enter detailed address" />
                           {profileErrors[`profile${profileIndex}_address`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_address`]}</p>}
                         </div>
@@ -3168,7 +3465,7 @@ export default function ContractsManagementPage() {
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Temporary Residence *</label>
                           <input type="text" value={profile.temporaryResidence} onChange={(e) => updateProfile(profileIndex, 'temporaryResidence', e.target.value)}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_temporaryResidence`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_temporaryResidence`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                             placeholder="Enter temporary residence" />
                           {profileErrors[`profile${profileIndex}_temporaryResidence`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_temporaryResidence`]}</p>}
                         </div>
@@ -3177,7 +3474,7 @@ export default function ContractsManagementPage() {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Citizen ID Number *</label>
                           <input type="text" value={profile.citizenIdNumber} onChange={(e) => updateProfile(profileIndex, 'citizenIdNumber', e.target.value)}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_citizenIdNumber`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_citizenIdNumber`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                             placeholder="Enter citizen ID" />
                           {profileErrors[`profile${profileIndex}_citizenIdNumber`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_citizenIdNumber`]}</p>}
                         </div>
@@ -3194,7 +3491,7 @@ export default function ContractsManagementPage() {
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Citizen ID Issued Place *</label>
                           <input type="text" value={profile.citizenIdIssuedPlace} onChange={(e) => updateProfile(profileIndex, 'citizenIdIssuedPlace', e.target.value)}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_citizenIdIssuedPlace`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_citizenIdIssuedPlace`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                             placeholder="Enter place of issue" />
                           {profileErrors[`profile${profileIndex}_citizenIdIssuedPlace`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_citizenIdIssuedPlace`]}</p>}
                         </div>
@@ -3203,7 +3500,7 @@ export default function ContractsManagementPage() {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Front ID Image URL *</label>
                           <input type="url" value={profile.frontImageUrl} onChange={(e) => updateProfile(profileIndex, 'frontImageUrl', e.target.value)}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_frontImageUrl`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_frontImageUrl`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                             placeholder="https://..." />
                           {profileErrors[`profile${profileIndex}_frontImageUrl`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_frontImageUrl`]}</p>}
                         </div>
@@ -3212,7 +3509,7 @@ export default function ContractsManagementPage() {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Back ID Image URL *</label>
                           <input type="url" value={profile.backImageUrl} onChange={(e) => updateProfile(profileIndex, 'backImageUrl', e.target.value)}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_backImageUrl`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} 
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_backImageUrl`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                             placeholder="https://..." />
                           {profileErrors[`profile${profileIndex}_backImageUrl`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_backImageUrl`]}</p>}
                         </div>
@@ -3221,7 +3518,7 @@ export default function ContractsManagementPage() {
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avatar URL (Optional)</label>
                           <input type="url" value={profile.avatarUrl} onChange={(e) => updateProfile(profileIndex, 'avatarUrl', e.target.value)}
-                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700" 
+                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700"
                             placeholder="https://... (optional)" />
                         </div>
 
@@ -3229,7 +3526,7 @@ export default function ContractsManagementPage() {
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
                           <textarea value={profile.notes} onChange={(e) => updateProfile(profileIndex, 'notes', e.target.value)}
-                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700" 
+                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700"
                             rows="2" placeholder="Additional notes (optional)" />
                         </div>
 
@@ -3328,7 +3625,7 @@ export default function ContractsManagementPage() {
                         <span className="mr-2">⚡</span>
                         Electricity Reading
                       </h5>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -3345,9 +3642,8 @@ export default function ContractsManagementPage() {
                                 currentIndex: e.target.value
                               }
                             })}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                              utilityErrors.electricityCurrentIndex ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${utilityErrors.electricityCurrentIndex ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                              }`}
                             placeholder="Enter electricity reading"
                           />
                           {utilityErrors.electricityCurrentIndex && (
@@ -3370,9 +3666,8 @@ export default function ContractsManagementPage() {
                                 price: e.target.value
                               }
                             })}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                              utilityErrors.electricityPrice ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${utilityErrors.electricityPrice ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                              }`}
                             placeholder="Enter electricity price"
                           />
                           {utilityErrors.electricityPrice && (
@@ -3395,9 +3690,8 @@ export default function ContractsManagementPage() {
                                 note: e.target.value
                               }
                             })}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                              utilityErrors.electricityNote ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${utilityErrors.electricityNote ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                              }`}
                             placeholder="Add note (max 100 chars)"
                           />
                           <div className="text-xs text-gray-500 mt-1">
@@ -3416,7 +3710,7 @@ export default function ContractsManagementPage() {
                         <span className="mr-2">💧</span>
                         Water Reading1
                       </h5>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -3433,9 +3727,8 @@ export default function ContractsManagementPage() {
                                 currentIndex: e.target.value
                               }
                             })}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                              utilityErrors.waterCurrentIndex ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${utilityErrors.waterCurrentIndex ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                              }`}
                             placeholder="Enter water reading"
                           />
                           {utilityErrors.waterCurrentIndex && (
@@ -3458,9 +3751,8 @@ export default function ContractsManagementPage() {
                                 price: e.target.value
                               }
                             })}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                              utilityErrors.waterPrice ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${utilityErrors.waterPrice ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                              }`}
                             placeholder="Enter water price"
                           />
                           {utilityErrors.waterPrice && (
@@ -3483,9 +3775,8 @@ export default function ContractsManagementPage() {
                                 note: e.target.value
                               }
                             })}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
-                              utilityErrors.waterNote ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${utilityErrors.waterNote ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                              }`}
                             placeholder="Add note (max 100 chars)"
                           />
                           <div className="text-xs text-gray-500 mt-1">
@@ -3555,6 +3846,217 @@ export default function ContractsManagementPage() {
           </div>
         </div>
       )}
+
+      {/* Signature Setting Modal */}
+      {showSignatureModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Signature Setting
+                </h2>
+                <button
+                  onClick={handleCloseSignatureModal}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Full Name Input */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={signatureName}
+                  onChange={(e) => setSignatureName(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Nguyễn Đình Vinh"
+                />
+              </div>
+
+              {/* Tabs */}
+              <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+                <button
+                  onClick={() => setSignatureTab('draw')}
+                  className={`px-6 py-3 font-medium transition-colors ${signatureTab === 'draw'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                    }`}
+                >
+                  Draw
+                </button>
+                <button
+                  onClick={() => setSignatureTab('file')}
+                  className={`px-6 py-3 font-medium transition-colors ${signatureTab === 'file'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                    }`}
+                >
+                  From File
+                </button>
+                <button
+                  onClick={() => setSignatureTab('manual')}
+                  className={`px-6 py-3 font-medium transition-colors ${signatureTab === 'manual'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                    }`}
+                >
+                  Manual Entry
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              <div className="mb-6">
+                {/* Draw Tab */}
+                {signatureTab === 'draw' && (
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Draw your signature below:
+                    </p>
+                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                      <canvas
+                        ref={canvasRef}
+                        width={800}
+                        height={200}
+                        onMouseDown={startDrawing}
+                        onMouseMove={draw}
+                        onMouseUp={stopDrawing}
+                        onMouseLeave={stopDrawing}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded bg-white cursor-crosshair"
+                      />
+                      <button
+                        onClick={clearCanvas}
+                        className="mt-3 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* From File Tab */}
+                {signatureTab === 'file' && (
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Upload your signature image:
+                    </p>
+                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center bg-gray-50 dark:bg-gray-700">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleSignatureFileUpload}
+                        className="hidden"
+                        id="signature-upload"
+                      />
+                      <label
+                        htmlFor="signature-upload"
+                        className="cursor-pointer inline-flex flex-col items-center"
+                      >
+                        <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          Click to upload or drag and drop
+                        </span>
+                        <span className="text-xs text-gray-500 mt-1">
+                          PNG, JPG, GIF up to 10MB
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {/* Manual Entry Tab */}
+                {signatureTab === 'manual' && (
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Your name will be used as signature with a unique code:
+                    </p>
+                    <button
+                      onClick={generateManualSignature}
+                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                      Generate Signature
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Preview Section */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Preview
+                  </h3>
+                  <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                    Change Style
+                  </button>
+                </div>
+
+                <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg p-6 bg-white dark:bg-gray-700 min-h-[150px] flex items-center justify-center">
+                  {signaturePreview ? (
+                    signatureTab === 'manual' ? (
+                      <div className="text-center border-2 border-gray-400 rounded-lg p-4 inline-block">
+                        <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
+                          {signaturePreview}
+                        </pre>
+                      </div>
+                    ) : (
+                      <img
+                        src={signaturePreview}
+                        alt="Signature preview"
+                        className="max-w-full max-h-[120px] object-contain"
+                      />
+                    )
+                  ) : (
+                    <p className="text-gray-400 dark:text-gray-500 italic">
+                      No signature preview available
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Agreement Checkbox */}
+              <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <label className="flex items-start space-x-3 cursor-pointer">
+                  <div className="flex items-center h-5">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    I agree that my signature will be an electronic representation of my signature for all purposes when I (or my representative) use it on documents, including legally binding contracts.
+                  </span>
+                </label>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={handleCloseSignatureModal}
+                  className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleSaveSignature}
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium shadow-sm"
+                  disabled={!signaturePreview}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Contract Modal - 3 Steps */}
     </div>
   );
 }

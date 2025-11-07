@@ -14,22 +14,22 @@ const contractService = {
       throw error;
     }
   },
-  
+
   getAll: async () => {
     const response = await api.get('/api/Contract');
     return response;
   },
-  
+
   getById: async (id) => {
     const response = await api.get(`/api/Contract/${id}`);
     return response;
   },
-  
+
   update: async (id, data) => {
     const response = await api.put(`/api/Contract/${id}`, data);
     return response;
   },
-  
+
   delete: async (id) => {
     const response = await api.delete(`/api/Contract/${id}`);
     return response;
@@ -81,9 +81,9 @@ const contractService = {
   // Extend contract
   extend: async (id, newCheckoutDate, notes = null) => {
     try {
-      const response = await api.put(`/api/Contract/${id}/extendcontract`, { 
+      const response = await api.put(`/api/Contract/${id}/extendcontract`, {
         CheckoutDate: newCheckoutDate,
-        Notes: notes 
+        Notes: notes
       });
       return response.data || response;
     } catch (error) {
@@ -132,21 +132,21 @@ const contractService = {
   uploadContractImages: async (contractId, files) => {
     try {
       const formData = new FormData();
-      
+
       // Backend expects [FromForm] List<IFormFile> request
       files.forEach((file) => {
         formData.append('request', file);
       });
-      
+
       console.log("📤 Uploading contract images:", {
         contractId,
         fileCount: files.length,
         fileNames: files.map(f => f.name)
       });
-      
+
       // Use putFormData instead of put for FormData
       const response = await api.putFormData(`/api/Contract/${contractId}/upload-image`, formData);
-      
+
       console.log("✅ Upload successful:", response);
       return response.data || response;
     } catch (error) {
@@ -165,6 +165,19 @@ const contractService = {
       return response.data || response;
     } catch (error) {
       console.error('Error deleting contract image:', error);
+      throw error;
+    }
+  },
+
+  // Alias for getById - for signature flow
+  getContractById: async (id) => {
+    try {
+      console.log('🔍 Fetching contract by ID:', id);
+      const response = await api.get(`/api/Contract/${id}`);
+      console.log('✅ Contract fetched:', response);
+      return response.data || response;
+    } catch (error) {
+      console.error('❌ Error fetching contract by ID:', error);
       throw error;
     }
   }
