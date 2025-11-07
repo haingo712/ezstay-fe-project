@@ -6,7 +6,8 @@ import roomService from './roomService';
 const normalizePostData = (post) => {
   if (!post) return post;
   
-  console.log('🔄 Normalizing post:', post.id || post.Id);
+  console.log('🔄 Normalizing post, raw data keys:', Object.keys(post));
+  console.log('🔄 Raw id field:', post.id, 'Raw Id field:', post.Id);
   
   // Parse imageUrls if it's a JSON string inside an array
   let imageUrls = post.imageUrls || post.ImageUrls;
@@ -43,20 +44,32 @@ const normalizePostData = (post) => {
     isActive: post.isActive !== undefined ? post.isActive : post.IsActive,
     isApproved: post.isApproved !== undefined ? post.isApproved : post.IsApproved,
     createdAt: post.createdAt || post.CreatedAt,
-    updatedAt: post.updatedAt || post.UpdatedAt
+    updatedAt: post.updatedAt || post.UpdatedAt,
+    reviews: post.reviews || post.Reviews // Include reviews from backend
   };
   
-  console.log('✅ Normalized result:', { id: normalized.id, imageUrls: normalized.imageUrls });
+  console.log('✅ Normalized post id:', normalized.id, 'type:', typeof normalized.id);
+  console.log('✅ Normalized reviews:', normalized.reviews);
+  
+  if (!normalized.id) {
+    console.error('❌ CRITICAL: Normalized post has no id!', post);
+  }
+  
   return normalized;
 };
 
 // Helper function to enrich post with boarding house, room, and author names by fetching from APIs
+// NOTE: BE RentalPostsAPI already returns AuthorName, HouseName, RoomName in the DTO
+// This function is kept for backward compatibility but mostly unnecessary now
 const enrichPostWithNames = async (post, verbose = false) => {
   try {
-    // Fetch author name by ID
-    if (post.authorId) {
+    // Backend already provides these fields, so we use them directly
+    // Only fallback to fetching if fields are missing
+    
+    // Check if authorName is already provided by backend
+    if (!post.authorName && post.authorId) {
+      if (verbose) console.log(`⚠️ AuthorName missing, fetching for ID: ${post.authorId}`);
       try {
-        if (verbose) console.log(`👤 Fetching author info for ID: ${post.authorId}`);
         const token = localStorage.getItem('token');
         if (token) {
           const response = await fetch(`https://localhost:7000/api/Accounts/${post.authorId}`, {
@@ -66,86 +79,49 @@ const enrichPostWithNames = async (post, verbose = false) => {
             },
           });
           
-          if (verbose) console.log(`📡 Author API response status: ${response.status}`);
-          
           if (response.ok) {
             const authorData = await response.json();
-            if (verbose) console.log(`📥 Author data received:`, authorData);
-            
-            // Try multiple possible field names
             post.authorName = authorData?.fullName || 
                             authorData?.FullName || 
                             authorData?.username || 
                             authorData?.Username ||
-                            authorData?.userName ||
-                            authorData?.UserName ||
-                            authorData?.name ||
-                            authorData?.Name ||
                             'Unknown Author';
-            
-            if (verbose) console.log(`✅ Author name: "${post.authorName}"`);
+            if (verbose) console.log(`✅ Fetched author name: "${post.authorName}"`);
           } else {
-            const errorText = await response.text();
-            if (verbose) console.warn(`⚠️ Author API error response:`, errorText);
             post.authorName = 'Unknown Author';
           }
         } else {
-          if (verbose) console.warn(`⚠️ No token found in localStorage`);
           post.authorName = 'Unknown Author';
         }
       } catch (err) {
-        if (verbose) console.warn(`⚠️ Could not fetch author ${post.authorId}:`, err.message);
+        if (verbose) console.warn(`⚠️ Could not fetch author:`, err.message);
         post.authorName = 'Unknown Author';
       }
-    } else {
-      post.authorName = 'Anonymous';
+    } else if (verbose && post.authorName) {
+      console.log(`✅ AuthorName already provided by backend: "${post.authorName}"`);
     }
     
-    // Fetch boarding house name by ID
-    if (post.boardingHouseId) {
+    // Check if houseName is already provided by backend
+    if (!post.houseName && post.boardingHouseId) {
+      if (verbose) console.log(`⚠️ HouseName missing, fetching for ID: ${post.boardingHouseId}`);
       try {
-        if (verbose) console.log(`🏠 Fetching house info for ID: ${post.boardingHouseId}`);
         const houseData = await boardingHouseService.getById(post.boardingHouseId);
         post.houseName = houseData?.houseName || houseData?.HouseName || 'Unknown House';
-        if (verbose) console.log(`✅ House name: "${post.houseName}"`);
+        if (verbose) console.log(`✅ Fetched house name: "${post.houseName}"`);
       } catch (err) {
-        if (verbose) console.warn(`⚠️ Could not fetch house ${post.boardingHouseId}:`, err.message);
+        if (verbose) console.warn(`⚠️ Could not fetch house:`, err.message);
         post.houseName = 'Unknown House';
       }
-    } else {
-      post.houseName = 'No house specified';
+    } else if (verbose && post.houseName) {
+      console.log(`✅ HouseName already provided by backend: "${post.houseName}"`);
     }
     
-    // Fetch room names by IDs array
-    if (post.roomId && Array.isArray(post.roomId) && post.roomId.length > 0) {
-      try {
-        if (verbose) console.log(`🚪 Fetching ${post.roomId.length} rooms:`, post.roomId);
-        const roomPromises = post.roomId.map(async (roomId) => {
-          try {
-            const roomData = await roomService.getById(roomId);
-            return roomData?.roomName || roomData?.RoomName || null;
-          } catch (err) {
-            if (verbose) console.warn(`⚠️ Could not fetch room ${roomId}:`, err.message);
-            return null;
-          }
-        });
-        
-        const roomNames = (await Promise.all(roomPromises)).filter(name => name);
-        
-        if (roomNames.length > 0) {
-          post.roomName = roomNames.join(', ');
-          if (verbose) console.log(`✅ Room names: "${post.roomName}"`);
-        } else {
-          post.roomName = 'All rooms';
-          if (verbose) console.log(`⚠️ No room names found, using: "All rooms"`);
-        }
-      } catch (err) {
-        if (verbose) console.warn('⚠️ Error fetching room names:', err.message);
-        post.roomName = 'All rooms';
-      }
-    } else {
+    // Check if roomName is already provided by backend
+    if (!post.roomName) {
       post.roomName = 'All rooms';
-      if (verbose) console.log(`ℹ️ No specific rooms, showing: "All rooms"`);
+      if (verbose) console.log(`ℹ️ RoomName not specified, using default: "All rooms"`);
+    } else if (verbose) {
+      console.log(`✅ RoomName already provided by backend: "${post.roomName}"`);
     }
     
     return post;
@@ -278,13 +254,17 @@ export const rentalPostService = {
   getById: async (postId) => {
     try {
       const response = await axiosInstance.get(`/api/RentalPosts/${postId}`);
+      console.log('📥 Raw getById response:', response.data);
       
-      // Backend wraps in ApiResponse: { data: {...}, success: true, message: "..." }
-      const rawPost = response.data?.data || response.data;
-      console.log('📥 Raw post from API:', rawPost);
+      // Check if response is wrapped in ApiResponse structure
+      let postData = response.data;
+      if (postData && postData.data && postData.isSuccess !== undefined) {
+        // Unwrap ApiResponse: { isSuccess, data, message }
+        postData = postData.data;
+        console.log('📥 Unwrapped post data:', postData);
+      }
       
-      let post = normalizePostData(rawPost);
-      console.log('🔄 Normalized post:', post);
+      let post = normalizePostData(postData);
       
       // Enrich with boarding house and room names
       post = await enrichPostWithNames(post, false);

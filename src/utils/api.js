@@ -18,10 +18,10 @@ async function apiFetch(path, options = {}) {
 
   const token = authService.getToken();
   console.log("🔑 API Request - Token:", token ? "Present" : "Missing");
-  
+
   // Check if this is a FormData request (skipContentType flag)
   const isFormData = options.headers?.skipContentType === true;
-  
+
   const defaultHeaders = {
     "Accept": "application/json",
   };
@@ -30,7 +30,7 @@ async function apiFetch(path, options = {}) {
   if (!isFormData) {
     defaultHeaders["Content-Type"] = "application/json";
   }
-  
+
   if (token) {
     defaultHeaders["Authorization"] = `Bearer ${token}`;
     console.log("🔐 Authorization header set with Bearer token");
@@ -61,7 +61,7 @@ async function apiFetch(path, options = {}) {
         bodyType: config.body?.constructor?.name || typeof config.body,
         hasContentType: !!config.headers['Content-Type']
       });
-      
+
       // List all headers being sent
       console.log("🔍 All headers:", Object.keys(config.headers).map(key => `${key}: ${config.headers[key]}`));
     } else if (url.includes('/api/Rooms') || !url.includes('UtilityRate') || !config.skipLogging) {
@@ -73,64 +73,64 @@ async function apiFetch(path, options = {}) {
       });
     }
 
-  const response = await fetch(url, config);
+    const response = await fetch(url, config);
 
-  // Log response details, especially for room API calls
-  if (url.includes('/api/Rooms') || (response.status === 404 && !url.includes('UtilityRate'))) {
-    console.log("📥 API Response:", {
-      url,
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok
-    });
-  }
+    // Log response details, especially for room API calls
+    if (url.includes('/api/Rooms') || (response.status === 404 && !url.includes('UtilityRate'))) {
+      console.log("📥 API Response:", {
+        url,
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+    }
 
-  if (!response.ok) {
-    let errorData;
-    try {
-      errorData = await response.json();
-      // Only log error data for non-404 responses to reduce console noise
-      if (response.status !== 404) {
-        console.log("❌ API Error Data:", errorData);
-        
-        // Log ASP.NET Core validation errors in detail
-        if (errorData.errors) {
-          console.log("🔍 Validation Errors:", errorData.errors);
-          Object.keys(errorData.errors).forEach(field => {
-            console.log(`  ❌ ${field}:`, errorData.errors[field]);
-          });
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+        // Only log error data for non-404 responses to reduce console noise
+        if (response.status !== 404) {
+          console.log("❌ API Error Data:", errorData);
+
+          // Log ASP.NET Core validation errors in detail
+          if (errorData.errors) {
+            console.log("🔍 Validation Errors:", errorData.errors);
+            Object.keys(errorData.errors).forEach(field => {
+              console.log(`  ❌ ${field}:`, errorData.errors[field]);
+            });
+          }
         }
+      } catch (e) {
+        errorData = { message: response.statusText };
       }
-    } catch (e) {
-      errorData = { message: response.statusText };
-    }
-    
-    // Build detailed error message for validation errors
-    let errorMessage = errorData.message || errorData.title || `Request failed with status ${response.status}`;
-    if (errorData.errors && typeof errorData.errors === 'object') {
-      const validationMessages = Object.entries(errorData.errors)
-        .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
-        .join('; ');
-      errorMessage = `${errorMessage} - ${validationMessages}`;
-    }
-    
-    const error = new Error(errorMessage);
-    error.response = response;
-    error.data = errorData;
-    throw error;
-  }
 
-  const contentType = response.headers.get("content-type");
-  if (contentType && contentType.includes("application/json")) {
-    return await response.json();
-  }
-  
-  const text = await response.text();
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    return text;
-  }
+      // Build detailed error message for validation errors
+      let errorMessage = errorData.message || errorData.title || `Request failed with status ${response.status}`;
+      if (errorData.errors && typeof errorData.errors === 'object') {
+        const validationMessages = Object.entries(errorData.errors)
+          .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+          .join('; ');
+        errorMessage = `${errorMessage} - ${validationMessages}`;
+      }
+
+      const error = new Error(errorMessage);
+      error.response = response;
+      error.data = errorData;
+      throw error;
+    }
+
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      return await response.json();
+    }
+
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      return text;
+    }
 
   } catch (error) {
     console.error("API Fetch Error:", error);
@@ -138,37 +138,40 @@ async function apiFetch(path, options = {}) {
   }
 }
 
+// Export apiFetch for direct use in services
+export { apiFetch };
+
 const api = {
-    get: (path, options) => apiFetch(path, { method: 'GET', ...options }),
-    post: (path, data, options) => apiFetch(path, { method: 'POST', body: JSON.stringify(data), ...options }),
-    put: (path, data, options) => apiFetch(path, { method: 'PUT', body: JSON.stringify(data), ...options }),
-    patch: (path, data, options) => apiFetch(path, { method: 'PATCH', body: JSON.stringify(data), ...options }),
-    delete: (path, options) => apiFetch(path, { method: 'DELETE', ...options }),
-    
-    // FormData methods - don't stringify body, let browser set Content-Type with boundary
-    postFormData: (path, formData, options = {}) => {
-      return apiFetch(path, { 
-        method: 'POST', 
-        body: formData,
-        headers: {
-          skipContentType: true, // Signal to apiFetch to skip Content-Type header
-          ...(options.headers || {})
-        },
-        ...options 
-      });
-    },
-    
-    putFormData: (path, formData, options = {}) => {
-      return apiFetch(path, { 
-        method: 'PUT', 
-        body: formData,
-        headers: {
-          skipContentType: true, // Signal to apiFetch to skip Content-Type header
-          ...(options.headers || {})
-        },
-        ...options 
-      });
-    },
+  get: (path, options) => apiFetch(path, { method: 'GET', ...options }),
+  post: (path, data, options) => apiFetch(path, { method: 'POST', body: JSON.stringify(data), ...options }),
+  put: (path, data, options) => apiFetch(path, { method: 'PUT', body: JSON.stringify(data), ...options }),
+  patch: (path, data, options) => apiFetch(path, { method: 'PATCH', body: JSON.stringify(data), ...options }),
+  delete: (path, options) => apiFetch(path, { method: 'DELETE', ...options }),
+
+  // FormData methods - don't stringify body, let browser set Content-Type with boundary
+  postFormData: (path, formData, options = {}) => {
+    return apiFetch(path, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        skipContentType: true, // Signal to apiFetch to skip Content-Type header
+        ...(options.headers || {})
+      },
+      ...options
+    });
+  },
+
+  putFormData: (path, formData, options = {}) => {
+    return apiFetch(path, {
+      method: 'PUT',
+      body: formData,
+      headers: {
+        skipContentType: true, // Signal to apiFetch to skip Content-Type header
+        ...(options.headers || {})
+      },
+      ...options
+    });
+  },
 };
 
 // Boarding House API
@@ -180,7 +183,7 @@ export const boardingHouseAPI = {
     console.log("🏠 Calling boarding house API...");
     console.log("🔑 Current token:", authService.getToken() ? "Present" : "Missing");
     console.log("👤 User info:", authService.getUserInfo());
-    
+
     // The backend endpoint /owner extracts ownerId from JWT token automatically
     return api.get('/api/BoardingHouses/owner');
   },
@@ -223,25 +226,25 @@ export const roomAPI = {
   getById: (id) => api.get(`/api/Rooms/${id}`),
   getByBoardingHouseId: (houseId) => api.get(`/api/Rooms/ByHouseId/${houseId}`),
   getByHouseId: (houseId) => api.get(`/api/Rooms/ByHouseId/${houseId}/Status`), // Alias for compatibility
-  
+
   // JSON create method (legacy, no image)
   create: (houseId, data) => {
     return api.post(`/api/Rooms/House/${houseId}`, data);
   },
-  
+
   // FormData create method (with image upload to Filebase IPFS)
   createWithFormData: (houseId, formData) => {
     return api.postFormData(`/api/Rooms/House/${houseId}`, formData);
   },
-  
+
   // JSON update method (legacy, no image)
   update: (id, data) => api.put(`/api/Rooms/${id}`, data),
-  
+
   // FormData update method (with optional image upload to Filebase IPFS)
   updateWithFormData: (id, formData) => {
     return api.putFormData(`/api/Rooms/${id}`, formData);
   },
-  
+
   delete: (id) => api.delete(`/api/Rooms/${id}`)
 };
 
@@ -255,6 +258,152 @@ export const amenityAPI = {
   create: (data) => api.post('/api/Amenity', data),
   update: (id, data) => api.put(`/api/Amenity/${id}`, data),
   delete: (id) => api.delete(`/api/Amenity/${id}`)
+};
+
+// Payment API
+export const paymentAPI = {
+  // Bank Account Management
+  getAllBankAccounts: (odataParams = {}) => {
+    const queryParams = new URLSearchParams();
+
+    if (odataParams.$filter) queryParams.append('$filter', odataParams.$filter);
+    if (odataParams.$orderby) queryParams.append('$orderby', odataParams.$orderby);
+    if (odataParams.$top) queryParams.append('$top', odataParams.$top);
+    if (odataParams.$skip) queryParams.append('$skip', odataParams.$skip);
+    if (odataParams.$count !== undefined) queryParams.append('$count', odataParams.$count);
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/api/BankAccount/getAll?${queryString}` : '/api/BankAccount/getAll';
+
+    return api.get(endpoint);
+  },
+  getBankAccountById: (id) => api.get(`/api/BankAccount/bank-account/${id}`),
+  createBankAccount: (data) => api.post('/api/BankAccount/bank-account', data),
+  updateBankAccount: (id, data) => api.put(`/api/BankAccount/bank-account/${id}`, data),
+  deleteBankAccount: (id) => api.delete(`/api/BankAccount/bank-account/${id}`),
+
+  // Transactions
+  getTransactions: () => api.get('/api/BankAccount/transactions')
+};
+
+// Review API
+export const reviewAPI = {
+  // Review Management
+  getAllReviews: (odataParams = {}) => {
+    const queryParams = new URLSearchParams();
+
+    if (odataParams.$filter) queryParams.append('$filter', odataParams.$filter);
+    if (odataParams.$orderby) queryParams.append('$orderby', odataParams.$orderby);
+    if (odataParams.$top) queryParams.append('$top', odataParams.$top);
+    if (odataParams.$skip) queryParams.append('$skip', odataParams.$skip);
+    if (odataParams.$count !== undefined) queryParams.append('$count', odataParams.$count);
+    if (odataParams.$expand) queryParams.append('$expand', odataParams.$expand);
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/api/Review?${queryString}` : '/api/Review';
+
+    return api.get(endpoint);
+  },
+  getReviewById: (id) => api.get(`/api/Review/${id}`),
+  createReview: (contractId, formData) => api.postFormData(`/api/Review/${contractId}`, formData),
+  updateReview: (id, formData) => api.putFormData(`/api/Review/${id}`, formData),
+  deleteReview: (id) => api.delete(`/api/Review/${id}`),
+
+  // Review Reply Management
+  getAllReviewReplies: (odataParams = {}) => {
+    const queryParams = new URLSearchParams();
+
+    if (odataParams.$filter) queryParams.append('$filter', odataParams.$filter);
+    if (odataParams.$orderby) queryParams.append('$orderby', odataParams.$orderby);
+    if (odataParams.$top) queryParams.append('$top', odataParams.$top);
+    if (odataParams.$skip) queryParams.append('$skip', odataParams.$skip);
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/api/ReviewReply?${queryString}` : '/api/ReviewReply';
+
+    return api.get(endpoint);
+  },
+  getReviewReplyById: (id) => api.get(`/api/ReviewReply/${id}`),
+  getReplyByReviewId: (reviewId) => api.get(`/api/ReviewReply/review/${reviewId}`),
+  createReviewReply: (reviewId, formData) => api.postFormData(`/api/ReviewReply/${reviewId}`, formData),
+  updateReviewReply: (id, formData) => api.putFormData(`/api/ReviewReply/${id}`, formData),
+  deleteReviewReply: (id) => api.delete(`/api/ReviewReply/${id}`),
+
+  // Review Report Management
+  getAllReviewReports: (odataParams = {}) => {
+    const queryParams = new URLSearchParams();
+
+    if (odataParams.$filter) queryParams.append('$filter', odataParams.$filter);
+    if (odataParams.$orderby) queryParams.append('$orderby', odataParams.$orderby);
+    if (odataParams.$top) queryParams.append('$top', odataParams.$top);
+    if (odataParams.$skip) queryParams.append('$skip', odataParams.$skip);
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/api/ReviewReport?${queryString}` : '/api/ReviewReport';
+
+    return api.get(endpoint);
+  },
+  getReviewReportById: (reviewId) => api.get(`/api/ReviewReport/${reviewId}`),
+  createReviewReport: (reviewId, formData) => api.postFormData(`/api/ReviewReport/${reviewId}`, formData),
+  updateReviewReport: (reviewId, formData) => api.putFormData(`/api/ReviewReport/${reviewId}`, formData),
+  updateReviewReportStatus: (reportId, data) => api.put(`/api/ReviewReport/status/${reportId}`, data)
+};
+
+// Utility Bill API
+export const utilityBillAPI = {
+  // Get bills for tenant (Guest User)
+  getTenantBills: (odataParams = {}) => {
+    const queryParams = new URLSearchParams();
+
+    if (odataParams.$filter) queryParams.append('$filter', odataParams.$filter);
+    if (odataParams.$orderby) queryParams.append('$orderby', odataParams.$orderby);
+    if (odataParams.$top) queryParams.append('$top', odataParams.$top);
+    if (odataParams.$skip) queryParams.append('$skip', odataParams.$skip);
+    if (odataParams.$count !== undefined) queryParams.append('$count', odataParams.$count);
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/api/UtilityBills/tenant?${queryString}` : '/api/UtilityBills/tenant';
+
+    return api.get(endpoint);
+  },
+
+  // Get bills for owner
+  getOwnerBills: (odataParams = {}) => {
+    const queryParams = new URLSearchParams();
+
+    if (odataParams.$filter) queryParams.append('$filter', odataParams.$filter);
+    if (odataParams.$orderby) queryParams.append('$orderby', odataParams.$orderby);
+    if (odataParams.$top) queryParams.append('$top', odataParams.$top);
+    if (odataParams.$skip) queryParams.append('$skip', odataParams.$skip);
+    if (odataParams.$count !== undefined) queryParams.append('$count', odataParams.$count);
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/api/UtilityBills/owner?${queryString}` : '/api/UtilityBills/owner';
+
+    return api.get(endpoint);
+  },
+
+  // Get bill by ID
+  getBillById: (billId) => api.get(`/api/UtilityBills/${billId}`),
+
+  // Generate bill for room (Owner only)
+  generateBill: (roomId, tenantId = null) => {
+    const endpoint = tenantId
+      ? `/api/UtilityBills/generate/${roomId}?tenantId=${tenantId}`
+      : `/api/UtilityBills/generate/${roomId}`;
+    return api.post(endpoint, {});
+  },
+
+  // Update bill (Owner only)
+  updateBill: (billId, formData) => api.putFormData(`/api/UtilityBills/${billId}`, formData),
+
+  // Mark bill as paid
+  markAsPaid: (billId, paymentMethod) =>
+    api.put(`/api/UtilityBills/${billId}/pay`, { paymentMethod }),
+
+  // Cancel bill (Owner only)
+  cancelBill: (billId, cancelNote) =>
+    api.put(`/api/UtilityBills/${billId}/cancel`, { cancelNote })
 };
 
 export default api;

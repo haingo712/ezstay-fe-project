@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 import chatService from '@/services/chatService';
-import { 
-  MessageSquare, 
+import {
+  MessageSquare,
   Search,
   User,
   Clock,
@@ -25,6 +26,7 @@ import Footer from '@/components/Footer';
 export default function UserChatsPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [chatRooms, setChatRooms] = useState([]);
   const [selectedChatRoom, setSelectedChatRoom] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -55,7 +57,7 @@ export default function UserChatsPage() {
       const rooms = await chatService.getChatRooms();
       console.log('Loaded user chat rooms:', rooms);
       setChatRooms(rooms || []);
-      
+
       // Auto-select first room if available
       if (rooms && rooms.length > 0 && !selectedChatRoom) {
         setSelectedChatRoom(rooms[0]);
@@ -79,7 +81,7 @@ export default function UserChatsPage() {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    
+
     if (!newMessage.trim() || !selectedChatRoom || sending) {
       return;
     }
@@ -88,10 +90,10 @@ export default function UserChatsPage() {
       setSending(true);
       await chatService.sendMessage(selectedChatRoom.id, newMessage.trim());
       setNewMessage('');
-      
+
       // Reload messages
       await loadMessages(selectedChatRoom.id);
-      
+
       // Update chat room list
       await loadChatRooms();
     } catch (error) {
@@ -121,7 +123,7 @@ export default function UserChatsPage() {
     const date = new Date(timestamp);
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
@@ -133,16 +135,16 @@ export default function UserChatsPage() {
     const ownerEmail = room.owner?.email || room.owner?.Email || '';
     const ownerPhone = room.owner?.phone || room.owner?.Phone || '';
     const searchLower = searchTerm.toLowerCase();
-    
+
     return ownerName.toLowerCase().includes(searchLower) ||
-           ownerEmail.toLowerCase().includes(searchLower) ||
-           ownerPhone.toLowerCase().includes(searchLower);
+      ownerEmail.toLowerCase().includes(searchLower) ||
+      ownerPhone.toLowerCase().includes(searchLower);
   });
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Header with Back Button */}
         <div className="flex items-center gap-4 mb-4">
@@ -151,7 +153,7 @@ export default function UserChatsPage() {
             className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
-            Back
+            {t('common.back')}
           </button>
         </div>
 
@@ -162,15 +164,15 @@ export default function UserChatsPage() {
             {/* Sidebar Header */}
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                My Chats
+                {t('chat.title')}
               </h2>
-              
+
               {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search conversations..."
+                  placeholder={t('chat.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-full text-sm focus:ring-2 focus:ring-blue-500 dark:text-white"
@@ -188,7 +190,7 @@ export default function UserChatsPage() {
                 <div className="text-center py-12 px-4">
                   <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                   <p className="text-gray-500 dark:text-gray-400">
-                    No conversations yet
+                    {t('chat.noChats')}
                   </p>
                 </div>
               ) : (
@@ -199,14 +201,13 @@ export default function UserChatsPage() {
                   const ownerEmail = room.owner?.email || room.owner?.Email || '';
                   const ownerPhone = room.owner?.phone || room.owner?.Phone || '';
                   const lastMessageTime = room.lastMessageAt || room.LastMessageAt;
-                  
+
                   return (
                     <div
                       key={room.id}
                       onClick={() => handleSelectChatRoom(room)}
-                      className={`p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                        isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                      }`}
+                      className={`p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        }`}
                     >
                       <div className="flex items-start gap-3">
                         {/* Avatar */}
@@ -224,11 +225,11 @@ export default function UserChatsPage() {
                               {formatLastMessageTime(lastMessageTime)}
                             </span>
                           </div>
-                          
+
                           <p className="text-xs text-gray-600 dark:text-gray-400 truncate mb-1">
                             {ownerEmail}
                           </p>
-                          
+
                           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                             {ownerPhone}
                           </p>
@@ -257,13 +258,13 @@ export default function UserChatsPage() {
                           {selectedChatRoom.owner?.fullName || selectedChatRoom.owner?.FullName || 'Owner'}
                         </h3>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Online
+                          {t('chat.online')}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button 
+                      <button
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                         title={selectedChatRoom.owner?.phone || selectedChatRoom.owner?.Phone || 'No phone'}
                       >
@@ -277,7 +278,7 @@ export default function UserChatsPage() {
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* Contact Info Bar */}
                   <div className="px-6 py-2 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-4 text-xs">
@@ -300,7 +301,7 @@ export default function UserChatsPage() {
                       <div className="text-center">
                         <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                         <p className="text-gray-500 dark:text-gray-400">
-                          No messages yet. Start the conversation!
+                          {t('chat.noMessages')}
                         </p>
                       </div>
                     </div>
@@ -309,9 +310,9 @@ export default function UserChatsPage() {
                       {messages.map((message, index) => {
                         const currentUserId = user?.id || user?.userId || user?.Id;
                         const messageSenderId = message.senderId || message.SenderId;
-                        const isOwn = currentUserId && messageSenderId && 
-                                      currentUserId.toString() === messageSenderId.toString();
-                        
+                        const isOwn = currentUserId && messageSenderId &&
+                          currentUserId.toString() === messageSenderId.toString();
+
                         return (
                           <div
                             key={message.id || index}
@@ -323,18 +324,16 @@ export default function UserChatsPage() {
                                   <User className="h-4 w-4 text-white" />
                                 </div>
                               )}
-                              
+
                               <div
-                                className={`px-4 py-2 rounded-2xl ${
-                                  isOwn
+                                className={`px-4 py-2 rounded-2xl ${isOwn
                                     ? 'bg-blue-600 text-white rounded-br-none'
                                     : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
-                                }`}
+                                  }`}
                               >
                                 <p className="text-sm">{message.content || message.Content}</p>
-                                <p className={`text-xs mt-1 ${
-                                  isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
-                                }`}>
+                                <p className={`text-xs mt-1 ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
+                                  }`}>
                                   {formatMessageTime(message.sentAt || message.SentAt)}
                                 </p>
                               </div>
@@ -379,7 +378,7 @@ export default function UserChatsPage() {
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Type a message..."
+                      placeholder={t('chat.typeMessage')}
                       className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border-0 rounded-full focus:ring-2 focus:ring-blue-500 dark:text-white"
                       disabled={sending}
                     />
@@ -404,10 +403,10 @@ export default function UserChatsPage() {
                 <div className="text-center">
                   <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    Select a conversation
+                    {t('chat.selectConversation')}
                   </h3>
                   <p className="text-gray-500 dark:text-gray-400">
-                    Choose a conversation from the list to start chatting
+                    {t('chat.startConversation')}
                   </p>
                 </div>
               </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const sampleLocations = [
   'Hanoi',
@@ -18,6 +19,7 @@ const sampleLocations = [
 export default function SearchBar() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
   const [keyword, setKeyword] = useState('');
   const [location, setLocation] = useState('');
   const [minPrice, setMinPrice] = useState('');
@@ -30,20 +32,20 @@ export default function SearchBar() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!isAuthenticated) {
       // Redirect to login if not authenticated
       router.push('/login?returnUrl=/boarding-houses');
       return;
     }
-    
+
     // Build search URL with parameters
     const params = new URLSearchParams();
     if (keyword) params.set('q', keyword);
     if (location) params.set('location', location);
     if (minPrice) params.set('minPrice', minPrice);
     if (maxPrice) params.set('maxPrice', maxPrice);
-    
+
     const searchURL = params.toString() ? `/boarding-houses?${params.toString()}` : '/boarding-houses';
     router.push(searchURL);
   };
@@ -61,10 +63,10 @@ export default function SearchBar() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Find Your Perfect Boarding House
+            {t('searchBar.title')}
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Thousands of quality boarding houses waiting for you to discover
+            {t('searchBar.subtitle')}
           </p>
         </div>
 
@@ -73,11 +75,11 @@ export default function SearchBar() {
             {/* Keyword Search */}
             <div className="lg:col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Search
+                {t('searchBar.keyword')}
               </label>
               <input
                 type="text"
-                placeholder="Enter boarding house name, address..."
+                placeholder={t('searchBar.keywordPlaceholder')}
                 value={keyword}
                 onChange={e => setKeyword(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -87,14 +89,14 @@ export default function SearchBar() {
             {/* Location */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Location
+                {t('searchBar.location')}
               </label>
               <select
                 value={location}
                 onChange={e => setLocation(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">All areas</option>
+                <option value="">{t('searchBar.allAreas')}</option>
                 {sampleLocations.map(loc => (
                   <option key={loc} value={loc}>{loc}</option>
                 ))}
@@ -104,19 +106,19 @@ export default function SearchBar() {
             {/* Price Range */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Price (USD)
+                {t('searchBar.priceRange')} (USD)
               </label>
               <div className="flex space-x-2">
                 <input
                   type="number"
-                  placeholder="From"
+                  placeholder={t('searchBar.minPrice')}
                   value={minPrice}
                   onChange={e => setMinPrice(e.target.value)}
                   className="w-full px-3 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <input
                   type="number"
-                  placeholder="To"
+                  placeholder={t('searchBar.maxPrice')}
                   value={maxPrice}
                   onChange={e => setMaxPrice(e.target.value)}
                   className="w-full px-3 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -133,7 +135,7 @@ export default function SearchBar() {
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
                 </svg>
-                Search
+                {t('searchBar.searchButton')}
               </button>
             </div>
           </div>
@@ -142,7 +144,7 @@ export default function SearchBar() {
         {/* Quick Search Buttons */}
         <div className="mt-6">
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 text-center">
-            Quick search by area:
+            {t('searchBar.quickSearch')}:
           </p>
           <div className="flex flex-wrap justify-center gap-2">
             {['District 1', 'District 7', 'Thu Duc City', 'Binh Thanh District', 'Go Vap District'].map(area => (

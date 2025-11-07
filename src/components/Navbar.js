@@ -6,22 +6,25 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/hooks/useAuth";
 import NotificationBell from "./NotificationBell";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const { isAuthenticated, user, logout, refreshUserInfo } = useAuth();
+  const { language, changeLanguage, t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
 
   // Get user role from user object or default to guest
   const userRole = user?.role || "guest";
-  
+
   // Get email from various possible JWT claim locations
-  const userEmail = user?.email || 
-                    user?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
-                    "Guest User";
-  
+  const userEmail = user?.email ||
+    user?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
+    "Guest User";
+
   // Debug logging
   console.log("Navbar - User:", user);
   console.log("Navbar - UserRole:", userRole, "Type:", typeof userRole);
@@ -39,11 +42,15 @@ export default function Navbar() {
 
   const getNavigationItems = () => {
     const baseItems = [
-      { href: "/", label: "Home" },
-      { href: "/rental-posts", label: "Rental Post" },
-      { href: "/support", label: "Support" },
-      { href: "/about", label: "About" },
+      { href: "/", label: t('nav.home') },
+      { href: "/rental-posts", label: t('nav.rentalPost') },
+      { href: "/support", label: t('nav.support') },
+      { href: "/about", label: t('nav.about') },
     ];
+
+    if (isAuthenticated) {
+      baseItems.splice(2, 0, { href: "/favorites", label: "Favorites" });
+    }
 
     return baseItems;
   };
@@ -97,6 +104,58 @@ export default function Navbar() {
 
             {/* Right side actions */}
             <div className="flex items-center space-x-4">
+              {/* Language Toggle Button */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
+                  className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 flex items-center space-x-2"
+                  title="Change Language"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+                    />
+                  </svg>
+                  <span className="text-sm font-medium uppercase">{language}</span>
+                </button>
+                {isLanguageMenuOpen && (
+                  <div className="absolute right-0 w-40 py-2 mt-2 bg-white rounded-md shadow-xl dark:bg-gray-800 z-20">
+                    <button
+                      onClick={() => {
+                        changeLanguage('vi');
+                        setIsLanguageMenuOpen(false);
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${language === 'vi'
+                          ? 'text-blue-600 dark:text-blue-400 font-semibold'
+                          : 'text-gray-700 dark:text-gray-200'
+                        }`}
+                    >
+                      🇻🇳 {t('language.vi')}
+                    </button>
+                    <button
+                      onClick={() => {
+                        changeLanguage('en');
+                        setIsLanguageMenuOpen(false);
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${language === 'en'
+                          ? 'text-blue-600 dark:text-blue-400 font-semibold'
+                          : 'text-gray-700 dark:text-gray-200'
+                        }`}
+                    >
+                      🇬🇧 {t('language.en')}
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Theme Toggle Button */}
               <button
                 onClick={toggleTheme}
@@ -160,34 +219,43 @@ export default function Navbar() {
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        Profile
+                        {t('nav.profile')}
                       </Link>
                       <Link
                         href="/chat"
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        My Chats
+                        {t('nav.myChats')}
                       </Link>
                       <Link
                         href="/profile/rental-history"
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        Rental History
+                        {t('nav.rentalHistory')}
                       </Link>
+
+                      <Link
+                        href="/bills"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        {t('nav.myBills')}
+                      </Link>
+
                       <Link
                         href={getUserDashboardLink()}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        Dashboard
+                        {t('nav.dashboard')}
                       </Link>
                       <button
                         onClick={handleLogout}
                         className="block w-full px-4 py-2 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                       >
-                        Logout
+                        {t('nav.logout')}
                       </button>
                     </div>
                   )}
@@ -198,13 +266,13 @@ export default function Navbar() {
                     href="/login"
                     className="px-4 py-2 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 font-medium"
                   >
-                    Sign In
+                    {t('nav.signIn')}
                   </Link>
                   <Link
                     href="/register"
                     className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
                   >
-                    Sign Up
+                    {t('nav.signUp')}
                   </Link>
                 </div>
               )}
@@ -261,14 +329,14 @@ export default function Navbar() {
                     className="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Sign In
+                    {t('nav.signIn')}
                   </Link>
                   <Link
                     href="/register"
                     className="block px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-center"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Sign Up
+                    {t('nav.signUp')}
                   </Link>
                 </div>
               )}
