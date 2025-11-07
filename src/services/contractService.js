@@ -167,6 +167,34 @@ const contractService = {
       console.error('Error deleting contract image:', error);
       throw error;
     }
+  },
+
+  // Digital Signature Management
+  // Add signatures to contract (Owner and Tenant)
+  addSignatures: async (contractId, ownerSignature, tenantSignature) => {
+    try {
+      console.log("📝 Adding signatures to contract:", contractId);
+      const response = await api.put(`/api/Contract/${contractId}/signatures`, {
+        ownerSignature,
+        tenantSignature
+      });
+      console.log("✅ Signatures added successfully");
+      return response.data || response;
+    } catch (error) {
+      console.error('Error adding signatures:', error);
+      throw error;
+    }
+  },
+
+  // Get signatures for a contract
+  getSignatures: async (contractId) => {
+    try {
+      const response = await api.get(`/api/Contract/${contractId}/signatures`);
+      return response.data || response;
+    } catch (error) {
+      console.error('Error fetching signatures:', error);
+      return null;
+    }
   }
 };
 

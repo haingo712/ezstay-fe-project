@@ -2,6 +2,7 @@
 import authService from "@/services/authService";
 
 // API Gateway URL - All requests go through this single endpoint  
+// Temporary: Use NotificationAPI port directly for testing
 export const API_GATEWAY_URL =
   process.env.NEXT_PUBLIC_API_GATEWAY_URL || "https://localhost:7000";
 
@@ -187,7 +188,23 @@ export const boardingHouseAPI = {
   create: (formData) => api.postFormData('/api/BoardingHouses', formData),
   // Update with FormData (supports multiple image upload)
   update: (id, formData) => api.putFormData(`/api/BoardingHouses/${id}`, formData),
-  delete: (id) => api.delete(`/api/BoardingHouses/${id}`)
+  delete: (id) => api.delete(`/api/BoardingHouses/${id}`),
+  
+  // Ranking & Analytics APIs
+  // Get ranked boarding houses by Rating or Sentiment (using Python ML)
+  // @param type: "Rating" or "Sentiment"
+  // @param order: "desc" or "asc" (default: "desc")
+  // @param limit: number of results (default: 10)
+  getRanked: (type, order = 'desc', limit = 10) => {
+    const params = new URLSearchParams({ type, order, limit: limit.toString() });
+    return api.get(`/api/BoardingHouses/rank?${params.toString()}`);
+  },
+  
+  // Get rating summary for a boarding house (star distribution + reviews)
+  getRatingSummary: (id) => api.get(`/api/BoardingHouses/${id}/rating-feedback`),
+  
+  // Get sentiment summary for a boarding house (positive/neutral/negative analysis using Python ML)
+  getSentimentSummary: (id) => api.get(`/api/BoardingHouses/${id}/sentiment-feedback`)
 };
 
 // House Location API

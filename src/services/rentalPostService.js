@@ -6,22 +6,27 @@ import roomService from './roomService';
 const normalizePostData = (post) => {
   if (!post) return post;
   
+  console.log('🔄 Normalizing post:', post.id || post.Id);
+  
   // Parse imageUrls if it's a JSON string inside an array
   let imageUrls = post.imageUrls || post.ImageUrls;
+  console.log('📥 Raw imageUrls:', imageUrls);
+  
   if (Array.isArray(imageUrls) && imageUrls.length > 0 && typeof imageUrls[0] === 'string') {
     try {
       // Check if first item is a JSON string like: "{\"urls\":[...]}"
       const parsed = JSON.parse(imageUrls[0]);
       if (parsed.urls && Array.isArray(parsed.urls)) {
         imageUrls = parsed.urls;
+        console.log('✅ Parsed imageUrls:', imageUrls);
       }
     } catch (e) {
       // If parsing fails, keep original array
-      console.log('ℹ️ imageUrls is already in correct format');
+      console.log('ℹ️ imageUrls is already in correct format or not parseable');
     }
   }
   
-  return {
+  const normalized = {
     ...post,
     id: post.id || post.Id,
     roomId: post.roomId || post.RoomId,
@@ -40,6 +45,9 @@ const normalizePostData = (post) => {
     createdAt: post.createdAt || post.CreatedAt,
     updatedAt: post.updatedAt || post.UpdatedAt
   };
+  
+  console.log('✅ Normalized result:', { id: normalized.id, imageUrls: normalized.imageUrls });
+  return normalized;
 };
 
 // Helper function to enrich post with boarding house, room, and author names by fetching from APIs
@@ -270,7 +278,13 @@ export const rentalPostService = {
   getById: async (postId) => {
     try {
       const response = await axiosInstance.get(`/api/RentalPosts/${postId}`);
-      let post = normalizePostData(response.data);
+      
+      // Backend wraps in ApiResponse: { data: {...}, success: true, message: "..." }
+      const rawPost = response.data?.data || response.data;
+      console.log('📥 Raw post from API:', rawPost);
+      
+      let post = normalizePostData(rawPost);
+      console.log('🔄 Normalized post:', post);
       
       // Enrich with boarding house and room names
       post = await enrichPostWithNames(post, false);

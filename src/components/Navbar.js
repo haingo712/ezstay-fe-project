@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/hooks/useAuth";
+import NotificationBell from "./NotificationBell";
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
@@ -124,6 +125,9 @@ export default function Navbar() {
                   </svg>
                 )}
               </button>
+
+              {/* Notification Bell - Only show when authenticated */}
+              {isAuthenticated && <NotificationBell />}
 
               {/* Authentication Actions */}
               {isAuthenticated ? (
