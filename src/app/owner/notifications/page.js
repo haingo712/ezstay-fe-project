@@ -1,485 +1,631 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import notificationService from "@/services/notificationService";
+// Hàm đánh dấu đã đọc notification
+async function markAsReadNotification(id) {
+    try {
+        await apiFetch(`/api/Notification/mark-read/${id}`, {
+            method: "PUT"
+        });
+    } catch (err) {
+        throw err;
+    }
+}
+https://github.com/haingo712/ezstay-fe-project/pull/25/conflict?name=src%252Fcomponents%252FNavbar.js&ancestor_oid=64014958ba85a39a7f2edd03aba6acf0e6b27faa&base_oid=5dee877f0ec80827b8c2f0284d77563a279d025b&head_oid=4fa1367af2ccdbcc303efd2a8c7f080476a8a5f2
+// Hàm cập nhật notification
+async function updateNotification(id, { title, message, notificationType = 0 }) {
+    try {
+        await apiFetch(`/api/Notification/${id}`, {
+            method: "PUT",
+            body: JSON.stringify({ title, message, notificationType }),
+            headers: { "Content-Type": "application/json" }
+        });
+    } catch (err) {
+        throw err;
+    }
+}
+
+import { useEffect, useState, useRef } from "react";
+// Icon Bell SVG
+function BellIcon({ className = "w-7 h-7" }) {
+    return (
+        <svg className={className} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.243a2 2 0 0 1-3.714 0M21 19H3m16-2V9a7 7 0 1 0-14 0v8a2 2 0 0 1-2 2h16a2 2 0 0 1-2-2Z" />
+        </svg>
+    );
+}
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { apiFetch } from "@/utils/api";
+
+// Hàm thêm notification mới
+async function addNotification({ title, message, notificationType = 0 }) {
+    try {
+        const res = await apiFetch("/api/Notification", {
+            method: "POST",
+            body: JSON.stringify({
+                title,
+                message,
+                notificationType
+            }),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+        return res;
+    } catch (err) {
+        throw err;
+    }
+}
+
+// Hàm thêm notification theo role (CreateByRole)
+async function addNotificationByRole({ title, message, notificationType = 0, targetRoles }) {
+    try {
+        const res = await apiFetch("/api/Notification/by-role", {
+            method: "POST",
+            body: JSON.stringify({
+                title,
+                message,
+                notificationType,
+                targetRoles
+            }),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+        return res;
+    } catch (err) {
+        throw err;
+    }
+}
+
+// Hàm thêm notification hẹn giờ (Schedule)
+async function addScheduledNotification({ title, message, notificationType = 0, targetRoles, scheduledTime }) {
+    try {
+        const res = await apiFetch("/api/Notification/schedule", {
+            method: "POST",
+            body: JSON.stringify({
+                title,
+                message,
+                notificationType,
+                targetRoles,
+                scheduledTime
+            }),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+        return res;
+    } catch (err) {
+        throw err;
+    }
+}
+
+// Hàm xóa notification
+async function deleteNotification(id) {
+    try {
+        await apiFetch(`/api/Notification/${id}`, {
+            method: "DELETE"
+        });
+    } catch (err) {
+        throw err;
+    }
+}
+
 
 export default function OwnerNotificationsPage() {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [filter, setFilter] = useState("all"); // all, read, unread
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedNotification, setSelectedNotification] = useState(null);
+    const [notifications, setNotifications] = useState([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [title, setTitle] = useState("");
+    const [message, setMessage] = useState("");
+    const [addLoading, setAddLoading] = useState(false);
+    const [addError, setAddError] = useState(null);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [deleteLoadingId, setDeleteLoadingId] = useState(null);
+    const [deleteErrorId, setDeleteErrorId] = useState(null);
+    // State cho update modal
+    const [showUpdateModalId, setShowUpdateModalId] = useState(null);
+    const [updateTitle, setUpdateTitle] = useState("");
+    const [updateMessage, setUpdateMessage] = useState("");
+    const [updateLoading, setUpdateLoading] = useState(false);
+    const [updateError, setUpdateError] = useState(null);
+    // State cho form tạo notification by role
+    const [showAddByRoleModal, setShowAddByRoleModal] = useState(false);
+    const [byRoleTitle, setByRoleTitle] = useState("");
+    const [byRoleMessage, setByRoleMessage] = useState("");
+    const [byRoleType, setByRoleType] = useState("");
+    const [byRoleTargetRoles, setByRoleTargetRoles] = useState([]);
+    const [addByRoleLoading, setAddByRoleLoading] = useState(false);
+    const [addByRoleError, setAddByRoleError] = useState(null);
+    const [notificationTypes, setNotificationTypes] = useState([]);
+    const [allRoles, setAllRoles] = useState([]);
+    // State cho form tạo notification hẹn giờ
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [scheduleTitle, setScheduleTitle] = useState("");
+    const [scheduleMessage, setScheduleMessage] = useState("");
+    const [scheduleType, setScheduleType] = useState("");
+    const [scheduleTargetRoles, setScheduleTargetRoles] = useState([]);
+    const [scheduleTime, setScheduleTime] = useState("");
+    const [addScheduleLoading, setAddScheduleLoading] = useState(false);
+    const [addScheduleError, setAddScheduleError] = useState(null);
+    // State cho phân trang
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
 
-  const fetchNotifications = async () => {
-    try {
-      setLoading(true);
-      const data = await notificationService.getAllNotifications();
-      console.log("📬 Notification data received:", data);
-      
-      // Safely handle data - ensure it's an array
-      if (Array.isArray(data)) {
-        // Sort by createdAt (newest first)
-        const sorted = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        setNotifications(sorted);
+    // Mở modal update với dữ liệu notification hiện tại
+    const openUpdateModal = (n) => {
+        setShowUpdateModalId(n.id);
+        setUpdateTitle(n.title);
+        setUpdateMessage(n.message);
+        setUpdateError(null);
+    };
+
+    // Xử lý submit update notification
+    const handleUpdateNotification = async (e) => {
+        e.preventDefault();
+        setUpdateLoading(true);
+        setUpdateError(null);
+        try {
+            await updateNotification(showUpdateModalId, { title: updateTitle, message: updateMessage });
+            setShowUpdateModalId(null);
+            await fetchNotifications();
+        } catch (err) {
+            setUpdateError("Không thể cập nhật. Vui lòng thử lại.");
+        } finally {
+            setUpdateLoading(false);
+        }
+    };
+    // Xử lý xóa notification
+    const handleDelete = async (id) => {
+        setDeleteLoadingId(id);
+        setDeleteErrorId(null);
+        try {
+            await deleteNotification(id);
+            await fetchNotifications();
+        } catch (err) {
+            setDeleteErrorId(id);
+        } finally {
+            setDeleteLoadingId(null);
+        }
+    };
+
+    // Xử lý submit thêm notification by role
+    const handleAddByRoleNotification = async (e) => {
+        e.preventDefault();
+        setAddByRoleLoading(true);
+        setAddByRoleError(null);
+        try {
+            // Đảm bảo notificationType là số
+            const notificationTypeNum = Number(byRoleType) || 0;
+            // Đảm bảo targetRoles là mảng số
+            const targetRolesArr = byRoleTargetRoles.filter(Boolean).map(Number);
+            await addNotificationByRole({ title: byRoleTitle, message: byRoleMessage, notificationType: notificationTypeNum, targetRoles: targetRolesArr });
+            setByRoleTitle("");
+            setByRoleMessage("");
+            setByRoleType("");
+            setByRoleTargetRoles([]);
+            setShowAddByRoleModal(false);
+            await fetchNotifications();
+        } catch (err) {
+            setAddByRoleError("Không thể tạo thông báo theo vai trò. Vui lòng thử lại.");
+        } finally {
+            setAddByRoleLoading(false);
+        }
+    };
+
+    // Xử lý submit thêm notification hẹn giờ
+    const handleScheduleNotification = async (e) => {
+        e.preventDefault();
+        setAddScheduleLoading(true);
+        setAddScheduleError(null);
+        try {
+            const notificationTypeNum = Number(scheduleType) || 0;
+            const targetRolesArr = scheduleTargetRoles.filter(Boolean).map(Number);
+
+            // Chuyển đổi thời gian sang định dạng ISO 8601 UTC
+            const scheduledTimeISO = new Date(scheduleTime).toISOString();
+
+            await addScheduledNotification({
+                title: scheduleTitle,
+                message: scheduleMessage,
+                notificationType: notificationTypeNum,
+                targetRoles: targetRolesArr,
+                scheduledTime: scheduledTimeISO
+            });
+            setScheduleTitle("");
+            setScheduleMessage("");
+            setScheduleType("");
+            setScheduleTargetRoles([]);
+            setScheduleTime("");
+            setShowScheduleModal(false);
+            await fetchNotifications(); // Cập nhật lại danh sách
+        } catch (err) {
+            console.error("Error scheduling notification:", err);
+            setAddScheduleError("Không thể hẹn giờ thông báo. Vui lòng thử lại.");
+        } finally {
+            setAddScheduleLoading(false);
+        }
+    };
+
+    // fetchNotifications tách riêng để gọi lại sau khi thêm
+    const fetchNotifications = async () => {
+        setLoading(true);
         setError(null);
-      } else {
-        console.warn("⚠️ Data is not an array:", data);
-        setNotifications([]);
-        setError(null); // No error, just empty list
-      }
-    } catch (err) {
-      console.error("❌ Error fetching notifications:", err);
-      setError("Failed to load notifications. Please try again.");
-      setNotifications([]); // Set empty array on error
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleMarkAsRead = async (id) => {
-    try {
-      await notificationService.markAsRead(id);
-      // Update local state
-      setNotifications(
-        notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-      );
-    } catch (err) {
-      alert("Failed to mark notification as read");
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this notification?")) return;
-    try {
-      await notificationService.deleteNotification(id);
-      setNotifications(notifications.filter((n) => n.id !== id));
-      if (selectedNotification?.id === id) {
-        setShowDetailModal(false);
-        setSelectedNotification(null);
-      }
-    } catch (err) {
-      alert("Failed to delete notification");
-    }
-  };
-
-  const handleViewDetail = (notification) => {
-    setSelectedNotification(notification);
-    setShowDetailModal(true);
-    if (!notification.isRead) {
-      handleMarkAsRead(notification.id);
-    }
-  };
-
-  const filteredNotifications = notifications.filter((n) => {
-    if (filter === "read") return n.isRead;
-    if (filter === "unread") return !n.isRead;
-    return true;
-  });
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-
-  const getNotificationTypeLabel = (type) => {
-    const types = {
-      0: "System",
-      1: "Promotion",
-      2: "Warning",
-      3: "Owner Register",
-      System: "System",
-      Promotion: "Promotion",
-      Warning: "Warning",
-      OwnerRegister: "Owner Register",
+        try {
+            const data = await apiFetch("/api/Notification/all-by-user");
+            setNotifications(Array.isArray(data) ? data : []);
+        } catch (err) {
+            setError("Không thể tải thông báo. Vui lòng thử lại.");
+        } finally {
+            setLoading(false);
+        }
     };
-    return types[type] || type;
-  };
 
-  const getNotificationTypeColor = (type) => {
-    const colors = {
-      0: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-      1: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      2: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-      3: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-      System: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-      Promotion: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      Warning: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-      OwnerRegister: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    // Lấy danh sách loại thông báo từ API hoặc fallback
+    useEffect(() => {
+        async function fetchTypes() {
+            try {
+                // Gọi API lấy loại thông báo
+                const res = await apiFetch("/api/Notification/types");
+                if (Array.isArray(res)) {
+                    setNotificationTypes(res);
+                } else {
+                    setNotificationTypes([
+                        { id: 1, name: "Thông báo chung" },
+                        { id: 2, name: "Thông báo hệ thống" }
+                    ]);
+                }
+            } catch {
+                setNotificationTypes([
+                    { id: 1, name: "Thông báo chung" },
+                    { id: 2, name: "Thông báo hệ thống" }
+                ]);
+            }
+        }
+        fetchTypes();
+    }, []);
+
+    // Lấy danh sách vai trò từ API hoặc fallback
+    useEffect(() => {
+        async function fetchRoles() {
+            try {
+                const res = await apiFetch("/api/Notification/roles");
+                if (Array.isArray(res)) {
+                    setAllRoles(res);
+                } else {
+                    setAllRoles([
+                        { id: 1, name: "Chủ nhà" },
+                        { id: 2, name: "Người thuê" },
+                        { id: 3, name: "Quản trị viên" }
+                    ]);
+                }
+            } catch {
+                setAllRoles([
+                    { id: 1, name: "Chủ nhà" },
+                    { id: 2, name: "Người thuê" },
+                    { id: 3, name: "Quản trị viên" }
+                ]);
+            }
+        }
+        fetchRoles();
+    }, []);
+
+    useEffect(() => {
+        fetchNotifications();
+        // Đóng dropdown khi click ngoài
+        function handleClickOutside(e) {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setShowDropdown(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Xử lý submit thêm notification
+    const handleAddNotification = async (e) => {
+        e.preventDefault();
+        setAddLoading(true);
+        setAddError(null);
+        try {
+            await addNotification({ title, message });
+            setTitle("");
+            setMessage("");
+            setShowAddModal(false);
+            await fetchNotifications();
+        } catch (err) {
+            setAddError("Không thể thêm thông báo. Vui lòng thử lại.");
+        } finally {
+            setAddLoading(false);
+        }
     };
-    return colors[type] || "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
-  };
 
-  const getRoleLabel = (roleNum) => {
-    const roleMap = {
-      1: "User",
-      2: "Owner",
-      3: "Staff",
-      4: "Admin",
+    // Logic phân trang
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentNotifications = notifications.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(notifications.length / itemsPerPage);
+
+    const paginate = (pageNumber) => {
+        if (pageNumber > 0 && pageNumber <= totalPages) {
+            setCurrentPage(pageNumber);
+        }
     };
-    return roleMap[roleNum] || "Unknown";
-  };
 
-  if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-      </div>
-    );
-  }
+        <ProtectedRoute roles={["Owner"]}>
+            {/* Đã xoá Bell icon gần About */}
+            <div className="max-w-2xl mx-auto py-10 px-4">
+                <h1 className="text-2xl font-bold mb-6">Thông báo của bạn</h1>
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Notifications
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            View all your notifications
-          </p>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {notifications.length}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-green-600 dark:text-green-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Unread</p>
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                {unreadCount}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-orange-600 dark:text-orange-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Read</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {notifications.length - unreadCount}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-green-600 dark:text-green-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter tabs */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="border-b border-gray-200 dark:border-gray-700">
-          <nav className="flex space-x-8 px-6" aria-label="Tabs">
-            {["all", "unread", "read"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setFilter(tab)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm capitalize ${
-                  filter === tab
-                    ? "border-green-500 text-green-600 dark:text-green-400"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-                }`}
-              >
-                {tab}
-                {tab === "unread" && unreadCount > 0 && (
-                  <span className="ml-2 bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 py-0.5 px-2 rounded-full text-xs">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Notifications list */}
-        <div className="divide-y divide-gray-200 dark:divide-gray-700">
-          {error && (
-            <div className="p-6">
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                <p className="text-red-800 dark:text-red-400">{error}</p>
-              </div>
-            </div>
-          )}
-
-          {!error && filteredNotifications.length === 0 && (
-            <div className="p-12 text-center">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
-              </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-                No notifications
-              </h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {filter === "all"
-                  ? "You don't have any notifications yet."
-                  : `You don't have any ${filter} notifications.`}
-              </p>
-            </div>
-          )}
-
-          {filteredNotifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer ${
-                !notification.isRead ? "bg-green-50 dark:bg-green-900/10" : ""
-              }`}
-              onClick={() => handleViewDetail(notification)}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded ${getNotificationTypeColor(
-                        notification.notificationType
-                      )}`}
-                    >
-                      {getNotificationTypeLabel(notification.notificationType)}
-                    </span>
-                    {!notification.isRead && (
-                      <span className="w-2 h-2 bg-green-600 rounded-full"></span>
-                    )}
-                  </div>
-                  <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
-                    {notification.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                    {notification.message}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                    {new Date(notification.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 ml-4">
-                  {!notification.isRead && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMarkAsRead(notification.id);
-                      }}
-                      className="p-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors"
-                      title="Mark as read"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    </button>
-                  )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(notification.id);
-                    }}
-                    className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors"
-                    title="Delete"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Detail Modal */}
-      {showDetailModal && selectedNotification && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Notification Detail
-                </h2>
+                {/* Nút mở modal thêm notification */}
                 <button
-                  onClick={() => setShowDetailModal(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="mb-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    onClick={() => { setShowAddModal(true); setAddError(null); }}
                 >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                    Thêm thông báo
                 </button>
-              </div>
 
-              <div className="space-y-4">
-                <div>
-                  <span
-                    className={`inline-block px-3 py-1 text-sm font-medium rounded ${getNotificationTypeColor(
-                      selectedNotification.notificationType
-                    )}`}
-                  >
-                    {getNotificationTypeLabel(selectedNotification.notificationType)}
-                  </span>
-                </div>
+                {/* Nút mở modal thêm notification theo vai trò */}
+                <button
+                    className="mb-6 ml-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                    onClick={() => { setShowAddByRoleModal(true); setAddByRoleError(null); }}
+                >
+                    Thêm thông báo theo vai trò
+                </button>
 
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {selectedNotification.title}
-                  </h3>
-                </div>
+                {/* Nút mở modal thêm notification hẹn giờ */}
+                <button
+                    className="mb-6 ml-4 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+                    onClick={() => { setShowScheduleModal(true); setAddScheduleError(null); }}
+                >
+                    Thêm thông báo hẹn giờ
+                </button>
 
-                <div>
-                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                    {selectedNotification.message}
-                  </p>
-                </div>
-
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400">Status</p>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {selectedNotification.isRead ? "Read" : "Unread"}
-                      </p>
+                {/* Modal thêm notification */}
+                {showAddModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                        <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-md relative">
+                            <button
+                                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                                onClick={() => setShowAddModal(false)}
+                                type="button"
+                            >
+                                &times;
+                            </button>
+                            <h2 className="text-lg font-bold mb-4">Thêm thông báo mới</h2>
+                            <form onSubmit={handleAddNotification}>
+                                <div className="mb-2">
+                                    <label className="block font-medium mb-1">Tiêu đề</label>
+                                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full border rounded px-3 py-2" required />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="block font-medium mb-1">Nội dung</label>
+                                    <textarea value={message} onChange={e => setMessage(e.target.value)} className="w-full border rounded px-3 py-2" required />
+                                </div>
+                                {addError && <div className="text-red-500 mb-2">{addError}</div>}
+                                <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" disabled={addLoading}>
+                                    {addLoading ? "Đang thêm..." : "Thêm thông báo"}
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400">Created At</p>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {new Date(selectedNotification.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                    {selectedNotification.targetRole && (
-                      <div>
-                        <p className="text-gray-500 dark:text-gray-400">Target Audience</p>
-                        <p className="font-medium text-gray-900 dark:text-white">
-                          {getRoleLabel(selectedNotification.targetRole)}
-                        </p>
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400">Notification ID</p>
-                      <p className="font-medium text-gray-900 dark:text-white text-xs">
-                        {selectedNotification.id}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                )}
 
-                <div className="flex justify-end gap-2 pt-4">
-                  {!selectedNotification.isRead && (
-                    <button
-                      onClick={() => {
-                        handleMarkAsRead(selectedNotification.id);
-                        setShowDetailModal(false);
-                      }}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      Mark as Read
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      handleDelete(selectedNotification.id);
-                    }}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
+                {/* Modal thêm notification theo vai trò */}
+                {showAddByRoleModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                        <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-md relative">
+                            <button
+                                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                                onClick={() => setShowAddByRoleModal(false)}
+                                type="button"
+                            >
+                                &times;
+                            </button>
+                            <h2 className="text-lg font-bold mb-4">Thêm thông báo theo vai trò</h2>
+                            <form onSubmit={handleAddByRoleNotification}>
+                                <div className="mb-2">
+                                    <label className="block font-medium mb-1">Tiêu đề</label>
+                                    <input type="text" value={byRoleTitle} onChange={e => setByRoleTitle(e.target.value)} className="w-full border rounded px-3 py-2" required />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="block font-medium mb-1">Nội dung</label>
+                                    <textarea value={byRoleMessage} onChange={e => setByRoleMessage(e.target.value)} className="w-full border rounded px-3 py-2" required />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="block font-medium mb-1">Loại thông báo</label>
+                                    <select value={byRoleType} onChange={e => setByRoleType(e.target.value)} className="w-full border rounded px-3 py-2" required>
+                                        <option value="">Chọn loại</option>
+                                        {notificationTypes.map(type => (
+                                            <option key={type.id} value={type.id}>{type.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="mb-2">
+                                    <label className="block font-medium mb-1">Vai trò đích</label>
+                                    <select value={byRoleTargetRoles[0] || ""} onChange={e => setByRoleTargetRoles([e.target.value])} className="w-full border rounded px-3 py-2" required>
+                                        <option value="">Chọn vai trò</option>
+                                        {allRoles.map(role => (
+                                            <option key={role.id} value={role.id}>{role.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {addByRoleError && <div className="text-red-500 mb-2">{addByRoleError}</div>}
+                                <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" disabled={addByRoleLoading}>
+                                    {addByRoleLoading ? "Đang thêm..." : "Thêm thông báo theo vai trò"}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal thêm notification hẹn giờ */}
+                {showScheduleModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                        <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-md relative">
+                            <button
+                                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                                onClick={() => setShowScheduleModal(false)}
+                                type="button"
+                            >
+                                &times;
+                            </button>
+                            <h2 className="text-lg font-bold mb-4">Thêm thông báo hẹn giờ</h2>
+                            <form onSubmit={handleScheduleNotification}>
+                                <div className="mb-2">
+                                    <label className="block font-medium mb-1">Tiêu đề</label>
+                                    <input type="text" value={scheduleTitle} onChange={e => setScheduleTitle(e.target.value)} className="w-full border rounded px-3 py-2" required />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="block font-medium mb-1">Nội dung</label>
+                                    <textarea value={scheduleMessage} onChange={e => setScheduleMessage(e.target.value)} className="w-full border rounded px-3 py-2" required />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="block font-medium mb-1">Loại thông báo</label>
+                                    <select value={scheduleType} onChange={e => setScheduleType(e.target.value)} className="w-full border rounded px-3 py-2" required>
+                                        <option value="">Chọn loại</option>
+                                        {notificationTypes.map(type => (
+                                            <option key={type.id} value={type.id}>{type.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="mb-2">
+                                    <label className="block font-medium mb-1">Vai trò đích</label>
+                                    <select value={scheduleTargetRoles[0] || ""} onChange={e => setScheduleTargetRoles([e.target.value])} className="w-full border rounded px-3 py-2" required>
+                                        <option value="">Chọn vai trò</option>
+                                        {allRoles.map(role => (
+                                            <option key={role.id} value={role.id}>{role.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="mb-2">
+                                    <label className="block font-medium mb-1">Thời gian hẹn</label>
+                                    <input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="w-full border rounded px-3 py-2" required />
+                                </div>
+                                {addScheduleError && <div className="text-red-500 mb-2">{addScheduleError}</div>}
+                                <button type="submit" className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700" disabled={addScheduleLoading}>
+                                    {addScheduleLoading ? "Đang hẹn giờ..." : "Hẹn giờ thông báo"}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {loading && <div>Đang tải thông báo...</div>}
+                {error && <div className="text-red-500 mb-4">{error}</div>}
+                {!loading && notifications.length === 0 && (
+                    <div className="text-gray-500">Không có thông báo nào.</div>
+                )}
+                <ul className="space-y-4">
+                    {currentNotifications.map((n) => (
+                        <li
+                            key={n.id}
+                            className={`bg-white dark:bg-gray-800 rounded-lg shadow p-4 cursor-pointer ${!n.isRead ? 'hover:ring-2 hover:ring-blue-400' : ''}`}
+                            onClick={async () => {
+                                if (!n.isRead) {
+                                    await markAsReadNotification(n.id);
+                                    await fetchNotifications();
+                                }
+                            }}
+                        >
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <div className="font-semibold text-blue-700 dark:text-blue-300">{n.title}</div>
+                                    <div className="text-gray-700 dark:text-gray-200">{n.message}</div>
+                                    <div className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString()}</div>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                    <span className={`mb-2 px-2 py-1 rounded text-xs ${n.isRead ? "bg-gray-200 text-gray-500" : "bg-blue-100 text-blue-700"}`}>
+                                        {n.isRead ? "Đã đọc" : "Chưa đọc"}
+                                    </span>
+                                    <div className="flex gap-2">
+                                        <button
+                                            className="text-blue-600 hover:underline text-xs disabled:opacity-50"
+                                            onClick={e => { e.stopPropagation(); openUpdateModal(n); }}
+                                            type="button"
+                                        >
+                                            Sửa
+                                        </button>
+                                        <button
+                                            className="text-red-600 hover:underline text-xs disabled:opacity-50"
+                                            onClick={e => { e.stopPropagation(); handleDelete(n.id); }}
+                                            disabled={deleteLoadingId === n.id}
+                                            type="button"
+                                        >
+                                            {deleteLoadingId === n.id ? "Đang xóa..." : "Xóa"}
+                                        </button>
+                                    </div>
+                                    {deleteErrorId === n.id && (
+                                        <div className="text-xs text-red-500 mt-1">Lỗi xóa!</div>
+                                    )}
+                                </div>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+
+                {/* Modal cập nhật notification - Đặt ngoài vòng lặp */}
+                {showUpdateModalId && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                        <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-md relative">
+                            <button
+                                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                                onClick={() => setShowUpdateModalId(null)}
+                                type="button"
+                            >
+                                &times;
+                            </button>
+                            <h2 className="text-lg font-bold mb-4">Cập nhật thông báo</h2>
+                            <form onSubmit={handleUpdateNotification}>
+                                <div className="mb-2">
+                                    <label className="block font-medium mb-1">Tiêu đề</label>
+                                    <input type="text" value={updateTitle} onChange={e => setUpdateTitle(e.target.value)} className="w-full border rounded px-3 py-2" required />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="block font-medium mb-1">Nội dung</label>
+                                    <textarea value={updateMessage} onChange={e => setUpdateMessage(e.target.value)} className="w-full border rounded px-3 py-2" required />
+                                </div>
+                                {updateError && <div className="text-red-500 mb-2">{updateError}</div>}
+                                <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" disabled={updateLoading}>
+                                    {updateLoading ? "Đang cập nhật..." : "Cập nhật"}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Phân trang */}
+                {totalPages > 1 && (
+                    <div className="flex justify-center items-center mt-8">
+                        <button
+                            onClick={() => paginate(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="px-4 py-2 mx-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
+                        >
+                            Trước
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
+                            <button
+                                key={number}
+                                onClick={() => paginate(number)}
+                                className={`px-4 py-2 mx-1 rounded ${currentPage === number ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+                            >
+                                {number}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => paginate(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className="px-4 py-2 mx-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
+                        >
+                            Sau
+                        </button>
+                    </div>
+                )}
             </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+        </ProtectedRoute>
+    );
 }

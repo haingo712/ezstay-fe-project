@@ -7,11 +7,14 @@ import AuthService from '@/services/authService';
 export default function UserManagementPage() {
   const [mounted, setMounted] = useState(false);
   const [users, setUsers] = useState([]);
+  const [ownerRequests, setOwnerRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [newAccount, setNewAccount] = useState({
     fullName: '',
@@ -31,14 +34,25 @@ export default function UserManagementPage() {
   useEffect(() => {
     setMounted(true);
     loadUsers();
+    loadOwnerRequests();
   }, []);
+
+  const loadOwnerRequests = async () => {
+    try {
+      const data = await userManagementService.getOwnerRequests();
+      setOwnerRequests(data);
+    } catch (error) {
+      console.error('Error loading owner requests:', error);
+      setOwnerRequests([]);
+    }
+  };
 
   const loadUsers = async () => {
     try {
       setLoading(true);
       const data = await userManagementService.getAllAccounts();
       console.log('📊 User data from API:', data[0]); // Debug: xem structure của data
-      
+
       // Transform API response to match frontend format
       const transformedData = Array.isArray(data) ? data.map(user => ({
         ...user,
@@ -46,7 +60,7 @@ export default function UserManagementPage() {
         isActive: !user.isBanned, // Map isBanned to isActive (inverse)
         createdAt: user.createAt, // Map createAt to createdAt
       })) : [];
-      
+
       setUsers(transformedData);
     } catch (error) {
       console.error('Error loading users:', error);
@@ -55,6 +69,37 @@ export default function UserManagementPage() {
       setLoading(false);
     }
   };
+
+  const handleApproveRequest = async (requestId) => {
+    try {
+      await userManagementService.approveOwnerRequest(requestId);
+      alert('Request approved successfully');
+      loadOwnerRequests();
+    } catch (error) {
+      console.error('Error approving request:', error);
+      alert('Failed to approve request');
+    }
+  };
+
+  const handleRejectRequest = async () => {
+    if (!selectedUser) return;
+    try {
+      await userManagementService.rejectOwnerRequest(selectedUser.id, rejectionReason);
+      alert('Request rejected successfully');
+      setShowRejectionModal(false);
+      setRejectionReason('');
+      loadOwnerRequests();
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      alert('Failed to reject request');
+    }
+  };
+
+  const openRejectionModal = (request) => {
+    setSelectedUser(request);
+    setShowRejectionModal(true);
+  };
+
 
   const filteredUsers = users.filter(user => {
     if (user.roleId === 3 || user.roleId === 4) return false;
@@ -82,7 +127,7 @@ export default function UserManagementPage() {
           RoleId: newAccount.roleId
         })
       });
-      
+
       if (response.ok) {
         alert('Account created successfully!');
         setShowCreateModal(false);
@@ -98,40 +143,12 @@ export default function UserManagementPage() {
     }
   };
 
-  const handleStatusToggle = async (userId, currentStatus) => {
-    if (!confirm(`${currentStatus ? 'Ban' : 'Unban'} this account?`)) return;
-    try {
-      if (currentStatus) {
-        await userManagementService.banAccount(userId);
-      } else {
-        await userManagementService.unbanAccount(userId);
-      }
-      await loadUsers();
-      alert(`Account ${currentStatus ? 'banned' : 'unbanned'} successfully!`);
-    } catch (error) {
-      console.error('Error toggling status:', error);
-      alert('Failed to update account status');
-    }
-  };
-
-  const handleEditAccount = (user) => {
-    setSelectedUser(user);
-    setEditAccount({
-      fullName: user.fullName || '',
-      email: user.email || '',
-      phone: user.phone || '',
-      password: '', // Keep empty for security
-      roleId: user.roleId || 1
-    });
-    setShowEditModal(true);
-  };
-
   const handleUpdateAccount = async (e) => {
     e.preventDefault();
     try {
       console.log('🔍 Updating user ID:', selectedUser.id);
       console.log('🔍 Update data:', editAccount);
-      
+
       await userManagementService.updateAccount(selectedUser.id, editAccount);
       alert('Account updated successfully!');
       setShowEditModal(false);
@@ -148,11 +165,11 @@ export default function UserManagementPage() {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return 'N/A';
-      
+
       const day = date.getDate().toString().padStart(2, '0');
       const month = (date.getMonth() + 1).toString().padStart(2, '0');
       const year = date.getFullYear();
-      
+
       return `${day}/${month}/${year}`;
     } catch (error) {
       console.error('Date format error:', error);
@@ -203,20 +220,20 @@ export default function UserManagementPage() {
         </div>
       </div>
 
-      <div className="flex gap-2 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-md">
-        {['all', 'users', 'owners', 'active', 'inactive'].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-6 py-3 font-medium rounded-lg transition-all ${
-              activeTab === tab
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-          >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+      <div className="border-b border-gray-200 dark:border-gray-700">
+        <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+          <button onClick={() => setActiveTab('all')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'all' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>All</button>
+          <button onClick={() => setActiveTab('users')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'users' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>Users</button>
+          <button onClick={() => setActiveTab('owners')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'owners' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>Owners</button>
+          <button onClick={() => setActiveTab('owner-requests')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'owner-requests' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+            Owner Requests
+            {ownerRequests.length > 0 && (
+              <span className="ml-2 inline-block py-0.5 px-2.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{ownerRequests.length}</span>
+            )}
           </button>
-        ))}
+          <button onClick={() => setActiveTab('active')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'active' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>Active</button>
+          <button onClick={() => setActiveTab('inactive')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'inactive' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>Inactive</button>
+        </nav>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -224,7 +241,7 @@ export default function UserManagementPage() {
           <div className="p-8 text-center text-gray-600 dark:text-gray-400">
             Loading users...
           </div>
-        ) : filteredUsers.length === 0 ? (
+        ) : activeTab !== 'owner-requests' && filteredUsers.length === 0 ? (
           <div className="p-8 text-center text-gray-600 dark:text-gray-400">
             No accounts found
           </div>
@@ -254,15 +271,14 @@ export default function UserManagementPage() {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredUsers.map((user) => (
+                {activeTab !== 'owner-requests' && filteredUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className={`h-10 w-10 rounded-full ${
-                          user.roleId === 1 
-                            ? 'bg-gradient-to-br from-blue-500 to-blue-600' 
-                            : 'bg-gradient-to-br from-green-500 to-green-600'
-                        } flex items-center justify-center text-white font-bold`}>
+                        <div className={`h-10 w-10 rounded-full ${user.roleId === 1
+                          ? 'bg-gradient-to-br from-blue-500 to-blue-600'
+                          : 'bg-gradient-to-br from-green-500 to-green-600'
+                          } flex items-center justify-center text-white font-bold`}>
                           {(user.fullName || user.email).charAt(0).toUpperCase()}
                         </div>
                         <div className="ml-4">
@@ -284,20 +300,18 @@ export default function UserManagementPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        user.roleId === 1
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                          : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                      }`}>
+                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${user.roleId === 1
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                        : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                        }`}>
                         {user.roleId === 1 ? 'User' : 'Owner'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        user.isActive
-                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
-                          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                      }`}>
+                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${user.isActive
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
+                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                        }`}>
                         {user.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
@@ -322,11 +336,10 @@ export default function UserManagementPage() {
                       </button>
                       <button
                         onClick={() => handleStatusToggle(user.id, user.isActive)}
-                        className={`${
-                          user.isActive
-                            ? 'text-red-600 hover:text-red-900 dark:text-red-400'
-                            : 'text-green-600 hover:text-green-900 dark:text-green-400'
-                        }`}
+                        className={`${user.isActive
+                          ? 'text-red-600 hover:text-red-900 dark:text-red-400'
+                          : 'text-green-600 hover:text-green-900 dark:text-green-400'
+                          }`}
                       >
                         {user.isActive ? 'Ban' : 'Unban'}
                       </button>
@@ -337,6 +350,37 @@ export default function UserManagementPage() {
             </table>
           </div>
         )}
+
+        {activeTab === 'owner-requests' && (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Full Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Phone</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Request Time</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {ownerRequests.map(request => (
+                  <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{request.fullName}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{request.email}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{request.phone}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{new Date(request.requestTime).toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                      <button onClick={() => handleApproveRequest(request.id)} className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Approve</button>
+                      <button onClick={() => openRejectionModal(request)} className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">Reject</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
       </div>
 
       {showCreateModal && (
@@ -354,7 +398,7 @@ export default function UserManagementPage() {
                   <select
                     required
                     value={newAccount.roleId}
-                    onChange={(e) => setNewAccount({...newAccount, roleId: parseInt(e.target.value)})}
+                    onChange={(e) => setNewAccount({ ...newAccount, roleId: parseInt(e.target.value) })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
                     <option value={1}>User (Regular User)</option>
@@ -369,7 +413,7 @@ export default function UserManagementPage() {
                     type="text"
                     required
                     value={newAccount.fullName}
-                    onChange={(e) => setNewAccount({...newAccount, fullName: e.target.value})}
+                    onChange={(e) => setNewAccount({ ...newAccount, fullName: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="Enter full name"
                   />
@@ -382,7 +426,7 @@ export default function UserManagementPage() {
                     type="email"
                     required
                     value={newAccount.email}
-                    onChange={(e) => setNewAccount({...newAccount, email: e.target.value})}
+                    onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="email@example.com"
                   />
@@ -395,7 +439,7 @@ export default function UserManagementPage() {
                     type="tel"
                     required
                     value={newAccount.phone}
-                    onChange={(e) => setNewAccount({...newAccount, phone: e.target.value})}
+                    onChange={(e) => setNewAccount({ ...newAccount, phone: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="0123456789"
                   />
@@ -408,7 +452,7 @@ export default function UserManagementPage() {
                     type="password"
                     required
                     value={newAccount.password}
-                    onChange={(e) => setNewAccount({...newAccount, password: e.target.value})}
+                    onChange={(e) => setNewAccount({ ...newAccount, password: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="Minimum 6 characters"
                     minLength={6}
@@ -466,7 +510,7 @@ export default function UserManagementPage() {
                   <input
                     type="text"
                     value={editAccount.fullName}
-                    onChange={(e) => setEditAccount({...editAccount, fullName: e.target.value})}
+                    onChange={(e) => setEditAccount({ ...editAccount, fullName: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="Enter full name"
                   />
@@ -478,7 +522,7 @@ export default function UserManagementPage() {
                   <input
                     type="email"
                     value={editAccount.email}
-                    onChange={(e) => setEditAccount({...editAccount, email: e.target.value})}
+                    onChange={(e) => setEditAccount({ ...editAccount, email: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="email@example.com"
                   />
@@ -490,7 +534,7 @@ export default function UserManagementPage() {
                   <input
                     type="tel"
                     value={editAccount.phone}
-                    onChange={(e) => setEditAccount({...editAccount, phone: e.target.value})}
+                    onChange={(e) => setEditAccount({ ...editAccount, phone: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="0123456789"
                   />
@@ -502,7 +546,7 @@ export default function UserManagementPage() {
                   <input
                     type="password"
                     value={editAccount.password}
-                    onChange={(e) => setEditAccount({...editAccount, password: e.target.value})}
+                    onChange={(e) => setEditAccount({ ...editAccount, password: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="Leave empty to keep current password"
                   />
@@ -543,11 +587,10 @@ export default function UserManagementPage() {
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                     Account Details
                   </h2>
-                  <span className={`inline-block mt-2 px-3 py-1 text-xs font-medium rounded-full ${
-                    selectedUser.roleId === 1
-                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                      : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                  }`}>
+                  <span className={`inline-block mt-2 px-3 py-1 text-xs font-medium rounded-full ${selectedUser.roleId === 1
+                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                    : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                    }`}>
                     {selectedUser.roleId === 1 ? 'USER' : 'OWNER'}
                   </span>
                 </div>
@@ -581,11 +624,10 @@ export default function UserManagementPage() {
                 <div>
                   <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</label>
                   <p className="mt-1">
-                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                      selectedUser.isActive
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                    }`}>
+                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${selectedUser.isActive
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                      }`}>
                       {selectedUser.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </p>
@@ -611,11 +653,10 @@ export default function UserManagementPage() {
                     setShowViewModal(false);
                     handleStatusToggle(selectedUser.id, selectedUser.isActive);
                   }}
-                  className={`px-4 py-2 rounded-lg font-medium ${
-                    selectedUser.isActive
-                      ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-200'
-                      : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-200'
-                  }`}
+                  className={`px-4 py-2 rounded-lg font-medium ${selectedUser.isActive
+                    ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-200'
+                    : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-200'
+                    }`}
                 >
                   {selectedUser.isActive ? 'Ban Account' : 'Unban Account'}
                 </button>
@@ -627,6 +668,29 @@ export default function UserManagementPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showRejectionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg w-1/3">
+            <h2 className="text-2xl mb-4">Reject Owner Request</h2>
+            <form>
+              <div className="mb-4">
+                <label className="block text-gray-700">Reason</label>
+                <textarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="w-full px-3 py-2 border rounded"
+                  rows="4"
+                ></textarea>
+              </div>
+              <div className="flex justify-end">
+                <button type="button" onClick={() => setShowRejectionModal(false)} className="bg-gray-500 text-white px-4 py-2 rounded mr-2">Cancel</button>
+                <button type="button" onClick={handleRejectRequest} className="bg-red-500 text-white px-4 py-2 rounded">Reject</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
