@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import ClientThemeProvider from "@/components/ClientThemeProvider";
 import RoleRedirect from "@/components/RoleRedirect";
+import { LanguageProvider } from "@/context/LanguageContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -46,11 +47,13 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <ClientThemeProvider>
-          <RoleRedirect>
-            {children}
-          </RoleRedirect>
-        </ClientThemeProvider>
+        <LanguageProvider>
+          <ClientThemeProvider>
+            <RoleRedirect>
+              {children}
+            </RoleRedirect>
+          </ClientThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

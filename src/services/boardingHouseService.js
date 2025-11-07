@@ -104,6 +104,58 @@ class BoardingHouseService {
     }
   }
 
+  /**
+   * Get ranked boarding houses based on rating or sentiment
+   * @param {string} type - "Rating" or "Sentiment"
+   * @param {string} order - "desc" or "asc" (default: "desc")
+   * @param {number} limit - Number of results (default: 10)
+   * @returns {Promise<Array>} List of ranked boarding houses
+   */
+  async getRankedHouses(type = "Rating", order = "desc", limit = 10) {
+    try {
+      console.log(`🏆 Fetching ranked boarding houses... Type: ${type}, Order: ${order}, Limit: ${limit}`);
+      const response = await boardingHouseAPI.getRanked(type, order, limit);
+      console.log("✅ Ranked boarding houses fetched successfully:", response);
+      return response;
+    } catch (error) {
+      console.error("❌ Error fetching ranked boarding houses:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get rating summary for a specific boarding house
+   * @param {string} id - Boarding house ID
+   * @returns {Promise<Object>} Rating summary with star distribution and reviews
+   */
+  async getRatingSummary(id) {
+    try {
+      console.log(`⭐ Fetching rating summary for boarding house: ${id}...`);
+      const response = await boardingHouseAPI.getRatingSummary(id);
+      console.log("✅ Rating summary fetched successfully:", response);
+      return response;
+    } catch (error) {
+      console.error(`❌ Error fetching rating summary for ${id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get sentiment summary for a specific boarding house (using Python ML)
+   * @param {string} id - Boarding house ID
+   * @returns {Promise<Object>} Sentiment summary with positive/neutral/negative counts
+   */
+  async getSentimentSummary(id) {
+    try {
+      console.log(`💭 Fetching sentiment summary for boarding house: ${id}...`);
+      const response = await boardingHouseAPI.getSentimentSummary(id);
+      console.log("✅ Sentiment summary fetched successfully:", response);
+      return response;
+    } catch (error) {
+      console.error(`❌ Error fetching sentiment summary for ${id}:`, error);
+      throw error;
+    }
+  }
 
 }
 

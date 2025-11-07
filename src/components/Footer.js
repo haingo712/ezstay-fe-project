@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function Footer() {
+  const { t } = useTranslation();
+
   return (
     <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
@@ -13,9 +16,7 @@ export default function Footer() {
               EZStay
             </h3>
             <p className="text-gray-700 dark:text-gray-300 text-sm mb-2">
-              Modern room rental platform connecting tenants and landlords with
-              trust and transparency. Powered by MongoDB and ASP.NET
-              microservices.
+              {t('footer.about')}
             </p>
             <div className="flex space-x-3 mt-4">
               <a
@@ -62,7 +63,7 @@ export default function Footer() {
           {/* Quick Links */}
           <div>
             <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-3">
-              Quick Links
+              {t('footer.quickLinks')}
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
@@ -70,7 +71,7 @@ export default function Footer() {
                   href="/"
                   className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
                 >
-                  Home
+                  {t('nav.home')}
                 </Link>
               </li>
               <li>
@@ -78,7 +79,7 @@ export default function Footer() {
                   href="/search"
                   className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
                 >
-                  Find Rooms
+                  {t('footer.findRooms')}
                 </Link>
               </li>
               <li>
@@ -86,7 +87,7 @@ export default function Footer() {
                   href="/owner/posts"
                   className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
                 >
-                  Post Room
+                  {t('footer.postRoom')}
                 </Link>
               </li>
               <li>
@@ -94,7 +95,7 @@ export default function Footer() {
                   href="/support"
                   className="text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
                 >
-                  Support
+                  {t('nav.support')}
                 </Link>
               </li>
             </ul>
@@ -179,7 +180,7 @@ export default function Footer() {
         </div>
         <div className="border-t border-gray-200 dark:border-gray-700 pt-6 flex flex-col md:flex-row items-center justify-between">
           <div className="text-gray-600 dark:text-gray-400 text-sm">
-            © 2025 EZStay. All rights reserved. Built with Next.js, MongoDB &
+            © 2025 EZStay. {t('footer.allRightsReserved')}. Built with Next.js, MongoDB &
             ASP.NET Core.
           </div>
           <div className="flex space-x-4 mt-4 md:mt-0">
@@ -187,13 +188,13 @@ export default function Footer() {
               href="/terms"
               className="text-gray-600 dark:text-gray-400 hover:text-blue-600 text-sm"
             >
-              Terms of Service
+              {t('footer.termsOfService')}
             </Link>
             <Link
               href="/privacy"
               className="text-gray-600 dark:text-gray-400 hover:text-blue-600 text-sm"
             >
-              Privacy Policy
+              {t('footer.privacyPolicy')}
             </Link>
           </div>
         </div>

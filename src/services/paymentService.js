@@ -98,7 +98,7 @@ class PaymentService {
         try {
             console.log('🏦 Fetching bank account:', id);
 
-            const response = await apiFetch(`/api/Payment?id=${id}`, {
+            const response = await apiFetch(`/api/BankAccount?id=${id}`, {
                 method: 'GET',
             });
 
@@ -119,7 +119,7 @@ class PaymentService {
         try {
             console.log('💳 Creating bank account:', bankAccountData);
 
-            const response = await apiFetch('/api/Payment/bank-account', {
+            const response = await apiFetch('/api/BankAccount/bank-account', {
                 method: 'POST',
                 body: JSON.stringify(bankAccountData),
             });
@@ -142,7 +142,7 @@ class PaymentService {
         try {
             console.log(`🔧 Updating bank account ${id}:`, bankAccountData);
 
-            const response = await apiFetch(`/api/Payment/bank-account/${id}`, {
+            const response = await apiFetch(`/api/BankAccount/bank-account/${id}`, {
                 method: 'PUT',
                 body: JSON.stringify(bankAccountData),
             });
@@ -163,7 +163,7 @@ class PaymentService {
         try {
             console.log('💰 Fetching transactions...');
 
-            const response = await apiFetch('/api/Payment/transactions', {
+            const response = await apiFetch('/api/BankAccount/transactions', {
                 method: 'GET',
             });
 

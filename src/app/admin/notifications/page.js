@@ -323,6 +323,150 @@ export default function AdminNotificationsPage() {
     }
   };
 
+  const fetchRoles = async () => {
+    try {
+      const rolesData = await notificationService.getAllRoles();
+      console.log("👥 Roles data:", rolesData);
+      setRoles(Array.isArray(rolesData) ? rolesData : []);
+    } catch (err) {
+      console.error("❌ Failed to fetch roles:", err);
+      setRoles([]);
+    }
+  };
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      await notificationService.markAsRead(id);
+      // Update local state
+      setNotifications(
+        notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      );
+    } catch (err) {
+      alert("Failed to mark notification as read");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this notification?")) return;
+    try {
+      await notificationService.deleteNotification(id);
+      setNotifications(notifications.filter((n) => n.id !== id));
+      if (selectedNotification?.id === id) {
+        setShowDetailModal(false);
+        setSelectedNotification(null);
+      }
+    } catch (err) {
+      alert("Failed to delete notification");
+    }
+  };
+
+  const handleCreateNotification = async (e) => {
+    e.preventDefault();
+    try {
+      if (formData.targetRole !== null) {
+        // Create by role (broadcast)
+        const payload = {
+          notificationType: parseInt(formData.notificationType),
+          title: formData.title,
+          message: formData.message,
+          targetRole: parseInt(formData.targetRole),
+          scheduledTime: formData.scheduledTime || null,
+        };
+        
+        if (formData.scheduledTime) {
+          await notificationService.scheduleNotification(payload);
+          alert("Notification scheduled successfully!");
+        } else {
+          await notificationService.createNotificationByRole(payload);
+          alert("Notification sent to all users with the selected role!");
+        }
+      } else {
+        // Create individual notification
+        const payload = {
+          notificationType: parseInt(formData.notificationType),
+          title: formData.title,
+          message: formData.message,
+        };
+        await notificationService.createNotification(payload);
+        alert("Notification created successfully!");
+      }
+
+      setShowCreateModal(false);
+      setFormData({
+        notificationType: 0,
+        title: "",
+        message: "",
+        targetRole: null,
+        scheduledTime: "",
+      });
+      fetchNotifications();
+    } catch (err) {
+      alert("Failed to create notification. " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleViewDetail = (notification) => {
+    setSelectedNotification(notification);
+    setShowDetailModal(true);
+    if (!notification.isRead) {
+      handleMarkAsRead(notification.id);
+    }
+  };
+
+  const filteredNotifications = notifications.filter((n) => {
+    if (filter === "read") return n.isRead;
+    if (filter === "unread") return !n.isRead;
+    return true;
+  });
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const getNotificationTypeLabel = (type) => {
+    const types = {
+      0: "System",
+      1: "Promotion",
+      2: "Warning",
+      3: "Owner Register",
+      System: "System",
+      Promotion: "Promotion",
+      Warning: "Warning",
+      OwnerRegister: "Owner Register",
+    };
+    return types[type] || type;
+  };
+
+  const getNotificationTypeColor = (type) => {
+    const colors = {
+      0: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      1: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      2: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+      3: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+      System: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      Promotion: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      Warning: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+      OwnerRegister: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    };
+    return colors[type] || "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+  };
+
+  const getRoleLabel = (roleNum) => {
+    const roleMap = {
+      1: "User",
+      2: "Owner",
+      3: "Staff",
+      4: "Admin",
+    };
+    return roleMap[roleNum] || "Unknown";
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto py-10 px-4">
       <h1 className="text-2xl font-bold mb-6">Thông báo của admin</h1>

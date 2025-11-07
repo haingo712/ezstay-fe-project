@@ -10,34 +10,42 @@ class RoomService {
       console.log(`🚪 Fetching room details for ID: ${roomId}...`);
       const response = await roomAPI.getById(roomId);
       console.log("✅ Room details fetched successfully:", response);
-      
+
       // Normalize room data: convert PascalCase to camelCase for frontend
       if (response) {
+        // Backend returns ImageUrl as List<string> (array)
+        const imageUrls = response.ImageUrl || response.imageUrl || response.Images || response.images || [];
+
         return {
           ...response,
-          imageUrl: response.ImageUrl || response.imageUrl,
+          // Support both old and new formats
+          images: Array.isArray(imageUrls) ? imageUrls : (imageUrls ? [imageUrls] : []),
+          imageUrl: Array.isArray(imageUrls) ? imageUrls[0] : imageUrls,
           roomName: response.RoomName || response.roomName,
           roomStatus: response.RoomStatus !== undefined ? response.RoomStatus : response.roomStatus,
           houseId: response.HouseId || response.houseId,
+          area: response.Area || response.area,
+          price: response.Price || response.price,
+          id: response.Id || response.id,
           name: response.RoomName || response.roomName || response.name // For compatibility
         };
       }
-      
+
       return response;
     } catch (error) {
       console.error(`❌ Error fetching room ${roomId}:`, error);
-      
+
       if (error.response) {
         const status = error.response.status;
         const errorData = error.data || {};
-        
+
         if (status === 404) {
           throw new Error("Room not found. It may have been deleted.");
         } else if (status === 500) {
           throw new Error("Server error. Please try again later.");
         }
       }
-      
+
       throw new Error(error.message || "Failed to fetch room details. Please try again.");
     }
   }
@@ -45,7 +53,7 @@ class RoomService {
   async getByBoardingHouseId(houseId) {
     try {
       console.log(`🚪 Fetching rooms for boarding house ID: ${houseId}...`);
-      
+
       let response;
       let lastError;
 
@@ -87,28 +95,52 @@ class RoomService {
         // For other errors, still throw
         throw lastError;
       }
-      
+
       // Handle different response formats and normalize data
       let rooms = [];
-      if (Array.isArray(response)) {
+
+      // Check for OData format first
+      if (response && response.value && Array.isArray(response.value)) {
+        console.log("📦 OData format detected");
+        rooms = response.value;
+      } else if (Array.isArray(response)) {
         rooms = response;
       } else if (response && response.data && Array.isArray(response.data)) {
         rooms = response.data;
       } else if (response && response.isSuccess && Array.isArray(response.result)) {
         rooms = response.result;
       } else {
-        console.warn("⚠️ Unexpected response format, returning empty array");
+        console.warn("⚠️ Unexpected response format:", response);
         return [];
       }
-      
+
+      console.log(`📦 Processing ${rooms.length} rooms...`);
+
       // Normalize room data: convert PascalCase to camelCase for frontend
-      return rooms.map(room => ({
-        ...room,
-        imageUrl: room.ImageUrl || room.imageUrl, // Map PascalCase to camelCase
-        roomName: room.RoomName || room.roomName,
-        roomStatus: room.RoomStatus !== undefined ? room.RoomStatus : room.roomStatus,
-        houseId: room.HouseId || room.houseId
-      }));
+      return rooms.map(room => {
+        // Backend returns ImageUrl as List<string> (array)
+        const imageUrls = room.ImageUrl || room.imageUrl || room.Images || room.images || [];
+
+        console.log(`🚪 Room ${room.RoomName || room.roomName}:`, {
+          hasImageUrl: !!room.ImageUrl,
+          imageUrlType: typeof room.ImageUrl,
+          imageUrlValue: room.ImageUrl,
+          isArray: Array.isArray(room.ImageUrl)
+        });
+
+        return {
+          ...room,
+          // Support both old and new formats
+          images: Array.isArray(imageUrls) ? imageUrls : (imageUrls ? [imageUrls] : []),
+          imageUrl: Array.isArray(imageUrls) ? imageUrls[0] : imageUrls,
+          roomName: room.RoomName || room.roomName,
+          roomStatus: room.RoomStatus !== undefined ? room.RoomStatus : room.roomStatus,
+          houseId: room.HouseId || room.houseId,
+          area: room.Area || room.area,
+          price: room.Price || room.price,
+          id: room.Id || room.id
+        };
+      });
     } catch (error) {
       console.error(`❌ Error fetching rooms for house ${houseId}:`, error);
       if (error.response && error.response.status === 404) {
@@ -129,7 +161,7 @@ class RoomService {
   async create(houseId, data) {
     try {
       console.log(`🚪 Creating new room for house ${houseId}...`);
-      
+
       // Check if data is FormData (for image upload)
       if (data instanceof FormData) {
         console.log("📤 Sending room FormData with image to Filebase IPFS");
@@ -139,17 +171,17 @@ class RoomService {
           price: data.get('Price'),
           hasImage: !!data.get('ImageUrl')
         });
-        
+
         // Call room create API with FormData
         const response = await roomAPI.createWithFormData(houseId, data);
         console.log("✅ Room created successfully with image:", response);
-        
+
         // Backend returns: { isSuccess: true, message: "...", data: {...} }
         if (response && response.isSuccess) {
           const roomData = response.data || response.result || response;
           console.log("📦 Created room data:", roomData);
           console.log("🖼️ Filebase IPFS URL:", roomData?.ImageUrl || roomData?.imageUrl);
-          
+
           // Normalize response data
           return {
             ...roomData,
@@ -159,10 +191,10 @@ class RoomService {
             houseId: roomData.HouseId || roomData.houseId
           };
         }
-        
+
         return response;
       }
-      
+
       // Legacy: JSON data (no image)
       const roomData = {
         roomName: data.roomName,
@@ -171,11 +203,11 @@ class RoomService {
       };
 
       console.log("📤 Sending room JSON data (no image):", roomData);
-      
+
       // Call room create API - no houseLocationId needed
       const response = await roomAPI.create(houseId, roomData);
       console.log("✅ Room created successfully:", response);
-      
+
       // Handle backend response format (ApiResponse<RoomDto>)
       if (response && response.isSuccess) {
         return response.data || response.result || response;
@@ -186,12 +218,12 @@ class RoomService {
       }
     } catch (error) {
       console.error("❌ Error creating room:", error);
-      
+
       // Enhanced error handling based on backend responses
       if (error.response) {
         const status = error.response.status;
         const errorData = error.data || {};
-        
+
         if (status === 400) {
           throw new Error(errorData.message || "Dữ liệu phòng không hợp lệ. Vui lòng kiểm tra lại các trường.");
         } else if (status === 404) {
@@ -203,7 +235,7 @@ class RoomService {
           throw new Error("Lỗi máy chủ. Vui lòng thử lại sau.");
         }
       }
-      
+
       throw new Error(error.message || "Không thể tạo phòng. Vui lòng thử lại.");
     }
   }
@@ -211,7 +243,7 @@ class RoomService {
   async update(id, data) {
     try {
       console.log(`🚪 Updating room ${id}...`);
-      
+
       // Check if data is FormData (for image upload)
       if (data instanceof FormData) {
         console.log("� Sending room FormData with optional image update");
@@ -221,17 +253,17 @@ class RoomService {
           roomStatus: data.get('RoomStatus'),
           hasNewImage: !!data.get('ImageUrl')
         });
-        
+
         // Call room update API with FormData
         const response = await roomAPI.updateWithFormData(id, data);
         console.log("✅ Room updated successfully with FormData:", response);
-        
+
         // Backend returns: { isSuccess: true, message: "...", data: {...} }
         if (response && response.isSuccess) {
           const roomData = response.data || response.result || response;
           console.log("📦 Updated room data:", roomData);
           console.log("🖼️ Filebase IPFS URL:", roomData?.ImageUrl || roomData?.imageUrl);
-          
+
           // Normalize response data
           return {
             ...roomData,
@@ -241,22 +273,22 @@ class RoomService {
             houseId: roomData.HouseId || roomData.houseId
           };
         }
-        
+
         return response;
       }
-      
+
       // Legacy: JSON data (no image)
       console.log("📥 Received JSON data:", data);
       console.log("� RoomStatus raw value:", data.roomStatus, "Type:", typeof data.roomStatus);
-      
+
       // Convert roomStatus to integer, handling both string and number types
       let roomStatus = 0; // Default to Available
-      
+
       if (typeof data.roomStatus === 'number') {
         roomStatus = data.roomStatus;
       } else if (typeof data.roomStatus === 'string') {
         // Handle string enum values from API response
-        switch(data.roomStatus.toLowerCase()) {
+        switch (data.roomStatus.toLowerCase()) {
           case 'available': roomStatus = 0; break;
           case 'maintenance': roomStatus = 1; break;
           case 'occupied': roomStatus = 2; break;
@@ -268,15 +300,15 @@ class RoomService {
             }
         }
       }
-      
+
       // Ensure roomStatus is within valid range (0, 1, 2)
       if (roomStatus < 0 || roomStatus > 2) {
         console.warn("⚠️ Room status out of range, defaulting to 0:", roomStatus);
         roomStatus = 0;
       }
-      
+
       console.log("✅ Final processed roomStatus:", roomStatus, "Type:", typeof roomStatus);
-      
+
       const updateData = {
         area: parseFloat(data.area),
         price: parseFloat(data.price),
@@ -287,7 +319,7 @@ class RoomService {
 
       const response = await roomAPI.update(id, updateData);
       console.log("✅ Room updated successfully:", response);
-      
+
       // Handle backend response format (ApiResponse<bool>)
       if (response && response.isSuccess) {
         return response.data || response.result || response;
@@ -296,13 +328,13 @@ class RoomService {
       }
     } catch (error) {
       console.error(`❌ Error updating room ${id}:`, error);
-      
+
       if (error.response) {
         const status = error.response.status;
         const errorData = error.response.data || error.data || {};
-        
+
         console.log("Backend error details:", errorData);
-        
+
         if (status === 400) {
           // Handle specific validation errors
           if (errorData.message && errorData.message.includes('RoomName')) {
@@ -315,7 +347,7 @@ class RoomService {
           throw new Error("Lỗi máy chủ. Vui lòng thử lại sau.");
         }
       }
-      
+
       throw new Error(error.message || "Không thể cập nhật phòng. Vui lòng thử lại.");
     }
   }
@@ -324,7 +356,7 @@ class RoomService {
     try {
       console.log(`🚪 Updating room ${id} with new data format...`);
       console.log("📥 Received data:", data);
-      
+
       // Prepare update data for room update modal format
       const updateData = {
         area: parseFloat(data.area),
@@ -336,11 +368,11 @@ class RoomService {
       if (data.name) {
         updateData.roomName = data.name; // Map name to roomName
       }
-      
+
       if (data.description) {
         updateData.description = data.description;
       }
-      
+
       if (data.maxOccupants) {
         updateData.maxOccupants = parseInt(data.maxOccupants);
       }
@@ -349,7 +381,7 @@ class RoomService {
 
       const response = await roomAPI.update(id, updateData);
       console.log("✅ Room updated successfully:", response);
-      
+
       return response;
     } catch (error) {
       console.error(`❌ Error updating room ${id}:`, error);
@@ -365,11 +397,11 @@ class RoomService {
       return response;
     } catch (error) {
       console.error(`❌ Error deleting room ${id}:`, error);
-      
+
       if (error.response) {
         const status = error.response.status;
         const errorData = error.data || {};
-        
+
         if (status === 404) {
           throw new Error("Room not found. It may have already been deleted.");
         } else if (status === 400) {
@@ -378,7 +410,7 @@ class RoomService {
           throw new Error("Server error. Please try again later.");
         }
       }
-      
+
       throw new Error(error.message || "Failed to delete room. Please try again.");
     }
   }
@@ -386,14 +418,14 @@ class RoomService {
   async getRoomsByOwner() {
     try {
       console.log("🏠 Fetching rooms for current owner...");
-      
+
       // First, get all boarding houses for this owner
       const { boardingHouseAPI } = await import("@/utils/api");
       console.log("📞 Calling boardingHouseAPI.getByOwnerId()...");
       const houses = await boardingHouseAPI.getByOwnerId();
       console.log("🏠 API Response - Found boarding houses:", houses);
       console.log("🏠 Houses type:", typeof houses, "Array:", Array.isArray(houses));
-      
+
       // Handle different response formats
       let housesArray = houses;
       if (houses && houses.data && Array.isArray(houses.data)) {
@@ -408,12 +440,12 @@ class RoomService {
       } else if (!Array.isArray(houses)) {
         console.log("🏠 Response is not array, checking properties:", Object.keys(houses || {}));
       }
-      
+
       if (!housesArray || housesArray.length === 0) {
         console.log("⚠️ No boarding houses found for owner");
         return [];
       }
-      
+
       // Get rooms from all houses
       let allRooms = [];
       for (let i = 0; i < housesArray.length; i++) {
@@ -425,19 +457,19 @@ class RoomService {
           console.log(`🚪 House.id:`, house.id);
           console.log(`🚪 House.HouseId:`, house.HouseId);
           console.log(`🚪 House.houseId:`, house.houseId);
-          
+
           const houseId = house.Id || house.id || house.HouseId || house.houseId;
           console.log(`🚪 Using houseId:`, houseId);
-          
+
           if (!houseId) {
             console.error(`❌ No valid houseId found for house:`, house);
             continue;
           }
-          
+
           console.log(`🚪 Fetching rooms for house: ${house.HouseName} (${houseId})`);
           const rooms = await this.getByBoardingHouseId(houseId);
           console.log(`🚪 Rooms for house ${houseId}:`, rooms);
-          
+
           if (rooms && rooms.length > 0) {
             // Add house info to each room for context
             const roomsWithHouseInfo = rooms.map(room => ({
@@ -453,14 +485,14 @@ class RoomService {
           // Continue with other houses even if one fails
         }
       }
-      
+
       console.log(`✅ Total rooms found: ${allRooms.length}`, allRooms);
       return allRooms;
-      
+
     } catch (error) {
       console.error("❌ Error fetching rooms by owner:", error);
       console.error("❌ Error details:", error.message, error.stack);
-      
+
       // For development/testing - return mock data if API fails
       console.log("🔧 Using mock rooms data for testing...");
       return [
@@ -472,7 +504,7 @@ class RoomService {
           houseAddress: "123 Test Street"
         },
         {
-          Id: "room-2", 
+          Id: "room-2",
           RoomName: "Room 102",
           Price: 300,
           houseName: "Sample House 1",
@@ -480,7 +512,7 @@ class RoomService {
         },
         {
           Id: "room-3",
-          RoomName: "Room 201", 
+          RoomName: "Room 201",
           Price: 350,
           houseName: "Sample House 2",
           houseAddress: "456 Mock Avenue"

@@ -76,13 +76,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/hooks/useAuth";
+import NotificationBell from "./NotificationBell";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const { isAuthenticated, user, logout, refreshUserInfo } = useAuth();
+  const { language, changeLanguage, t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
 
   // Get user role from user object or default to guest
   const userRole = user?.role || "guest";
@@ -109,11 +113,15 @@ export default function Navbar() {
 
   const getNavigationItems = () => {
     const baseItems = [
-      { href: "/", label: "Home" },
-      { href: "/rental-posts", label: "Rental Post" },
-      { href: "/support", label: "Support" },
-      { href: "/about", label: "About" },
+      { href: "/", label: t('nav.home') },
+      { href: "/rental-posts", label: t('nav.rentalPost') },
+      { href: "/support", label: t('nav.support') },
+      { href: "/about", label: t('nav.about') },
     ];
+
+    if (isAuthenticated) {
+      baseItems.splice(2, 0, { href: "/favorites", label: "Favorites" });
+    }
 
     return baseItems;
   };
@@ -198,6 +206,9 @@ export default function Navbar() {
                 )}
               </button>
 
+              {/* Notification Bell - Only show when authenticated */}
+              {isAuthenticated && <NotificationBell />}
+
               {/* Authentication Actions */}
               {isAuthenticated ? (
                 <div className="relative">
@@ -229,28 +240,37 @@ export default function Navbar() {
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        Profile
+                        {t('nav.profile')}
                       </Link>
                       <Link
                         href="/chat"
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        My Chats
+                        {t('nav.myChats')}
                       </Link>
                       <Link
                         href="/profile/rental-history"
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        Rental History
+                        {t('nav.rentalHistory')}
                       </Link>
+
+                      <Link
+                        href="/bills"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        {t('nav.myBills')}
+                      </Link>
+
                       <Link
                         href={getUserDashboardLink()}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        Dashboard
+                        {t('nav.dashboard')}
                       </Link>
                       <Link
                         href="/register-owner"
@@ -263,7 +283,7 @@ export default function Navbar() {
                         onClick={handleLogout}
                         className="block w-full px-4 py-2 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                       >
-                        Logout
+                        {t('nav.logout')}
                       </button>
                     </div>
                   )}
@@ -274,13 +294,13 @@ export default function Navbar() {
                     href="/login"
                     className="px-4 py-2 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 font-medium"
                   >
-                    Sign In
+                    {t('nav.signIn')}
                   </Link>
                   <Link
                     href="/register"
                     className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
                   >
-                    Sign Up
+                    {t('nav.signUp')}
                   </Link>
                 </div>
               )}
@@ -337,14 +357,14 @@ export default function Navbar() {
                     className="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Sign In
+                    {t('nav.signIn')}
                   </Link>
                   <Link
                     href="/register"
                     className="block px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-center"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Sign Up
+                    {t('nav.signUp')}
                   </Link>
                 </div>
               )}

@@ -16,22 +16,22 @@ function RoomsPageContent() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imagePreviews, setImagePreviews] = useState([]);
 
   const [newRoom, setNewRoom] = useState({
     roomName: '',
     area: '',
     price: '',
-    imageFile: null
+    imageFiles: []
   });
 
   const [editRoom, setEditRoom] = useState({
     area: '',
     price: '',
     roomStatus: 0,
-    imageFile: null
+    imageFiles: []
   });
-  const [editImagePreview, setEditImagePreview] = useState(null);
+  const [editImagePreviews, setEditImagePreviews] = useState([]);
 
   useEffect(() => {
     if (houseId) {
@@ -44,6 +44,12 @@ function RoomsPageContent() {
       setLoading(true);
       const data = await roomService.getByBoardingHouseId(houseId);
       console.log('📦 Loaded rooms:', data);
+      console.log('📦 Rooms count:', data?.length);
+      if (data && data.length > 0) {
+        console.log('🚪 First room data:', data[0]);
+        console.log('🖼️ First room images:', data[0].images);
+        console.log('🖼️ First room imageUrl:', data[0].imageUrl);
+      }
       setRooms(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error loading rooms:', error);
@@ -54,55 +60,106 @@ function RoomsPageContent() {
   };
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setNewRoom({ ...newRoom, imageFile: file });
-      
-      // Create temporary preview using base64 Data URL (only for UI preview)
-      // Actual file will be uploaded to Filebase IPFS storage via backend
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result); // Base64 preview only - not sent to server
-      };
-      reader.readAsDataURL(file);
-    }
+    const files = Array.from(e.target.files || []);
+
+    if (files.length === 0) return;
+
+    // Validate file types
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('image/')) {
+        alert(`${file.name} is not an image file`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
+    // Add new files to existing ones
+    const updatedFiles = [...newRoom.imageFiles, ...validFiles];
+    setNewRoom({ ...newRoom, imageFiles: updatedFiles });
+
+    // Create previews for new files
+    const newPreviews = validFiles.map(file => URL.createObjectURL(file));
+    setImagePreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const removeImage = (index) => {
+    // Revoke the URL to free memory
+    URL.revokeObjectURL(imagePreviews[index]);
+
+    setNewRoom(prev => ({
+      ...prev,
+      imageFiles: prev.imageFiles.filter((_, i) => i !== index)
+    }));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleEditImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setEditRoom({ ...editRoom, imageFile: file });
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
+    const files = Array.from(e.target.files || []);
+
+    if (files.length === 0) return;
+
+    // Validate file types
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('image/')) {
+        alert(`${file.name} is not an image file`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
+    // Add new files
+    const updatedFiles = [...editRoom.imageFiles, ...validFiles];
+    setEditRoom({ ...editRoom, imageFiles: updatedFiles });
+
+    // Create previews
+    const newPreviews = validFiles.map(file => URL.createObjectURL(file));
+    setEditImagePreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const removeEditImage = (index) => {
+    URL.revokeObjectURL(editImagePreviews[index]);
+
+    setEditRoom(prev => ({
+      ...prev,
+      imageFiles: prev.imageFiles.filter((_, i) => i !== index)
+    }));
+    setEditImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleCreateRoom = async (e) => {
     e.preventDefault();
 
-    if (!newRoom.roomName || !newRoom.area || !newRoom.price || !newRoom.imageFile) {
-      alert('Please fill in all fields and select an image!');
+    if (!newRoom.roomName || !newRoom.area || !newRoom.price) {
+      alert('Please fill in all fields!');
+      return;
+    }
+
+    if (newRoom.imageFiles.length === 0) {
+      alert('Please select at least one image!');
       return;
     }
 
     try {
       // Create FormData for file upload to backend
-      // Backend will upload the file to Filebase IPFS and return IPFS URL
       const formData = new FormData();
       formData.append('RoomName', newRoom.roomName);
       formData.append('Area', newRoom.area);
       formData.append('Price', newRoom.price);
-      formData.append('ImageUrl', newRoom.imageFile); // Actual file object (not base64)
+
+      // Append all images
+      newRoom.imageFiles.forEach((file) => {
+        formData.append('ImageUrl', file);
+      });
 
       console.log('📤 Sending create room request:', {
         roomName: newRoom.roomName,
         area: newRoom.area,
         price: newRoom.price,
-        imageFile: newRoom.imageFile.name
+        imageCount: newRoom.imageFiles.length
       });
 
       const result = await roomService.create(houseId, formData);
@@ -112,8 +169,11 @@ function RoomsPageContent() {
       alert('Room created successfully! ✅');
 
       setShowCreateModal(false);
-      setNewRoom({ roomName: '', area: '', price: '', imageFile: null });
-      setImagePreview(null);
+      setNewRoom({ roomName: '', area: '', price: '', imageFiles: [] });
+
+      // Cleanup preview URLs
+      imagePreviews.forEach(url => URL.revokeObjectURL(url));
+      setImagePreviews([]);
 
       // Reload rooms to show the new one
       await loadRooms();
@@ -138,12 +198,14 @@ function RoomsPageContent() {
       formData.append('Price', editRoom.price);
       formData.append('RoomStatus', editRoom.roomStatus);
 
-      // Only append image if user selected a new one
-      if (editRoom.imageFile) {
-        formData.append('ImageUrl', editRoom.imageFile);
-        console.log('📤 Updating with new image:', editRoom.imageFile.name);
+      // Append new images if user selected any
+      if (editRoom.imageFiles.length > 0) {
+        editRoom.imageFiles.forEach((file) => {
+          formData.append('ImageUrl', file);
+        });
+        console.log('📤 Updating with', editRoom.imageFiles.length, 'new images');
       } else {
-        console.log('📤 Updating without changing image');
+        console.log('📤 Updating without changing images');
       }
 
       console.log('📤 Sending update request for room:', selectedRoom.id);
@@ -156,8 +218,11 @@ function RoomsPageContent() {
 
       setShowEditModal(false);
       setSelectedRoom(null);
-      setEditRoom({ area: '', price: '', roomStatus: 0, imageFile: null });
-      setEditImagePreview(null);
+      setEditRoom({ area: '', price: '', roomStatus: 0, imageFiles: [] });
+
+      // Cleanup preview URLs
+      editImagePreviews.forEach(url => URL.revokeObjectURL(url));
+      setEditImagePreviews([]);
 
       // Reload rooms to show updated data
       await loadRooms();
@@ -186,9 +251,9 @@ function RoomsPageContent() {
       area: room.area,
       price: room.price,
       roomStatus: room.roomStatus || 0,
-      imageFile: null
+      imageFiles: []
     });
-    setEditImagePreview(null);
+    setEditImagePreviews([]);
     setShowEditModal(true);
   };
 
@@ -196,10 +261,15 @@ function RoomsPageContent() {
     setShowCreateModal(false);
     setShowEditModal(false);
     setSelectedRoom(null);
-    setNewRoom({ roomName: '', area: '', price: '', imageFile: null });
-    setImagePreview(null);
-    setEditRoom({ area: '', price: '', roomStatus: 0, imageFile: null });
-    setEditImagePreview(null);
+    setNewRoom({ roomName: '', area: '', price: '', imageFiles: [] });
+
+    // Cleanup all preview URLs
+    imagePreviews.forEach(url => URL.revokeObjectURL(url));
+    setImagePreviews([]);
+
+    setEditRoom({ area: '', price: '', roomStatus: 0, imageFiles: [] });
+    editImagePreviews.forEach(url => URL.revokeObjectURL(url));
+    setEditImagePreviews([]);
   };
 
   const getRoomStatusText = (status) => {
@@ -308,13 +378,35 @@ function RoomsPageContent() {
             >
               {/* Image */}
               <div className="relative h-48 bg-gray-200 dark:bg-gray-700">
-                <SafeImage
-                  src={room.imageUrl}
-                  alt={room.roomName || 'Room'}
-                  fill
-                  fallbackIcon="🚪"
-                  objectFit="cover"
-                />
+                {room.images && room.images.length > 0 ? (
+                  <>
+                    <SafeImage
+                      src={room.images[0]}
+                      alt={room.roomName || 'Room'}
+                      fill
+                      fallbackIcon="🚪"
+                      objectFit="cover"
+                    />
+                    {/* Image count badge */}
+                    {room.images.length > 1 && (
+                      <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+                        📷 {room.images.length} photos
+                      </div>
+                    )}
+                  </>
+                ) : room.imageUrl ? (
+                  <SafeImage
+                    src={room.imageUrl}
+                    alt={room.roomName || 'Room'}
+                    fill
+                    fallbackIcon="🚪"
+                    objectFit="cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-6xl">
+                    🚪
+                  </div>
+                )}
                 {/* Status Badge */}
                 <div className="absolute top-2 right-2">
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoomStatusColor(room.roomStatus)}`}>
@@ -421,25 +513,43 @@ function RoomsPageContent() {
                 {/* Image Upload */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Room Image *
+                    Room Images *
                   </label>
                   <input
                     type="file"
-                    required
                     accept="image/*"
+                    multiple
                     onChange={handleImageChange}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    You can select multiple images at once
+                  </p>
 
-                  {/* Image Preview */}
-                  {imagePreview && (
-                    <div className="mt-3 h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="max-h-full max-w-full object-contain"
-                      />
+                  {/* Image Previews */}
+                  {imagePreviews.length > 0 && (
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative group">
+                          <div className="h-24 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={preview}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -524,49 +634,85 @@ function RoomsPageContent() {
                   </select>
                 </div>
 
-                {/* Current Image */}
+                {/* Current Images */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Current Image
+                    Current Images
                   </label>
-                  <div className="h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center relative">
-                    <SafeImage
-                      src={selectedRoom.imageUrl}
-                      alt={selectedRoom.roomName}
-                      fill
-                      fallbackIcon="🚪"
-                      objectFit="contain"
-                    />
-                  </div>
+                  {selectedRoom.images && selectedRoom.images.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      {selectedRoom.images.map((imageUrl, index) => (
+                        <div key={index} className="h-24 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden relative">
+                          <SafeImage
+                            src={imageUrl}
+                            alt={`${selectedRoom.roomName} - Image ${index + 1}`}
+                            fill
+                            fallbackIcon="🚪"
+                            objectFit="cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : selectedRoom.imageUrl ? (
+                    <div className="h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center relative">
+                      <SafeImage
+                        src={selectedRoom.imageUrl}
+                        alt={selectedRoom.roomName}
+                        fill
+                        fallbackIcon="🚪"
+                        objectFit="contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-40 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-4xl">
+                      🚪
+                    </div>
+                  )}
                 </div>
 
-                {/* Upload New Image (Optional) */}
+                {/* Upload New Images (Optional) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Upload New Image (Optional)
+                    Upload New Images (Optional)
                   </label>
                   <input
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleEditImageChange}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Leave empty to keep current image
+                    Leave empty to keep current images. You can select multiple images.
                   </p>
 
-                  {/* New Image Preview */}
-                  {editImagePreview && (
-                    <div className="mt-3 relative h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center border-2 border-blue-500">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={editImagePreview}
-                        alt="New Preview"
-                        className="max-h-full max-w-full object-contain"
-                      />
-                      <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
-                        New Image
-                      </div>
+                  {/* New Image Previews */}
+                  {editImagePreviews.length > 0 && (
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      {editImagePreviews.map((preview, index) => (
+                        <div key={index} className="relative group">
+                          <div className="h-24 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden border-2 border-blue-500">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={preview}
+                              alt={`New Preview ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeEditImage(index)}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                          <div className="absolute bottom-1 left-1 bg-blue-600 text-white text-xs px-2 py-0.5 rounded">
+                            New
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
