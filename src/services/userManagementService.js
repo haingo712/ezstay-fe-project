@@ -146,10 +146,10 @@ class UserManagementService {
         Password: accountData.password,
         Role: accountData.roleId,
       };
-      
+
       console.log(`🔄 Updating account ${userId} with payload:`, payload);
       console.log(`🔄 URL: /api/TestAccount/${userId}`);
-      
+
       const response = await api.put(`/api/TestAccount/${userId}`, payload);
       console.log(`✅ Updated account ${userId}:`, response);
       return response;
@@ -193,6 +193,59 @@ class UserManagementService {
   }
 
   /**
+   * Get pending owner requests (Staff only)
+   * @returns {Promise<Array>} List of owner requests
+   */
+  async getOwnerRequests() {
+    try {
+      const response = await api.get(`/api/TestAccount/request-owner`);
+      console.log(`✅ Fetched owner requests:`, response);
+      return Array.isArray(response) ? response : [];
+    } catch (error) {
+      // If 404 (no requests) return empty array to simplify frontend handling
+      if (error?.response?.status === 404) {
+        return [];
+      }
+      console.error('❌ Error fetching owner requests:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Approve an owner request (Staff only)
+   * @param {string} requestId - Request ID (GUID)
+   * @returns {Promise<Object>} Approved request result
+   */
+  async approveOwnerRequest(requestId) {
+    try {
+      const response = await api.put(`/api/TestAccount/request-owner/approve/${requestId}`);
+      console.log(`✅ Approved owner request ${requestId}:`, response);
+      return response;
+    } catch (error) {
+      console.error(`❌ Error approving owner request ${requestId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reject an owner request (Staff only)
+   * @param {string} requestId - Request ID (GUID)
+   * @param {string} reason - Rejection reason
+   * @returns {Promise<Object>} Reject result
+   */
+  async rejectOwnerRequest(requestId, reason) {
+    try {
+      const payload = { RejectionReason: reason };
+      const response = await api.put(`/api/TestAccount/request-owner/reject/${requestId}`, payload);
+      console.log(`✅ Rejected owner request ${requestId}:`, response);
+      return response;
+    } catch (error) {
+      console.error(`❌ Error rejecting owner request ${requestId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Get role name from role ID
    * @param {number} roleId - Role ID
    * @returns {string} Role name
@@ -200,7 +253,7 @@ class UserManagementService {
   getRoleName(roleId) {
     const roles = {
       1: "User",
-      2: "Owner", 
+      2: "Owner",
       3: "Staff",
       4: "Admin"
     };
