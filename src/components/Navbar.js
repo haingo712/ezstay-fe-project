@@ -7,22 +7,34 @@ function GlobalNotificationBell() {
   const [notifications, setNotifications] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef();
+  
   // Đánh dấu đã đọc notification
   async function markNotificationAsRead(id) {
     try {
       await apiFetch(`/api/Notification/mark-read/${id}`, { method: "PUT" });
     } catch { }
   }
-  // Refetch mỗi lần mở dropdown
+  
+  // Fetch notifications function
+  async function fetchNotifications() {
+    try {
+      const data = await apiFetch("/api/Notification/by-role");
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch { }
+  }
+  
+  // Fetch ngay khi component mount và tự động refresh mỗi 30 giây
   useEffect(() => {
-    if (!showDropdown) return;
-    async function fetchNotifications() {
-      try {
-        const data = await apiFetch("/api/Notification/by-role");
-        setNotifications(Array.isArray(data) ? data : []);
-      } catch { }
+    fetchNotifications(); // Fetch ngay lần đầu
+    const interval = setInterval(fetchNotifications, 30000); // Refresh mỗi 30s
+    return () => clearInterval(interval); // Cleanup
+  }, []);
+  
+  // Refetch khi mở dropdown để có data mới nhất
+  useEffect(() => {
+    if (showDropdown) {
+      fetchNotifications();
     }
-    fetchNotifications();
   }, [showDropdown]);
   return (
     <div className="relative" ref={dropdownRef}>
@@ -206,8 +218,14 @@ export default function Navbar() {
                 )}
               </button>
 
-              {/* Notification Bell - Only show when authenticated */}
-              {isAuthenticated && <NotificationBell />}
+              {/* Language Toggle Button */}
+              <button
+                onClick={() => changeLanguage(language === 'en' ? 'vi' : 'en')}
+                className="px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 font-semibold text-sm"
+                title={language === 'en' ? 'Switch to Vietnamese' : 'Chuyển sang Tiếng Anh'}
+              >
+                {language === 'en' ? '🇻🇳 VI' : '🇬🇧 EN'}
+              </button>
 
               {/* Authentication Actions */}
               {isAuthenticated ? (
@@ -277,7 +295,7 @@ export default function Navbar() {
                         className="block w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        🏠 Đăng ký Owner
+                        🏠 Register as Owner
                       </Link>
                       <button
                         onClick={handleLogout}
@@ -349,6 +367,14 @@ export default function Navbar() {
                   {item.label}
                 </Link>
               ))}
+
+              {/* Language Toggle for Mobile */}
+              <button
+                onClick={() => changeLanguage(language === 'en' ? 'vi' : 'en')}
+                className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200 font-medium"
+              >
+                {language === 'en' ? '🇻🇳 Tiếng Việt' : '🇬🇧 English'}
+              </button>
 
               {!isAuthenticated && (
                 <div className="pt-2 space-y-2">

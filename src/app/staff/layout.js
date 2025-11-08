@@ -6,11 +6,13 @@ import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useTheme } from "@/context/ThemeContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function StaffLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+  const { language, changeLanguage } = useLanguage();
 
   const navigation = [
     {
@@ -229,8 +231,8 @@ export default function StaffLayout({ children }) {
                     <Link
                       href={item.href}
                       className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${isActive(item.href)
-                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
+                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+                        : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
                         }`}
                       onClick={() => setSidebarOpen(false)}
                     >
@@ -242,8 +244,27 @@ export default function StaffLayout({ children }) {
               </ul>
             </nav>
 
-            {/* Theme Toggle Button */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+            {/* Settings Section */}
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+              {/* Language Toggle Button */}
+              <button
+                onClick={() => changeLanguage(language === 'en' ? 'vi' : 'en')}
+                className="w-full flex items-center justify-center px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                {language === 'en' ? (
+                  <>
+                    <span className="mr-2">🇻🇳</span>
+                    Tiếng Việt
+                  </>
+                ) : (
+                  <>
+                    <span className="mr-2">🇬🇧</span>
+                    English
+                  </>
+                )}
+              </button>
+
+              {/* Theme Toggle Button */}
               <button
                 onClick={toggleTheme}
                 className="w-full flex items-center justify-center px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
