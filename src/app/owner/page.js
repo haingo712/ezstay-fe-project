@@ -706,13 +706,7 @@ export default function OwnerDashboard() {
                     color="gray"
                     onClick={() => router.push('/owner/notifications')}
                   />
-                  <QuickAction
-                    icon="bell"
-                    title="Notification"
-                    description="Thông báo mới nhất"
-                    color="blue"
-                    onClick={() => router.push('/owner/notifications')}
-                  />
+                  {/* Notification quick card removed per request (bell) */}
                   <QuickAction
                     icon="settings"
                     title="Account Settings"

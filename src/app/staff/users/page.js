@@ -100,6 +100,28 @@ export default function UserManagementPage() {
     setShowRejectionModal(true);
   };
 
+  const handleEditAccount = (user) => {
+    setSelectedUser(user);
+    setEditAccount({
+      fullName: user.fullName || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      password: '',
+      roleId: user.roleId
+    });
+    setShowEditModal(true);
+  };
+
+  const handleStatusToggle = async (userId, currentStatus) => {
+    try {
+      await userManagementService.updateAccountStatus(userId, !currentStatus);
+      alert('Account status updated successfully!');
+      await loadUsers();
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Failed to update account status');
+    }
+  };
 
   const filteredUsers = users.filter(user => {
     if (user.roleId === 3 || user.roleId === 4) return false;
@@ -237,150 +259,68 @@ export default function UserManagementPage() {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-600 dark:text-gray-400">
-            Loading users...
-          </div>
-        ) : activeTab !== 'owner-requests' && filteredUsers.length === 0 ? (
-          <div className="p-8 text-center text-gray-600 dark:text-gray-400">
-            No accounts found
+        {activeTab === 'owner-requests' ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ACCOUNT ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">REASON</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">SUBMITTED AT</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">STATUS</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {ownerRequests.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                      No owner requests found
+                    </td>
+                  </tr>
+                ) : (
+                  ownerRequests.map(request => (
+                    <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{request.accountId || request.AccountId || 'N/A'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{request.reason || request.Reason || 'N/A'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(request.submittedAt || request.SubmittedAt).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${(request.status || request.Status) === 'Pending'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : (request.status || request.Status) === 'Approved'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                          }`}>
+                          {request.status || request.Status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium space-x-2">
+                        <button
+                          onClick={() => handleApproveRequest(request.id)}
+                          className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => openRejectionModal(request)}
+                          className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700"
+                        >
+                          Reject
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    User Info
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    Contact
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    Role
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    Created Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {activeTab !== 'owner-requests' && filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className={`h-10 w-10 rounded-full ${user.roleId === 1
-                          ? 'bg-gradient-to-br from-blue-500 to-blue-600'
-                          : 'bg-gradient-to-br from-green-500 to-green-600'
-                          } flex items-center justify-center text-white font-bold`}>
-                          {(user.fullName || user.email).charAt(0).toUpperCase()}
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {user.fullName || 'N/A'}
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            ID: {user.id}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {user.email}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {user.phone || 'N/A'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${user.roleId === 1
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                        : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                        }`}>
-                        {user.roleId === 1 ? 'User' : 'Owner'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${user.isActive
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                        }`}>
-                        {user.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                      {formatDate(user.createdAt)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
-                      <button
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setShowViewModal(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        View
-                      </button>
-                      <button
-                        onClick={() => handleEditAccount(user)}
-                        className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleStatusToggle(user.id, user.isActive)}
-                        className={`${user.isActive
-                          ? 'text-red-600 hover:text-red-900 dark:text-red-400'
-                          : 'text-green-600 hover:text-green-900 dark:text-green-400'
-                          }`}
-                      >
-                        {user.isActive ? 'Ban' : 'Unban'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="p-8 text-center text-gray-600 dark:text-gray-400">
+            Please select "Owner Requests" tab to view owner registration requests
           </div>
         )}
-
-        {activeTab === 'owner-requests' && (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Full Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Phone</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Request Time</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {ownerRequests.map(request => (
-                  <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{request.fullName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{request.email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{request.phone}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{new Date(request.requestTime).toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <button onClick={() => handleApproveRequest(request.id)} className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Approve</button>
-                      <button onClick={() => openRejectionModal(request)} className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">Reject</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
       </div>
 
       {showCreateModal && (
@@ -672,25 +612,77 @@ export default function UserManagementPage() {
         </div>
       )}
 
-      {showRejectionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-1/3">
-            <h2 className="text-2xl mb-4">Reject Owner Request</h2>
-            <form>
-              <div className="mb-4">
-                <label className="block text-gray-700">Reason</label>
-                <textarea
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  className="w-full px-3 py-2 border rounded"
-                  rows="4"
-                ></textarea>
+      {showRejectionModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full shadow-2xl">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    ❌ Reject Owner Request
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Please provide a reason for rejecting this request
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowRejectionModal(false);
+                    setRejectionReason('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <div className="flex justify-end">
-                <button type="button" onClick={() => setShowRejectionModal(false)} className="bg-gray-500 text-white px-4 py-2 rounded mr-2">Cancel</button>
-                <button type="button" onClick={handleRejectRequest} className="bg-red-500 text-white px-4 py-2 rounded">Reject</button>
-              </div>
-            </form>
+
+              {/* Rejection Reason Form */}
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                handleRejectRequest();
+              }}>
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Rejection Reason <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    required
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    rows="5"
+                    placeholder="Enter the reason for rejecting this owner registration request..."
+                  ></textarea>
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    This reason will be sent to the user.
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowRejectionModal(false);
+                      setRejectionReason('');
+                    }}
+                    className="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 font-medium transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!rejectionReason.trim()}
+                    className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium transition shadow-lg"
+                  >
+                    Reject Request
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

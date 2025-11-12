@@ -1,5 +1,9 @@
 "use client";
 
+import { useEffect, useState, useRef } from "react";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { apiFetch } from "@/utils/api";
+
 // Hàm đánh dấu đã đọc notification
 async function markAsReadNotification(id) {
     try {
@@ -10,7 +14,7 @@ async function markAsReadNotification(id) {
         throw err;
     }
 }
-https://github.com/haingo712/ezstay-fe-project/pull/25/conflict?name=src%252Fcomponents%252FNavbar.js&ancestor_oid=64014958ba85a39a7f2edd03aba6acf0e6b27faa&base_oid=5dee877f0ec80827b8c2f0284d77563a279d025b&head_oid=4fa1367af2ccdbcc303efd2a8c7f080476a8a5f2
+
 // Hàm cập nhật notification
 async function updateNotification(id, { title, message, notificationType = 0 }) {
     try {
@@ -24,7 +28,6 @@ async function updateNotification(id, { title, message, notificationType = 0 }) 
     }
 }
 
-import { useEffect, useState, useRef } from "react";
 // Icon Bell SVG
 function BellIcon({ className = "w-7 h-7" }) {
     return (
@@ -33,8 +36,6 @@ function BellIcon({ className = "w-7 h-7" }) {
         </svg>
     );
 }
-import ProtectedRoute from "@/components/ProtectedRoute";
-import { apiFetch } from "@/utils/api";
 
 // Hàm thêm notification mới
 async function addNotification({ title, message, notificationType = 0 }) {
