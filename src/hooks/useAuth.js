@@ -89,19 +89,9 @@ export function useAuth() {
     setIsAuthenticated(false);
     setLoading(false);
     
-    // Force a small delay then redirect to home instead of login
-    setTimeout(() => {
-      console.log("✅ useAuth: Logout completed, redirecting to home");
-      // Double-check that everything is cleared
-      const remainingUser = AuthService.getUserInfo();
-      if (remainingUser) {
-        console.warn("⚠️ Warning: User info still exists after logout, forcing clear");
-        AuthService.logout(); // Force clear again
-      }
-      
-      // Redirect to home page instead of forcing reload
-      window.location.href = '/';
-    }, 100);
+    // Redirect directly to login page
+    console.log("✅ useAuth: Logout completed, redirecting to login");
+    window.location.href = '/login';
   };
 
   // Method to load avatar for navbar

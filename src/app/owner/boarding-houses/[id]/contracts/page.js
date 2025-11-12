@@ -4,6 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import contractService from "@/services/contractService";
 import roomService from "@/services/roomService";
 import otpService from "@/services/otpService";
+import imageService from "@/services/imageService";
 import { useAuth } from "@/hooks/useAuth";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
@@ -41,6 +42,8 @@ export default function ContractsManagementPage() {
   const [signaturePhone, setSignaturePhone] = useState('');
   const [signaturePreview, setSignaturePreview] = useState('');
   const [signatureFile, setSignatureFile] = useState(null);
+  const [signatureEmail, setSignatureEmail] = useState(''); // Email for OTP
+  const [currentOtpId, setCurrentOtpId] = useState(null); // OTP ID from backend
   const [otpCode, setOtpCode] = useState('');
   const [otpTimer, setOtpTimer] = useState(300); // 5 minutes in seconds
   const [canResendOtp, setCanResendOtp] = useState(false);
@@ -59,12 +62,6 @@ export default function ContractsManagementPage() {
   const [contractImagePreviews, setContractImagePreviews] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-
-  // Digital Signature states
-  const [showSignatureModal, setShowSignatureModal] = useState(false);
-  const [ownerSignature, setOwnerSignature] = useState(null);
-  const [tenantSignature, setTenantSignature] = useState(null);
-  const [savingSignatures, setSavingSignatures] = useState(false);
 
   // New contract creation states
   const [createStep, setCreateStep] = useState(1); // 1: contract, 2: identity profile, 3: utility readings
@@ -1249,7 +1246,7 @@ export default function ContractsManagementPage() {
       }
 
       console.log('🔍 Fetching contract details for ID:', contractId);
-      const fullContract = await contractService.getContractById(contractId);
+      const fullContract = await contractService.getById(contractId);
       console.log('✅ Contract details loaded:', fullContract);
 
       setSelectedContract(fullContract);
@@ -1271,33 +1268,27 @@ export default function ContractsManagementPage() {
     }
   };
 
-  const handleCloseSignatureModal = () => {
-    setShowSignatureModal(false);
-    setSignatureStep(1);
-    setSignatureName('');
-    setSignaturePhone('');
-    setSignaturePreview('');
-    setOtpCode('');
-    setOtpTimer(300);
-    setCanResendOtp(false);
-    setSelectedContract(null);
-  };
-
-  // Handle Save signature and proceed to OTP step
-  const handleSaveSignature = async () => {
+  // Handle Continue to OTP step (Step 1 → Step 2)
+  const handleContinueToOtp = async () => {
+    console.log('🔔 handleContinueToOtp called!');
+    console.log('📝 signaturePreview:', signaturePreview);
+    console.log('👤 signatureName:', signatureName);
+    
     if (!signaturePreview) {
-      toast.error('Vui lòng tạo chữ ký trước khi lưu');
+      console.log('❌ No signature preview');
+      toast.error('Vui lòng tạo chữ ký trước');
       return;
     }
 
     if (!signatureName.trim()) {
+      console.log('❌ No signature name');
       toast.error('Vui lòng nhập họ tên');
       return;
     }
 
     try {
       setSendingOtp(true);
-      console.log('📝 Saving signature and sending OTP...');
+      console.log('📝 Sending OTP...');
 
       // Get user email from contract or current user
       const userEmail = selectedContract?.identityProfiles?.[0]?.email ||
@@ -1322,31 +1313,38 @@ export default function ContractsManagementPage() {
       console.log('📧 Sending OTP to email:', userEmail);
       console.log('📝 Contract ID:', contractId);
 
-      // Send OTP via MailAPI (backend will generate and send OTP)
-      await otpService.sendVerificationOtp(userEmail, null, contractId);
-      console.log('✅ OTP request sent to backend');
+      // Send OTP via MailAPI - Backend will generate OTP and return otpId
+      const otpResult = await otpService.sendContractOtp(contractId, userEmail);
+      console.log('✅ OTP sent, result:', otpResult);
+      
+      // Extract otpId from response
+      const otpId = otpResult?.otpId || otpResult?.data?.otpId;
+      
+      console.log('🔍 Extracted OTP ID:', otpId);
+      
+      if (!otpId) {
+        console.error('❌ No OTP ID in response:', otpResult);
+        toast.error('Error creating OTP. Please try again.');
+        setSendingOtp(false);
+        return;
+      }
 
-      // Note: Backend generates OTP, stores it in DB, and sends email
-      // Frontend will verify OTP through backend API
+      console.log('🔑 OTP ID:', otpId);
 
-      // Save signature data temporarily
-      sessionStorage.setItem('pendingSignature', JSON.stringify({
-        contractId,
-        signatureName,
-        signaturePreview,
-        signatureTab,
-        email: userEmail,
-        timestamp: Date.now()
-      }));
+      // Store otpId and email for verification
+      setCurrentOtpId(otpId);
+      setSignatureEmail(userEmail);
 
       toast.success(`Mã OTP đã được gửi đến email ${userEmail}`);
 
-      // Close modal and navigate to OTP verification page
-      setShowSignatureModal(false);
-      router.push(`/owner/contracts/${contractId}/signature?email=${encodeURIComponent(userEmail)}&boardingHouseId=${houseId}`);
+      // Move to OTP verification step
+      setSignatureStep(2);
+      setOtpTimer(300); // 5 minutes
+      setCanResendOtp(false);
 
     } catch (error) {
       console.error('❌ Error sending OTP:', error);
+      console.error('❌ Error response:', error.response?.data);
       toast.error('Lỗi khi gửi mã OTP. Vui lòng thử lại.');
     } finally {
       setSendingOtp(false);
@@ -1357,16 +1355,28 @@ export default function ContractsManagementPage() {
   const handleResendOtp = async () => {
     try {
       setSendingOtp(true);
-      console.log('📝 Resending OTP to:', signaturePhone);
+      console.log('📝 Resending OTP...');
 
-      // TODO: Call API to resend OTP
-      // const response = await api.post('/api/signature/resend-otp', {
-      //   contractId: selectedContract.id,
-      //   phoneNumber: signaturePhone
-      // });
+      // Get contract ID
+      const contractId = selectedContract?.id || selectedContract?.Id;
+      if (!contractId || !signatureEmail) {
+        toast.error('Thông tin không hợp lệ');
+        setSendingOtp(false);
+        return;
+      }
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Resend OTP
+      const otpResult = await otpService.sendContractOtp(contractId, signatureEmail);
+      const otpId = otpResult?.otpId || otpResult?.id || otpResult?.Id || otpResult?.data?.id;
+      
+      if (!otpId) {
+        toast.error('Lỗi khi gửi lại OTP');
+        setSendingOtp(false);
+        return;
+      }
+
+      // Update otpId
+      setCurrentOtpId(otpId);
 
       setOtpTimer(300); // Reset timer to 5 minutes
       setCanResendOtp(false);
@@ -1380,65 +1390,100 @@ export default function ContractsManagementPage() {
     }
   };
 
-  // Handle Confirm OTP and complete signature
+  // Handle Confirm OTP and save signature (Step 2 → Complete)
   const handleConfirmSignature = async () => {
     if (!otpCode.trim()) {
-      toast.error('Vui lòng nhập mã OTP');
+      toast.error('Please enter OTP code');
       return;
     }
 
     if (otpCode.length !== 6) {
-      toast.error('Mã OTP phải có 6 chữ số');
+      toast.error('OTP must be 6 digits');
       return;
     }
 
     try {
       setVerifyingOtp(true);
       console.log('✅ Verifying OTP:', otpCode);
+      console.log('🔑 OTP ID:', currentOtpId);
 
-      // Get pending signature data
-      const pendingData = sessionStorage.getItem('pendingSignature');
-      if (!pendingData) {
-        toast.error('Không tìm thấy thông tin chữ ký');
-        return;
-      }
-
-      const signatureData = JSON.parse(pendingData);
-      const userEmail = signatureData.email;
-
-      // Verify OTP with backend
-      try {
-        const result = await otpService.verifyContractOtp(userEmail, otpCode);
-        console.log('✅ OTP verified by backend:', result);
-      } catch (apiError) {
-        console.error('❌ Backend verification failed:', apiError);
-        toast.error('Mã OTP không đúng hoặc đã hết hạn');
+      if (!currentOtpId) {
+        toast.error('OTP information not found');
         setVerifyingOtp(false);
         return;
       }
 
-      // TODO: Call API to save signature to contract
-      // await api.post('/api/Contract/add-signature', {
-      //   contractId: signatureData.contractId,
-      //   signatureName: signatureData.signatureName,
-      //   signatureImage: signatureData.signaturePreview,
-      //   signatureType: signatureData.signatureTab
-      // });
+      const contractId = selectedContract?.id || selectedContract?.Id;
+      if (!contractId) {
+        toast.error('Contract information not found');
+        setVerifyingOtp(false);
+        return;
+      }
 
-      // Clear stored data
-      otpService.clearOtp(userEmail);
-      sessionStorage.removeItem('pendingSignature');
+      // Step 1: Verify OTP using otpId (backend will set IsUsed = true)
+      console.log('1️⃣ Verifying OTP with backend...');
+      const verifyResult = await otpService.verifyContractOtp(currentOtpId, otpCode);
+      console.log('✅ OTP verified:', verifyResult);
 
-      toast.success('Chữ ký điện tử đã được lưu thành công!');
-      handleCloseSignatureModal();
-      await fetchData(); // Refresh contracts list
+      if (!verifyResult || !verifyResult.success) {
+        toast.error(verifyResult?.message || 'Invalid OTP code');
+        setVerifyingOtp(false);
+        return;
+      }
+
+      // Step 2: Use base64 signature directly (no upload needed)
+      console.log('2️⃣ Using base64 signature directly...');
+      console.log('� Signature preview length:', signaturePreview?.length);
+      
+      if (!signaturePreview) {
+        toast.error('Signature not found');
+        setVerifyingOtp(false);
+        return;
+      }
+
+      // Step 3: Sign contract with base64 signature (saves to OwnerSignature or TenantSignature)
+      console.log('3️⃣ Signing contract...');
+      console.log('📝 Contract ID:', contractId);
+      console.log('🖼️ Signature (base64):', signaturePreview.substring(0, 50) + '...');
+      const result = await contractService.signContract(contractId, signaturePreview);
+      console.log('✅ Contract signed:', result);
+
+      toast.success('Contract signed successfully!');
+
+      // Reset states and close modal
+      setShowSignatureModal(false);
+      setSignatureStep(1);
+      setOtpCode('');
+      setCurrentOtpId(null);
+      setSignatureEmail('');
+      setSignaturePreview(null);
+      setSignatureName('');
+
+      // Refresh contracts list
+      await fetchData();
 
     } catch (error) {
-      console.error('❌ Error verifying OTP:', error);
-      toast.error('Có lỗi xảy ra. Vui lòng thử lại.');
+      console.error('❌ Error confirming signature:', error);
+      console.error('❌ Error response:', error.response?.data);
+      toast.error(error.response?.data?.message || 'Error confirming signature. Please try again.');
     } finally {
       setVerifyingOtp(false);
     }
+  };
+
+  const handleCloseSignatureModal = () => {
+    setShowSignatureModal(false);
+    setSignatureStep(1);
+    setSignatureName('');
+    setSignaturePreview(null);
+    setSignatureFile(null);
+    setSignatureTab('draw');
+    setSignatureEmail('');
+    setCurrentOtpId(null);
+    setOtpCode('');
+    setOtpTimer(300);
+    setCanResendOtp(false);
+    setSelectedContract(null);
   };
 
   const generateManualSignature = () => {
@@ -3266,7 +3311,7 @@ export default function ContractsManagementPage() {
               {/* Modal Header */}
               <div className="flex items-center justify-between mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Signature Setting
+                  {signatureStep === 1 ? 'Ký Hợp Đồng - Tạo Chữ Ký' : 'Ký Hợp Đồng - Xác Thực OTP'}
                 </h2>
                 <button
                   onClick={handleCloseSignatureModal}
@@ -3276,192 +3321,317 @@ export default function ContractsManagementPage() {
                 </button>
               </div>
 
-              {/* Full Name Input */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={signatureName}
-                  onChange={(e) => setSignatureName(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Nguyễn Đình Vinh"
-                />
+              {/* Step Indicator */}
+              <div className="mb-6 flex items-center justify-center">
+                <div className="flex items-center">
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full ${signatureStep === 1 ? 'bg-blue-600 text-white' : 'bg-green-500 text-white'}`}>
+                    {signatureStep === 1 ? '1' : '✓'}
+                  </div>
+                  <div className={`w-24 h-1 ${signatureStep === 2 ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full ${signatureStep === 2 ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-500'}`}>
+                    2
+                  </div>
+                </div>
               </div>
 
-              {/* Tabs */}
-              <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
-                <button
-                  onClick={() => setSignatureTab('draw')}
-                  className={`px-6 py-3 font-medium transition-colors ${signatureTab === 'draw'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
-                    }`}
-                >
-                  Draw
-                </button>
-                <button
-                  onClick={() => setSignatureTab('file')}
-                  className={`px-6 py-3 font-medium transition-colors ${signatureTab === 'file'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
-                    }`}
-                >
-                  From File
-                </button>
-                <button
-                  onClick={() => setSignatureTab('manual')}
-                  className={`px-6 py-3 font-medium transition-colors ${signatureTab === 'manual'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
-                    }`}
-                >
-                  Manual Entry
-                </button>
-              </div>
+              {/* STEP 1: Create Signature */}
+              {signatureStep === 1 && (
+                <>
+                  {/* Full Name Input */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Họ và Tên <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={signatureName}
+                      onChange={(e) => setSignatureName(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="Nhập họ tên đầy đủ"
+                    />
+                  </div>
 
-              {/* Tab Content */}
-              <div className="mb-6">
-                {/* Draw Tab */}
-                {signatureTab === 'draw' && (
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      Draw your signature below:
-                    </p>
-                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                      <canvas
-                        ref={canvasRef}
-                        width={800}
-                        height={200}
-                        onMouseDown={startDrawing}
-                        onMouseMove={draw}
-                        onMouseUp={stopDrawing}
-                        onMouseLeave={stopDrawing}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded bg-white cursor-crosshair"
-                      />
+                  {/* Tabs */}
+                  <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+                    <button
+                      onClick={() => setSignatureTab('draw')}
+                      className={`px-6 py-3 font-medium transition-colors ${signatureTab === 'draw'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                        }`}
+                    >
+                      Vẽ Chữ Ký
+                    </button>
+                    <button
+                      onClick={() => setSignatureTab('file')}
+                      className={`px-6 py-3 font-medium transition-colors ${signatureTab === 'file'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                        }`}
+                    >
+                      Tải Lên File
+                    </button>
+                    <button
+                      onClick={() => setSignatureTab('manual')}
+                      className={`px-6 py-3 font-medium transition-colors ${signatureTab === 'manual'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                        }`}
+                    >
+                      Tạo Tự Động
+                    </button>
+                  </div>
+
+                  {/* Tab Content */}
+                  <div className="mb-6">
+                    {/* Draw Tab */}
+                    {signatureTab === 'draw' && (
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          Vẽ chữ ký của bạn bên dưới:
+                        </p>
+                        <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                          <canvas
+                            ref={canvasRef}
+                            width={800}
+                            height={200}
+                            onMouseDown={startDrawing}
+                            onMouseMove={draw}
+                            onMouseUp={stopDrawing}
+                            onMouseLeave={stopDrawing}
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded bg-white cursor-crosshair"
+                          />
+                          <button
+                            onClick={clearCanvas}
+                            className="mt-3 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* From File Tab */}
+                    {signatureTab === 'file' && (
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          Tải lên ảnh chữ ký:
+                        </p>
+                        <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center bg-gray-50 dark:bg-gray-700">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleSignatureFileUpload}
+                            className="hidden"
+                            id="signature-upload"
+                          />
+                          <label
+                            htmlFor="signature-upload"
+                            className="cursor-pointer inline-flex flex-col items-center"
+                          >
+                            <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              Nhấn để tải lên
+                            </span>
+                            <span className="text-xs text-gray-500 mt-1">
+                              PNG, JPG, GIF tối đa 10MB
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Manual Entry Tab */}
+                    {signatureTab === 'manual' && (
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          Tên của bạn sẽ được tạo thành chữ ký với mã duy nhất:
+                        </p>
+                        <button
+                          onClick={generateManualSignature}
+                          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                        >
+                          Tạo Chữ Ký
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Preview Section */}
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Xem Trước
+                      </h3>
+                    </div>
+
+                    <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg p-6 bg-white dark:bg-gray-700 min-h-[150px] flex items-center justify-center">
+                      {signaturePreview ? (
+                        signatureTab === 'manual' ? (
+                          <div className="text-center border-2 border-gray-400 rounded-lg p-4 inline-block">
+                            <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
+                              {signaturePreview}
+                            </pre>
+                          </div>
+                        ) : (
+                          <img
+                            src={signaturePreview}
+                            alt="Signature preview"
+                            className="max-w-full max-h-[120px] object-contain"
+                          />
+                        )
+                      ) : (
+                        <p className="text-gray-400 dark:text-gray-500 italic">
+                          Chưa có chữ ký
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Agreement Checkbox */}
+                  <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <label className="flex items-start space-x-3">
+                      <div className="flex items-center h-5 mt-0.5">
+                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        Tôi đồng ý rằng chữ ký của tôi sẽ là đại diện điện tử của chữ ký tôi cho tất cả các mục đích khi tôi sử dụng nó trên các tài liệu, bao gồm cả hợp đồng ràng buộc về mặt pháp lý.
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Action Buttons - Step 1 */}
+                  <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={handleCloseSignatureModal}
+                      className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      onClick={handleContinueToOtp}
+                      className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={!signaturePreview || sendingOtp}
+                    >
+                      {sendingOtp ? (
+                        <span className="flex items-center">
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Đang gửi OTP...
+                        </span>
+                      ) : (
+                        'Tiếp Tục →'
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* STEP 2: OTP Verification */}
+              {signatureStep === 2 && (
+                <>
+                  <div className="mb-6">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                      <p className="text-sm text-blue-800 dark:text-blue-200">
+                        Mã OTP đã được gửi đến email: <strong>{signatureEmail}</strong>
+                      </p>
+                      <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                        Vui lòng kiểm tra hộp thư đến hoặc thư rác của bạn
+                      </p>
+                    </div>
+
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Nhập Mã OTP (6 chữ số) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={otpCode}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setOtpCode(value);
+                      }}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center text-2xl tracking-widest font-mono"
+                      placeholder="000000"
+                      maxLength={6}
+                    />
+
+                    {/* Timer and Resend */}
+                    <div className="mt-4 flex items-center justify-between">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {otpTimer > 0 ? (
+                          <span>Mã hết hạn sau: <strong className="text-blue-600">{Math.floor(otpTimer / 60)}:{(otpTimer % 60).toString().padStart(2, '0')}</strong></span>
+                        ) : (
+                          <span className="text-red-600">Mã OTP đã hết hạn</span>
+                        )}
+                      </div>
                       <button
-                        onClick={clearCanvas}
-                        className="mt-3 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                        onClick={handleResendOtp}
+                        disabled={!canResendOtp || sendingOtp}
+                        className="text-sm text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed font-medium"
                       >
-                        Clear
+                        {sendingOtp ? 'Đang gửi...' : 'Gửi lại OTP'}
                       </button>
                     </div>
                   </div>
-                )}
 
-                {/* From File Tab */}
-                {signatureTab === 'file' && (
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      Upload your signature image:
-                    </p>
-                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center bg-gray-50 dark:bg-gray-700">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleSignatureFileUpload}
-                        className="hidden"
-                        id="signature-upload"
-                      />
-                      <label
-                        htmlFor="signature-upload"
-                        className="cursor-pointer inline-flex flex-col items-center"
-                      >
-                        <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          Click to upload or drag and drop
-                        </span>
-                        <span className="text-xs text-gray-500 mt-1">
-                          PNG, JPG, GIF up to 10MB
-                        </span>
-                      </label>
+                  {/* Signature Preview in Step 2 */}
+                  <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Chữ ký của bạn:</h4>
+                    <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800 flex items-center justify-center min-h-[100px]">
+                      {signaturePreview && (
+                        signatureTab === 'manual' ? (
+                          <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
+                            {signaturePreview}
+                          </pre>
+                        ) : (
+                          <img
+                            src={signaturePreview}
+                            alt="Signature"
+                            className="max-w-full max-h-[80px] object-contain"
+                          />
+                        )
+                      )}
                     </div>
-                  </div>
-                )}
-
-                {/* Manual Entry Tab */}
-                {signatureTab === 'manual' && (
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      Your name will be used as signature with a unique code:
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      Người ký: <strong>{signatureName}</strong>
                     </p>
+                  </div>
+
+                  {/* Action Buttons - Step 2 */}
+                  <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
                     <button
-                      onClick={generateManualSignature}
-                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      onClick={() => setSignatureStep(1)}
+                      className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                      disabled={verifyingOtp}
                     >
-                      Generate Signature
+                      ← Quay Lại
+                    </button>
+                    <button
+                      onClick={handleConfirmSignature}
+                      className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={otpCode.length !== 6 || verifyingOtp}
+                    >
+                      {verifyingOtp ? (
+                        <span className="flex items-center">
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Đang xác thực...
+                        </span>
+                      ) : (
+                        '✓ Xác Nhận và Ký'
+                      )}
                     </button>
                   </div>
-                )}
-              </div>
-
-              {/* Preview Section */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Preview
-                  </h3>
-                  <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                    Change Style
-                  </button>
-                </div>
-
-                <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg p-6 bg-white dark:bg-gray-700 min-h-[150px] flex items-center justify-center">
-                  {signaturePreview ? (
-                    signatureTab === 'manual' ? (
-                      <div className="text-center border-2 border-gray-400 rounded-lg p-4 inline-block">
-                        <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
-                          {signaturePreview}
-                        </pre>
-                      </div>
-                    ) : (
-                      <img
-                        src={signaturePreview}
-                        alt="Signature preview"
-                        className="max-w-full max-h-[120px] object-contain"
-                      />
-                    )
-                  ) : (
-                    <p className="text-gray-400 dark:text-gray-500 italic">
-                      No signature preview available
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Agreement Checkbox */}
-              <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <label className="flex items-start space-x-3 cursor-pointer">
-                  <div className="flex items-center h-5">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    I agree that my signature will be an electronic representation of my signature for all purposes when I (or my representative) use it on documents, including legally binding contracts.
-                  </span>
-                </label>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={handleCloseSignatureModal}
-                  className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={handleSaveSignature}
-                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium shadow-sm"
-                  disabled={!signaturePreview}
-                >
-                  Save
-                </button>
-              </div>
+                </>
+              )}
             </div>
           </div>
         </div>

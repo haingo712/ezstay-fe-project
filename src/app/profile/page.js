@@ -600,6 +600,16 @@ export default function ProfilePage() {
 
   return (
     <ProtectedRoute>
+      {/* Add debug info at the top */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed top-0 right-0 bg-black bg-opacity-75 text-white p-2 text-xs z-50">
+          <div>User: {user?.email}</div>
+          <div>Role: {user?.role}</div>
+          <div>Auth: {isAuthenticated ? 'Yes' : 'No'}</div>
+          <div>Profile Exists: {profileExists ? 'Yes' : 'No'}</div>
+        </div>
+      )}
+      
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-slate-800 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}

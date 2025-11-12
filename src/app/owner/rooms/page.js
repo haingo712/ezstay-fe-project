@@ -49,6 +49,13 @@ function RoomsPageContent() {
         console.log('🚪 First room data:', data[0]);
         console.log('🖼️ First room images:', data[0].images);
         console.log('🖼️ First room imageUrl:', data[0].imageUrl);
+        console.log('🏷️ First room roomStatus:', data[0].roomStatus, 'Type:', typeof data[0].roomStatus);
+        console.log('🏷️ First room RoomStatus:', data[0].RoomStatus, 'Type:', typeof data[0].RoomStatus);
+        
+        // Check all rooms status
+        data.forEach((room, idx) => {
+          console.log(`Room ${idx}: roomStatus=${room.roomStatus}, RoomStatus=${room.RoomStatus}`);
+        });
       }
       setRooms(Array.isArray(data) ? data : []);
     } catch (error) {

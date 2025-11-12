@@ -170,18 +170,23 @@ const contractService = {
   },
 
   // Digital Signature Management
-  // Add signatures to contract (Owner and Tenant)
-  addSignatures: async (contractId, ownerSignature, tenantSignature) => {
+  // Sign contract with signature image URL
+  signContract: async (contractId, signatureBase64) => {
     try {
-      console.log("📝 Adding signatures to contract:", contractId);
-      const response = await api.put(`/api/Contract/${contractId}/signatures`, {
-        ownerSignature,
-        tenantSignature
-      });
-      console.log("✅ Signatures added successfully");
+      console.log("✍️ Signing contract:", contractId);
+      console.log("🖼️ Signature length:", signatureBase64?.length);
+      
+      // Backend endpoint: PUT /api/Contract/{id}/sign-contract
+      // Send signature in request body (base64 string is too long for query string)
+      const response = await api.put(
+        `/api/Contract/${contractId}/sign-contract`,
+        { Signature: signatureBase64 }
+      );
+      
+      console.log("✅ Contract signed successfully");
       return response.data || response;
     } catch (error) {
-      console.error('Error adding signatures:', error);
+      console.error('Error signing contract:', error);
       throw error;
     }
   },

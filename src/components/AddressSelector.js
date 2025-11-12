@@ -45,9 +45,12 @@ const AddressSelector = ({
   };
 
   const loadWards = async (provinceCode) => {
+    console.log('🔄 Loading wards for province:', provinceCode);
     setIsLoadingWards(true);
     try {
       const data = await vietnamAddressService.getWardsByProvince(provinceCode);
+      console.log('✅ Loaded wards:', data.length, 'wards');
+      console.log('📋 First few wards:', data.slice(0, 3));
       setWards(data);
     } catch (error) {
       console.error('❌ Error loading wards:', error);
@@ -59,6 +62,8 @@ const AddressSelector = ({
   const handleProvinceChange = useCallback((e) => {
     const provinceCode = parseInt(e.target.value);
     const selectedProvince = provinces.find(p => p.code === provinceCode);
+
+    console.log('🏙️ Province changed:', { provinceCode, provinceName: selectedProvince?.name });
 
     onChange({
       ...value,
