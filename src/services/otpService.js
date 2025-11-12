@@ -7,42 +7,62 @@ class OtpService {
   }
 
   // Gửi OTP verification email cho contract signature
-  // actor: "Tenant" hoặc "Owner"
-  async sendVerificationOtp(email, contractId, actor) {
+  async sendContractOtp(contractId, email) {
     try {
-      console.log("📧 Sending verification OTP to:", email);
+      console.log("📧 Sending contract OTP to:", email);
       console.log("📝 Contract ID:", contractId);
-      console.log("👤 Actor:", actor);
 
-      // Endpoint mới: /send-otp/{contractId}/{actor}
-      // Chỉ cần gửi Email trong body, backend tự generate OTP
-      const response = await api.post(`${this.mailApiUrl}/send-otp/${contractId}/${actor}`, {
-        Email: email
-      });
+      // Backend endpoint: POST /api/Mail/send-otp/{contractId}?email={email}
+      const response = await api.post(`${this.mailApiUrl}/send-otp/${contractId}?email=${encodeURIComponent(email)}`);
       console.log("✅ OTP sent successfully:", response);
-      return response;
+      
+      // Response contains otpId that we need for verification
+      return response.data || response;
     } catch (error) {
-      console.error("❌ Error sending OTP:", error);
+      console.error("❌ Error sending contract OTP:", error);
       console.error("❌ Error details:", error.response?.data);
       throw error;
     }
   }
 
-  // Verify OTP cho contract signature
-  // actor: "Tenant" hoặc "Owner"
-  async verifyContractOtp(contractId, otp, actor) {
+  // Verify OTP cho contract signature - using contractId
+  async verifyContractOtpByContract(contractId, otpCode) {
     try {
       console.log("🔍 Verifying OTP for Contract:", contractId);
-      console.log("👤 Actor:", actor);
+      console.log("🔢 OTP Code:", otpCode);
 
-      // Endpoint mới: /verify-otp/{contractId}/{actor}
-      const response = await api.post(`${this.mailApiUrl}/verify-otp/${contractId}/${actor}`, {
-        Otp: otp
+      // Backend endpoint: POST /api/Mail/verify-otp/{contractId}
+      // Body: { "Otp": "123456" } - Note: Capital O for Otp
+      const response = await api.post(`${this.mailApiUrl}/verify-otp/${contractId}`, {
+        Otp: otpCode // Backend expects capital O
       });
+      
       console.log("✅ OTP verified successfully:", response);
-      return response.data;
+      return response.data || response;
     } catch (error) {
       console.error("❌ Error verifying OTP:", error);
+      console.error("❌ Error response:", error.response?.data);
+      throw error;
+    }
+  }
+
+  // Verify OTP cho contract signature - using otpId (old method)
+  async verifyContractOtp(otpId, otpCode) {
+    try {
+      console.log("🔍 Verifying OTP ID:", otpId);
+      console.log("🔢 OTP Code:", otpCode);
+
+      // Backend endpoint: PUT /api/Mail/verify-otp/{otpId}
+      // Body: { "Otp": "123456" } - Note: Capital O for Otp
+      const response = await api.put(`${this.mailApiUrl}/verify-otp/${otpId}`, {
+        Otp: otpCode // Backend expects capital O
+      });
+      
+      console.log("✅ OTP verified successfully:", response);
+      return response.data || response;
+    } catch (error) {
+      console.error("❌ Error verifying OTP:", error);
+      console.error("❌ Error response:", error.response?.data);
       throw error;
     }
   }

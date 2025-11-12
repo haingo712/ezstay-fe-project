@@ -16,13 +16,21 @@ class RoomService {
         // Backend returns ImageUrl as List<string> (array)
         const imageUrls = response.ImageUrl || response.imageUrl || response.Images || response.images || [];
 
+        // Get room status - check both PascalCase and camelCase
+        let roomStatus = 0; // Default to Available
+        if (response.RoomStatus !== undefined && response.RoomStatus !== null) {
+          roomStatus = response.RoomStatus;
+        } else if (response.roomStatus !== undefined && response.roomStatus !== null) {
+          roomStatus = response.roomStatus;
+        }
+
         return {
           ...response,
           // Support both old and new formats
           images: Array.isArray(imageUrls) ? imageUrls : (imageUrls ? [imageUrls] : []),
           imageUrl: Array.isArray(imageUrls) ? imageUrls[0] : imageUrls,
           roomName: response.RoomName || response.roomName,
-          roomStatus: response.RoomStatus !== undefined ? response.RoomStatus : response.roomStatus,
+          roomStatus: roomStatus,
           houseId: response.HouseId || response.houseId,
           area: response.Area || response.area,
           price: response.Price || response.price,
@@ -121,11 +129,22 @@ class RoomService {
         // Backend returns ImageUrl as List<string> (array)
         const imageUrls = room.ImageUrl || room.imageUrl || room.Images || room.images || [];
 
+        // Get room status - check both PascalCase and camelCase
+        let roomStatus = 0; // Default to Available
+        if (room.RoomStatus !== undefined && room.RoomStatus !== null) {
+          roomStatus = room.RoomStatus;
+        } else if (room.roomStatus !== undefined && room.roomStatus !== null) {
+          roomStatus = room.roomStatus;
+        }
+
         console.log(`🚪 Room ${room.RoomName || room.roomName}:`, {
           hasImageUrl: !!room.ImageUrl,
           imageUrlType: typeof room.ImageUrl,
           imageUrlValue: room.ImageUrl,
-          isArray: Array.isArray(room.ImageUrl)
+          isArray: Array.isArray(room.ImageUrl),
+          roomStatus: roomStatus,
+          rawRoomStatus: room.RoomStatus,
+          rawroomStatus: room.roomStatus
         });
 
         return {
@@ -134,7 +153,7 @@ class RoomService {
           images: Array.isArray(imageUrls) ? imageUrls : (imageUrls ? [imageUrls] : []),
           imageUrl: Array.isArray(imageUrls) ? imageUrls[0] : imageUrls,
           roomName: room.RoomName || room.roomName,
-          roomStatus: room.RoomStatus !== undefined ? room.RoomStatus : room.roomStatus,
+          roomStatus: roomStatus,
           houseId: room.HouseId || room.houseId,
           area: room.Area || room.area,
           price: room.Price || room.price,

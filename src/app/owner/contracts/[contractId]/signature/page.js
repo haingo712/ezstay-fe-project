@@ -15,6 +15,7 @@ export default function ContractSignaturePage() {
     const contractId = params.contractId;
     const email = searchParams.get('email');
     const boardingHouseId = searchParams.get('boardingHouseId');
+    const otpId = searchParams.get('otpId'); // Get otpId from URL
 
     const [contract, setContract] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -29,7 +30,7 @@ export default function ContractSignaturePage() {
     useEffect(() => {
         const loadContract = async () => {
             try {
-                const data = await contractService.getContractById(contractId);
+                const data = await contractService.getById(contractId);
                 setContract(data);
 
                 // Pre-fill data from sessionStorage
@@ -71,12 +72,31 @@ export default function ContractSignaturePage() {
         try {
             setResending(true);
 
-            console.log('� Resending OTP to:', email);
+            console.log('📧 Resending OTP to:', email);
+            console.log('📝 Contract ID:', contractId);
 
             // Backend will generate new OTP and send email
-            await otpService.sendVerificationOtp(email, null, contractId);
+            const otpResult = await otpService.sendContractOtp(contractId, email);
+            console.log('✅ New OTP sent, result:', otpResult);
+            
+            // Get new otpId
+            const newOtpId = otpResult?.otpId || otpResult?.id || otpResult?.Id || otpResult?.data?.id;
+            
+            if (newOtpId) {
+                // Update URL with new otpId
+                router.push(`/owner/contracts/${contractId}/signature?email=${encodeURIComponent(email)}&boardingHouseId=${boardingHouseId}&otpId=${newOtpId}`, undefined, { shallow: true });
+                
+                // Update sessionStorage
+                const pendingSignature = sessionStorage.getItem('pendingSignature');
+                if (pendingSignature) {
+                    const sigData = JSON.parse(pendingSignature);
+                    sigData.otpId = newOtpId;
+                    sessionStorage.setItem('pendingSignature', JSON.stringify(sigData));
+                }
+            }
 
             setOtpTimer(300); // Reset to 5 minutes
+            setOtpCode(''); // Clear current input
             toast.success('Mã OTP mới đã được gửi');
         } catch (error) {
             console.error('Error resending OTP:', error);
@@ -92,42 +112,108 @@ export default function ContractSignaturePage() {
             return;
         }
 
+        if (!otpId) {
+            toast.error('Không tìm thấy phiên OTP. Vui lòng thử lại.');
+            return;
+        }
+
         try {
             setVerifying(true);
 
-            // Verify OTP with backend
-            const result = await otpService.verifyContractOtp(email, otpCode);
+            console.log('🔐 Verifying OTP...');
+            console.log('🔑 OTP ID:', otpId);
+            console.log('🔢 OTP Code:', otpCode);
+
+            // Step 1: Verify OTP with backend
+            const result = await otpService.verifyContractOtp(otpId, otpCode);
             console.log('✅ OTP verified:', result);
+            
+            toast.success('OTP đã xác thực! Đang upload chữ ký...');
 
-            // Get signature data
+            // Step 2: Get signature data and upload
             const pendingSignature = sessionStorage.getItem('pendingSignature');
-            if (pendingSignature) {
-                const sigData = JSON.parse(pendingSignature);
-
-                // TODO: Call API to save signature to contract
-                // await contractService.addSignature(contractId, {
-                //   signatureName: sigData.signatureName,
-                //   signatureImage: sigData.signaturePreview,
-                //   signatureType: sigData.signatureTab
-                // });
+            if (!pendingSignature) {
+                toast.error('Không tìm thấy dữ liệu chữ ký. Vui lòng thử lại.');
+                setVerifying(false);
+                return;
             }
 
-            // Clear data
-            otpService.clearOtp(email);
-            sessionStorage.removeItem('pendingSignature');
+            const sigData = JSON.parse(pendingSignature);
+            console.log('📝 Signature data:', sigData);
 
-            toast.success('Chữ ký điện tử đã được lưu thành công!');
+            // Step 3: Upload signature image to get URL
+            let signatureUrl;
+            
+            if (sigData.signatureTab === 'draw' || sigData.signatureTab === 'file') {
+                // Upload from data URL (canvas or uploaded file)
+                const imageService = (await import('@/services/imageService')).default;
+                signatureUrl = await imageService.uploadSignatureFromDataUrl(sigData.signaturePreview);
+                console.log('🖼️ Signature uploaded to:', signatureUrl);
+            } else if (sigData.signatureTab === 'manual') {
+                // For manual signature, you might want to render text as image first
+                // For now, we'll upload the preview data
+                const imageService = (await import('@/services/imageService')).default;
+                signatureUrl = await imageService.uploadSignatureFromDataUrl(sigData.signaturePreview);
+                console.log('🖼️ Manual signature uploaded to:', signatureUrl);
+            }
+
+            if (!signatureUrl) {
+                toast.error('Lỗi khi upload chữ ký. Vui lòng thử lại.');
+                setVerifying(false);
+                return;
+            }
+
+            toast.success('Chữ ký đã upload! Đang ký hợp đồng...');
+
+            // Step 4: Sign contract with signature URL
+            await contractService.signContract(contractId, signatureUrl);
+            console.log('✅ Contract signed successfully');
+
+            // Step 5: Generate and upload signed PDF with embedded signature
+            toast.info('Đang tạo file PDF hợp đồng...');
+            const contractPdfService = (await import('@/services/contractPdfService')).default;
+            
+            try {
+                // Generate PDF with tenant signature embedded
+                const pdfResult = await contractPdfService.signContractWithPdf(
+                    contract, 
+                    sigData.signaturePreview, // tenant signature
+                    null // owner signature (if you have it, pass it here)
+                );
+                console.log('✅ Signed PDF generated and uploaded:', pdfResult.pdfUrl);
+                toast.success('File PDF hợp đồng đã được tạo thành công!');
+            } catch (pdfError) {
+                console.error('⚠️ Error generating PDF, but contract is already signed:', pdfError);
+                // Don't fail the whole process if PDF generation fails
+                // The contract signature is already saved
+                toast.warning('Hợp đồng đã ký nhưng không thể tạo PDF. Vui lòng liên hệ hỗ trợ.');
+            }
+
+            // Step 6: Clean up
+            sessionStorage.removeItem('pendingSignature');
+            
+            toast.success('Hợp đồng đã được ký thành công! 🎉');
 
             // Navigate back to contracts page
-            if (boardingHouseId) {
-                router.push(`/owner/boarding-houses/${boardingHouseId}/contracts`);
-            } else {
-                router.push('/owner/contracts');
-            }
+            setTimeout(() => {
+                if (boardingHouseId) {
+                    router.push(`/owner/boarding-houses/${boardingHouseId}/contracts`);
+                } else {
+                    router.push('/owner/contracts');
+                }
+            }, 1500);
 
         } catch (error) {
-            console.error('Error verifying OTP:', error);
-            toast.error('Mã OTP không đúng hoặc đã hết hạn');
+            console.error('Error in signature process:', error);
+            console.error('Error details:', error.response?.data);
+            
+            if (error.response?.status === 400) {
+                toast.error('Mã OTP không đúng hoặc đã hết hạn');
+            } else if (error.response?.status === 404) {
+                toast.error('Không tìm thấy phiên OTP. Vui lòng thử lại.');
+            } else {
+                toast.error('Có lỗi xảy ra. Vui lòng thử lại.');
+            }
         } finally {
             setVerifying(false);
         }

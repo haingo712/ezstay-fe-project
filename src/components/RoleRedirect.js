@@ -23,6 +23,9 @@ export default function RoleRedirect({ children }) {
     // Public pages that everyone can access during auth flow
     if (pathname === '/login' || pathname === '/register') return true;
     
+    // Profile page accessible to all authenticated users
+    if (pathname === '/profile') return true;
+    
     // Check role-based access
     if (userRole === 2 && !pathname.startsWith('/owner')) return false; // Owner trying non-owner page
     if (userRole === 3 && !pathname.startsWith('/staff')) return false; // Staff trying non-staff page  
@@ -56,6 +59,12 @@ export default function RoleRedirect({ children }) {
       // If user role is not available yet, wait
       if (!userRole) {
         console.log("🔄 RoleRedirect: User role not yet available, waiting...");
+        return;
+      }
+
+      // Allow all authenticated users to access profile page
+      if (pathname === '/profile') {
+        console.log("✅ RoleRedirect: Profile page accessible to all authenticated users");
         return;
       }
 
