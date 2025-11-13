@@ -70,6 +70,7 @@ export default function ContractsManagementPage() {
   // Contract form data
   const [contractData, setContractData] = useState({
     roomId: "", // Will be selected
+    roomPrice: 0, // Room price - required by backend
     checkinDate: "",
     checkoutDate: "",
     depositAmount: 0,
@@ -84,8 +85,11 @@ export default function ContractsManagementPage() {
     dateOfBirth: "",
     phoneNumber: "",
     email: "",
+    gender: "Male", // Default gender
     provinceId: "",
+    provinceName: "",
     wardId: "",
+    wardName: "",
     address: "",
     temporaryResidence: "",
     citizenIdNumber: "",
@@ -201,8 +205,11 @@ export default function ContractsManagementPage() {
             dateOfBirth: '',
             phoneNumber: '',
             email: '',
+            gender: 'Male', // Default gender
             provinceId: '',
+            provinceName: '',
             wardId: '',
+            wardName: '',
             address: '',
             temporaryResidence: '',
             citizenIdNumber: '',
@@ -467,6 +474,7 @@ export default function ContractsManagementPage() {
           dateOfBirth: (userData.dateOfBirth || userData.DateOfBirth) ? (userData.dateOfBirth || userData.DateOfBirth).split('T')[0] : '',
           phoneNumber: userData.phone || userData.Phone || '',
           email: userData.email || userData.Email || '',
+          gender: userData.gender || userData.Gender || 'Male',
           // Address with names from backend
           provinceId: userData.provinceId || userData.ProvinceId || '',
           provinceName: userData.provinceName || userData.ProvinceName || '',
@@ -517,10 +525,6 @@ export default function ContractsManagementPage() {
     console.log("🏛️ Total provinces:", provinces.length);
     console.log("🏛️ First province sample:", provinces[0]);
 
-    // Update provinceId in profile
-    updateProfile(profileIndex, 'provinceId', provinceCode);
-    updateProfile(profileIndex, 'wardId', ''); // Reset ward when province changes
-
     // Find selected province and update wards FOR THIS PROFILE
     const selectedProvince = provinces.find(p => {
       const match = p.code.toString() === provinceCode.toString();
@@ -529,6 +533,12 @@ export default function ContractsManagementPage() {
       }
       return match;
     });
+
+    // Update provinceId AND provinceName in profile
+    updateProfile(profileIndex, 'provinceId', provinceCode);
+    updateProfile(profileIndex, 'provinceName', selectedProvince?.name || '');
+    updateProfile(profileIndex, 'wardId', ''); // Reset ward when province changes
+    updateProfile(profileIndex, 'wardName', ''); // Reset ward name
 
     if (selectedProvince) {
       console.log("🏘️ Setting wards for profile", profileIndex, ":", selectedProvince.wards?.length, "wards");
@@ -551,7 +561,14 @@ export default function ContractsManagementPage() {
 
   const handleWardChange = (profileIndex, wardCode) => {
     console.log("🏘️ Ward selected for profile", profileIndex, ":", wardCode);
+
+    // Find selected ward from wardsByProfile for this profile
+    const wardsForProfile = wardsByProfile[profileIndex] || [];
+    const selectedWard = wardsForProfile.find(w => w.code.toString() === wardCode.toString());
+
+    // Update wardId AND wardName in profile
     updateProfile(profileIndex, 'wardId', wardCode);
+    updateProfile(profileIndex, 'wardName', selectedWard?.name || '');
   };
 
   const handleViewContract = (contract) => {
@@ -597,6 +614,7 @@ export default function ContractsManagementPage() {
       setContractData({
         tenantId: fullContract.tenantId || "",
         roomId: fullContract.roomId || "",
+        roomPrice: fullContract.roomPrice || 0,
         checkinDate: fullContract.checkinDate ? fullContract.checkinDate.split('T')[0] : "",
         checkoutDate: fullContract.checkoutDate ? fullContract.checkoutDate.split('T')[0] : "",
         depositAmount: fullContract.depositAmount || 0,
@@ -651,18 +669,21 @@ export default function ContractsManagementPage() {
             userId: profile.userId || profile.UserId || null,
             fullName: profile.fullName || profile.FullName || "",
             dateOfBirth: (profile.dateOfBirth || profile.DateOfBirth) ? (profile.dateOfBirth || profile.DateOfBirth).split('T')[0] : "",
-            phoneNumber: profile.phoneNumber || profile.PhoneNumber || "",
+            phoneNumber: profile.phoneNumber || profile.PhoneNumber || profile.phone || profile.Phone || "",
             email: profile.email || profile.Email || "",
+            gender: profile.gender || profile.Gender || "Male",
             provinceId: profile.provinceId || profile.ProvinceId || "",
-            districtId: profile.districtId || profile.DistrictId || "",
+            provinceName: profile.provinceName || profile.ProvinceName || "",
             wardId: profile.wardId || profile.WardId || "",
+            wardName: profile.wardName || profile.WardName || "",
             address: profile.address || profile.Address || "",
             temporaryResidence: profile.temporaryResidence || profile.TemporaryResidence || "",
             citizenIdNumber: profile.citizenIdNumber || profile.CitizenIdNumber || "",
             citizenIdIssuedDate: (profile.citizenIdIssuedDate || profile.CitizenIdIssuedDate) ? (profile.citizenIdIssuedDate || profile.CitizenIdIssuedDate).split('T')[0] : "",
             citizenIdIssuedPlace: profile.citizenIdIssuedPlace || profile.CitizenIdIssuedPlace || "",
             notes: profile.notes || profile.Notes || "",
-            avatarUrl: profile.avatarUrl || profile.AvatarUrl || "",
+            // Avatar is returned as 'avatar' field from backend response (mapped from AvatarUrl in backend)
+            avatarUrl: profile.avatar || profile.Avatar || profile.avatarUrl || profile.AvatarUrl || "",
             frontImageUrl: profile.frontImageUrl || profile.FrontImageUrl || "",
             backImageUrl: profile.backImageUrl || profile.BackImageUrl || ""
           };
@@ -695,9 +716,11 @@ export default function ContractsManagementPage() {
             dateOfBirth: "",
             phoneNumber: "",
             email: "",
+            gender: "Male", // Default gender
             provinceId: "",
-            districtId: "",
+            provinceName: "",
             wardId: "",
+            wardName: "",
             address: "",
             temporaryResidence: "",
             citizenIdNumber: "",
@@ -1029,30 +1052,37 @@ export default function ContractsManagementPage() {
 
       // Prepare request data with ProfilesInContract array (NEW STRUCTURE)
       const requestData = {
-        ProfilesInContract: profiles.map(p => ({
-          UserId: p.userId || null,
-          FullName: p.fullName,
-          DateOfBirth: new Date(p.dateOfBirth).toISOString(),
-          PhoneNumber: p.phoneNumber,
-          Email: p.email || null,
-          ProvinceId: p.provinceId,
-          WardId: p.wardId,
-          Address: p.address,
-          TemporaryResidence: p.temporaryResidence,
-          CitizenIdNumber: p.citizenIdNumber,
-          CitizenIdIssuedDate: new Date(p.citizenIdIssuedDate).toISOString(),
-          CitizenIdIssuedPlace: p.citizenIdIssuedPlace,
-          Notes: p.notes || null,
-          AvatarUrl: p.avatarUrl || null,
-          FrontImageUrl: p.frontImageUrl,
-          BackImageUrl: p.backImageUrl
-        })),
+        ProfilesInContract: profiles.map(p => {
+          // Generate a new GUID for userId if not provided (backend requires UserId)
+          const userId = p.userId && p.userId !== "" ? p.userId : '00000000-0000-0000-0000-000000000000'; // Use null GUID if no userId
+
+          return {
+            UserId: userId,
+            Gender: String(p.gender || "Male"), // Ensure it's a string
+            FullName: p.fullName || "",
+            Avatar: p.avatarUrl || "", // Backend expects 'Avatar', frontend uses 'avatarUrl'
+            DateOfBirth: new Date(p.dateOfBirth).toISOString(),
+            Phone: p.phoneNumber || "", // Backend expects 'Phone', frontend uses 'phoneNumber'
+            Email: p.email || "",
+            ProvinceName: p.provinceName || "",
+            WardName: p.wardName || "",
+            Address: p.address || "",
+            TemporaryResidence: p.temporaryResidence || "",
+            CitizenIdNumber: p.citizenIdNumber || "",
+            CitizenIdIssuedDate: new Date(p.citizenIdIssuedDate).toISOString(),
+            CitizenIdIssuedPlace: p.citizenIdIssuedPlace || "",
+            FrontImageUrl: p.frontImageUrl || "",
+            BackImageUrl: p.backImageUrl || ""
+          };
+        }),
         RoomId: contractData.roomId,
+        RoomPrice: parseFloat(contractData.roomPrice) || 0, // Required by backend
         CheckinDate: new Date(contractData.checkinDate).toISOString(),
         CheckoutDate: new Date(contractData.checkoutDate).toISOString(),
         DepositAmount: parseFloat(contractData.depositAmount),
         NumberOfOccupants: parseInt(contractData.numberOfOccupants),
         Notes: contractData.notes || null,
+        ServiceInfors: [], // Empty array for now - can be extended later
         ElectricityReading: {
           Price: utilityReadingData.electricityReading.price ? parseFloat(utilityReadingData.electricityReading.price) : null,
           Note: utilityReadingData.electricityReading.note || null,
@@ -1093,6 +1123,7 @@ export default function ContractsManagementPage() {
       setContractData({
         tenantId: "",
         roomId: "",
+        roomPrice: 0,
         checkinDate: "",
         checkoutDate: "",
         depositAmount: 0,
@@ -1105,8 +1136,11 @@ export default function ContractsManagementPage() {
         dateOfBirth: "",
         phoneNumber: "",
         email: "",
+        gender: "Male", // Default gender
         provinceId: "",
+        provinceName: "",
         wardId: "",
+        wardName: "",
         address: "",
         temporaryResidence: "",
         citizenIdNumber: "",
@@ -1146,7 +1180,15 @@ export default function ContractsManagementPage() {
       // Show detailed error message
       let errorMessage = `Error ${isEditMode ? 'updating' : 'creating'} contract: `;
       if (error.response?.status === 400) {
-        if (error.response.data?.errors) {
+        if (error.response.data?.message) {
+          // Backend custom error message (like "Không tìm thấy thông tin chủ trọ")
+          errorMessage = error.response.data.message;
+
+          // Provide helpful hint for owner profile error
+          if (errorMessage.includes('chủ trọ') || errorMessage.includes('owner')) {
+            errorMessage += '\n\n💡 Tip: Please make sure your owner profile is complete with all required information (Name, Phone, Email, Address, Citizen ID, etc.) before creating a contract.';
+          }
+        } else if (error.response.data?.errors) {
           // ASP.NET Core validation errors
           const validationErrors = Object.entries(error.response.data.errors)
             .map(([field, errors]) => `${field}: ${errors.join(', ')}`)
@@ -1248,16 +1290,29 @@ export default function ContractsManagementPage() {
       console.log('🔍 Fetching contract details for ID:', contractId);
       const fullContract = await contractService.getById(contractId);
       console.log('✅ Contract details loaded:', fullContract);
+      console.log('📋 Identity profiles:', fullContract.identityProfiles);
+
+      // Get owner info from contract position [1] (owner profile)
+      const ownerProfile = fullContract.identityProfiles?.[1];
+      const ownerName = ownerProfile?.fullName || ownerProfile?.FullName || user?.fullName || user?.name || '';
+      const ownerPhone = ownerProfile?.phone || ownerProfile?.Phone || ownerProfile?.phoneNumber || user?.phone || user?.phoneNumber || '';
+      const ownerEmail = ownerProfile?.email || ownerProfile?.Email || user?.email || user?.Email || '';
 
       setSelectedContract(fullContract);
       setShowSignatureModal(true);
       setSignatureStep(1); // Reset to step 1
-      setSignatureName(user?.fullName || user?.name || '');
-      setSignaturePhone(user?.phone || user?.phoneNumber || '');
+      setSignatureName(ownerName);
+      setSignaturePhone(ownerPhone);
+      setSignatureEmail(ownerEmail); // Set OWNER email from contract position [1]
       setSignaturePreview('');
       setOtpCode('');
       setOtpTimer(300);
       setCanResendOtp(false);
+
+      console.log('👤 Owner info set for signature (from contract position [1]):');
+      console.log('  - Name:', ownerName);
+      console.log('  - Phone:', ownerPhone);
+      console.log('  - Email:', ownerEmail);
 
       // Update URL to reflect contract ID
       router.push(`/owner/boarding-houses/${houseId}/contracts?contractId=${contractId}`, undefined, { shallow: true });
@@ -1273,7 +1328,7 @@ export default function ContractsManagementPage() {
     console.log('🔔 handleContinueToOtp called!');
     console.log('📝 signaturePreview:', signaturePreview);
     console.log('👤 signatureName:', signatureName);
-    
+
     if (!signaturePreview) {
       console.log('❌ No signature preview');
       toast.error('Vui lòng tạo chữ ký trước');
@@ -1290,17 +1345,19 @@ export default function ContractsManagementPage() {
       setSendingOtp(true);
       console.log('📝 Sending OTP...');
 
-      // Get user email from contract or current user
-      const userEmail = selectedContract?.identityProfiles?.[0]?.email ||
-        selectedContract?.identityProfiles?.[0]?.Email ||
+      // Get OWNER email from contract at position [1] (owner profile), NOT [0] (tenant)
+      const ownerEmail = selectedContract?.identityProfiles?.[1]?.email ||
+        selectedContract?.identityProfiles?.[1]?.Email ||
         user?.email ||
         user?.Email;
 
-      if (!userEmail) {
-        toast.error('Không tìm thấy email người dùng');
+      if (!ownerEmail) {
+        toast.error('Không tìm thấy email chủ trọ. Vui lòng cập nhật email trong hồ sơ của bạn.');
         setSendingOtp(false);
         return;
       }
+
+      console.log('📧 Sending OTP to OWNER email (from contract position [1]):', ownerEmail);
 
       // Get contract ID
       const contractId = selectedContract?.id || selectedContract?.Id;
@@ -1310,18 +1367,18 @@ export default function ContractsManagementPage() {
         return;
       }
 
-      console.log('📧 Sending OTP to email:', userEmail);
+      console.log('📧 Sending OTP to email:', ownerEmail);
       console.log('📝 Contract ID:', contractId);
 
       // Send OTP via MailAPI - Backend will generate OTP and return otpId
-      const otpResult = await otpService.sendContractOtp(contractId, userEmail);
+      const otpResult = await otpService.sendContractOtp(contractId, ownerEmail);
       console.log('✅ OTP sent, result:', otpResult);
-      
+
       // Extract otpId from response
       const otpId = otpResult?.otpId || otpResult?.data?.otpId;
-      
+
       console.log('🔍 Extracted OTP ID:', otpId);
-      
+
       if (!otpId) {
         console.error('❌ No OTP ID in response:', otpResult);
         toast.error('Error creating OTP. Please try again.');
@@ -1333,9 +1390,9 @@ export default function ContractsManagementPage() {
 
       // Store otpId and email for verification
       setCurrentOtpId(otpId);
-      setSignatureEmail(userEmail);
+      setSignatureEmail(ownerEmail);
 
-      toast.success(`Mã OTP đã được gửi đến email ${userEmail}`);
+      toast.success(`Mã OTP đã được gửi đến email ${ownerEmail}`);
 
       // Move to OTP verification step
       setSignatureStep(2);
@@ -1368,7 +1425,7 @@ export default function ContractsManagementPage() {
       // Resend OTP
       const otpResult = await otpService.sendContractOtp(contractId, signatureEmail);
       const otpId = otpResult?.otpId || otpResult?.id || otpResult?.Id || otpResult?.data?.id;
-      
+
       if (!otpId) {
         toast.error('Lỗi khi gửi lại OTP');
         setSendingOtp(false);
@@ -1434,7 +1491,7 @@ export default function ContractsManagementPage() {
       // Step 2: Use base64 signature directly (no upload needed)
       console.log('2️⃣ Using base64 signature directly...');
       console.log('� Signature preview length:', signaturePreview?.length);
-      
+
       if (!signaturePreview) {
         toast.error('Signature not found');
         setVerifyingOtp(false);
@@ -1492,9 +1549,40 @@ export default function ContractsManagementPage() {
       return;
     }
 
-    // Generate signature preview with unique code
+    // Generate signature text with unique code
     const uniqueCode = Math.random().toString(36).substring(2, 15).toUpperCase();
-    setSignaturePreview(`Được ký bởi/ Signed by:\n${signatureName}\n${uniqueCode}`);
+    const signatureText = `Được ký bởi/ Signed by:\n${signatureName}\n${uniqueCode}`;
+
+    // Convert text to image using canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = 400;
+    canvas.height = 150;
+    const ctx = canvas.getContext('2d');
+
+    // Set background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Set text style
+    ctx.fillStyle = '#000000';
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Draw text lines
+    const lines = signatureText.split('\n');
+    const lineHeight = 25;
+    const startY = (canvas.height - (lines.length * lineHeight)) / 2;
+
+    lines.forEach((line, index) => {
+      ctx.fillText(line, canvas.width / 2, startY + (index * lineHeight) + lineHeight / 2);
+    });
+
+    // Convert canvas to base64 image
+    const base64Image = canvas.toDataURL('image/png');
+    setSignaturePreview(base64Image);
+
+    console.log('✅ Manual signature generated as base64 image');
   };
 
   const handleSignatureFileUpload = (e) => {
@@ -1560,7 +1648,7 @@ export default function ContractsManagementPage() {
   const generateContractPDF = async (contract) => {
     try {
       console.log('📄 Preparing contract PDF with complete data...');
-      
+
       // Fetch signatures
       let signatures = null;
       try {
@@ -1568,7 +1656,7 @@ export default function ContractsManagementPage() {
       } catch (error) {
         console.log('No signatures found, will generate PDF without signatures');
       }
-      
+
       // Enrich contract with room details if not already present
       let enrichedContract = { ...contract };
       if (contract.roomId && !contract.roomDetails) {
@@ -1581,7 +1669,7 @@ export default function ContractsManagementPage() {
           console.error('❌ Error fetching room details for PDF:', error);
         }
       }
-      
+
       // Fetch identity profiles if not already present
       if (!enrichedContract.identityProfiles || enrichedContract.identityProfiles.length === 0) {
         console.log('🔍 Identity profiles not found in contract, fetching...');
@@ -1597,7 +1685,7 @@ export default function ContractsManagementPage() {
           console.error('❌ Error fetching identity profiles for PDF:', error);
         }
       }
-      
+
       downloadContractPDF(enrichedContract, signatures?.ownerSignature || null, signatures?.tenantSignature || null);
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -1609,7 +1697,7 @@ export default function ContractsManagementPage() {
   const previewContractPDF = async (contract) => {
     try {
       console.log('👁️ Preparing contract preview with complete data...');
-      
+
       // Fetch signatures
       let signatures = null;
       try {
@@ -1617,7 +1705,7 @@ export default function ContractsManagementPage() {
       } catch (error) {
         console.log('No signatures found, will preview PDF without signatures');
       }
-      
+
       // Enrich contract with room details if not already present
       let enrichedContract = { ...contract };
       if (contract.roomId && !contract.roomDetails) {
@@ -1630,7 +1718,7 @@ export default function ContractsManagementPage() {
           console.error('❌ Error fetching room details for preview:', error);
         }
       }
-      
+
       // Fetch identity profiles if not already present
       if (!enrichedContract.identityProfiles || enrichedContract.identityProfiles.length === 0) {
         console.log('🔍 Identity profiles not found in contract, fetching...');
@@ -2026,12 +2114,16 @@ export default function ContractsManagementPage() {
 
                             {/* Province and Ward Information */}
                             <div>
-                              <span className="font-medium text-gray-700 dark:text-gray-300">Province ID:</span>
-                              <span className="ml-2 text-gray-900 dark:text-white">{profile.provinceId || 'N/A'}</span>
+                              <span className="font-medium text-gray-700 dark:text-gray-300">Province:</span>
+                              <span className="ml-2 text-gray-900 dark:text-white">
+                                {profile.provinceName || profile.provinceId || 'N/A'}
+                              </span>
                             </div>
                             <div>
-                              <span className="font-medium text-gray-700 dark:text-gray-300">Ward ID:</span>
-                              <span className="ml-2 text-gray-900 dark:text-white">{profile.wardId || 'N/A'}</span>
+                              <span className="font-medium text-gray-700 dark:text-gray-300">Ward:</span>
+                              <span className="ml-2 text-gray-900 dark:text-white">
+                                {profile.wardName || profile.wardId || 'N/A'}
+                              </span>
                             </div>
 
                             {/* ID Images */}
@@ -2616,10 +2708,19 @@ export default function ContractsManagementPage() {
                         <select
                           value={contractData.roomId}
                           onChange={(e) => {
-                            console.log("🏠 Room selected:", e.target.value);
+                            const selectedRoomId = e.target.value;
+                            console.log("🏠 Room selected:", selectedRoomId);
+
+                            // Find selected room to get price
+                            const selectedRoom = rooms.find(r => r.id === selectedRoomId);
+                            const roomPrice = selectedRoom?.price || selectedRoom?.roomPrice || 0;
+
+                            console.log("💰 Room price:", roomPrice);
+
                             setContractData({
                               ...contractData,
-                              roomId: e.target.value
+                              roomId: selectedRoomId,
+                              roomPrice: roomPrice
                             });
                           }}
                           className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${contractErrors.roomId ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
@@ -3469,19 +3570,11 @@ export default function ContractsManagementPage() {
 
                     <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg p-6 bg-white dark:bg-gray-700 min-h-[150px] flex items-center justify-center">
                       {signaturePreview ? (
-                        signatureTab === 'manual' ? (
-                          <div className="text-center border-2 border-gray-400 rounded-lg p-4 inline-block">
-                            <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
-                              {signaturePreview}
-                            </pre>
-                          </div>
-                        ) : (
-                          <img
-                            src={signaturePreview}
-                            alt="Signature preview"
-                            className="max-w-full max-h-[120px] object-contain"
-                          />
-                        )
+                        <img
+                          src={signaturePreview}
+                          alt="Signature preview"
+                          className="max-w-full max-h-[120px] object-contain"
+                        />
                       ) : (
                         <p className="text-gray-400 dark:text-gray-500 italic">
                           Chưa có chữ ký
