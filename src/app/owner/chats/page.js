@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import chatService from '@/services/chatService';
-import { 
-  Search, 
-  Send, 
+import {
+  Search,
+  Send,
   User,
   MessageSquare,
   Clock,
@@ -27,7 +27,9 @@ export default function OwnerChatsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     loadChatRooms();
@@ -58,7 +60,7 @@ export default function OwnerChatsPage() {
       const rooms = await chatService.getOwnerChatRooms();
       console.log('Loaded chat rooms:', rooms);
       setChatRooms(rooms || []);
-      
+
       // Auto-select first room if available
       if (rooms && rooms.length > 0 && !selectedChatRoom) {
         setSelectedChatRoom(rooms[0]);
@@ -82,19 +84,31 @@ export default function OwnerChatsPage() {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    
-    if (!newMessage.trim() || !selectedChatRoom || sending) {
+
+    if ((!newMessage.trim() && !selectedImage) || !selectedChatRoom || sending) {
       return;
     }
 
     try {
       setSending(true);
-      await chatService.sendMessage(selectedChatRoom.id, newMessage.trim());
+
+      // If there's an image, send it along with the message
+      if (selectedImage) {
+        await chatService.sendMessageWithImage(
+          selectedChatRoom.id,
+          newMessage.trim(), // Can be empty when sending image
+          selectedImage
+        );
+      } else {
+        await chatService.sendMessage(selectedChatRoom.id, newMessage.trim());
+      }
+
       setNewMessage('');
-      
+      setSelectedImage(null);
+
       // Reload messages
       await loadMessages(selectedChatRoom.id);
-      
+
       // Update chat room list to reflect new message
       await loadChatRooms();
     } catch (error) {
@@ -102,6 +116,20 @@ export default function OwnerChatsPage() {
       alert('Failed to send message. Please try again.');
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -124,7 +152,7 @@ export default function OwnerChatsPage() {
     const date = new Date(timestamp);
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
@@ -136,10 +164,10 @@ export default function OwnerChatsPage() {
     const userEmail = room.user?.email || room.user?.Email || '';
     const userPhone = room.user?.phone || room.user?.Phone || '';
     const searchLower = searchTerm.toLowerCase();
-    
+
     return userName.toLowerCase().includes(searchLower) ||
-           userEmail.toLowerCase().includes(searchLower) ||
-           userPhone.toLowerCase().includes(searchLower);
+      userEmail.toLowerCase().includes(searchLower) ||
+      userPhone.toLowerCase().includes(searchLower);
   });
 
   return (
@@ -151,7 +179,7 @@ export default function OwnerChatsPage() {
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
             Messages
           </h2>
-          
+
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -186,14 +214,13 @@ export default function OwnerChatsPage() {
               const userEmail = room.user?.email || room.user?.Email || '';
               const userPhone = room.user?.phone || room.user?.Phone || '';
               const lastMessageTime = room.lastMessageAt || room.LastMessageAt;
-              
+
               return (
                 <div
                   key={room.id}
                   onClick={() => handleSelectChatRoom(room)}
-                  className={`p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                    isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                  }`}
+                  className={`p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                    }`}
                 >
                   <div className="flex items-start gap-3">
                     {/* Avatar */}
@@ -211,11 +238,11 @@ export default function OwnerChatsPage() {
                           {formatLastMessageTime(lastMessageTime)}
                         </span>
                       </div>
-                      
+
                       <p className="text-xs text-gray-600 dark:text-gray-400 truncate mb-1">
                         {userEmail}
                       </p>
-                      
+
                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {userPhone}
                       </p>
@@ -250,7 +277,7 @@ export default function OwnerChatsPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button 
+                  <button
                     className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                     title={selectedChatRoom.user?.phone || selectedChatRoom.user?.Phone || 'No phone'}
                   >
@@ -264,7 +291,7 @@ export default function OwnerChatsPage() {
                   </button>
                 </div>
               </div>
-              
+
               {/* Contact Info Bar */}
               <div className="px-6 py-2 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-4 text-xs">
@@ -296,9 +323,9 @@ export default function OwnerChatsPage() {
                   {messages.map((message, index) => {
                     const currentUserId = user?.id || user?.userId || user?.Id;
                     const messageSenderId = message.senderId || message.SenderId;
-                    const isOwn = currentUserId && messageSenderId && 
-                                  currentUserId.toString() === messageSenderId.toString();
-                    
+                    const isOwn = currentUserId && messageSenderId &&
+                      currentUserId.toString() === messageSenderId.toString();
+
                     return (
                       <div
                         key={message.id || index}
@@ -310,18 +337,35 @@ export default function OwnerChatsPage() {
                               <User className="h-4 w-4 text-white" />
                             </div>
                           )}
-                          
+
                           <div
-                            className={`px-4 py-2 rounded-2xl ${
-                              isOwn
+                            className={`px-4 py-2 rounded-2xl ${isOwn
                                 ? 'bg-blue-600 text-white rounded-br-none'
                                 : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
-                            }`}
+                              }`}
                           >
-                            <p className="text-sm">{message.content || message.Content}</p>
-                            <p className={`text-xs mt-1 ${
-                              isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
-                            }`}>
+                            {/* Display images if available */}
+                            {message.image && message.image.length > 0 && (
+                              <div className="mb-2 space-y-2">
+                                {message.image.map((imageUrl, imgIndex) => (
+                                  <img
+                                    key={imgIndex}
+                                    src={imageUrl}
+                                    alt="Sent image"
+                                    className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                    onClick={() => window.open(imageUrl, '_blank')}
+                                  />
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Display message content only if not empty/whitespace */}
+                            {(message.content || message.Content) && (message.content || message.Content).trim() && (
+                              <p className="text-sm">{message.content || message.Content}</p>
+                            )}
+
+                            <p className={`text-xs mt-1 ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
+                              }`}>
                               {formatMessageTime(message.sentAt || message.SentAt)}
                             </p>
                           </div>
@@ -336,7 +380,35 @@ export default function OwnerChatsPage() {
 
             {/* Message Input with Icons */}
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+              {/* Image Preview */}
+              {selectedImage && (
+                <div className="mb-3 relative inline-block">
+                  <img
+                    src={URL.createObjectURL(selectedImage)}
+                    alt="Preview"
+                    className="h-20 w-20 object-cover rounded-lg"
+                  />
+                  <button
+                    onClick={handleRemoveImage}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+
               <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+
                 {/* Action Buttons */}
                 <div className="flex items-center gap-1">
                   <button
@@ -355,6 +427,7 @@ export default function OwnerChatsPage() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => fileInputRef.current?.click()}
                     className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                     title="Send image"
                   >
@@ -375,7 +448,7 @@ export default function OwnerChatsPage() {
                 {/* Send Button */}
                 <button
                   type="submit"
-                  disabled={!newMessage.trim() || sending}
+                  disabled={(!newMessage.trim() && !selectedImage) || sending}
                   className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {sending ? (

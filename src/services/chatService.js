@@ -12,9 +12,9 @@ class ChatService {
   getAuthToken() {
     if (typeof window !== 'undefined') {
       // Try different token keys used by the app
-      return localStorage.getItem('authToken') || 
-             localStorage.getItem('ezstay_token') || 
-             localStorage.getItem('token');
+      return localStorage.getItem('authToken') ||
+        localStorage.getItem('ezstay_token') ||
+        localStorage.getItem('token');
     }
     return null;
   }
@@ -35,17 +35,17 @@ class ChatService {
   }
 
   /**
-   * Create a chat room for a specific post
-   * @param {string} postId - The rental post ID
+   * Create a chat room for a specific owner
+   * @param {string} ownerId - The owner's account ID
    * @returns {Promise} Chat room creation response
    */
-  async createChatRoom(postId) {
+  async createChatRoom(ownerId) {
     try {
-      console.log('Creating chat room for postId:', postId);
+      console.log('Creating chat room for ownerId:', ownerId);
       const headers = this.getHeaders();
       console.log('Request headers:', headers);
-      
-      const response = await fetch(`${API_GATEWAY_URL}/api/Chat?postId=${postId}`, {
+
+      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/${ownerId}`, {
         method: 'POST',
         headers: headers,
       });
@@ -75,22 +75,74 @@ class ChatService {
    */
   async sendMessage(chatRoomId, message) {
     try {
-      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/message?chatRoomId=${chatRoomId}`, {
+      const formData = new FormData();
+      formData.append('Content', message);
+      // Don't append Image field - let it be null in backend
+
+      const token = this.getAuthToken();
+      console.log('Sending message to:', `${API_GATEWAY_URL}/api/Chat/message/${chatRoomId}`);
+      console.log('FormData Content:', message);
+
+      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/message/${chatRoomId}`, {
         method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify({
-          content: message
-        }),
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: formData,
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Send message failed:', response.status, errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('Message sent successfully:', data);
       return data;
     } catch (error) {
       console.error('Error sending message:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send a message with image to a chat room
+   * @param {string} chatRoomId - The chat room ID
+   * @param {string} message - The message content
+   * @param {File} imageFile - The image file to send
+   * @returns {Promise} Message send response
+   */
+  async sendMessageWithImage(chatRoomId, message, imageFile) {
+    try {
+      const formData = new FormData();
+      formData.append('Content', message);
+      formData.append('Image', imageFile);
+
+      const token = this.getAuthToken();
+      console.log('Sending message with image to:', `${API_GATEWAY_URL}/api/Chat/message/${chatRoomId}`);
+
+      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/message/${chatRoomId}`, {
+        method: 'POST',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Send message with image failed:', response.status, errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Message with image sent successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('Error sending message with image:', error);
       throw error;
     }
   }
@@ -184,18 +236,18 @@ class ChatService {
   }
 
   /**
-   * Get chat room by post ID
-   * @param {string} postId - The rental post ID
+   * Get chat room by owner ID
+   * @param {string} ownerId - The owner ID
    * @returns {Promise} Chat room data
    */
-  async getChatRoomByPostId(postId) {
+  async getChatRoomByOwnerId(ownerId) {
     try {
       // Backend doesn't have this endpoint yet, so we'll return null
       // and let createChatRoom handle creation
-      console.warn('getChatRoomByPostId endpoint not implemented, will create new room');
+      console.warn('getChatRoomByOwnerId endpoint not implemented, will create new room');
       return null;
     } catch (error) {
-      console.error('Error getting chat room by post ID:', error);
+      console.error('Error getting chat room by owner ID:', error);
       return null;
     }
   }
