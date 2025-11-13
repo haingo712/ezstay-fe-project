@@ -37,11 +37,39 @@ const contractService = {
 
   getByOwnerId: async () => {
     try {
-      const response = await api.get('/api/Contract/ByOwnerId');
-      return response.data || response;
+      // Try ByOwnerId first (Owner role endpoint)
+      console.log('📊 Fetching contracts for owner...');
+      const response = await api.get('/api/Contract/ByOwnerId?$count=false');
+      console.log('📊 OData Response:', response);
+
+      // OData returns data in { value: [...] } format
+      if (response && response.value) {
+        return response.value;
+      }
+
+      // Fallback to regular response
+      return response.data || response || [];
     } catch (error) {
-      console.error('Error fetching contracts by owner:', error);
-      // Return empty array if endpoint doesn't exist yet
+      console.error('❌ Error fetching contracts by owner:', error);
+      console.error('❌ Error response:', error.response);
+      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error data:', error.response?.data);
+
+      // If ByOwnerId fails, try MyContract endpoint as fallback
+      if (error.response?.status === 500 || error.response?.status === 400) {
+        try {
+          console.log('⚠️ Trying MyContract endpoint instead...');
+          const retryResponse = await api.get('/api/Contract/MyContract?$count=false');
+          if (retryResponse && retryResponse.value) {
+            return retryResponse.value;
+          }
+          return retryResponse.data || retryResponse || [];
+        } catch (retryError) {
+          console.error('❌ MyContract also failed:', retryError);
+        }
+      }
+
+      // Return empty array as last resort
       return [];
     }
   },
@@ -175,14 +203,19 @@ const contractService = {
     try {
       console.log("✍️ Signing contract:", contractId);
       console.log("🖼️ Signature length:", signatureBase64?.length);
-      
+
       // Backend endpoint: PUT /api/Contract/{id}/sign-contract
-      // Send signature in request body (base64 string is too long for query string)
+      // Backend expects [FromBody] string - send base64 directly with JSON.stringify
       const response = await api.put(
         `/api/Contract/${contractId}/sign-contract`,
-        { Signature: signatureBase64 }
+        JSON.stringify(signatureBase64), // Stringify the string to send as JSON string literal
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
       );
-      
+
       console.log("✅ Contract signed successfully");
       return response.data || response;
     } catch (error) {
