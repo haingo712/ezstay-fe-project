@@ -6,12 +6,12 @@ import { useAuth } from '@/hooks/useAuth';
 import rentalPostService from '@/services/rentalPostService';
 import reviewService from '@/services/reviewService';
 import boardingHouseService from '@/services/boardingHouseService';
-import { 
-  Building2, 
-  MapPin, 
-  Phone, 
-  Calendar, 
-  User, 
+import {
+  Building2,
+  MapPin,
+  Phone,
+  Calendar,
+  User,
   Star,
   ArrowLeft,
   MessageSquare,
@@ -49,19 +49,19 @@ export default function RentalPostDetailPage() {
       setLoading(true);
       const postData = await rentalPostService.getPostById(postId);
       console.log('📋 Post detail:', postData);
-      
+
       setPost(postData);
-      
+
       // Fetch boarding house location if boardingHouseId exists
       if (postData.boardingHouseId) {
         fetchHouseLocation(postData.boardingHouseId);
       }
-      
+
       // BE RentalPostsAPI returns reviews in post.Reviews (already normalized to camelCase)
       const reviewsData = postData.reviews || [];
       console.log('📝 Reviews from BE:', reviewsData);
       setReviews(Array.isArray(reviewsData) ? reviewsData : []);
-      
+
       // Fetch userNames for all reviews
       if (Array.isArray(reviewsData) && reviewsData.length > 0) {
         fetchUserNames(reviewsData);
@@ -80,7 +80,7 @@ export default function RentalPostDetailPage() {
       console.log('🏠 Fetching boarding house location:', boardingHouseId);
       const houseData = await boardingHouseService.getById(boardingHouseId);
       console.log('✅ House data:', houseData);
-      
+
       // Extract location data
       const location = houseData?.location || houseData?.Location;
       if (location) {
@@ -156,11 +156,10 @@ export default function RentalPostDetailPage() {
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`h-4 w-4 ${
-              star <= rating
+            className={`h-4 w-4 ${star <= rating
                 ? 'fill-yellow-400 text-yellow-400'
                 : 'text-gray-300 dark:text-gray-600'
-            }`}
+              }`}
           />
         ))}
       </div>
@@ -176,7 +175,7 @@ export default function RentalPostDetailPage() {
   // Group reviews by roomId
   const groupReviewsByRoom = () => {
     if (reviews.length === 0) return {};
-    
+
     const grouped = reviews.reduce((acc, review) => {
       const roomId = review.roomId || 'unknown';
       if (!acc[roomId]) {
@@ -185,7 +184,7 @@ export default function RentalPostDetailPage() {
       acc[roomId].push(review);
       return acc;
     }, {});
-    
+
     return grouped;
   };
 
@@ -230,7 +229,7 @@ export default function RentalPostDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <button
@@ -261,7 +260,7 @@ export default function RentalPostDetailPage() {
                       {getStatusBadge(post.postStatus)}
                     </div>
                   </div>
-                  
+
                   {/* Thumbnail Images */}
                   {post.imageUrls.length > 1 && (
                     <div className="grid grid-cols-4 gap-2">
@@ -349,7 +348,7 @@ export default function RentalPostDetailPage() {
                         ({reviews.length})
                       </span>
                     </div>
-                    
+
                     {/* Toggle Group by Room */}
                     {Object.keys(groupReviewsByRoom()).length > 1 && (
                       <button
@@ -422,19 +421,19 @@ export default function RentalPostDetailPage() {
                                   </p>
                                   {review.imageUrl && review.imageUrl !== '' && (
                                     <div className="mb-2">
-                                      <img 
-                                        src={review.imageUrl} 
-                                        alt="Review" 
+                                      <img
+                                        src={review.imageUrl}
+                                        alt="Review"
                                         className="rounded-lg max-h-48 w-auto object-cover border-2 border-gray-200 dark:border-gray-600 shadow-md"
                                       />
                                     </div>
                                   )}
                                   <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                                     <Calendar className="h-3 w-3" />
-                                    <span>{new Date(review.createdAt).toLocaleDateString('vi-VN', { 
-                                      year: 'numeric', 
-                                      month: 'short', 
-                                      day: 'numeric' 
+                                    <span>{new Date(review.createdAt).toLocaleDateString('vi-VN', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric'
                                     })}</span>
                                   </div>
                                 </div>
@@ -478,9 +477,9 @@ export default function RentalPostDetailPage() {
                             </p>
                             {review.imageUrl && review.imageUrl !== '' && (
                               <div className="mb-3">
-                                <img 
-                                  src={review.imageUrl} 
-                                  alt="Review" 
+                                <img
+                                  src={review.imageUrl}
+                                  alt="Review"
                                   className="rounded-lg max-h-64 w-auto object-cover border-2 border-gray-200 dark:border-gray-600 shadow-md"
                                 />
                               </div>
@@ -488,10 +487,10 @@ export default function RentalPostDetailPage() {
                             <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 bg-white/50 dark:bg-gray-800/50 px-3 py-2 rounded-md">
                               <div className="flex items-center gap-1.5">
                                 <Calendar className="h-3.5 w-3.5" />
-                                <span className="font-medium">{new Date(review.createdAt).toLocaleDateString('vi-VN', { 
-                                  year: 'numeric', 
-                                  month: 'long', 
-                                  day: 'numeric' 
+                                <span className="font-medium">{new Date(review.createdAt).toLocaleDateString('vi-VN', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
                                 })}</span>
                               </div>
                               {review.roomId && (
@@ -592,14 +591,14 @@ export default function RentalPostDetailPage() {
               <div className="space-y-3 mt-6">
                 {isAuthenticated ? (
                   <>
-                    <button 
+                    <button
                       onClick={() => setShowChatDialog(true)}
                       className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
                     >
                       <MessageSquare className="h-4 w-4" />
                       Chat with Owner
                     </button>
-                    
+
                     <button className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2">
                       <Phone className="h-4 w-4" />
                       Call Owner
@@ -607,7 +606,7 @@ export default function RentalPostDetailPage() {
                   </>
                 ) : (
                   <div className="space-y-3">
-                    <button 
+                    <button
                       onClick={() => router.push('/login')}
                       className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                     >
@@ -625,12 +624,12 @@ export default function RentalPostDetailPage() {
       </div>
 
       <Footer />
-      
+
       {/* Chat Dialog */}
-      <ChatDialog 
+      <ChatDialog
         isOpen={showChatDialog}
         onClose={() => setShowChatDialog(false)}
-        postId={postId}
+        ownerId={post?.authorId}
         postTitle={post?.title}
         ownerName={post?.authorName}
       />

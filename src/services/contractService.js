@@ -37,11 +37,39 @@ const contractService = {
 
   getByOwnerId: async () => {
     try {
-      const response = await api.get('/api/Contract/ByOwnerId');
-      return response.data || response;
+      // Try ByOwnerId first (Owner role endpoint)
+      console.log('📊 Fetching contracts for owner...');
+      const response = await api.get('/api/Contract/ByOwnerId?$count=false');
+      console.log('📊 OData Response:', response);
+
+      // OData returns data in { value: [...] } format
+      if (response && response.value) {
+        return response.value;
+      }
+
+      // Fallback to regular response
+      return response.data || response || [];
     } catch (error) {
-      console.error('Error fetching contracts by owner:', error);
-      // Return empty array if endpoint doesn't exist yet
+      console.error('❌ Error fetching contracts by owner:', error);
+      console.error('❌ Error response:', error.response);
+      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error data:', error.response?.data);
+
+      // If ByOwnerId fails, try MyContract endpoint as fallback
+      if (error.response?.status === 500 || error.response?.status === 400) {
+        try {
+          console.log('⚠️ Trying MyContract endpoint instead...');
+          const retryResponse = await api.get('/api/Contract/MyContract?$count=false');
+          if (retryResponse && retryResponse.value) {
+            return retryResponse.value;
+          }
+          return retryResponse.data || retryResponse || [];
+        } catch (retryError) {
+          console.error('❌ MyContract also failed:', retryError);
+        }
+      }
+
+      // Return empty array as last resort
       return [];
     }
   },
@@ -175,7 +203,7 @@ const contractService = {
     try {
       console.log("✍️ Signing contract:", contractId);
       console.log("🖼️ Signature length:", signatureBase64?.length);
-      
+
       // Backend endpoint: PUT /api/Contract/{id}/sign-contract
       // Backend expects raw string in body, NOT an object
       // C# signature: [FromBody] string ownerSignature
@@ -183,7 +211,7 @@ const contractService = {
         `/api/Contract/${contractId}/sign-contract`,
         JSON.stringify(signatureBase64) // Send as JSON string
       );
-      
+
       console.log("✅ Contract signed successfully");
       return response.data || response;
     } catch (error) {

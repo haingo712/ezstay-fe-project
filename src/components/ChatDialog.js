@@ -5,12 +5,12 @@ import { X, Send, MessageSquare } from 'lucide-react';
 import chatService from '@/services/chatService';
 import { useAuth } from '@/hooks/useAuth';
 
-export default function ChatDialog({ 
-  isOpen, 
-  onClose, 
-  postId, 
+export default function ChatDialog({
+  isOpen,
+  onClose,
+  ownerId,  // Changed from postId to ownerId
   postTitle,
-  ownerName 
+  ownerName
 }) {
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
@@ -31,15 +31,15 @@ export default function ChatDialog({
 
   // Initialize chat when dialog opens
   useEffect(() => {
-    if (isOpen && postId) {
+    if (isOpen && ownerId) {
       initializeChat();
     }
-  }, [isOpen, postId]);
+  }, [isOpen, ownerId]);
 
   const initializeChat = async () => {
     try {
       setLoading(true);
-      
+
       // Check if user is authenticated
       if (!user) {
         notification.warning('Please login to start chatting');
@@ -86,7 +86,7 @@ export default function ChatDialog({
       } else {
         console.log('✅ Found existing chat room:', chatRoom.id || chatRoom.Id);
       }
-      
+
       // Extract room ID from response (backend returns different structures)
       const roomId = chatRoom?.id || chatRoom?.Id;
       if (roomId) {
@@ -111,10 +111,17 @@ export default function ChatDialog({
 
   const loadMessages = async (roomId) => {
     try {
+      console.log('Loading messages for roomId:', roomId);
       const response = await chatService.getMessages(roomId);
+      console.log('Get messages response:', response);
+
       // Backend trả về ApiResponse với structure { success: boolean, data: [], message: string }
       const messagesData = response.data || response;
+      console.log('Messages data:', messagesData);
+      console.log('Is array?', Array.isArray(messagesData));
+
       setMessages(Array.isArray(messagesData) ? messagesData : []);
+      console.log('Messages set successfully, count:', Array.isArray(messagesData) ? messagesData.length : 0);
     } catch (error) {
       console.error('Error loading messages:', error);
     }
@@ -122,18 +129,22 @@ export default function ChatDialog({
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    
+
     if (!newMessage.trim() || !chatRoomId || sending) {
       return;
     }
 
     try {
       setSending(true);
-      await chatService.sendMessage(chatRoomId, newMessage.trim());
-      
+      console.log('Sending message to chatRoomId:', chatRoomId);
+      console.log('Message content:', newMessage.trim());
+
+      const response = await chatService.sendMessage(chatRoomId, newMessage.trim());
+      console.log('Send message response:', response);
+
       // Reload messages to get the updated list
       await loadMessages(chatRoomId);
-      
+
       setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
@@ -198,23 +209,21 @@ export default function ChatDialog({
                 const currentUserId = user?.id || user?.userId || user?.Id;
                 const messageSenderId = message.senderId || message.SenderId;
                 const isOwn = currentUserId && messageSenderId && currentUserId.toString() === messageSenderId.toString();
-                
+
                 return (
                   <div
                     key={message.id || index}
                     className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        isOwn
+                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${isOwn
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                      }`}
+                        }`}
                     >
                       <p className="text-sm">{message.content || message.Content}</p>
-                      <p className={`text-xs mt-1 ${
-                        isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
-                      }`}>
+                      <p className={`text-xs mt-1 ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
+                        }`}>
                         {formatMessageTime(message.sentAt || message.SentAt || message.createdAt)}
                       </p>
                     </div>

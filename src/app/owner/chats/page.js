@@ -76,7 +76,7 @@ export default function OwnerChatsPage() {
       const rooms = await chatService.getOwnerChatRooms();
       console.log('Loaded chat rooms:', rooms);
       setChatRooms(rooms || []);
-      
+
       // Auto-select first room if available
       if (rooms && rooms.length > 0 && !selectedChatRoom) {
         setSelectedChatRoom(rooms[0]);
@@ -117,7 +117,7 @@ export default function OwnerChatsPage() {
       
       // Reload messages
       await loadMessages(selectedChatRoom.id);
-      
+
       // Update chat room list to reflect new message
       await loadChatRooms();
     } catch (error) {
@@ -232,7 +232,7 @@ export default function OwnerChatsPage() {
     const date = new Date(timestamp);
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
@@ -244,10 +244,10 @@ export default function OwnerChatsPage() {
     const userEmail = room.user?.email || room.user?.Email || '';
     const userPhone = room.user?.phone || room.user?.Phone || '';
     const searchLower = searchTerm.toLowerCase();
-    
+
     return userName.toLowerCase().includes(searchLower) ||
-           userEmail.toLowerCase().includes(searchLower) ||
-           userPhone.toLowerCase().includes(searchLower);
+      userEmail.toLowerCase().includes(searchLower) ||
+      userPhone.toLowerCase().includes(searchLower);
   });
 
   return (
@@ -259,7 +259,7 @@ export default function OwnerChatsPage() {
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
             Messages
           </h2>
-          
+
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -294,14 +294,13 @@ export default function OwnerChatsPage() {
               const userEmail = room.user?.email || room.user?.Email || '';
               const userPhone = room.user?.phone || room.user?.Phone || '';
               const lastMessageTime = room.lastMessageAt || room.LastMessageAt;
-              
+
               return (
                 <div
                   key={room.id}
                   onClick={() => handleSelectChatRoom(room)}
-                  className={`p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                    isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                  }`}
+                  className={`p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                    }`}
                 >
                   <div className="flex items-start gap-3">
                     {/* Avatar */}
@@ -319,11 +318,11 @@ export default function OwnerChatsPage() {
                           {formatLastMessageTime(lastMessageTime)}
                         </span>
                       </div>
-                      
+
                       <p className="text-xs text-gray-600 dark:text-gray-400 truncate mb-1">
                         {userEmail}
                       </p>
-                      
+
                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {userPhone}
                       </p>
@@ -358,7 +357,7 @@ export default function OwnerChatsPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button 
+                  <button
                     className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                     title={selectedChatRoom.user?.phone || selectedChatRoom.user?.Phone || 'No phone'}
                   >
@@ -372,7 +371,7 @@ export default function OwnerChatsPage() {
                   </button>
                 </div>
               </div>
-              
+
               {/* Contact Info Bar */}
               <div className="px-6 py-2 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-4 text-xs">
@@ -424,7 +423,7 @@ export default function OwnerChatsPage() {
                               <User className="h-4 w-4 text-white" />
                             </div>
                           )}
-                          
+
                           <div
                             className={`relative px-4 py-2 rounded-2xl ${
                               isOwn

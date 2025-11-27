@@ -12,9 +12,9 @@ class ChatService {
   getAuthToken() {
     if (typeof window !== 'undefined') {
       // Try different token keys used by the app
-      return localStorage.getItem('authToken') || 
-             localStorage.getItem('ezstay_token') || 
-             localStorage.getItem('token');
+      return localStorage.getItem('authToken') ||
+        localStorage.getItem('ezstay_token') ||
+        localStorage.getItem('token');
     }
     return null;
   }
@@ -104,11 +104,16 @@ class ChatService {
         body: formData,
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Send message failed:', response.status, errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('Message sent successfully:', data);
       return data;
     } catch (error) {
       console.error('Error sending message:', error);
@@ -231,18 +236,18 @@ class ChatService {
   }
 
   /**
-   * Get chat room by post ID
-   * @param {string} postId - The rental post ID
+   * Get chat room by owner ID
+   * @param {string} ownerId - The owner ID
    * @returns {Promise} Chat room data
    */
-  async getChatRoomByPostId(postId) {
+  async getChatRoomByOwnerId(ownerId) {
     try {
       // Backend doesn't have this endpoint yet, so we'll return null
       // and let createChatRoom handle creation
-      console.warn('getChatRoomByPostId endpoint not implemented, will create new room');
+      console.warn('getChatRoomByOwnerId endpoint not implemented, will create new room');
       return null;
     } catch (error) {
-      console.error('Error getting chat room by post ID:', error);
+      console.error('Error getting chat room by owner ID:', error);
       return null;
     }
   }
