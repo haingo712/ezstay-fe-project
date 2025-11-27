@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import notification from '@/utils/notification';
 
 /**
  * Generate a complete contract PDF with all terms, conditions, and digital signatures
@@ -1027,7 +1028,7 @@ export function previewContractPDF(contract, ownerSignature = null, tenantSignat
       </html>
     `);
   } else {
-    alert('Please allow popups to preview the contract PDF');
+    notification.warning('Please allow popups to preview the contract PDF');
   }
 }
 

@@ -9,36 +9,28 @@ class PaymentService {
      */
     async getAllBankGateways(odataParams = {}) {
         try {
-            // Build OData query string
-            const queryParams = new URLSearchParams();
+            // Use external payment API instead of local backend
+            const externalApiUrl = 'https://payment-api-r4zy.onrender.com/api/Bank/gateway';
+            
+            console.log('🏦 Fetching bank gateways from external API:', externalApiUrl);
 
-            if (odataParams.$filter) {
-                queryParams.append('$filter', odataParams.$filter);
-            }
-            if (odataParams.$orderby) {
-                queryParams.append('$orderby', odataParams.$orderby);
-            }
-            if (odataParams.$top) {
-                queryParams.append('$top', odataParams.$top);
-            }
-            if (odataParams.$skip) {
-                queryParams.append('$skip', odataParams.$skip);
-            }
-            if (odataParams.$count !== undefined) {
-                queryParams.append('$count', odataParams.$count);
-            }
-
-            const queryString = queryParams.toString();
-            const endpoint = queryString ? `/api/BankGateway?${queryString}` : '/api/BankGateway';
-
-            console.log('🏦 Fetching bank gateways from:', endpoint);
-
-            const response = await apiFetch(endpoint, {
+            // Direct fetch to external API (not using apiFetch which adds local API gateway URL)
+            const response = await fetch(externalApiUrl, {
                 method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
             });
 
-            console.log('✅ Bank gateways fetched:', response);
-            return response;
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('✅ Bank gateways fetched from external API:', data);
+            
+            // Return data in expected format (check if it's wrapped or direct array)
+            return data.data || data;
         } catch (error) {
             console.error('❌ Error fetching bank gateways:', error);
             throw error;
@@ -46,18 +38,45 @@ class PaymentService {
     }
 
     /**
+     * Get only active bank gateways
+     * Uses external API and filters for active banks
+     * @returns {Promise} List of active bank gateways
+     */
+    async getActiveBankGateways() {
+        try {
+            console.log('🏦 Fetching active bank gateways...');
+
+            // Get all banks from external API
+            const allBanks = await this.getAllBankGateways();
+            
+            // Filter for active banks only
+            const activeBanks = Array.isArray(allBanks) 
+                ? allBanks.filter(bank => bank.isActive === true)
+                : [];
+
+            console.log(`✅ Found ${activeBanks.length} active bank gateways out of ${allBanks.length} total`);
+            return activeBanks;
+        } catch (error) {
+            console.error('❌ Error fetching active bank gateways:', error);
+            // Return empty array on error to avoid breaking the UI
+            return [];
+        }
+    }
+
+    /**
      * Sync bank gateways from VietQR API
+     * Note: External API does not support sync endpoint
+     * This method now just refetches the data
      * @returns {Promise} Synced bank gateways
      */
     async syncBankGateways() {
         try {
-            console.log('🔄 Syncing bank gateways from VietQR...');
+            console.log('🔄 Syncing bank gateways (refetching from external API)...');
 
-            const response = await apiFetch('/api/BankGateway/sync', {
-                method: 'POST',
-            });
+            // External API doesn't have sync endpoint, just refetch the data
+            const response = await this.getAllBankGateways();
 
-            console.log('✅ Bank gateways synced:', response);
+            console.log('✅ Bank gateways refreshed:', response);
             return response;
         } catch (error) {
             console.error('❌ Error syncing bank gateways:', error);
@@ -67,6 +86,7 @@ class PaymentService {
 
     /**
      * Toggle bank gateway active status (Admin only)
+     * Note: External API is read-only, toggle functionality disabled
      * @param {string} id - Bank gateway ID
      * @param {boolean} isActive - New active status
      * @returns {Promise} Update result
@@ -74,13 +94,11 @@ class PaymentService {
     async toggleBankGateway(id, isActive) {
         try {
             console.log(`🔧 Toggling bank gateway ${id} to ${isActive ? 'active' : 'inactive'}`);
+            console.warn('⚠️ External API is read-only. Toggle functionality is not available.');
 
-            const response = await apiFetch(`/api/BankGateway/${id}?isActive=${isActive}`, {
-                method: 'PUT',
-            });
-
-            console.log('✅ Bank gateway toggled:', response);
-            return response;
+            // External API doesn't support PUT/PATCH operations
+            // Return mock success for UI purposes
+            throw new Error('External API does not support toggling bank status. This is a read-only data source.');
         } catch (error) {
             console.error('❌ Error toggling bank gateway:', error);
             throw error;

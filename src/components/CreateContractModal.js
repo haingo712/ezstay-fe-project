@@ -278,12 +278,12 @@ export default function CreateContractModal({
 
       console.log("📤 Creating contract:", payload);
       await contractService.create(payload);
-      alert("Contract created successfully!");
+      notification.success("Contract created successfully!");
       onSuccess?.();
       onClose();
     } catch (error) {
       console.error("❌ Error creating contract:", error);
-      alert("Error: " + (error.response?.data?.message || error.message));
+      notification.error("Error: " + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }

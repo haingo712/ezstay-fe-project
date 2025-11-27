@@ -114,7 +114,7 @@ export default function PDFSignatureDemo() {
       );
     } catch (error) {
       console.error('Error previewing PDF:', error);
-      alert('Lỗi: ' + error.message);
+      notification.error('Error: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -133,7 +133,7 @@ export default function PDFSignatureDemo() {
       );
     } catch (error) {
       console.error('Error downloading PDF:', error);
-      alert('Lỗi: ' + error.message);
+      notification.error('Error: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -145,7 +145,7 @@ export default function PDFSignatureDemo() {
       const tenantSig = generateSampleSignature();
       const ownerSig = generateSampleSignature();
       
-      alert('Đang tạo và upload PDF...\nQuá trình này có thể mất 3-10 giây.');
+      notification.info('Creating and uploading PDF...\nThis process may take 3-10 seconds.');
       
       const result = await contractPdfService.generateAndUploadSignedPdf(
         sampleContract,
@@ -153,11 +153,11 @@ export default function PDFSignatureDemo() {
         tenantSig
       );
       
-      alert(`✅ Upload thành công!\n\nPDF URL:\n${result}`);
+      notification.success(`Upload successful!\n\nPDF URL:\n${result}`);
       console.log('PDF URL:', result);
     } catch (error) {
       console.error('Error uploading PDF:', error);
-      alert('❌ Lỗi upload: ' + error.message);
+      notification.error('Upload error: ' + error.message);
     } finally {
       setLoading(false);
     }

@@ -156,9 +156,9 @@ const contractPdfService = {
             <iframe src='${pdfDataUri}'></iframe>
           </body>
           </html>
-        `);
+        `
       } else {
-        alert('Please allow popups to preview the contract PDF');
+        notification.warning('Please allow popups to preview the contract PDF');
       }
     } catch (error) {
       console.error('❌ Error previewing PDF:', error);

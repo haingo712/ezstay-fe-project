@@ -3,7 +3,7 @@
  * Integrates with the API Gateway and Chat API endpoints
  */
 
-const API_GATEWAY_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'https://localhost:7000';
+const API_GATEWAY_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL;
 
 class ChatService {
   /**
@@ -35,17 +35,21 @@ class ChatService {
   }
 
   /**
-   * Create a chat room for a specific post
-   * @param {string} postId - The rental post ID
+   * Create a chat room with the owner
+   * @param {string} ownerId - The owner's user ID (not postId!)
    * @returns {Promise} Chat room creation response
    */
-  async createChatRoom(postId) {
+  async createChatRoom(ownerId) {
     try {
-      console.log('Creating chat room for postId:', postId);
+      console.log('Creating chat room with ownerId:', ownerId);
       const headers = this.getHeaders();
       console.log('Request headers:', headers);
       
-      const response = await fetch(`${API_GATEWAY_URL}/api/Chat?postId=${postId}`, {
+      // Backend endpoint: POST /api/Chat/{ownerId}
+      // [HttpPost("{ownerId}")]
+      // [Authorize(Roles = "User")]
+      // public async Task<IActionResult> CreateChatRoom(Guid ownerId)
+      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/${ownerId}`, {
         method: 'POST',
         headers: headers,
       });
@@ -68,19 +72,36 @@ class ChatService {
   }
 
   /**
-   * Send a message to a chat room
+   * Send a message to a chat room (with optional images)
    * @param {string} chatRoomId - The chat room ID
    * @param {string} message - The message content
+   * @param {File[]} images - Optional array of image files
    * @returns {Promise} Message send response
    */
-  async sendMessage(chatRoomId, message) {
+  async sendMessage(chatRoomId, message, images = []) {
     try {
-      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/message?chatRoomId=${chatRoomId}`, {
+      // Backend endpoint: POST /api/Chat/message/{chatRoomId}
+      // [HttpPost("message/{chatRoomId}")]
+      // public async Task<IActionResult> SendMessage(Guid chatRoomId, [FromForm] CreateChatMessage request)
+      
+      const formData = new FormData();
+      formData.append('Content', message);
+      
+      // Append images if provided
+      if (images && images.length > 0) {
+        images.forEach((image) => {
+          formData.append('Image', image);
+        });
+      }
+      
+      const headers = this.getHeaders();
+      // Remove Content-Type to let browser set it with boundary for FormData
+      delete headers['Content-Type'];
+      
+      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/message/${chatRoomId}`, {
         method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify({
-          content: message
-        }),
+        headers: headers,
+        body: formData,
       });
 
       if (!response.ok) {
@@ -91,6 +112,32 @@ class ChatService {
       return data;
     } catch (error) {
       console.error('Error sending message:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Revoke/Delete a message
+   * @param {string} chatMessageId - The message ID to revoke
+   * @returns {Promise} Delete response
+   */
+  async revokeMessage(chatMessageId) {
+    try {
+      console.log('Revoking message:', chatMessageId);
+      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/${chatMessageId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Message revoked successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('Error revoking message:', error);
       throw error;
     }
   }

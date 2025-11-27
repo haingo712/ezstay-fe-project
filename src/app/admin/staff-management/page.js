@@ -9,9 +9,11 @@ export default function StaffManagementPage() {
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [newStaff, setNewStaff] = useState({
     fullName: '',
@@ -25,29 +27,81 @@ export default function StaffManagementPage() {
     phone: '',
     password: ''
   });
+  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
 
   useEffect(() => {
     setMounted(true);
     loadStaff();
   }, []);
 
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const exportToCSV = () => {
+    const headers = ['ID', 'Full Name', 'Email', 'Phone', 'Status', 'Created Date'];
+    const rows = filteredStaff.map(staff => [
+      staff.id,
+      staff.fullName || 'N/A',
+      staff.email,
+      staff.phone || 'N/A',
+      staff.isActive ? 'Active' : 'Inactive',
+      formatDate(staff.createdAt)
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `staff_accounts_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const loadStaff = async () => {
     try {
       setLoading(true);
-      const data = await userManagementService.getAccountsByRole(3); // Role 3 = Staff
-      console.log('📊 Staff data from API:', data);
+      // Use Accounts API from AuthApi, not TestAccount
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${AuthService.getToken()}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('📊 All accounts from API:', data);
+      
+      // Filter for staff only (role = 3)
+      const staffAccounts = Array.isArray(data) ? data.filter(acc => acc.role === 3) : [];
       
       // Transform API response to match frontend format
-      const transformedData = Array.isArray(data) ? data.map(staff => ({
+      const transformedData = staffAccounts.map(staff => ({
         ...staff,
         roleId: staff.role, // Map role enum to roleId
         isActive: !staff.isBanned, // Map isBanned to isActive (inverse)
         createdAt: staff.createAt, // Map createAt to createdAt
-      })) : [];
+      }));
       
+      console.log('✅ Transformed staff data:', transformedData);
       setStaffList(transformedData);
     } catch (error) {
-      console.error('Error loading staff:', error);
+      console.error('❌ Error loading staff:', error);
       setStaffList([]);
     } finally {
       setLoading(false);
@@ -56,10 +110,30 @@ export default function StaffManagementPage() {
 
   const handleCreateStaff = async (e) => {
     e.preventDefault();
+    
+    // Validate inputs
+    if (!newStaff.fullName || newStaff.fullName.length < 2) {
+      alert('Full name must be at least 2 characters');
+      return;
+    }
+    if (!newStaff.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newStaff.email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+    if (!newStaff.phone || newStaff.phone.length < 10) {
+      alert('Phone number must be at least 10 digits');
+      return;
+    }
+    if (!newStaff.password || newStaff.password.length < 6) {
+      alert('Password must be at least 6 characters');
+      return;
+    }
+    
     try {
       console.log('🔍 Creating staff account:', newStaff);
       
-      const response = await fetch('https://localhost:7000/api/Auth/create-staff', {
+      // Use Accounts API to create staff
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -69,7 +143,8 @@ export default function StaffManagementPage() {
           FullName: newStaff.fullName,
           Email: newStaff.email,
           Phone: newStaff.phone,
-          Password: newStaff.password
+          Password: newStaff.password,
+          Role: 3 // Staff role
         })
       });
       
@@ -78,34 +153,56 @@ export default function StaffManagementPage() {
       if (response.ok) {
         const result = await response.json();
         console.log('✅ Staff created:', result);
-        alert('Staff account created successfully!');
+        alert('✅ Staff account created successfully!');
         setShowCreateModal(false);
         setNewStaff({ fullName: '', email: '', phone: '', password: '' });
         await loadStaff();
       } else {
-        const error = await response.json();
-        console.error('❌ Error response:', error);
-        alert(error.message || 'Failed to create staff account');
+        let errorMessage = 'Failed to create staff account';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.title || errorMessage;
+        } catch (parseError) {
+          errorMessage = await response.text() || errorMessage;
+        }
+        console.error('❌ Error response:', errorMessage);
+        alert(`❌ ${errorMessage}`);
       }
     } catch (error) {
       console.error('❌ Error creating staff:', error);
-      alert('Failed to create staff account: ' + error.message);
+      alert('❌ Failed to create staff account: ' + error.message);
     }
   };
 
   const handleStatusToggle = async (staffId, currentStatus) => {
-    if (!confirm(`${currentStatus ? 'Ban' : 'Unban'} this staff account?`)) return;
+    const action = currentStatus ? 'ban' : 'unban';
+    const actionText = currentStatus ? 'Ban' : 'Unban';
+    
+    if (!confirm(`⚠️ Are you sure you want to ${action} this staff account?\n\nThis will ${currentStatus ? 'restrict' : 'restore'} their access to the system.`)) {
+      return;
+    }
+    
     try {
-      if (currentStatus) {
-        await userManagementService.banAccount(staffId);
-      } else {
-        await userManagementService.unbanAccount(staffId);
+      console.log(`🔄 ${actionText}ning staff ID:`, staffId);
+      
+      // Use TestAccount API for ban/unban
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/TestAccount/${staffId}/${action}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${AuthService.getToken()}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
       await loadStaff();
-      alert(`Staff account ${currentStatus ? 'banned' : 'unbanned'} successfully!`);
+      alert(`✅ Staff account ${currentStatus ? 'banned' : 'unbanned'} successfully!`);
     } catch (error) {
-      console.error('Error toggling status:', error);
-      alert('Failed to update staff status');
+      console.error(`❌ Error ${action}ning staff:`, error);
+      alert(`❌ Failed to ${action} staff account: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -122,21 +219,63 @@ export default function StaffManagementPage() {
 
   const handleUpdateStaff = async (e) => {
     e.preventDefault();
+    
+    // Validate inputs
+    if (editStaff.fullName && editStaff.fullName.length < 2) {
+      alert('Full name must be at least 2 characters');
+      return;
+    }
+    if (editStaff.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editStaff.email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+    if (editStaff.phone && editStaff.phone.length < 10) {
+      alert('Phone number must be at least 10 digits');
+      return;
+    }
+    if (editStaff.password && editStaff.password.length < 6) {
+      alert('Password must be at least 6 characters');
+      return;
+    }
+    
     try {
       console.log('🔍 Updating staff ID:', selectedStaff.id);
       console.log('🔍 Update data:', editStaff);
       
-      await userManagementService.updateAccount(selectedStaff.id, {
-        ...editStaff,
-        roleId: 3 // Keep Staff role
+      // Build AccountRequest payload for AuthApi
+      const payload = {
+        FullName: editStaff.fullName || selectedStaff.fullName,
+        Email: editStaff.email || selectedStaff.email,
+        Phone: editStaff.phone || selectedStaff.phone,
+        Role: 3 // Keep Staff role
+      };
+      
+      // Only add password if user entered a new one
+      if (editStaff.password && editStaff.password.trim() !== '') {
+        payload.Password = editStaff.password;
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts/${selectedStaff.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${AuthService.getToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
       });
-      alert('Staff account updated successfully!');
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Update failed');
+      }
+      
+      alert('✅ Staff account updated successfully!');
       setShowEditModal(false);
       setSelectedStaff(null);
       await loadStaff();
     } catch (error) {
-      console.error('Error updating staff:', error);
-      alert(`Failed to update staff account: ${error.message || 'Unknown error'}`);
+      console.error('❌ Error updating staff:', error);
+      alert(`❌ Failed to update staff account: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -157,11 +296,70 @@ export default function StaffManagementPage() {
     }
   };
 
-  const filteredStaff = staffList.filter(staff => {
-    if (activeTab === 'active' && !staff.isActive) return false;
-    if (activeTab === 'inactive' && staff.isActive) return false;
-    return true;
-  });
+  const handleDeleteStaff = async () => {
+    if (!selectedStaff) return;
+    
+    try {
+      console.log('🗑️ Deleting staff ID:', selectedStaff.id);
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts/${selectedStaff.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${AuthService.getToken()}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      alert('✅ Staff account deleted successfully!');
+      setShowDeleteConfirm(false);
+      setShowViewModal(false);
+      setSelectedStaff(null);
+      await loadStaff();
+    } catch (error) {
+      console.error('❌ Error deleting staff:', error);
+      alert(`❌ Failed to delete staff account: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const filteredAndSortedStaff = staffList
+    .filter(staff => {
+      // Filter by active tab
+      if (activeTab === 'active' && !staff.isActive) return false;
+      if (activeTab === 'inactive' && staff.isActive) return false;
+      
+      // Filter by search query
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        return (
+          staff.fullName?.toLowerCase().includes(query) ||
+          staff.email?.toLowerCase().includes(query) ||
+          staff.phone?.toLowerCase().includes(query) ||
+          staff.id?.toLowerCase().includes(query)
+        );
+      }
+      
+      return true;
+    })
+    .sort((a, b) => {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+      
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+      
+      if (sortConfig.key === 'createdAt') {
+        const aDate = new Date(aValue);
+        const bDate = new Date(bValue);
+        return sortConfig.direction === 'asc' ? aDate - bDate : bDate - aDate;
+      }
+      
+      const comparison = aValue.toString().localeCompare(bValue.toString());
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
+    });
 
   if (!mounted) return null;
 
@@ -176,15 +374,27 @@ export default function StaffManagementPage() {
             Manage staff accounts (Admin only)
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-lg"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Create Staff Account
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={exportToCSV}
+            disabled={filteredAndSortedStaff.length === 0}
+            className="flex items-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export CSV
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-lg"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Create Staff Account
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -202,47 +412,146 @@ export default function StaffManagementPage() {
         </div>
       </div>
 
-      <div className="flex gap-2 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-md">
-        {['all', 'active', 'inactive'].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-6 py-3 font-medium rounded-lg transition-all ${
-              activeTab === tab
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            placeholder="🔍 Search by name, email, phone, or ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+          <svg 
+            className="absolute left-3 top-3.5 w-5 h-5 text-gray-400"
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
           >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </button>
-        ))}
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        <div className="flex gap-2 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-md">
+          {['all', 'active', 'inactive'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-6 py-3 font-medium rounded-lg transition-all ${
+                activeTab === tab
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-600 dark:text-gray-400">
-            Loading staff...
+          <div className="p-8 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">Loading staff accounts...</p>
           </div>
-        ) : filteredStaff.length === 0 ? (
+        ) : filteredAndSortedStaff.length === 0 ? (
           <div className="p-8 text-center text-gray-600 dark:text-gray-400">
-            No staff accounts found
+            {searchQuery ? (
+              <>
+                <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <p className="text-lg font-medium">No staff found matching "{searchQuery}"</p>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="mt-2 text-purple-600 hover:text-purple-700 dark:text-purple-400"
+                >
+                  Clear search
+                </button>
+              </>
+            ) : (
+              <>
+                <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <p className="text-lg font-medium">No {activeTab !== 'all' ? activeTab : ''} staff accounts found</p>
+              </>
+            )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700">
+          <>
+            <div className="px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Showing <span className="font-semibold text-gray-900 dark:text-white">{filteredAndSortedStaff.length}</span> of{' '}
+                <span className="font-semibold text-gray-900 dark:text-white">{staffList.length}</span> staff account(s)
+                {searchQuery && <> matching "<span className="font-semibold text-purple-600 dark:text-purple-400">{searchQuery}</span>"</>}
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    Staff Info
+                  <th 
+                    onClick={() => handleSort('fullName')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    <div className="flex items-center gap-2">
+                      Staff Info
+                      {sortConfig.key === 'fullName' && (
+                        <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      )}
+                    </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    Contact
+                  <th 
+                    onClick={() => handleSort('email')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    <div className="flex items-center gap-2">
+                      Contact
+                      {sortConfig.key === 'email' && (
+                        <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      )}
+                    </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    Status
+                  <th 
+                    onClick={() => handleSort('isActive')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    <div className="flex items-center gap-2">
+                      Status
+                      {sortConfig.key === 'isActive' && (
+                        <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      )}
+                    </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    Created Date
+                  <th 
+                    onClick={() => handleSort('createdAt')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    <div className="flex items-center gap-2">
+                      Created Date
+                      {sortConfig.key === 'createdAt' && (
+                        <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      )}
+                    </div>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                     Actions
@@ -250,7 +559,7 @@ export default function StaffManagementPage() {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredStaff.map((staff) => (
+                {filteredAndSortedStaff.map((staff) => (
                   <tr key={staff.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -318,7 +627,8 @@ export default function StaffManagementPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -479,6 +789,43 @@ export default function StaffManagementPage() {
         </div>
       )}
 
+      {showDeleteConfirm && selectedStaff && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 dark:bg-red-900 rounded-full">
+              <svg className="w-8 h-8 text-red-600 dark:text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2">
+              Delete Staff Account
+            </h2>
+            <p className="text-center text-gray-600 dark:text-gray-400 mb-6">
+              Are you sure you want to permanently delete <span className="font-semibold text-gray-900 dark:text-white">{selectedStaff.fullName || selectedStaff.email}</span>?
+              <br />
+              <span className="text-red-600 dark:text-red-400 font-medium">This action cannot be undone!</span>
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleDeleteStaff}
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+              >
+                Yes, Delete
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setShowViewModal(true);
+                }}
+                className="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showViewModal && selectedStaff && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full">
@@ -559,6 +906,15 @@ export default function StaffManagementPage() {
                   }`}
                 >
                   {selectedStaff.isActive ? 'Ban Account' : 'Unban Account'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setShowDeleteConfirm(true);
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+                >
+                  Delete Account
                 </button>
                 <button
                   onClick={() => setShowViewModal(false)}

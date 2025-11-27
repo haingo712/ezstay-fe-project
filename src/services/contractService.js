@@ -177,10 +177,11 @@ const contractService = {
       console.log("🖼️ Signature length:", signatureBase64?.length);
       
       // Backend endpoint: PUT /api/Contract/{id}/sign-contract
-      // Send signature in request body (base64 string is too long for query string)
+      // Backend expects raw string in body, NOT an object
+      // C# signature: [FromBody] string ownerSignature
       const response = await api.put(
         `/api/Contract/${contractId}/sign-contract`,
-        { Signature: signatureBase64 }
+        JSON.stringify(signatureBase64) // Send as JSON string
       );
       
       console.log("✅ Contract signed successfully");

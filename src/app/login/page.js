@@ -881,8 +881,26 @@ export default function LoginPage() {
                 // Store auth token
                 localStorage.setItem('token', result.token);
                 localStorage.setItem('user', JSON.stringify(result.user));
-                // Redirect based on role
-                router.push(result.user.role === 'Owner' ? '/owner' : '/dashboard');
+                
+                // Redirect based on role (same logic as regular login)
+                const userRole = result.user.role;
+                console.log('🚀 Face login - Redirecting with user role:', userRole);
+                
+                setTimeout(() => {
+                  if (userRole === 2) { // Owner
+                    console.log("➡️ Redirecting to owner dashboard");
+                    router.push("/owner");
+                  } else if (userRole === 3) { // Staff
+                    console.log("➡️ Redirecting to staff page");
+                    router.push("/staff");
+                  } else if (userRole === 4) { // Admin
+                    console.log("➡️ Redirecting to admin page");
+                    router.push("/admin");
+                  } else { // User or default
+                    console.log("➡️ Redirecting to homepage");
+                    router.push("/");
+                  }
+                }, 200);
               }
             }}
           />

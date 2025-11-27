@@ -5,6 +5,7 @@ import contractService from "@/services/contractService";
 import roomService from "@/services/roomService";
 import otpService from "@/services/otpService";
 import imageService from "@/services/imageService";
+import serviceService from "@/services/serviceService";
 import { useAuth } from "@/hooks/useAuth";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
@@ -37,7 +38,7 @@ export default function ContractsManagementPage() {
   // Signature Setting states
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [signatureStep, setSignatureStep] = useState(1); // 1: signature setting, 2: OTP verification
-  const [signatureTab, setSignatureTab] = useState('manual'); // 'draw', 'file', 'manual'
+  const [signatureTab, setSignatureTab] = useState('draw'); // Only 'draw' tab is used
   const [signatureName, setSignatureName] = useState('');
   const [signaturePhone, setSignaturePhone] = useState('');
   const [signaturePreview, setSignaturePreview] = useState('');
@@ -64,8 +65,13 @@ export default function ContractsManagementPage() {
   const [isUploading, setIsUploading] = useState(false);
 
   // New contract creation states
-  const [createStep, setCreateStep] = useState(1); // 1: contract, 2: identity profile, 3: utility readings
+  const [createStep, setCreateStep] = useState(1); // 1: contract, 2: identity profile, 3: utility readings, 4: services
   const [creatingContract, setCreatingContract] = useState(false);
+  
+  // Service states
+  const [availableServices, setAvailableServices] = useState([]);
+  const [selectedServices, setSelectedServices] = useState([]);
+  const [loadingServices, setLoadingServices] = useState(false);
 
   // Contract form data
   const [contractData, setContractData] = useState({
@@ -79,7 +85,8 @@ export default function ContractsManagementPage() {
 
   // Identity profiles form data - ARRAY for multiple occupants
   const [profiles, setProfiles] = useState([{
-    userId: null,
+    userId: "",
+    gender: "Male",
     fullName: "",
     dateOfBirth: "",
     phoneNumber: "",
@@ -232,15 +239,21 @@ export default function ContractsManagementPage() {
       return;
     }
 
+    if (!houseId) {
+      console.log("❌ No house ID available for fetching contracts");
+      return;
+    }
+
     try {
       setLoading(true);
       console.log("📄 Fetching contracts for owner:", user.id);
+      console.log("🏠 Current boarding house ID:", houseId);
 
       // Fetch contracts for this owner (no need to pass user.id since it's from JWT token)
       const contractsResponse = await contractService.getByOwnerId();
-      console.log("📄 Contracts fetched:", contractsResponse);
+      console.log("📄 All contracts fetched:", contractsResponse);
 
-      // Enrich contracts with room information
+      // Enrich contracts with room information and filter by current house
       const enrichedContracts = await Promise.all(
         (contractsResponse || []).map(async (contract) => {
           try {
@@ -250,7 +263,8 @@ export default function ContractsManagementPage() {
               return {
                 ...contract,
                 roomName: roomResponse?.name || roomResponse?.roomName || 'Unknown Room',
-                roomDetails: roomResponse
+                roomDetails: roomResponse,
+                boardingHouseId: roomResponse?.boardingHouseId
               };
             }
             return contract;
@@ -264,8 +278,32 @@ export default function ContractsManagementPage() {
         })
       );
 
-      console.log("📄 Enriched contracts:", enrichedContracts);
-      setContracts(enrichedContracts);
+      // Filter contracts for this specific boarding house
+      console.log("🔍 Filtering contracts:");
+      console.log("  Current houseId:", houseId, "Type:", typeof houseId);
+      enrichedContracts.forEach((contract, idx) => {
+        console.log(`  Contract ${idx}: boardingHouseId =`, contract.boardingHouseId, "Type:", typeof contract.boardingHouseId, "Match:", contract.boardingHouseId === houseId);
+      });
+
+      const houseContracts = enrichedContracts.filter(contract => {
+        const match = String(contract.boardingHouseId) === String(houseId);
+        if (!match) {
+          console.log(`  ❌ Contract ${contract.id} filtered out: ${contract.boardingHouseId} !== ${houseId}`);
+        }
+        return match;
+      });
+
+      console.log("📄 Total contracts:", enrichedContracts.length);
+      console.log("🏠 Contracts for this house:", houseContracts.length);
+      console.log("📄 Filtered contracts:", houseContracts);
+      
+      // Temporary: Show all contracts if filter returns empty (for debugging)
+      if (houseContracts.length === 0 && enrichedContracts.length > 0) {
+        console.warn("⚠️ No contracts matched this house - showing all contracts for debugging");
+        setContracts(enrichedContracts);
+      } else {
+        setContracts(houseContracts);
+      }
 
     } catch (error) {
       console.error("❌ Error fetching contracts:", error);
@@ -381,8 +419,8 @@ export default function ContractsManagementPage() {
       console.log('🔍 Citizen ID length:', citizenId.length);
 
       // TEMPORARY: Test direct API call bypassing gateway
-      const directApiUrl = `https://localhost:7211/api/User/search-cccd/${citizenId}`;
-      const gatewayUrl = `/api/User/search-cccd/${citizenId}`;
+      const directApiUrl = `http://localhost:7001/api/Profile/search-cccd/${citizenId}`;
+      const gatewayUrl = `/api/Profile/search-cccd/${citizenId}`;
 
       console.log('🔍 Gateway URL:', gatewayUrl);
       console.log('🔍 Direct API URL:', directApiUrl);
@@ -460,8 +498,8 @@ export default function ContractsManagementPage() {
         const newProfiles = [...currentProfiles];
         newProfiles[profileIndex] = {
           ...newProfiles[profileIndex],
-          // User ID - try both camelCase and PascalCase
-          userId: userData.userId || userData.UserId || userData.id || userData.Id || null,
+          // User ID - Backend returns "id" field, prioritize it
+          userId: userData.id || userData.Id || userData.userId || userData.UserId || null,
           // Personal info
           fullName: userData.fullName || userData.FullName || '',
           dateOfBirth: (userData.dateOfBirth || userData.DateOfBirth) ? (userData.dateOfBirth || userData.DateOfBirth).split('T')[0] : '',
@@ -987,6 +1025,12 @@ export default function ContractsManagementPage() {
       if (validateProfileStep()) {
         setCreateStep(3);
       }
+    } else if (createStep === 3) {
+      if (validateUtilityStep()) {
+        setCreateStep(4);
+        // Fetch services when entering step 4
+        fetchServices();
+      }
     }
   };
 
@@ -995,12 +1039,33 @@ export default function ContractsManagementPage() {
       setCreateStep(1);
     } else if (createStep === 3) {
       setCreateStep(2);
+    } else if (createStep === 4) {
+      setCreateStep(3);
+    }
+  };
+
+  // Fetch available services
+  const fetchServices = async () => {
+    try {
+      setLoadingServices(true);
+      const services = await serviceService.getAll();
+      console.log("📋 Fetched services:", services);
+      setAvailableServices(services || []);
+    } catch (error) {
+      console.error("❌ Error fetching services:", error);
+      toast.error("Failed to load services");
+      setAvailableServices([]);
+    } finally {
+      setLoadingServices(false);
     }
   };
 
   const handleCreateContract = async () => {
     const isEditMode = modalType === 'edit';
     console.log(`🚀 Starting contract ${isEditMode ? 'update' : 'creation'}...`);
+    console.log("👤 Current User Info:", user);
+    console.log("🔑 Is Authenticated:", isAuthenticated);
+    console.log("🎭 User Role:", user?.role);
     console.log("📝 Current form data:", {
       contractData,
       profiles,
@@ -1028,29 +1093,65 @@ export default function ContractsManagementPage() {
       }
 
       // Prepare request data with ProfilesInContract array (NEW STRUCTURE)
+      // Get the selected room's price
+      const selectedRoom = rooms.find(r => r.id === contractData.roomId);
+      const roomPrice = selectedRoom?.price || 0;
+
+      // Get province and ward names from IDs
+      const getProvinceName = (provinceId) => {
+        const province = provinces.find(p => String(p.code) === String(provinceId));
+        return province?.name || "";
+      };
+
+      const getWardName = (profileIndex, wardId) => {
+        const wards = wardsByProfile[profileIndex] || [];
+        const ward = wards.find(w => String(w.code) === String(wardId));
+        return ward?.name || "";
+      };
+
+      // Log profiles BEFORE mapping
+      console.log("🔍 === CHECKING PROFILES BEFORE MAPPING ===");
+      profiles.forEach((p, i) => {
+        console.log(`Profile ${i}:`, {
+          userId: p.userId,
+          hasUserId: !!p.userId,
+          userIdType: typeof p.userId,
+          gender: p.gender,
+          fullName: p.fullName
+        });
+      });
+
       const requestData = {
-        ProfilesInContract: profiles.map(p => ({
-          UserId: p.userId || null,
-          FullName: p.fullName,
-          DateOfBirth: new Date(p.dateOfBirth).toISOString(),
-          PhoneNumber: p.phoneNumber,
-          Email: p.email || null,
-          ProvinceId: p.provinceId,
-          WardId: p.wardId,
-          Address: p.address,
-          TemporaryResidence: p.temporaryResidence,
-          CitizenIdNumber: p.citizenIdNumber,
-          CitizenIdIssuedDate: new Date(p.citizenIdIssuedDate).toISOString(),
-          CitizenIdIssuedPlace: p.citizenIdIssuedPlace,
-          Notes: p.notes || null,
-          AvatarUrl: p.avatarUrl || null,
-          FrontImageUrl: p.frontImageUrl,
-          BackImageUrl: p.backImageUrl
-        })),
+        ProfilesInContract: profiles.map((p, index) => {
+          const userId = p.userId || "00000000-0000-0000-0000-000000000000";
+          const gender = p.gender || "Male";
+          
+          console.log(`Mapping Profile ${index}: userId=${userId}, gender=${gender}`);
+          
+          return {
+            UserId: userId,
+            Gender: gender,
+            FullName: p.fullName,
+            Avatar: p.avatarUrl || p.frontImageUrl,
+            DateOfBirth: new Date(p.dateOfBirth).toISOString(),
+            Phone: p.phoneNumber,
+            Email: p.email || "",
+            ProvinceName: getProvinceName(p.provinceId),
+            WardName: getWardName(index, p.wardId),
+            Address: p.address,
+            TemporaryResidence: p.temporaryResidence,
+            CitizenIdNumber: p.citizenIdNumber,
+            CitizenIdIssuedDate: new Date(p.citizenIdIssuedDate).toISOString(),
+            CitizenIdIssuedPlace: p.citizenIdIssuedPlace,
+            FrontImageUrl: p.frontImageUrl,
+            BackImageUrl: p.backImageUrl
+          };
+        }),
         RoomId: contractData.roomId,
         CheckinDate: new Date(contractData.checkinDate).toISOString(),
         CheckoutDate: new Date(contractData.checkoutDate).toISOString(),
         DepositAmount: parseFloat(contractData.depositAmount),
+        RoomPrice: parseFloat(roomPrice),
         NumberOfOccupants: parseInt(contractData.numberOfOccupants),
         Notes: contractData.notes || null,
         ElectricityReading: {
@@ -1062,7 +1163,11 @@ export default function ContractsManagementPage() {
           Price: utilityReadingData.waterReading.price ? parseFloat(utilityReadingData.waterReading.price) : null,
           Note: utilityReadingData.waterReading.note || null,
           CurrentIndex: parseFloat(utilityReadingData.waterReading.currentIndex)
-        }
+        },
+        ServiceInfors: selectedServices.map(s => ({
+          ServiceName: s.serviceName,
+          Price: s.price
+        }))
       };
 
       console.log(`📋 ${isEditMode ? 'Updating' : 'Creating'} contract with multiple profiles:`, requestData);
@@ -1073,6 +1178,10 @@ export default function ContractsManagementPage() {
       console.log("- ProfilesInContract:", requestData.ProfilesInContract);
       console.log("- ElectricityReading:", requestData.ElectricityReading);
       console.log("- WaterReading:", requestData.WaterReading);
+      console.log("- ServiceInfors (count):", requestData.ServiceInfors?.length || 0);
+      console.log("- ServiceInfors:", requestData.ServiceInfors);
+      console.log("🔍 FULL REQUEST DATA BEING SENT:");
+      console.log(JSON.stringify(requestData, null, 2));
 
       let result;
       if (isEditMode) {
@@ -1090,6 +1199,7 @@ export default function ContractsManagementPage() {
       setCreateStep(1);
       setModalType(''); // Reset modal type
       setCurrentEditingRoomId(null); // Reset current editing room
+      setSelectedServices([]); // Reset selected services
       setContractData({
         tenantId: "",
         roomId: "",
@@ -1101,6 +1211,7 @@ export default function ContractsManagementPage() {
       });
       setProfiles([{
         userId: null,
+        gender: "Male",
         fullName: "",
         dateOfBirth: "",
         phoneNumber: "",
@@ -1142,6 +1253,10 @@ export default function ContractsManagementPage() {
         data: error.response?.data,
         message: error.message
       });
+      console.error("❌ FULL ERROR RESPONSE:");
+      console.error("Status:", error.response?.status);
+      console.error("Response Data:", JSON.stringify(error.response?.data, null, 2));
+      console.error("Request that was sent:", JSON.stringify(requestData, null, 2));
 
       // Show detailed error message
       let errorMessage = `Error ${isEditMode ? 'updating' : 'creating'} contract: `;
@@ -1282,7 +1397,7 @@ export default function ContractsManagementPage() {
 
     if (!signatureName.trim()) {
       console.log('❌ No signature name');
-      toast.error('Vui lòng nhập họ tên');
+      toast.error('Please enter your full name');
       return;
     }
 
@@ -1297,7 +1412,7 @@ export default function ContractsManagementPage() {
         user?.Email;
 
       if (!userEmail) {
-        toast.error('Không tìm thấy email người dùng');
+        toast.error('User email not found');
         setSendingOtp(false);
         return;
       }
@@ -1360,7 +1475,7 @@ export default function ContractsManagementPage() {
       // Get contract ID
       const contractId = selectedContract?.id || selectedContract?.Id;
       if (!contractId || !signatureEmail) {
-        toast.error('Thông tin không hợp lệ');
+        toast.error('Invalid information');
         setSendingOtp(false);
         return;
       }
@@ -1370,7 +1485,7 @@ export default function ContractsManagementPage() {
       const otpId = otpResult?.otpId || otpResult?.id || otpResult?.Id || otpResult?.data?.id;
       
       if (!otpId) {
-        toast.error('Lỗi khi gửi lại OTP');
+        toast.error('Error sending OTP');
         setSendingOtp(false);
         return;
       }
@@ -1380,11 +1495,11 @@ export default function ContractsManagementPage() {
 
       setOtpTimer(300); // Reset timer to 5 minutes
       setCanResendOtp(false);
-      toast.success('Mã OTP mới đã được gửi');
+      toast.success('New OTP code has been sent');
 
     } catch (error) {
       console.error('❌ Error resending OTP:', error);
-      toast.error('Lỗi khi gửi lại mã OTP. Vui lòng thử lại.');
+      toast.error('Error resending OTP. Please try again.');
     } finally {
       setSendingOtp(false);
     }
@@ -1486,33 +1601,8 @@ export default function ContractsManagementPage() {
     setSelectedContract(null);
   };
 
-  const generateManualSignature = () => {
-    if (!signatureName.trim()) {
-      toast.error('Please enter your full name');
-      return;
-    }
-
-    // Generate signature preview with unique code
-    const uniqueCode = Math.random().toString(36).substring(2, 15).toUpperCase();
-    setSignaturePreview(`Được ký bởi/ Signed by:\n${signatureName}\n${uniqueCode}`);
-  };
-
-  const handleSignatureFileUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setSignatureFile(file);
-        setSignaturePreview(event.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  // Removed generateManualSignature and handleSignatureFileUpload functions
+  // Only draw signature is supported now
 
   // Canvas Drawing Functions
   const startDrawing = (e) => {
@@ -2572,23 +2662,30 @@ export default function ContractsManagementPage() {
                     }`}>
                     1
                   </div>
-                  <div className={`flex-1 h-1 mx-4 ${createStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'
+                  <div className={`flex-1 h-1 mx-2 ${createStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'
                     }`}></div>
                   <div className={`flex items-center justify-center w-8 h-8 rounded-full ${createStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
                     }`}>
                     2
                   </div>
-                  <div className={`flex-1 h-1 mx-4 ${createStep >= 3 ? 'bg-blue-600' : 'bg-gray-300'
+                  <div className={`flex-1 h-1 mx-2 ${createStep >= 3 ? 'bg-blue-600' : 'bg-gray-300'
                     }`}></div>
                   <div className={`flex items-center justify-center w-8 h-8 rounded-full ${createStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
                     }`}>
                     3
                   </div>
+                  <div className={`flex-1 h-1 mx-2 ${createStep >= 4 ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}></div>
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${createStep >= 4 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                    }`}>
+                    4
+                  </div>
                 </div>
                 <div className="flex justify-between mt-2">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Contract Details</span>
                   <span className="text-sm text-gray-600 dark:text-gray-400">Identity Profile</span>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Utility Readings</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Utility</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Services</span>
                 </div>
               </div>
 
@@ -2849,6 +2946,20 @@ export default function ContractsManagementPage() {
                             className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_fullName`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                             placeholder="Enter full name" />
                           {profileErrors[`profile${profileIndex}_fullName`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_fullName`]}</p>}
+                        </div>
+
+                        {/* Gender */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Gender *</label>
+                          <select 
+                            value={profile.gender || "Male"} 
+                            onChange={(e) => updateProfile(profileIndex, 'gender', e.target.value)}
+                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700"
+                          >
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                          </select>
                         </div>
 
                         {/* Date of Birth */}
@@ -3279,6 +3390,137 @@ export default function ContractsManagementPage() {
                       ← Previous
                     </button>
                     <button
+                      onClick={handleNextStep}
+                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Services */}
+              {createStep === 4 && (
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      🛎️ Select Services (Optional)
+                    </h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Choose the services that will be included in this contract
+                    </p>
+
+                    {loadingServices ? (
+                      <div className="flex items-center justify-center py-12">
+                        <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading services...</span>
+                      </div>
+                    ) : availableServices.length === 0 ? (
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 text-center">
+                        <svg className="h-12 w-12 text-yellow-500 dark:text-yellow-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="text-gray-700 dark:text-gray-300 font-medium mb-2">No Services Available</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Please create services in the Services Management page first
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {selectedServices.length} of {availableServices.length} selected
+                            </span>
+                            {selectedServices.length > 0 && (
+                              <button
+                                onClick={() => setSelectedServices([])}
+                                className="text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium"
+                              >
+                                Clear All
+                              </button>
+                            )}
+                          </div>
+                          
+                          <div className="space-y-2 max-h-96 overflow-y-auto">
+                            {availableServices.map((service) => {
+                              const isSelected = selectedServices.some(s => s.id === service.id);
+                              return (
+                                <label
+                                  key={service.id}
+                                  className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                    isSelected
+                                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                      : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedServices([...selectedServices, service]);
+                                      } else {
+                                        setSelectedServices(selectedServices.filter(s => s.id !== service.id));
+                                      }
+                                    }}
+                                    className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                                  />
+                                  <div className="ml-3 flex-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-medium text-gray-900 dark:text-white">
+                                        {service.serviceName}
+                                      </span>
+                                      <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                                        {service.price?.toLocaleString('vi-VN')} ₫
+                                      </span>
+                                    </div>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Information Box */}
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-4">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0">
+                          <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                            Service Information
+                          </h3>
+                          <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
+                            <ul className="list-disc list-inside space-y-1">
+                              <li>Services are optional - you can skip this step if no services are needed</li>
+                              <li>Selected services will be billed monthly along with the rent</li>
+                              <li>Service prices are fixed and defined in Services Management</li>
+                              <li>You can modify services later by editing the contract</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 4 Actions */}
+                  <div className="flex justify-between mt-6">
+                    <button
+                      onClick={handlePreviousStep}
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      ← Previous
+                    </button>
+                    <button
                       onClick={handleCreateContract}
                       className={`px-6 py-2 ${modalType === 'edit' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
                       disabled={creatingContract}
@@ -3287,7 +3529,7 @@ export default function ContractsManagementPage() {
                         <span className="flex items-center">
                           <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
                           {modalType === 'edit' ? 'Updating Contract...' : 'Creating Contract...'}
                         </span>
@@ -3311,7 +3553,7 @@ export default function ContractsManagementPage() {
               {/* Modal Header */}
               <div className="flex items-center justify-between mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {signatureStep === 1 ? 'Ký Hợp Đồng - Tạo Chữ Ký' : 'Ký Hợp Đồng - Xác Thực OTP'}
+                  {signatureStep === 1 ? 'Sign Contract - Create Signature' : 'Sign Contract - OTP Verification'}
                 </h2>
                 <button
                   onClick={handleCloseSignatureModal}
@@ -3340,151 +3582,60 @@ export default function ContractsManagementPage() {
                   {/* Full Name Input */}
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Họ và Tên <span className="text-red-500">*</span>
+                      Full Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={signatureName}
                       onChange={(e) => setSignatureName(e.target.value)}
                       className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      placeholder="Nhập họ tên đầy đủ"
+                      placeholder="Enter your full name"
                     />
                   </div>
 
-                  {/* Tabs */}
-                  <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
-                    <button
-                      onClick={() => setSignatureTab('draw')}
-                      className={`px-6 py-3 font-medium transition-colors ${signatureTab === 'draw'
-                        ? 'text-blue-600 border-b-2 border-blue-600'
-                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
-                        }`}
-                    >
-                      Vẽ Chữ Ký
-                    </button>
-                    <button
-                      onClick={() => setSignatureTab('file')}
-                      className={`px-6 py-3 font-medium transition-colors ${signatureTab === 'file'
-                        ? 'text-blue-600 border-b-2 border-blue-600'
-                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
-                        }`}
-                    >
-                      Tải Lên File
-                    </button>
-                    <button
-                      onClick={() => setSignatureTab('manual')}
-                      className={`px-6 py-3 font-medium transition-colors ${signatureTab === 'manual'
-                        ? 'text-blue-600 border-b-2 border-blue-600'
-                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
-                        }`}
-                    >
-                      Tạo Tự Động
-                    </button>
-                  </div>
-
-                  {/* Tab Content */}
+                  {/* Draw Signature */}
                   <div className="mb-6">
-                    {/* Draw Tab */}
-                    {signatureTab === 'draw' && (
-                      <div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                          Vẽ chữ ký của bạn bên dưới:
-                        </p>
-                        <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                          <canvas
-                            ref={canvasRef}
-                            width={800}
-                            height={200}
-                            onMouseDown={startDrawing}
-                            onMouseMove={draw}
-                            onMouseUp={stopDrawing}
-                            onMouseLeave={stopDrawing}
-                            className="w-full border border-gray-300 dark:border-gray-600 rounded bg-white cursor-crosshair"
-                          />
-                          <button
-                            onClick={clearCanvas}
-                            className="mt-3 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-                          >
-                            Xóa
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* From File Tab */}
-                    {signatureTab === 'file' && (
-                      <div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                          Tải lên ảnh chữ ký:
-                        </p>
-                        <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center bg-gray-50 dark:bg-gray-700">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleSignatureFileUpload}
-                            className="hidden"
-                            id="signature-upload"
-                          />
-                          <label
-                            htmlFor="signature-upload"
-                            className="cursor-pointer inline-flex flex-col items-center"
-                          >
-                            <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
-                              Nhấn để tải lên
-                            </span>
-                            <span className="text-xs text-gray-500 mt-1">
-                              PNG, JPG, GIF tối đa 10MB
-                            </span>
-                          </label>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Manual Entry Tab */}
-                    {signatureTab === 'manual' && (
-                      <div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                          Tên của bạn sẽ được tạo thành chữ ký với mã duy nhất:
-                        </p>
-                        <button
-                          onClick={generateManualSignature}
-                          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                        >
-                          Tạo Chữ Ký
-                        </button>
-                      </div>
-                    )}
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Draw your signature below:
+                    </p>
+                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                      <canvas
+                        ref={canvasRef}
+                        width={800}
+                        height={200}
+                        onMouseDown={startDrawing}
+                        onMouseMove={draw}
+                        onMouseUp={stopDrawing}
+                        onMouseLeave={stopDrawing}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded bg-white cursor-crosshair"
+                      />
+                      <button
+                        onClick={clearCanvas}
+                        className="mt-3 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                      >
+                        Clear
+                      </button>
+                    </div>
                   </div>
 
                   {/* Preview Section */}
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        Xem Trước
+                        Preview
                       </h3>
                     </div>
 
                     <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg p-6 bg-white dark:bg-gray-700 min-h-[150px] flex items-center justify-center">
                       {signaturePreview ? (
-                        signatureTab === 'manual' ? (
-                          <div className="text-center border-2 border-gray-400 rounded-lg p-4 inline-block">
-                            <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
-                              {signaturePreview}
-                            </pre>
-                          </div>
-                        ) : (
-                          <img
-                            src={signaturePreview}
-                            alt="Signature preview"
-                            className="max-w-full max-h-[120px] object-contain"
-                          />
-                        )
+                        <img
+                          src={signaturePreview}
+                          alt="Signature preview"
+                          className="max-w-full max-h-[120px] object-contain"
+                        />
                       ) : (
                         <p className="text-gray-400 dark:text-gray-500 italic">
-                          Chưa có chữ ký
+                          No signature yet
                         </p>
                       )}
                     </div>
@@ -3499,7 +3650,7 @@ export default function ContractsManagementPage() {
                         </svg>
                       </div>
                       <span className="text-sm text-gray-700 dark:text-gray-300">
-                        Tôi đồng ý rằng chữ ký của tôi sẽ là đại diện điện tử của chữ ký tôi cho tất cả các mục đích khi tôi sử dụng nó trên các tài liệu, bao gồm cả hợp đồng ràng buộc về mặt pháp lý.
+                        I agree that my signature will be the electronic representation of my signature for all purposes when I use it on documents, including legally binding contracts.
                       </span>
                     </label>
                   </div>
@@ -3510,7 +3661,7 @@ export default function ContractsManagementPage() {
                       onClick={handleCloseSignatureModal}
                       className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                     >
-                      Hủy
+                      Cancel
                     </button>
                     <button
                       onClick={handleContinueToOtp}
@@ -3523,10 +3674,10 @@ export default function ContractsManagementPage() {
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          Đang gửi OTP...
+                          Sending OTP...
                         </span>
                       ) : (
-                        'Tiếp Tục →'
+                        'Continue →'
                       )}
                     </button>
                   </div>
@@ -3539,15 +3690,15 @@ export default function ContractsManagementPage() {
                   <div className="mb-6">
                     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
                       <p className="text-sm text-blue-800 dark:text-blue-200">
-                        Mã OTP đã được gửi đến email: <strong>{signatureEmail}</strong>
+                        OTP code has been sent to email: <strong>{signatureEmail}</strong>
                       </p>
                       <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-                        Vui lòng kiểm tra hộp thư đến hoặc thư rác của bạn
+                        Please check your inbox or spam folder
                       </p>
                     </div>
 
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Nhập Mã OTP (6 chữ số) <span className="text-red-500">*</span>
+                      Enter OTP Code (6 digits) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -3565,9 +3716,9 @@ export default function ContractsManagementPage() {
                     <div className="mt-4 flex items-center justify-between">
                       <div className="text-sm text-gray-600 dark:text-gray-400">
                         {otpTimer > 0 ? (
-                          <span>Mã hết hạn sau: <strong className="text-blue-600">{Math.floor(otpTimer / 60)}:{(otpTimer % 60).toString().padStart(2, '0')}</strong></span>
+                          <span>Code expires in: <strong className="text-blue-600">{Math.floor(otpTimer / 60)}:{(otpTimer % 60).toString().padStart(2, '0')}</strong></span>
                         ) : (
-                          <span className="text-red-600">Mã OTP đã hết hạn</span>
+                          <span className="text-red-600">OTP code expired</span>
                         )}
                       </div>
                       <button
@@ -3575,31 +3726,25 @@ export default function ContractsManagementPage() {
                         disabled={!canResendOtp || sendingOtp}
                         className="text-sm text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed font-medium"
                       >
-                        {sendingOtp ? 'Đang gửi...' : 'Gửi lại OTP'}
+                        {sendingOtp ? 'Sending...' : 'Resend OTP'}
                       </button>
                     </div>
                   </div>
 
                   {/* Signature Preview in Step 2 */}
                   <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Chữ ký của bạn:</h4>
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Your signature:</h4>
                     <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800 flex items-center justify-center min-h-[100px]">
                       {signaturePreview && (
-                        signatureTab === 'manual' ? (
-                          <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
-                            {signaturePreview}
-                          </pre>
-                        ) : (
-                          <img
-                            src={signaturePreview}
-                            alt="Signature"
-                            className="max-w-full max-h-[80px] object-contain"
-                          />
-                        )
+                        <img
+                          src={signaturePreview}
+                          alt="Signature"
+                          className="max-w-full max-h-[80px] object-contain"
+                        />
                       )}
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                      Người ký: <strong>{signatureName}</strong>
+                      Signer: <strong>{signatureName}</strong>
                     </p>
                   </div>
 
@@ -3610,7 +3755,7 @@ export default function ContractsManagementPage() {
                       className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                       disabled={verifyingOtp}
                     >
-                      ← Quay Lại
+                      ← Back
                     </button>
                     <button
                       onClick={handleConfirmSignature}
@@ -3623,10 +3768,10 @@ export default function ContractsManagementPage() {
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          Đang xác thực...
+                          Verifying...
                         </span>
                       ) : (
-                        '✓ Xác Nhận và Ký'
+                        '✓ Confirm & Sign'
                       )}
                     </button>
                   </div>

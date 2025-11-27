@@ -42,18 +42,49 @@ export default function ChatDialog({
       
       // Check if user is authenticated
       if (!user) {
-        alert('Please login to start chatting');
+        notification.warning('Please login to start chatting');
         onClose();
         return;
       }
       
-      // First, try to get existing chat room
-      let chatRoom = await chatService.getChatRoomByPostId(postId);
+      // Get ownerId from post data
+      const rentalPostService = await import('@/services/rentalPostService');
+      const post = await rentalPostService.default.getPostById(postId);
+      
+      // Try multiple possible field names for owner ID
+      const ownerId = post?.ownerId || post?.OwnerId || post?.authorId || post?.AuthorId;
+      
+      console.log('🔍 Post data for chat:', { 
+        postId, 
+        ownerId, 
+        authorId: post?.authorId,
+        allKeys: Object.keys(post || {})
+      });
+      
+      if (!ownerId) {
+        console.error('❌ Post object:', post);
+        throw new Error('Cannot get owner information from post. Check console for post data.');
+      }
+      
+      console.log('🔍 Looking for chat room with ownerId:', ownerId);
+      
+      // Get all existing chat rooms
+      const allRoomsResponse = await chatService.getChatRooms();
+      const allRooms = allRoomsResponse?.data || allRoomsResponse || [];
+      
+      // Find existing chat room with this owner
+      let chatRoom = allRooms.find(room => {
+        const roomOwnerId = room.ownerId || room.OwnerId;
+        return roomOwnerId && roomOwnerId.toString() === ownerId.toString();
+      });
       
       // If no chat room exists, create one
       if (!chatRoom) {
-        const createResponse = await chatService.createChatRoom(postId);
+        console.log('📝 Creating new chat room with ownerId:', ownerId);
+        const createResponse = await chatService.createChatRoom(ownerId);
         chatRoom = createResponse.data || createResponse;
+      } else {
+        console.log('✅ Found existing chat room:', chatRoom.id || chatRoom.Id);
       }
       
       // Extract room ID from response (backend returns different structures)
@@ -62,14 +93,16 @@ export default function ChatDialog({
         setChatRoomId(roomId);
         // Load existing messages
         await loadMessages(roomId);
+      } else {
+        throw new Error('Could not get chat room ID from response');
       }
     } catch (error) {
-      console.error('Error initializing chat:', error);
-      if (error.message.includes('401')) {
-        alert('Please login to start chatting');
+      console.error('❌ Error initializing chat:', error);
+      if (error.message?.includes('401')) {
+        notification.warning('Please login to start chatting');
         onClose();
       } else {
-        alert('Failed to initialize chat. Please try again.');
+        notification.error(`Failed to initialize chat: ${error.message || 'Please try again.'}`);
       }
     } finally {
       setLoading(false);
@@ -104,7 +137,7 @@ export default function ChatDialog({
       setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Failed to send message. Please try again.');
+      notification.error('Failed to send message. Please try again.');
     } finally {
       setSending(false);
     }

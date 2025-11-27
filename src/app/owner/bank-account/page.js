@@ -70,12 +70,17 @@ export default function BankAccountPage() {
         const loadBanks = async () => {
             try {
                 setLoadingBanks(true);
-                const response = await paymentService.getAllBankGateways({
-                    $filter: 'isActive eq true',
-                    $orderby: 'bankName asc'
-                });
-                const banks = response.value || response;
-                setAvailableBanks(banks);
+                // Use getActiveBankGateways to get only active banks from local backend
+                const banks = await paymentService.getActiveBankGateways();
+                console.log('🏦 Loaded active banks:', banks);
+                
+                // Ensure banks is an array
+                if (Array.isArray(banks)) {
+                    setAvailableBanks(banks);
+                } else {
+                    console.warn('⚠️ Banks response is not an array:', banks);
+                    setAvailableBanks([]);
+                }
             } catch (err) {
                 console.error('Error loading banks:', err);
                 setAvailableBanks([]);
@@ -329,21 +334,32 @@ export default function BankAccountPage() {
                                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
                                             <span className="ml-2 text-gray-600 dark:text-gray-400">{t('bankAccount.loadingBanks')}</span>
                                         </div>
+                                    ) : availableBanks.length === 0 ? (
+                                        <div className="w-full px-4 py-3 border border-red-300 dark:border-red-600 rounded-lg bg-red-50 dark:bg-red-900/20">
+                                            <p className="text-red-600 dark:text-red-400 text-sm">
+                                                ⚠️ Không tìm thấy ngân hàng nào đang active. Vui lòng kiểm tra backend hoặc kích hoạt ngân hàng trong admin panel.
+                                            </p>
+                                        </div>
                                     ) : (
-                                        <select
-                                            name="bankName"
-                                            value={formData.bankName}
-                                            onChange={handleInputChange}
-                                            required
-                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                        >
-                                            <option value="">{t('bankAccount.selectBank')}</option>
-                                            {availableBanks.map((bank) => (
-                                                <option key={bank.id} value={bank.bankName}>
-                                                    {bank.fullName} ({bank.bankName})
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <div>
+                                            <select
+                                                name="bankName"
+                                                value={formData.bankName}
+                                                onChange={handleInputChange}
+                                                required
+                                                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                            >
+                                                <option value="">{t('bankAccount.selectBank')}</option>
+                                                {availableBanks.map((bank) => (
+                                                    <option key={bank.id} value={bank.bankName}>
+                                                        {bank.fullName} ({bank.bankName})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                Tìm thấy {availableBanks.length} ngân hàng
+                                            </p>
+                                        </div>
                                     )}
                                 </div>
 

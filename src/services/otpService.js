@@ -120,7 +120,7 @@ class OtpService {
       this.storeOtp(phone, otp, 'phone');
 
       // Show the OTP to user temporarily (remove in production)
-      alert(`Phone OTP sent: ${otp} (This is for testing only)`);
+      console.log(`📱 Phone OTP sent: ${otp} (This is for testing only)`);
 
       return { success: true, message: "OTP sent to phone" };
     } catch (error) {

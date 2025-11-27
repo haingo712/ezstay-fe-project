@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // API Gateway URL - All requests go through this single endpoint  
-const API_GATEWAY_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL || "https://localhost:7000";
+const API_GATEWAY_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL;
 
 // Create axios instance
 const axiosInstance = axios.create({

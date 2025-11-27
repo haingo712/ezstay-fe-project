@@ -2,9 +2,8 @@
 import authService from "@/services/authService";
 
 // API Gateway URL - All requests go through this single endpoint  
-// Temporary: Use NotificationAPI port directly for testing
-export const API_GATEWAY_URL =
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL || "https://localhost:7000";
+// Uses NEXT_PUBLIC_API_GATEWAY_URL from .env file
+export const API_GATEWAY_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL;
 
 // Helper function for API calls
 async function apiFetch(path, options = {}) {
@@ -224,8 +223,8 @@ export const houseLocationAPI = {
 export const roomAPI = {
   getAll: () => api.get('/api/Rooms'),
   getById: (id) => api.get(`/api/Rooms/${id}`),
-  getByBoardingHouseId: (houseId) => api.get(`/api/Rooms/ByHouseId/${houseId}`),
-  getByHouseId: (houseId) => api.get(`/api/Rooms/ByHouseId/${houseId}/Status`), // Alias for compatibility
+  getByBoardingHouseId: (houseId) => api.get(`/api/Rooms/house/${houseId}`),
+  getByHouseId: (houseId) => api.get(`/api/Rooms/house/${houseId}/Status`), // Alias for compatibility
 
   // JSON create method (legacy, no image)
   create: (houseId, data) => {
