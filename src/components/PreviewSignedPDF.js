@@ -24,7 +24,7 @@ export default function PreviewSignedPDF({
       contractPdfService.previewSignedPdf(contract, ownerSignature, tenantSignature);
     } catch (error) {
       console.error('Error previewing PDF:', error);
-      alert('Không thể xem trước PDF. Vui lòng thử lại.');
+      notification.error('Unable to preview PDF. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -36,7 +36,7 @@ export default function PreviewSignedPDF({
       contractPdfService.downloadSignedPdf(contract, ownerSignature, tenantSignature);
     } catch (error) {
       console.error('Error downloading PDF:', error);
-      alert('Không thể tải xuống PDF. Vui lòng thử lại.');
+      notification.error('Unable to download PDF. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -32,6 +32,7 @@ const normalizePostData = (post) => {
     id: post.id || post.Id,
     roomId: post.roomId || post.RoomId,
     authorId: post.authorId || post.AuthorId,
+    ownerId: post.ownerId || post.OwnerId,
     boardingHouseId: post.boardingHouseId || post.BoardingHouseId,
     imageUrls: imageUrls,
     authorName: post.authorName || post.AuthorName,
@@ -72,7 +73,7 @@ const enrichPostWithNames = async (post, verbose = false) => {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const response = await fetch(`https://localhost:7000/api/Accounts/${post.authorId}`, {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts/${post.authorId}`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`,

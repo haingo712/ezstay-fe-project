@@ -3,7 +3,9 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import roomService from '@/services/roomService';
+import amenityService from '@/services/amenityService';
 import SafeImage from '@/components/SafeImage';
+import notification from '@/utils/notification';
 
 function RoomsPageContent() {
   const searchParams = useSearchParams();
@@ -17,19 +19,23 @@ function RoomsPageContent() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [amenities, setAmenities] = useState([]);
+  const [loadingAmenities, setLoadingAmenities] = useState(false);
 
   const [newRoom, setNewRoom] = useState({
     roomName: '',
     area: '',
     price: '',
-    imageFiles: []
+    imageFiles: [],
+    selectedAmenities: []
   });
 
   const [editRoom, setEditRoom] = useState({
     area: '',
     price: '',
     roomStatus: 0,
-    imageFiles: []
+    imageFiles: [],
+    selectedAmenities: []
   });
   const [editImagePreviews, setEditImagePreviews] = useState([]);
 
@@ -38,6 +44,24 @@ function RoomsPageContent() {
       loadRooms();
     }
   }, [houseId]);
+
+  useEffect(() => {
+    loadAmenities();
+  }, []);
+
+  const loadAmenities = async () => {
+    try {
+      setLoadingAmenities(true);
+      const data = await amenityService.getAllAmenities();
+      console.log('🎯 Loaded amenities:', data);
+      setAmenities(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error loading amenities:', error);
+      setAmenities([]);
+    } finally {
+      setLoadingAmenities(false);
+    }
+  };
 
   const loadRooms = async () => {
     try {
@@ -74,7 +98,7 @@ function RoomsPageContent() {
     // Validate file types
     const validFiles = files.filter(file => {
       if (!file.type.startsWith('image/')) {
-        alert(`${file.name} is not an image file`);
+        notification.error(`${file.name} is not an image file`);
         return false;
       }
       return true;
@@ -91,15 +115,37 @@ function RoomsPageContent() {
     setImagePreviews(prev => [...prev, ...newPreviews]);
   };
 
-  const removeImage = (index) => {
+  const removeEditImage = (index) => {
     // Revoke the URL to free memory
-    URL.revokeObjectURL(imagePreviews[index]);
+    URL.revokeObjectURL(editImagePreviews[index]);
 
-    setNewRoom(prev => ({
+    setEditRoom(prev => ({
       ...prev,
       imageFiles: prev.imageFiles.filter((_, i) => i !== index)
     }));
-    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setEditImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const toggleAmenity = (amenityId) => {
+    setNewRoom(prev => {
+      const selected = prev.selectedAmenities || [];
+      if (selected.includes(amenityId)) {
+        return { ...prev, selectedAmenities: selected.filter(id => id !== amenityId) };
+      } else {
+        return { ...prev, selectedAmenities: [...selected, amenityId] };
+      }
+    });
+  };
+
+  const toggleEditAmenity = (amenityId) => {
+    setEditRoom(prev => {
+      const selected = prev.selectedAmenities || [];
+      if (selected.includes(amenityId)) {
+        return { ...prev, selectedAmenities: selected.filter(id => id !== amenityId) };
+      } else {
+        return { ...prev, selectedAmenities: [...selected, amenityId] };
+      }
+    });
   };
 
   const handleEditImageChange = (e) => {
@@ -110,7 +156,7 @@ function RoomsPageContent() {
     // Validate file types
     const validFiles = files.filter(file => {
       if (!file.type.startsWith('image/')) {
-        alert(`${file.name} is not an image file`);
+        notification.error(`${file.name} is not an image file`);
         return false;
       }
       return true;
@@ -127,26 +173,16 @@ function RoomsPageContent() {
     setEditImagePreviews(prev => [...prev, ...newPreviews]);
   };
 
-  const removeEditImage = (index) => {
-    URL.revokeObjectURL(editImagePreviews[index]);
-
-    setEditRoom(prev => ({
-      ...prev,
-      imageFiles: prev.imageFiles.filter((_, i) => i !== index)
-    }));
-    setEditImagePreviews(prev => prev.filter((_, i) => i !== index));
-  };
-
   const handleCreateRoom = async (e) => {
     e.preventDefault();
 
     if (!newRoom.roomName || !newRoom.area || !newRoom.price) {
-      alert('Please fill in all fields!');
+      notification.warning('Please fill in all fields!');
       return;
     }
 
     if (newRoom.imageFiles.length === 0) {
-      alert('Please select at least one image!');
+      notification.warning('Please select at least one image!');
       return;
     }
 
@@ -162,21 +198,30 @@ function RoomsPageContent() {
         formData.append('ImageUrl', file);
       });
 
+      // Note: Backend needs to uncomment Amenities field in CreateRoom.cs for this to work
+      // Prepare amenities data (currently backend has this commented out)
+      if (newRoom.selectedAmenities && newRoom.selectedAmenities.length > 0) {
+        newRoom.selectedAmenities.forEach((amenityId) => {
+          formData.append('Amenities', JSON.stringify({ AmenityId: amenityId }));
+        });
+      }
+
       console.log('📤 Sending create room request:', {
         roomName: newRoom.roomName,
         area: newRoom.area,
         price: newRoom.price,
-        imageCount: newRoom.imageFiles.length
+        imageCount: newRoom.imageFiles.length,
+        amenitiesCount: newRoom.selectedAmenities?.length || 0
       });
 
       const result = await roomService.create(houseId, formData);
 
       console.log('✅ Create response:', result);
 
-      alert('Room created successfully! ✅');
+      notification.success('Room created successfully!');
 
       setShowCreateModal(false);
-      setNewRoom({ roomName: '', area: '', price: '', imageFiles: [] });
+      setNewRoom({ roomName: '', area: '', price: '', imageFiles: [], selectedAmenities: [] });
 
       // Cleanup preview URLs
       imagePreviews.forEach(url => URL.revokeObjectURL(url));
@@ -186,7 +231,7 @@ function RoomsPageContent() {
       await loadRooms();
     } catch (error) {
       console.error('❌ Error creating room:', error);
-      alert(error.message || 'Failed to create room!');
+      notification.error(error.message || 'Failed to create room!');
     }
   };
 
@@ -194,13 +239,14 @@ function RoomsPageContent() {
     e.preventDefault();
 
     if (!editRoom.area || !editRoom.price) {
-      alert('Please fill in all required fields!');
+      notification.warning('Please fill in all required fields!');
       return;
     }
 
     try {
       // Create FormData for file upload to backend
       const formData = new FormData();
+      formData.append('RoomName', selectedRoom.roomName); // ✅ Backend requires RoomName
       formData.append('Area', editRoom.area);
       formData.append('Price', editRoom.price);
       formData.append('RoomStatus', editRoom.roomStatus);
@@ -211,17 +257,32 @@ function RoomsPageContent() {
           formData.append('ImageUrl', file);
         });
         console.log('📤 Updating with', editRoom.imageFiles.length, 'new images');
+      }
+
+      // Note: Backend needs to uncomment Amenities field in UpdateRoom.cs for this to work
+      if (editRoom.selectedAmenities && editRoom.selectedAmenities.length > 0) {
+        editRoom.selectedAmenities.forEach((amenityId) => {
+          formData.append('Amenities', JSON.stringify({ AmenityId: amenityId }));
+        });
+        console.log('📤 Updating with', editRoom.selectedAmenities.length, 'amenities');
       } else {
-        console.log('📤 Updating without changing images');
+        console.log('📤 Updating without new images - keeping existing images');
       }
 
       console.log('📤 Sending update request for room:', selectedRoom.id);
+      console.log('📤 Update data:', {
+        roomName: selectedRoom.roomName,
+        area: editRoom.area,
+        price: editRoom.price,
+        roomStatus: editRoom.roomStatus,
+        newImagesCount: editRoom.imageFiles.length
+      });
 
       const result = await roomService.update(selectedRoom.id, formData);
 
       console.log('✅ Update response:', result);
 
-      alert('Room updated successfully! ✅');
+      notification.success('Room updated successfully!');
 
       setShowEditModal(false);
       setSelectedRoom(null);
@@ -235,20 +296,21 @@ function RoomsPageContent() {
       await loadRooms();
     } catch (error) {
       console.error('❌ Error updating room:', error);
-      alert(error.message || 'Failed to update room!');
+      notification.error(error.message || 'Failed to update room!');
     }
   };
 
   const handleDeleteRoom = async (roomId) => {
-    if (!confirm('Are you sure you want to delete this room?')) return;
+    const confirmed = await notification.confirm('Are you sure you want to delete this room?');
+    if (!confirmed) return;
 
     try {
       await roomService.delete(roomId);
-      alert('Room deleted successfully!');
+      notification.success('Room deleted successfully!');
       await loadRooms();
     } catch (error) {
       console.error('Error deleting room:', error);
-      alert('Failed to delete room!');
+      notification.error('Failed to delete room!');
     }
   };
 
@@ -561,8 +623,50 @@ function RoomsPageContent() {
                   )}
                 </div>
 
+                {/* Room Amenities */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Room Amenities
+                  </label>
+                  {loadingAmenities ? (
+                    <div className="text-sm text-gray-500">Loading amenities...</div>
+                  ) : amenities.length === 0 ? (
+                    <div className="text-sm text-gray-500">No amenities available</div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-3">
+                      {amenities.map((amenity) => (
+                        <label
+                          key={amenity.id}
+                          className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={(editRoom.selectedAmenities || []).includes(amenity.id)}
+                            onChange={() => toggleEditAmenity(amenity.id)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          {amenity.imageUrl && (
+                            <div className="w-6 h-6 relative flex-shrink-0">
+                              <SafeImage
+                                src={amenity.imageUrl}
+                                alt={amenity.amenityName}
+                                fill
+                                objectFit="contain"
+                                fallbackIcon="🏠"
+                              />
+                            </div>
+                          )}
+                          <span className="text-sm text-gray-900 dark:text-white">
+                            {amenity.amenityName}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* Buttons */}
-                <div className="flex gap-2 pt-4">
+                <div className="flex gap-3 mt-6">
                   <button
                     type="submit"
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"

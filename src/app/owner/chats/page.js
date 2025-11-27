@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import chatService from '@/services/chatService';
-import {
-  Search,
-  Send,
+import notification from '@/utils/notification';
+import { 
+  Search, 
+  Send, 
   User,
   MessageSquare,
   Clock,
@@ -14,8 +15,11 @@ import {
   MoreVertical,
   Mail,
   Smile,
-  Paperclip,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Check,
+  CheckCheck,
+  Trash2,
+  X
 } from 'lucide-react';
 
 export default function OwnerChatsPage() {
@@ -27,9 +31,12 @@ export default function OwnerChatsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, messageId: null });
+  const [revokingMessageId, setRevokingMessageId] = useState(null);
   const messagesEndRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
 
   useEffect(() => {
     loadChatRooms();
@@ -49,6 +56,15 @@ export default function OwnerChatsPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClick = () => closeContextMenu();
+    if (contextMenu.visible) {
+      document.addEventListener('click', handleClick);
+      return () => document.removeEventListener('click', handleClick);
+    }
+  }, [contextMenu.visible]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -84,28 +100,21 @@ export default function OwnerChatsPage() {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-
-    if ((!newMessage.trim() && !selectedImage) || !selectedChatRoom || sending) {
+    
+    if ((!newMessage.trim() && selectedImages.length === 0) || !selectedChatRoom || sending) {
       return;
     }
 
     try {
       setSending(true);
-
-      // If there's an image, send it along with the message
-      if (selectedImage) {
-        await chatService.sendMessageWithImage(
-          selectedChatRoom.id,
-          newMessage.trim(), // Can be empty when sending image
-          selectedImage
-        );
-      } else {
-        await chatService.sendMessage(selectedChatRoom.id, newMessage.trim());
-      }
-
+      await chatService.sendMessage(selectedChatRoom.id, newMessage.trim(), selectedImages);
       setNewMessage('');
-      setSelectedImage(null);
-
+      
+      // Clear selected images
+      imagePreviews.forEach(url => URL.revokeObjectURL(url));
+      setSelectedImages([]);
+      setImagePreviews([]);
+      
       // Reload messages
       await loadMessages(selectedChatRoom.id);
 
@@ -113,29 +122,100 @@ export default function OwnerChatsPage() {
       await loadChatRooms();
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Failed to send message. Please try again.');
+      notification.error('Failed to send message. Please try again.');
     } finally {
       setSending(false);
     }
   };
 
+  // Handle image selection
   const handleImageSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Validate file types
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('image/')) {
+        notification.error(`${file.name} is not an image file`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
+    // Add new files
+    setSelectedImages(prev => [...prev, ...validFiles]);
+    
+    // Create previews
+    const newPreviews = validFiles.map(file => URL.createObjectURL(file));
+    setImagePreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  // Remove selected image
+  const removeSelectedImage = (index) => {
+    URL.revokeObjectURL(imagePreviews[index]);
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Handle message right-click context menu
+  const handleMessageContextMenu = (e, messageId, isOwn) => {
+    if (!isOwn) return; // Only allow context menu for own messages
+    e.preventDefault();
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      messageId: messageId
+    });
+  };
+
+  // Close context menu
+  const closeContextMenu = () => {
+    setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
+  };
+
+  // Handle revoke message
+  const handleRevokeMessage = async (messageId) => {
+    closeContextMenu();
+    
+    const confirmed = await notification.confirm(
+      'Are you sure you want to revoke this message? This action cannot be undone.',
+      'Revoke Message'
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      setRevokingMessageId(messageId);
+      await chatService.revokeMessage(messageId);
+      notification.success('Message revoked successfully');
+      
+      // Reload messages
+      await loadMessages(selectedChatRoom.id);
+    } catch (error) {
+      console.error('Error revoking message:', error);
+      notification.error('Failed to revoke message. Please try again.');
+    } finally {
+      setRevokingMessageId(null);
     }
   };
 
-  const handleRemoveImage = () => {
-    setSelectedImage(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleSelectChatRoom = (room) => {
+  const handleSelectChatRoom = async (room) => {
+    // Don't reload if same room is selected
+    if (selectedChatRoom?.id === room.id) return;
+    
     setSelectedChatRoom(room);
-    setMessages([]);
+    // Load messages for the selected room
+    try {
+      const response = await chatService.getMessages(room.id);
+      const messagesData = response.data || response;
+      setMessages(Array.isArray(messagesData) ? messagesData : []);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      setMessages([]);
+    }
   };
 
   const formatMessageTime = (timestamp) => {
@@ -323,15 +403,21 @@ export default function OwnerChatsPage() {
                   {messages.map((message, index) => {
                     const currentUserId = user?.id || user?.userId || user?.Id;
                     const messageSenderId = message.senderId || message.SenderId;
-                    const isOwn = currentUserId && messageSenderId &&
-                      currentUserId.toString() === messageSenderId.toString();
-
+                    const isOwn = currentUserId && messageSenderId && 
+                                  currentUserId.toString() === messageSenderId.toString();
+                    const isRead = message.isRead || message.IsRead;
+                    const messageImages = message.image || message.Image || [];
+                    const isRevoking = revokingMessageId === (message.id || message.Id);
+                    
                     return (
                       <div
-                        key={message.id || index}
+                        key={message.id || message.Id || index}
                         className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div className={`flex items-end gap-2 max-w-md ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+                        <div 
+                          className={`flex items-end gap-2 max-w-md ${isOwn ? 'flex-row-reverse' : 'flex-row'} group`}
+                          onContextMenu={(e) => handleMessageContextMenu(e, message.id || message.Id, isOwn)}
+                        >
                           {!isOwn && (
                             <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
                               <User className="h-4 w-4 text-white" />
@@ -339,35 +425,65 @@ export default function OwnerChatsPage() {
                           )}
 
                           <div
-                            className={`px-4 py-2 rounded-2xl ${isOwn
+                            className={`relative px-4 py-2 rounded-2xl ${
+                              isOwn
                                 ? 'bg-blue-600 text-white rounded-br-none'
                                 : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
-                              }`}
+                            } ${isRevoking ? 'opacity-50' : ''}`}
                           >
-                            {/* Display images if available */}
-                            {message.image && message.image.length > 0 && (
-                              <div className="mb-2 space-y-2">
-                                {message.image.map((imageUrl, imgIndex) => (
+                            {/* Message Images */}
+                            {messageImages.length > 0 && (
+                              <div className={`mb-2 ${messageImages.length > 1 ? 'grid grid-cols-2 gap-1' : ''}`}>
+                                {messageImages.map((img, imgIdx) => (
                                   <img
-                                    key={imgIndex}
-                                    src={imageUrl}
-                                    alt="Sent image"
-                                    className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                    onClick={() => window.open(imageUrl, '_blank')}
+                                    key={imgIdx}
+                                    src={img}
+                                    alt={`Image ${imgIdx + 1}`}
+                                    className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90"
+                                    onClick={() => window.open(img, '_blank')}
                                   />
                                 ))}
                               </div>
                             )}
-
-                            {/* Display message content only if not empty/whitespace */}
-                            {(message.content || message.Content) && (message.content || message.Content).trim() && (
+                            
+                            {/* Message Content */}
+                            {(message.content || message.Content) && (
                               <p className="text-sm">{message.content || message.Content}</p>
                             )}
+                            
+                            {/* Time and Read Status */}
+                            <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                              <p className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                                {formatMessageTime(message.sentAt || message.SentAt)}
+                              </p>
+                              {/* Read Status for own messages */}
+                              {isOwn && (
+                                <span className="ml-1">
+                                  {isRead ? (
+                                    <CheckCheck className="h-3.5 w-3.5 text-blue-200" title="Read" />
+                                  ) : (
+                                    <Check className="h-3.5 w-3.5 text-blue-200" title="Sent" />
+                                  )}
+                                </span>
+                              )}
+                            </div>
 
-                            <p className={`text-xs mt-1 ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
-                              }`}>
-                              {formatMessageTime(message.sentAt || message.SentAt)}
-                            </p>
+                            {/* Revoke button on hover (for own messages) */}
+                            {isOwn && !isRevoking && (
+                              <button
+                                onClick={() => handleRevokeMessage(message.id || message.Id)}
+                                className="absolute -left-8 top-1/2 -translate-y-1/2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                title="Revoke message"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                            
+                            {isRevoking && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -380,31 +496,35 @@ export default function OwnerChatsPage() {
 
             {/* Message Input with Icons */}
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-              {/* Image Preview */}
-              {selectedImage && (
-                <div className="mb-3 relative inline-block">
-                  <img
-                    src={URL.createObjectURL(selectedImage)}
-                    alt="Preview"
-                    className="h-20 w-20 object-cover rounded-lg"
-                  />
-                  <button
-                    onClick={handleRemoveImage}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                  >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+              {/* Image Previews */}
+              {imagePreviews.length > 0 && (
+                <div className="flex gap-2 mb-3 flex-wrap">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        className="h-16 w-16 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeSelectedImage(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
 
               <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                 {/* Hidden file input */}
                 <input
-                  ref={fileInputRef}
+                  ref={imageInputRef}
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleImageSelect}
                   className="hidden"
                 />
@@ -420,14 +540,7 @@ export default function OwnerChatsPage() {
                   </button>
                   <button
                     type="button"
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                    title="Attach file"
-                  >
-                    <Paperclip className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => imageInputRef.current?.click()}
                     className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                     title="Send image"
                   >
@@ -448,7 +561,7 @@ export default function OwnerChatsPage() {
                 {/* Send Button */}
                 <button
                   type="submit"
-                  disabled={(!newMessage.trim() && !selectedImage) || sending}
+                  disabled={(!newMessage.trim() && selectedImages.length === 0) || sending}
                   className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {sending ? (
@@ -474,6 +587,22 @@ export default function OwnerChatsPage() {
           </div>
         )}
       </div>
+
+      {/* Context Menu for Message Actions */}
+      {contextMenu.visible && (
+        <div
+          className="fixed bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+        >
+          <button
+            onClick={() => handleRevokeMessage(contextMenu.messageId)}
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <Trash2 className="h-4 w-4" />
+            Revoke Message
+          </button>
+        </div>
+      )}
     </div>
   );
 }

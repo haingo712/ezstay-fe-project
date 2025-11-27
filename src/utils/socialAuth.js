@@ -3,7 +3,7 @@ export class SocialAuth {
   constructor() {
     this.googleLoaded = false;
     this.facebookLoaded = false;
-    this.apiUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL || "https://localhost:7000";
+    this.apiUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL;
   }
 
   // Initialize Google Sign-In

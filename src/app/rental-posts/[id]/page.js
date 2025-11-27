@@ -109,7 +109,7 @@ export default function RentalPostDetailPage() {
       await Promise.all(
         uniqueUserIds.map(async (userId) => {
           try {
-            const response = await fetch(`https://localhost:7000/api/Accounts/${userId}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts/${userId}`, {
               headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {

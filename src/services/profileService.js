@@ -4,7 +4,7 @@ import imageService from "./imageService";
 
 class ProfileService {
   constructor() {
-    this.baseUrl = "/api/User";
+    this.baseUrl = "/api/Profile";
     this.imageUrl = "/api/Images";
   }
 

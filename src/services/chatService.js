@@ -3,7 +3,7 @@
  * Integrates with the API Gateway and Chat API endpoints
  */
 
-const API_GATEWAY_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'https://localhost:7000';
+const API_GATEWAY_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL;
 
 class ChatService {
   /**
@@ -35,16 +35,20 @@ class ChatService {
   }
 
   /**
-   * Create a chat room for a specific owner
-   * @param {string} ownerId - The owner's account ID
+   * Create a chat room with the owner
+   * @param {string} ownerId - The owner's user ID (not postId!)
    * @returns {Promise} Chat room creation response
    */
   async createChatRoom(ownerId) {
     try {
-      console.log('Creating chat room for ownerId:', ownerId);
+      console.log('Creating chat room with ownerId:', ownerId);
       const headers = this.getHeaders();
       console.log('Request headers:', headers);
-
+      
+      // Backend endpoint: POST /api/Chat/{ownerId}
+      // [HttpPost("{ownerId}")]
+      // [Authorize(Roles = "User")]
+      // public async Task<IActionResult> CreateChatRoom(Guid ownerId)
       const response = await fetch(`${API_GATEWAY_URL}/api/Chat/${ownerId}`, {
         method: 'POST',
         headers: headers,
@@ -68,26 +72,35 @@ class ChatService {
   }
 
   /**
-   * Send a message to a chat room
+   * Send a message to a chat room (with optional images)
    * @param {string} chatRoomId - The chat room ID
    * @param {string} message - The message content
+   * @param {File[]} images - Optional array of image files
    * @returns {Promise} Message send response
    */
-  async sendMessage(chatRoomId, message) {
+  async sendMessage(chatRoomId, message, images = []) {
     try {
+      // Backend endpoint: POST /api/Chat/message/{chatRoomId}
+      // [HttpPost("message/{chatRoomId}")]
+      // public async Task<IActionResult> SendMessage(Guid chatRoomId, [FromForm] CreateChatMessage request)
+      
       const formData = new FormData();
       formData.append('Content', message);
-      // Don't append Image field - let it be null in backend
-
-      const token = this.getAuthToken();
-      console.log('Sending message to:', `${API_GATEWAY_URL}/api/Chat/message/${chatRoomId}`);
-      console.log('FormData Content:', message);
-
+      
+      // Append images if provided
+      if (images && images.length > 0) {
+        images.forEach((image) => {
+          formData.append('Image', image);
+        });
+      }
+      
+      const headers = this.getHeaders();
+      // Remove Content-Type to let browser set it with boundary for FormData
+      delete headers['Content-Type'];
+      
       const response = await fetch(`${API_GATEWAY_URL}/api/Chat/message/${chatRoomId}`, {
         method: 'POST',
-        headers: {
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
+        headers: headers,
         body: formData,
       });
 
@@ -109,40 +122,27 @@ class ChatService {
   }
 
   /**
-   * Send a message with image to a chat room
-   * @param {string} chatRoomId - The chat room ID
-   * @param {string} message - The message content
-   * @param {File} imageFile - The image file to send
-   * @returns {Promise} Message send response
+   * Revoke/Delete a message
+   * @param {string} chatMessageId - The message ID to revoke
+   * @returns {Promise} Delete response
    */
-  async sendMessageWithImage(chatRoomId, message, imageFile) {
+  async revokeMessage(chatMessageId) {
     try {
-      const formData = new FormData();
-      formData.append('Content', message);
-      formData.append('Image', imageFile);
-
-      const token = this.getAuthToken();
-      console.log('Sending message with image to:', `${API_GATEWAY_URL}/api/Chat/message/${chatRoomId}`);
-
-      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/message/${chatRoomId}`, {
-        method: 'POST',
-        headers: {
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
-        body: formData,
+      console.log('Revoking message:', chatMessageId);
+      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/${chatMessageId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Send message with image failed:', response.status, errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('Message with image sent successfully:', data);
+      console.log('Message revoked successfully:', data);
       return data;
     } catch (error) {
-      console.error('Error sending message with image:', error);
+      console.error('Error revoking message:', error);
       throw error;
     }
   }

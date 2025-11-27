@@ -6,6 +6,7 @@ import { boardingHouseAPI, roomAPI } from "@/utils/api";
 import { useAuth } from "@/hooks/useAuth";
 import AddressSelector from "@/components/AddressSelector";
 import vietnamAddressService from "@/services/vietnamAddressService";
+import notification from "@/utils/notification";
 
 // Image Gallery Component for Boarding House - 3 Thumbnails Layout
 function ImageCarousel({ images, houseName }) {
@@ -288,7 +289,7 @@ export default function BoardingHousesPage() {
     const invalidFiles = files.filter(file => !validTypes.includes(file.type));
     
     if (invalidFiles.length > 0) {
-      alert(`Invalid file types: ${invalidFiles.map(f => f.name).join(', ')}. Please upload only image files.`);
+      notification.error(`Invalid file types: ${invalidFiles.map(f => f.name).join(', ')}. Please upload only image files.`);
       return;
     }
 
@@ -319,17 +320,17 @@ export default function BoardingHousesPage() {
       
       // Validate required fields before submission
       if (!houseData.addressData.provinceCode) {
-        alert('Please select a province');
+        notification.warning('Please select a province');
         setSubmitting(false);
         return;
       }
       if (!houseData.addressData.wardCode) {
-        alert('Please select a ward');
+        notification.warning('Please select a ward');
         setSubmitting(false);
         return;
       }
       if (!houseData.addressData.address) {
-        alert('Please enter detailed address');
+        notification.warning('Please enter detailed address');
         setSubmitting(false);
         return;
       }
@@ -384,7 +385,7 @@ export default function BoardingHousesPage() {
       console.log("✅ Create response:", res);
       
       if (res && res.isSuccess !== false) { 
-        alert(`Boarding house created successfully${selectedImages.length > 0 ? ` with ${selectedImages.length} image(s)` : ''}!`); 
+        notification.success(`Boarding house created successfully${selectedImages.length > 0 ? ` with ${selectedImages.length} image(s)` : ''}!`); 
         setShowModal(false); 
         // Reset form
         setHouseData({ 
@@ -404,7 +405,7 @@ export default function BoardingHousesPage() {
         fetchBoardingHouses(); 
       }
       else {
-        alert('Create failed: ' + (res?.message || JSON.stringify(res)));
+        notification.error('Create failed: ' + (res?.message || JSON.stringify(res)));
       }
     } catch (e) { 
       console.error("❌ Create error:", e); 
@@ -433,7 +434,7 @@ export default function BoardingHousesPage() {
         errorMessage += 'Unknown error';
       }
       
-      alert(errorMessage);
+      notification.error(errorMessage);
     }
     finally { setSubmitting(false); }
   };
@@ -473,7 +474,7 @@ export default function BoardingHousesPage() {
       
       const res = await boardingHouseAPI.update(editingHouse.id, formData);
       if (res && res.isSuccess !== false) { 
-        alert(`Boarding house updated successfully${selectedImages.length > 0 ? ` with ${selectedImages.length} new image(s)` : ''}!`); 
+        notification.success(`Boarding house updated successfully${selectedImages.length > 0 ? ` with ${selectedImages.length} new image(s)` : ''}!`); 
         setShowModal(false); 
         setEditingHouse(null); 
         // Reset form
@@ -493,17 +494,18 @@ export default function BoardingHousesPage() {
         setFormErrors({});
         fetchBoardingHouses(); 
       }
-      else alert('Update failed: ' + (res?.message || JSON.stringify(res)));
+      else notification.error('Update failed: ' + (res?.message || JSON.stringify(res)));
     } catch (e) { 
       console.error("❌ Update error:", e); 
       console.error("❌ Error response:", e.response?.data);
-      alert('API error updating boarding house: ' + (e.response?.data?.message || e.message || e)); 
+      notification.error('API error updating boarding house: ' + (e.response?.data?.message || e.message || e)); 
     }
     finally { setSubmitting(false); }
   };
 
   const handleDelete = async (houseId) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa nhà trọ này? Tất cả các phòng sẽ bị xóa nếu được phép.')) return;
+    const confirmed = await notification.confirm('Are you sure you want to delete this boarding house? All rooms will be deleted if allowed.');
+    if (!confirmed) return;
     try {
       // Try to delete all rooms first (best effort)
       try {
@@ -515,29 +517,31 @@ export default function BoardingHousesPage() {
 
       const res = await boardingHouseAPI.delete(houseId);
       if (res && res.isSuccess !== false) {
-        alert('Xóa nhà trọ thành công!');
+        notification.success('Boarding house deleted successfully!');
         fetchBoardingHouses();
         return;
       }
       // Check for specific backend error message
       const msg = res?.message || '';
       if (msg.includes('Không thể kiểm tra phòng') || msg.includes('phòng trong nhà trọ')) {
-        if (window.confirm('Bạn cần xóa hết các phòng trong nhà trọ này trước khi xóa nhà trọ. Chuyển đến trang Quản lý phòng?')) {
+        const goToRooms = await notification.confirm('You need to delete all rooms in this boarding house first. Go to Room Management page?');
+        if (goToRooms) {
           window.location.href = `/owner/rooms?houseId=${houseId}`;
         }
         return;
       }
-      alert('Xóa nhà trọ thất bại: ' + msg);
+      notification.error('Delete boarding house failed: ' + msg);
     } catch (e) {
       console.error('Error deleting boarding house', e);
       const msg = e?.data?.message || e?.message || String(e);
       if (msg.includes('Không thể kiểm tra phòng') || msg.includes('phòng trong nhà trọ')) {
-        if (window.confirm('Bạn cần xóa hết các phòng trong nhà trọ này trước khi xóa nhà trọ. Chuyển đến trang Quản lý phòng?')) {
+        const goToRooms = await notification.confirm('You need to delete all rooms in this boarding house first. Go to Room Management page?');
+        if (goToRooms) {
           window.location.href = `/owner/rooms?houseId=${houseId}`;
         }
         return;
       }
-      alert('Lỗi xóa nhà trọ: ' + msg);
+      notification.error('Error deleting boarding house: ' + msg);
     }
   };
 
