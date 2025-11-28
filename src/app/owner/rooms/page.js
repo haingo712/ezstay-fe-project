@@ -54,7 +54,10 @@ function RoomsPageContent() {
       setLoadingAmenities(true);
       const data = await amenityService.getAllAmenities();
       console.log('🎯 Loaded amenities:', data);
-      setAmenities(Array.isArray(data) ? data : []);
+      // Handle both { value: [...] } and direct array format
+      const amenityList = data?.value || (Array.isArray(data) ? data : []);
+      console.log('🎯 Amenity list:', amenityList);
+      setAmenities(amenityList);
     } catch (error) {
       console.error('Error loading amenities:', error);
       setAmenities([]);
@@ -75,7 +78,7 @@ function RoomsPageContent() {
         console.log('🖼️ First room imageUrl:', data[0].imageUrl);
         console.log('🏷️ First room roomStatus:', data[0].roomStatus, 'Type:', typeof data[0].roomStatus);
         console.log('🏷️ First room RoomStatus:', data[0].RoomStatus, 'Type:', typeof data[0].RoomStatus);
-        
+
         // Check all rooms status
         data.forEach((room, idx) => {
           console.log(`Room ${idx}: roomStatus=${room.roomStatus}, RoomStatus=${room.RoomStatus}`);
@@ -198,12 +201,13 @@ function RoomsPageContent() {
         formData.append('ImageUrl', file);
       });
 
-      // Note: Backend needs to uncomment Amenities field in CreateRoom.cs for this to work
-      // Prepare amenities data (currently backend has this commented out)
+      // Prepare amenities data - use simple AmenityIds array format
+      // FormData binding: AmenityIds=guid1&AmenityIds=guid2
       if (newRoom.selectedAmenities && newRoom.selectedAmenities.length > 0) {
         newRoom.selectedAmenities.forEach((amenityId) => {
-          formData.append('Amenities', JSON.stringify({ AmenityId: amenityId }));
+          formData.append('AmenityIds', amenityId);
         });
+        console.log('📤 Sending amenities:', newRoom.selectedAmenities);
       }
 
       console.log('📤 Sending create room request:', {
@@ -259,14 +263,12 @@ function RoomsPageContent() {
         console.log('📤 Updating with', editRoom.imageFiles.length, 'new images');
       }
 
-      // Note: Backend needs to uncomment Amenities field in UpdateRoom.cs for this to work
+      // Use simple AmenityIds array format for amenities
       if (editRoom.selectedAmenities && editRoom.selectedAmenities.length > 0) {
         editRoom.selectedAmenities.forEach((amenityId) => {
-          formData.append('Amenities', JSON.stringify({ AmenityId: amenityId }));
+          formData.append('AmenityIds', amenityId);
         });
         console.log('📤 Updating with', editRoom.selectedAmenities.length, 'amenities');
-      } else {
-        console.log('📤 Updating without new images - keeping existing images');
       }
 
       console.log('📤 Sending update request for room:', selectedRoom.id);
@@ -319,8 +321,9 @@ function RoomsPageContent() {
     setEditRoom({
       area: room.area,
       price: room.price,
-      roomStatus: room.roomStatus || 0,
-      imageFiles: []
+      roomStatus: normalizeStatus(room.roomStatus),
+      imageFiles: [],
+      selectedAmenities: []
     });
     setEditImagePreviews([]);
     setShowEditModal(true);
@@ -341,8 +344,19 @@ function RoomsPageContent() {
     setEditImagePreviews([]);
   };
 
+  // Helper to normalize status to number (backend may return string or number)
+  const normalizeStatus = (status) => {
+    if (typeof status === 'number') return status;
+    if (typeof status === 'string') {
+      const statusMap = { 'available': 0, 'occupied': 1, 'maintenance': 2 };
+      return statusMap[status.toLowerCase()] ?? -1;
+    }
+    return -1;
+  };
+
   const getRoomStatusText = (status) => {
-    switch (status) {
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
       case 0: return 'Available';
       case 1: return 'Occupied';
       case 2: return 'Maintenance';
@@ -351,7 +365,8 @@ function RoomsPageContent() {
   };
 
   const getRoomStatusColor = (status) => {
-    switch (status) {
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
       case 0: return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 1: return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       case 2: return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
@@ -410,15 +425,15 @@ function RoomsPageContent() {
         </div>
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
           <p className="text-green-100 text-sm">Available</p>
-          <p className="text-4xl font-bold mt-2">{rooms.filter(r => r.roomStatus === 0).length}</p>
+          <p className="text-4xl font-bold mt-2">{rooms.filter(r => normalizeStatus(r.roomStatus) === 0).length}</p>
         </div>
         <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
           <p className="text-red-100 text-sm">Occupied</p>
-          <p className="text-4xl font-bold mt-2">{rooms.filter(r => r.roomStatus === 1).length}</p>
+          <p className="text-4xl font-bold mt-2">{rooms.filter(r => normalizeStatus(r.roomStatus) === 1).length}</p>
         </div>
         <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-6 text-white">
           <p className="text-yellow-100 text-sm">Maintenance</p>
-          <p className="text-4xl font-bold mt-2">{rooms.filter(r => r.roomStatus === 2).length}</p>
+          <p className="text-4xl font-bold mt-2">{rooms.filter(r => normalizeStatus(r.roomStatus) === 2).length}</p>
         </div>
       </div>
 
@@ -641,8 +656,8 @@ function RoomsPageContent() {
                         >
                           <input
                             type="checkbox"
-                            checked={(editRoom.selectedAmenities || []).includes(amenity.id)}
-                            onChange={() => toggleEditAmenity(amenity.id)}
+                            checked={(newRoom.selectedAmenities || []).includes(amenity.id)}
+                            onChange={() => toggleAmenity(amenity.id)}
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                           />
                           {amenity.imageUrl && (

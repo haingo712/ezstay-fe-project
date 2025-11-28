@@ -1,6 +1,16 @@
 // Payment Service for Bank Gateway Management
 import { apiFetch } from "@/utils/api";
 
+// Helper function to get auth token
+const getAuthToken = () => {
+    if (typeof window !== 'undefined') {
+        return localStorage.getItem('authToken') ||
+            localStorage.getItem('ezstay_token') ||
+            localStorage.getItem('token');
+    }
+    return null;
+};
+
 class PaymentService {
     /**
      * Get all bank gateways with OData support
@@ -11,7 +21,7 @@ class PaymentService {
         try {
             // Use external payment API instead of local backend
             const externalApiUrl = 'https://payment-api-r4zy.onrender.com/api/Bank/gateway';
-            
+
             console.log('🏦 Fetching bank gateways from external API:', externalApiUrl);
 
             // Direct fetch to external API (not using apiFetch which adds local API gateway URL)
@@ -28,7 +38,7 @@ class PaymentService {
 
             const data = await response.json();
             console.log('✅ Bank gateways fetched from external API:', data);
-            
+
             // Return data in expected format (check if it's wrapped or direct array)
             return data.data || data;
         } catch (error) {
@@ -48,9 +58,9 @@ class PaymentService {
 
             // Get all banks from external API
             const allBanks = await this.getAllBankGateways();
-            
+
             // Filter for active banks only
-            const activeBanks = Array.isArray(allBanks) 
+            const activeBanks = Array.isArray(allBanks)
                 ? allBanks.filter(bank => bank.isActive === true)
                 : [];
 
@@ -86,7 +96,6 @@ class PaymentService {
 
     /**
      * Toggle bank gateway active status (Admin only)
-     * Note: External API is read-only, toggle functionality disabled
      * @param {string} id - Bank gateway ID
      * @param {boolean} isActive - New active status
      * @returns {Promise} Update result
@@ -94,11 +103,25 @@ class PaymentService {
     async toggleBankGateway(id, isActive) {
         try {
             console.log(`🔧 Toggling bank gateway ${id} to ${isActive ? 'active' : 'inactive'}`);
-            console.warn('⚠️ External API is read-only. Toggle functionality is not available.');
 
-            // External API doesn't support PUT/PATCH operations
-            // Return mock success for UI purposes
-            throw new Error('External API does not support toggling bank status. This is a read-only data source.');
+            const externalApiUrl = `https://payment-api-r4zy.onrender.com/api/Bank/gateway/${id}?isActive=${isActive}`;
+
+            console.log('🏦 Calling toggle API:', externalApiUrl);
+
+            const response = await fetch(externalApiUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('✅ Bank gateway toggled successfully:', data);
+            return data;
         } catch (error) {
             console.error('❌ Error toggling bank gateway:', error);
             throw error;
@@ -137,13 +160,41 @@ class PaymentService {
         try {
             console.log('💳 Creating bank account:', bankAccountData);
 
-            const response = await apiFetch('/api/BankAccount/bank-account', {
+            const externalApiUrl = 'https://payment-api-r4zy.onrender.com/api/Bank/bank-account';
+            const token = getAuthToken();
+
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(externalApiUrl, {
                 method: 'POST',
+                headers,
                 body: JSON.stringify(bankAccountData),
             });
 
-            console.log('✅ Bank account created:', response);
-            return response;
+            if (!response.ok) {
+                // Backend returns error message as plain text or JSON
+                const errorText = await response.text();
+                let errorMessage = `HTTP error! status: ${response.status}`;
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage = errorJson.message || errorJson.Message || errorJson || errorMessage;
+                } catch {
+                    // If not JSON, use plain text
+                    if (errorText) errorMessage = errorText;
+                }
+                console.error('❌ Create bank account error:', errorMessage);
+                throw new Error(errorMessage);
+            }
+
+            const data = await response.json();
+            console.log('✅ Bank account created:', data);
+            return data;
         } catch (error) {
             console.error('❌ Error creating bank account:', error);
             throw error;
@@ -160,13 +211,92 @@ class PaymentService {
         try {
             console.log(`🔧 Updating bank account ${id}:`, bankAccountData);
 
-            const response = await apiFetch(`/api/BankAccount/bank-account/${id}`, {
+            const externalApiUrl = `https://payment-api-r4zy.onrender.com/api/Bank/bank-account/${id}`;
+            const token = getAuthToken();
+
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(externalApiUrl, {
                 method: 'PUT',
+                headers,
                 body: JSON.stringify(bankAccountData),
             });
 
-            console.log('✅ Bank account updated:', response);
-            return response;
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.log('❌ Error response text (raw):', errorText);
+                let errorMessage = `HTTP error! status: ${response.status}`;
+
+                if (errorText) {
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        console.log('❌ Error JSON (full):', JSON.stringify(errorJson, null, 2));
+
+                        // Handle ApiResponse format from backend: { success: false, message: "..." }
+                        if (errorJson.success === false && errorJson.message) {
+                            errorMessage = errorJson.message;
+                        }
+                        // Handle wrapped data format: { data: { message: "..." } }
+                        else if (errorJson.data && errorJson.data.message) {
+                            errorMessage = errorJson.data.message;
+                        }
+                        // Handle Problem Details format (RFC 7807) with errors object
+                        else if (errorJson.errors) {
+                            const firstErrorKey = Object.keys(errorJson.errors)[0];
+                            if (firstErrorKey && Array.isArray(errorJson.errors[firstErrorKey])) {
+                                errorMessage = errorJson.errors[firstErrorKey][0];
+                            } else if (firstErrorKey) {
+                                errorMessage = errorJson.errors[firstErrorKey];
+                            }
+                        }
+                        // Try other common error message fields
+                        else {
+                            errorMessage = errorJson.message
+                                || errorJson.Message
+                                || errorJson.detail
+                                || errorJson.Detail
+                                || errorJson.error
+                                || errorJson.Error
+                                || (errorJson.title && errorJson.title !== 'Bad Request' && errorJson.title !== 'One or more validation errors occurred.' ? errorJson.title : null)
+                                || (typeof errorJson === 'string' ? errorJson : null)
+                                || errorMessage;
+                        }
+                    } catch {
+                        // If not JSON, use plain text directly
+                        errorMessage = errorText;
+                    }
+                }
+
+                // Provide user-friendly message for common 400 errors
+                // Backend returns plain text message like "Bank account already exists"
+                if (response.status === 400 && errorMessage === `HTTP error! status: 400`) {
+                    errorMessage = 'Bank account already exists';
+                }
+
+                console.error('❌ Parsed error message:', errorMessage);
+                throw new Error(errorMessage);
+            }
+
+            // Handle empty or non-JSON response
+            const text = await response.text();
+            if (!text) {
+                console.log('✅ Bank account updated (empty response)');
+                return { success: true };
+            }
+            try {
+                const data = JSON.parse(text);
+                console.log('✅ Bank account updated:', data);
+                return data;
+            } catch {
+                console.log('✅ Bank account updated:', text);
+                return { success: true, message: text };
+            }
         } catch (error) {
             console.error('❌ Error updating bank account:', error);
             throw error;

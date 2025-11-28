@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import amenityService from '@/services/amenityService';
 import SafeImage from '@/components/SafeImage';
 
@@ -11,7 +11,12 @@ export default function AmenityManagementPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAmenity, setSelectedAmenity] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  
+
+  // Search and filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState('amenityName asc');
+  const [totalCount, setTotalCount] = useState(0);
+
   const [newAmenity, setNewAmenity] = useState({
     amenityName: '',
     imageFile: null
@@ -23,29 +28,74 @@ export default function AmenityManagementPage() {
   });
   const [editImagePreview, setEditImagePreview] = useState(null);
 
-  useEffect(() => {
-    loadAmenities();
-  }, []);
-
-  const loadAmenities = async () => {
+  // Load amenities with OData parameters
+  const loadAmenities = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await amenityService.getAllAmenities();
-      console.log('📦 Loaded amenities:', data);
-      setAmenities(Array.isArray(data) ? data : []);
+
+      console.log('🔍 Loading amenities...');
+
+      // Load all amenities without OData filter (backend may not support it)
+      const result = await amenityService.getAllAmenities({});
+      console.log('📦 Loaded amenities:', result);
+
+      let amenitiesData = result.value || [];
+
+      // Filter by search query on client side
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        amenitiesData = amenitiesData.filter(amenity =>
+          (amenity.amenityName || '').toLowerCase().includes(query)
+        );
+      }
+
+      // Sort on client side
+      if (sortOrder === 'amenityName asc') {
+        amenitiesData = [...amenitiesData].sort((a, b) =>
+          (a.amenityName || '').localeCompare(b.amenityName || '')
+        );
+      } else if (sortOrder === 'amenityName desc') {
+        amenitiesData = [...amenitiesData].sort((a, b) =>
+          (b.amenityName || '').localeCompare(a.amenityName || '')
+        );
+      } else if (sortOrder === 'createdAt desc') {
+        amenitiesData = [...amenitiesData].sort((a, b) =>
+          new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+        );
+      } else if (sortOrder === 'createdAt asc') {
+        amenitiesData = [...amenitiesData].sort((a, b) =>
+          new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
+        );
+      }
+
+      setAmenities(amenitiesData);
+      setTotalCount(amenitiesData.length);
     } catch (error) {
       console.error('Error loading amenities:', error);
       setAmenities([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
+  }, [searchQuery, sortOrder]);
+
+  useEffect(() => {
+    loadAmenities();
+  }, [loadAmenities]);
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleSortChange = (e) => {
+    setSortOrder(e.target.value);
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setNewAmenity({ ...newAmenity, imageFile: file });
-      
+
       // Create temporary preview using base64 Data URL (only for UI preview)
       // Actual file will be uploaded to Filebase IPFS storage via backend
       const reader = new FileReader();
@@ -58,7 +108,7 @@ export default function AmenityManagementPage() {
 
   const handleCreateAmenity = async (e) => {
     e.preventDefault();
-    
+
     if (!newAmenity.amenityName || !newAmenity.imageFile) {
       alert('Please enter amenity name and select an image!');
       return;
@@ -77,21 +127,18 @@ export default function AmenityManagementPage() {
       });
 
       const result = await amenityService.createAmenity(formData);
-      
+
       console.log('✅ Create response:', result);
-      
-      // Show success message from backend
-      alert('Amenity created successfully! ✅');
-      
+
       setShowCreateModal(false);
       setNewAmenity({ amenityName: '', imageFile: null });
       setImagePreview(null);
-      
+
       // Reload amenities to show the new one
       await loadAmenities();
     } catch (error) {
       console.error('❌ Error creating amenity:', error);
-      alert(error.response?.data?.message || 'Failed to create amenity!');
+      alert(error.message || 'Failed to create amenity');
     }
   };
 
@@ -100,11 +147,10 @@ export default function AmenityManagementPage() {
 
     try {
       await amenityService.deleteAmenity(id);
-      alert('Amenity deleted successfully!');
       await loadAmenities();
     } catch (error) {
       console.error('Error deleting amenity:', error);
-      alert('Failed to delete amenity!');
+      alert(error.message || 'Failed to delete amenity!');
     }
   };
 
@@ -112,7 +158,7 @@ export default function AmenityManagementPage() {
     const file = e.target.files[0];
     if (file) {
       setEditAmenity({ ...editAmenity, imageFile: file });
-      
+
       // Create temporary preview using base64 Data URL (only for UI preview)
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -124,7 +170,7 @@ export default function AmenityManagementPage() {
 
   const handleUpdateAmenity = async (e) => {
     e.preventDefault();
-    
+
     if (!editAmenity.amenityName) {
       alert('Please enter amenity name!');
       return;
@@ -134,7 +180,7 @@ export default function AmenityManagementPage() {
       // Create FormData for file upload to backend
       const formData = new FormData();
       formData.append('AmenityName', editAmenity.amenityName);
-      
+
       // Only append image if user selected a new one
       if (editAmenity.imageFile) {
         formData.append('ImageUrl', editAmenity.imageFile);
@@ -146,21 +192,19 @@ export default function AmenityManagementPage() {
       console.log('📤 Sending update request for:', selectedAmenity.id);
 
       const result = await amenityService.updateAmenity(selectedAmenity.id, formData);
-      
+
       console.log('✅ Update response:', result);
-      
-      alert('Amenity updated successfully! ✅');
-      
+
       setShowEditModal(false);
       setSelectedAmenity(null);
       setEditAmenity({ amenityName: '', imageFile: null });
       setEditImagePreview(null);
-      
+
       // Reload amenities to show updated data
       await loadAmenities();
     } catch (error) {
       console.error('❌ Error updating amenity:', error);
-      alert(error.response?.data?.message || 'Failed to update amenity!');
+      alert(error.message || 'Failed to update amenity');
     }
   };
 
@@ -192,9 +236,7 @@ export default function AmenityManagementPage() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             🛠️ Amenity Management
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage system amenities and facilities
-          </p>
+
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
@@ -207,10 +249,84 @@ export default function AmenityManagementPage() {
         </button>
       </div>
 
+      {/* Search and Filter Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Search Input */}
+          <div className="flex-1 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Search amenities by name..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {/* Sort Select */}
+          <div className="md:w-48">
+            <select
+              value={sortOrder}
+              onChange={handleSortChange}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="amenityName asc">Name (A-Z)</option>
+              <option value="amenityName desc">Name (Z-A)</option>
+              <option value="createdAt desc">Newest First</option>
+              <option value="createdAt asc">Oldest First</option>
+            </select>
+          </div>
+
+          {/* Refresh Button */}
+          <button
+            onClick={loadAmenities}
+            disabled={loading}
+            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+          >
+            <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Search Results Info */}
+        {searchQuery && (
+          <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+            Found <span className="font-semibold text-blue-600 dark:text-blue-400">{totalCount}</span> amenity(ies)
+            {searchQuery && <span> matching "<span className="font-medium">{searchQuery}</span>"</span>}
+          </div>
+        )}
+      </div>
+
       {/* Stats Card */}
       <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-        <p className="text-purple-100 text-sm">Total Amenities</p>
-        <p className="text-4xl font-bold mt-2">{amenities.length}</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-purple-100 text-sm">Total Amenities</p>
+            <p className="text-4xl font-bold mt-2">{totalCount}</p>
+          </div>
+          {searchQuery && (
+            <div className="text-right">
+              <p className="text-purple-100 text-sm">Showing</p>
+              <p className="text-2xl font-bold mt-1">{amenities.length}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Amenities Grid */}
@@ -285,7 +401,7 @@ export default function AmenityManagementPage() {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 ➕ Add New Amenity
               </h2>
-              
+
               <form onSubmit={handleCreateAmenity} className="space-y-4">
                 {/* Amenity Name */}
                 <div>
@@ -315,7 +431,7 @@ export default function AmenityManagementPage() {
                     onChange={handleImageChange}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
-                  
+
                   {/* Image Preview - Use regular img tag for Data URL */}
                   {imagePreview && (
                     <div className="mt-3 h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center">
@@ -359,7 +475,7 @@ export default function AmenityManagementPage() {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 ✏️ Edit Amenity
               </h2>
-              
+
               <form onSubmit={handleUpdateAmenity} className="space-y-4">
                 {/* Amenity Name */}
                 <div>
@@ -407,7 +523,7 @@ export default function AmenityManagementPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Leave empty to keep current image
                   </p>
-                  
+
                   {/* New Image Preview */}
                   {editImagePreview && (
                     <div className="mt-3 h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center border-2 border-blue-500">

@@ -113,7 +113,7 @@ export default function StaffReportsPage() {
         return reviewId.toString().includes(query) || reason.toLowerCase().includes(query.toLowerCase());
     });
 
-    if (loading) return <div className="p-6">Đang tải báo cáo...</div>;
+    if (loading) return <div className="p-6">There are currently no reports for this.</div>;
     if (error) return <div className="p-6 text-red-600">{error}</div>;
 
     return (
