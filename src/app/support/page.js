@@ -3,16 +3,19 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import RoleBasedRedirect from "@/components/RoleBasedRedirect";
+import { useTranslation } from "@/hooks/useTranslation";
 import aiAssistantService from "@/services/aiAssistantService";
 
-const WELCOME_MESSAGE = {
-  id: "welcome",
-  type: "bot",
-  message: "Hello! I am EZStay virtual assistant. How can I help you?",
-  timestamp: new Date().toISOString(),
-};
-
 export default function SupportPage() {
+  const { t } = useTranslation();
+  
+  const WELCOME_MESSAGE = {
+    id: "welcome",
+    type: "bot",
+    message: t('supportPage.askAnything'),
+    timestamp: new Date().toISOString(),
+  };
+  
   const [activeTab, setActiveTab] = useState("contact");
   const [contactForm, setContactForm] = useState({
     name: "",
@@ -30,47 +33,41 @@ export default function SupportPage() {
   const faqData = [
     {
       id: 1,
-      question: "How to find suitable rooms?",
-      answer:
-        "You can use the search bar on the homepage or search page to filter by area, price, size and desired amenities. The system will display rooms that match your criteria.",
+      question: t('supportPage.faqHowToFind'),
+      answer: t('supportPage.faqHowToFindAnswer'),
     },
     {
       id: 2,
-      question: "Can I contact landlords directly?",
-      answer:
-        'Yes, after viewing room details, you can click "Contact Landlord" to send a message or call directly. Contact information will be displayed after you register an account.',
+      question: t('supportPage.faqContactOwner'),
+      answer: t('supportPage.faqContactOwnerAnswer'),
     },
     {
       id: 3,
-      question: "How to register an account?",
-      answer:
-        'Click the "Sign Up" button in the top right corner, fill in your personal information and confirm your email. You can choose to register as a tenant or landlord.',
+      question: t('supportPage.faqRegister'),
+      answer: t('supportPage.faqRegisterAnswer'),
     },
     {
       id: 4,
-      question: "Can I post rooms for rent?",
-      answer:
-        "Yes, after registering a landlord account and verifying your information, you can post rental listings with full images, descriptions and contact information.",
+      question: t('supportPage.faqPostRoom'),
+      answer: t('supportPage.faqPostRoomAnswer'),
     },
     {
       id: 5,
-      question: "What are EZStay service fees?",
-      answer:
-        "EZStay is free for room seekers. For landlords, we have flexible service packages with reasonable fees for posting and managing rental properties.",
+      question: t('supportPage.faqFees'),
+      answer: t('supportPage.faqFeesAnswer'),
     },
     {
       id: 6,
-      question: "How to report inappropriate listings?",
-      answer:
-        'You can click the "Report" button on the room detail page or contact us through the support form. We will review and handle it as soon as possible.',
+      question: t('supportPage.faqReport'),
+      answer: t('supportPage.faqReportAnswer'),
     },
   ];
 
   const quickQuestions = [
-    "How to find rooms?",
-    "How to contact landlords?",
-    "What are the service fees?",
-    "How to post listings?",
+    t('supportPage.quickFindRooms'),
+    t('supportPage.quickContactOwner'),
+    t('supportPage.quickFees'),
+    t('supportPage.quickPostListing'),
   ];
 
   const generateMessageId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -128,7 +125,7 @@ export default function SupportPage() {
   const handleContactSubmit = (e) => {
     e.preventDefault();
     // Handle contact form submission
-    alert("Support request sent! We will respond within 24 hours.");
+    alert(t('supportPage.submitSuccess'));
     setContactForm({
       name: "",
       email: "",
@@ -158,8 +155,8 @@ export default function SupportPage() {
       {/* Hero Section */}
       <section className="bg-blue-600 dark:bg-blue-800 text-white py-3">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl font-bold mb-4">Support Center</h1>
-          <p className="text-xl">We are here to help you 24/7</p>
+          <h1 className="text-4xl font-bold mb-4">{t('supportPage.title')}</h1>
+          <p className="text-xl">{t('supportPage.subtitle')}</p>
         </div>
       </section>
 
@@ -174,7 +171,7 @@ export default function SupportPage() {
                 : "border-transparent text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
             }`}
           >
-            📧 Contact Support
+            📧 {t('supportPage.contactSupport')}
           </button>
           <button
             onClick={() => setActiveTab("chat")}
@@ -184,7 +181,7 @@ export default function SupportPage() {
                 : "border-transparent text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
             }`}
           >
-            🤖 AI Assistant
+            🤖 {t('supportPage.aiAssistant')}
           </button>
           <button
             onClick={() => setActiveTab("faq")}
@@ -194,7 +191,7 @@ export default function SupportPage() {
                 : "border-transparent text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
             }`}
           >
-            ❓ FAQ
+            ❓ {t('supportPage.faq')}
           </button>
         </div>
 
@@ -203,14 +200,14 @@ export default function SupportPage() {
           <div className="max-w-2xl mx-auto">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                Send Support Request
+                {t('supportPage.sendRequest')}
               </h2>
 
               <form onSubmit={handleContactSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Full Name *
+                      {t('supportPage.fullName')} *
                     </label>
                     <input
                       type="text"
@@ -228,7 +225,7 @@ export default function SupportPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Email *
+                      {t('supportPage.email')} *
                     </label>
                     <input
                       type="email"
@@ -248,7 +245,7 @@ export default function SupportPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Phone Number
+                      {t('supportPage.phone')}
                     </label>
                     <input
                       type="tel"
@@ -265,7 +262,7 @@ export default function SupportPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Category
+                      {t('supportPage.category')}
                     </label>
                     <select
                       className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -277,19 +274,19 @@ export default function SupportPage() {
                         }))
                       }
                     >
-                      <option value="general">General Question</option>
-                      <option value="technical">Technical Issue</option>
-                      <option value="account">Account</option>
-                      <option value="payment">Payment</option>
-                      <option value="report">Report Violation</option>
-                      <option value="other">Other</option>
+                      <option value="general">{t('supportPage.categoryGeneral')}</option>
+                      <option value="technical">{t('supportPage.categoryTechnical')}</option>
+                      <option value="account">{t('supportPage.categoryAccount')}</option>
+                      <option value="payment">{t('supportPage.categoryPayment')}</option>
+                      <option value="report">{t('supportPage.categoryReport')}</option>
+                      <option value="other">{t('supportPage.categoryOther')}</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Subject *
+                    {t('supportPage.subject')} *
                   </label>
                   <input
                     type="text"
@@ -302,13 +299,13 @@ export default function SupportPage() {
                         subject: e.target.value,
                       }))
                     }
-                    placeholder="Brief description of your issue"
+                    placeholder={t('supportPage.subjectPlaceholder')}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Message *
+                    {t('supportPage.message')} *
                   </label>
                   <textarea
                     required
@@ -321,7 +318,7 @@ export default function SupportPage() {
                         message: e.target.value,
                       }))
                     }
-                    placeholder="Describe your issue in detail..."
+                    placeholder={t('supportPage.messagePlaceholder')}
                   />
                 </div>
 
@@ -329,7 +326,7 @@ export default function SupportPage() {
                   type="submit"
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors"
                 >
-                  Send Support Request
+                  {t('supportPage.submit')}
                 </button>
               </form>
             </div>
@@ -341,9 +338,9 @@ export default function SupportPage() {
           <div className="max-w-4xl mx-auto space-y-6">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
               <div className="bg-blue-600 dark:bg-blue-800 text-white p-4">
-                <h2 className="text-xl font-bold">EZStay Virtual Assistant</h2>
+                <h2 className="text-xl font-bold">{t('supportPage.virtualAssistant')}</h2>
                 <p className="text-blue-100">
-                  Ask me anything about our services!
+                  {t('supportPage.askAnything')}
                 </p>
               </div>
 
@@ -399,7 +396,7 @@ export default function SupportPage() {
               {/* Quick Questions */}
               <div className="border-t border-gray-200 dark:border-gray-700 p-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  Quick questions:
+                  {t('supportPage.quickQuestions')}:
                 </p>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {quickQuestions.map((question, index) => (
@@ -419,14 +416,14 @@ export default function SupportPage() {
                     type="text"
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Type your question..."
+                    placeholder={t('supportPage.typePlaceholder')}
                     className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                   <button
                     type="submit"
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
                   >
-                    Send
+                    {t('supportPage.send')}
                   </button>
                 </form>
               </div>
@@ -439,10 +436,10 @@ export default function SupportPage() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                Frequently Asked Questions
+                {t('supportPage.frequentlyAskedQuestions')}
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
-                Find quick answers to common questions
+                {t('supportPage.findQuickAnswers')}
               </p>
             </div>
 
@@ -483,13 +480,13 @@ export default function SupportPage() {
 
             <div className="text-center mt-8">
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Can not find the answer you need?
+                {t('supportPage.cantFindAnswer')}
               </p>
               <button
                 onClick={() => setActiveTab("contact")}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
               >
-                Contact Support
+                {t('supportPage.contactSupport')}
               </button>
             </div>
           </div>
@@ -501,10 +498,10 @@ export default function SupportPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Contact Information
+              {t('supportPage.contactInformation')}
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Multiple ways to get in touch with us
+              {t('supportPage.multipleWays')}
             </p>
           </div>
 
@@ -526,7 +523,7 @@ export default function SupportPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Email
+                {t('supportPage.emailLabel')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
                 support@ezstay.com
@@ -550,7 +547,7 @@ export default function SupportPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Hotline
+                {t('supportPage.hotlineLabel')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
                 +1 (555) 123-4567 (24/7)
@@ -580,7 +577,7 @@ export default function SupportPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Address
+                {t('supportPage.addressLabel')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
                 123 Main Street, New York, NY 10001

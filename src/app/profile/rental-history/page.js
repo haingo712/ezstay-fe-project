@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 import contractService from '@/services/contractService';
 import reviewService from '@/services/reviewService';
 import { 
@@ -24,6 +25,7 @@ import RoleBasedRedirect from '@/components/RoleBasedRedirect';
 export default function RentalHistoryPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedContract, setSelectedContract] = useState(null);
@@ -91,7 +93,7 @@ export default function RentalHistoryPage() {
     if (!selectedContract) return;
     
     if (!reviewForm.content.trim()) {
-      alert('Please write your review!');
+      alert(t('rentalHistory.writeReviewPlaceholder'));
       return;
     }
 
@@ -125,7 +127,7 @@ export default function RentalHistoryPage() {
       const createdReview = await reviewService.createReview(selectedContract.id, formData);
       console.log('✅ Created review:', createdReview);
       
-      alert('Review submitted successfully! ✅');
+      alert(t('rentalHistory.reviewSuccess'));
       handleCloseReviewModal();
       
       // Navigate to the created review detail page
@@ -146,10 +148,10 @@ export default function RentalHistoryPage() {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      0: { label: 'Active', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-      1: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-      2: { label: 'Expired', color: 'bg-red-100 text-red-800', icon: XCircle },
-      3: { label: 'Cancelled', color: 'bg-gray-100 text-gray-800', icon: XCircle },
+      0: { label: t('rentalHistory.active'), color: 'bg-green-100 text-green-800', icon: CheckCircle },
+      1: { label: t('rentalHistory.pending'), color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+      2: { label: t('rentalHistory.expired'), color: 'bg-red-100 text-red-800', icon: XCircle },
+      3: { label: t('rentalHistory.cancelled'), color: 'bg-gray-100 text-gray-800', icon: XCircle },
     };
 
     const config = statusConfig[status] || statusConfig[1];
@@ -181,10 +183,10 @@ export default function RentalHistoryPage() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Rental History
+              {t('rentalHistory.title')}
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              View all your rental contracts and leave reviews
+              {t('rentalHistory.subtitle')}
             </p>
           </div>
 
@@ -192,7 +194,7 @@ export default function RentalHistoryPage() {
           {loading && (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading your rental history...</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">{t('rentalHistory.loading')}</p>
             </div>
           )}
 
@@ -201,10 +203,10 @@ export default function RentalHistoryPage() {
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
               <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                No Rental History
+                {t('rentalHistory.noHistory')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                You haven't rented any rooms yet
+                {t('rentalHistory.noHistoryDesc')}
               </p>
             </div>
           )}
@@ -239,28 +241,28 @@ export default function RentalHistoryPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-600 dark:text-gray-400">Check-in:</span>
+                      <span className="text-gray-600 dark:text-gray-400">{t('rentalHistory.checkIn')}:</span>
                       <span className="font-medium text-gray-900 dark:text-white">
                         {new Date(contract.checkinDate).toLocaleDateString()}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-600 dark:text-gray-400">Check-out:</span>
+                      <span className="text-gray-600 dark:text-gray-400">{t('rentalHistory.checkOut')}:</span>
                       <span className="font-medium text-gray-900 dark:text-white">
                         {new Date(contract.checkoutDate).toLocaleDateString()}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <User className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-600 dark:text-gray-400">Owner:</span>
+                      <span className="text-gray-600 dark:text-gray-400">{t('rentalHistory.owner')}:</span>
                       <span className="font-medium text-gray-900 dark:text-white">
                         {contract.ownerName || 'N/A'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Phone className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-600 dark:text-gray-400">Contact:</span>
+                      <span className="text-gray-600 dark:text-gray-400">{t('profile.phone')}:</span>
                       <span className="font-medium text-gray-900 dark:text-white">
                         {contract.ownerPhone || 'N/A'}
                       </span>
@@ -272,7 +274,7 @@ export default function RentalHistoryPage() {
                     <button
                       className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                      View Details
+                      {t('common.view')}
                     </button>
                     
                     <button
@@ -280,7 +282,7 @@ export default function RentalHistoryPage() {
                       className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                     >
                       <Star className="h-4 w-4" />
-                      Add Review
+                      {t('rentalHistory.writeReview')}
                     </button>
 
                     <button
@@ -288,7 +290,7 @@ export default function RentalHistoryPage() {
                       className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
                     >
                       <Star className="h-4 w-4 fill-current" />
-                      Review Details
+                      {t('rentalPostDetail.reviews')}
                     </button>
                   </div>
                 </div>
@@ -304,7 +306,7 @@ export default function RentalHistoryPage() {
               {/* Modal Header */}
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Leave a Review
+                  {t('rentalHistory.reviewTitle')}
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {selectedContract?.roomName} - {selectedContract?.houseName}
@@ -316,7 +318,7 @@ export default function RentalHistoryPage() {
                 {/* Rating */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Rating
+                    {t('rentalHistory.yourRating')}
                   </label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -341,26 +343,26 @@ export default function RentalHistoryPage() {
                 {/* Content */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Your Review <span className="text-red-500">*</span>
+                    {t('rentalHistory.yourReview')} <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={reviewForm.content}
                     onChange={(e) => setReviewForm({ ...reviewForm, content: e.target.value })}
-                    placeholder="Share your experience with this rental..."
+                    placeholder={t('rentalHistory.writeReviewPlaceholder')}
                     rows={6}
                     maxLength={1000}
                     required
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-none"
                   />
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    {reviewForm.content.length}/1000 characters
+                    {reviewForm.content.length}/1000
                   </p>
                 </div>
 
                 {/* Image Upload */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Upload Image <span className="text-red-500">*</span>
+                    {t('rentalHistory.uploadImage')}
                   </label>
                   <input
                     type="file"
@@ -369,9 +371,6 @@ export default function RentalHistoryPage() {
                     onChange={handleImageChange}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Image will be uploaded to Filebase IPFS storage
-                  </p>
 
                   {/* Image Preview */}
                   {imagePreview && (
@@ -382,9 +381,6 @@ export default function RentalHistoryPage() {
                         alt="Review Preview"
                         className="w-full h-full object-contain"
                       />
-                      <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
-                        Preview
-                      </div>
                     </div>
                   )}
                 </div>
@@ -397,7 +393,7 @@ export default function RentalHistoryPage() {
                   disabled={submitting}
                   className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={handleSubmitReview}
@@ -407,12 +403,12 @@ export default function RentalHistoryPage() {
                   {submitting ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Submitting...
+                      {t('rentalHistory.submitting')}
                     </>
                   ) : (
                     <>
                       <MessageSquare className="h-4 w-4" />
-                      Submit Review
+                      {t('rentalHistory.submitReview')}
                     </>
                   )}
                 </button>

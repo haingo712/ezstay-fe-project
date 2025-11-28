@@ -58,7 +58,7 @@ export default function BankAccountPage() {
             }
         } catch (err) {
             console.error('Error loading bank accounts:', err);
-            setError('Không thể tải danh sách tài khoản. Vui lòng thử lại.');
+            setError(t('bankAccount.errorLoading'));
             setBankAccounts([]);
         } finally {
             setLoading(false);
@@ -132,7 +132,7 @@ export default function BankAccountPage() {
             });
         } catch (err) {
             console.error('Error saving bank account:', err);
-            setError(err.message || 'Không thể lưu tài khoản ngân hàng. Vui lòng thử lại.');
+            setError(err.message || t('bankAccount.errorSaving'));
         } finally {
             setLoading(false);
         }
@@ -167,12 +167,12 @@ export default function BankAccountPage() {
             await loadBankAccounts();
         } catch (err) {
             console.error('Error toggling bank account status:', err);
-            setError(err.message || 'Không thể thay đổi trạng thái tài khoản. Vui lòng thử lại.');
+            setError(err.message || t('bankAccount.errorToggle'));
         }
     };
 
     const handleDelete = async (account) => {
-        if (!confirm(`Bạn có chắc chắn muốn xóa tài khoản ${account.bankName} - ${account.accountNumber}?`)) {
+        if (!confirm(t('bankAccount.deleteConfirm'))) {
             return;
         }
 
@@ -190,7 +190,7 @@ export default function BankAccountPage() {
             }
         } catch (err) {
             console.error('Error deleting bank account:', err);
-            setError(err.message || 'Không thể xóa tài khoản ngân hàng. Vui lòng thử lại.');
+            setError(err.message || t('bankAccount.errorDeleting'));
         }
     };
 
@@ -337,7 +337,7 @@ export default function BankAccountPage() {
                                     ) : availableBanks.length === 0 ? (
                                         <div className="w-full px-4 py-3 border border-red-300 dark:border-red-600 rounded-lg bg-red-50 dark:bg-red-900/20">
                                             <p className="text-red-600 dark:text-red-400 text-sm">
-                                                ⚠️ Không tìm thấy ngân hàng nào đang active. Vui lòng kiểm tra backend hoặc kích hoạt ngân hàng trong admin panel.
+                                                ⚠️ {t('bankAccount.noBanksFound')}
                                             </p>
                                         </div>
                                     ) : (
@@ -357,7 +357,7 @@ export default function BankAccountPage() {
                                                 ))}
                                             </select>
                                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                Tìm thấy {availableBanks.length} ngân hàng
+                                                {t('bankAccount.foundBanks').replace('{{count}}', availableBanks.length)}
                                             </p>
                                         </div>
                                     )}
@@ -577,7 +577,7 @@ export default function BankAccountPage() {
                                                         onClick={() => handleToggleActive(account)}
                                                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${account.isActive ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'
                                                             }`}
-                                                        title={account.isActive ? 'Click để tắt' : 'Click để bật'}
+                                                        title={account.isActive ? t('bankAccount.clickToDisable') : t('bankAccount.clickToEnable')}
                                                     >
                                                         <span
                                                             className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${account.isActive ? 'translate-x-6' : 'translate-x-1'

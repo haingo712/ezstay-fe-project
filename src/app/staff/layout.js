@@ -7,16 +7,18 @@ import Navbar from "@/components/Navbar";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function StaffLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { language, changeLanguage } = useLanguage();
+  const { t } = useTranslation();
 
   const navigation = [
     {
-      name: "Overview",
+      name: t('staffNav.overview'),
       href: "/staff",
       icon: (
         <svg
@@ -35,7 +37,7 @@ export default function StaffLayout({ children }) {
       ),
     },
     {
-      name: "User & Owner Management",
+      name: t('staffNav.userManagement'),
       href: "/staff/users",
       icon: (
         <svg
@@ -54,7 +56,7 @@ export default function StaffLayout({ children }) {
       ),
     },
     {
-      name: "Post Management",
+      name: t('staffNav.postManagement'),
       href: "/staff/posts",
       icon: (
         <svg
@@ -73,7 +75,7 @@ export default function StaffLayout({ children }) {
       ),
     },
     {
-      name: "Amenity Management",
+      name: t('staffNav.amenityManagement'),
       href: "/staff/amenity-management",
       icon: (
         <svg
@@ -87,7 +89,7 @@ export default function StaffLayout({ children }) {
       )
     },
     {
-      name: "Reports",
+      name: t('staffNav.reports'),
       href: "/staff/reports",
       icon: (
         <svg
@@ -106,7 +108,7 @@ export default function StaffLayout({ children }) {
       ),
     },
     {
-      name: "Notifications",
+      name: t('staffNav.notifications'),
       href: "/staff/notifications",
       icon: (
         <svg
@@ -125,7 +127,7 @@ export default function StaffLayout({ children }) {
       ),
     },
     {
-      name: "Content Moderation",
+      name: t('staffNav.contentModeration'),
       href: "/staff/moderation",
       icon: (
         <svg
@@ -144,7 +146,7 @@ export default function StaffLayout({ children }) {
       ),
     },
     {
-      name: "Customer Support",
+      name: t('staffNav.customerSupport'),
       href: "/staff/support",
       icon: (
         <svg
@@ -163,7 +165,7 @@ export default function StaffLayout({ children }) {
       ),
     },
     {
-      name: "Notifications",
+      name: t('staffNav.notifications'),
       href: "/staff/notifications",
       icon: (
         <svg
@@ -202,7 +204,7 @@ export default function StaffLayout({ children }) {
           >
             <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Staff Panel
+                {t('staffNav.staffPanel')}
               </h2>
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -274,14 +276,14 @@ export default function StaffLayout({ children }) {
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                     </svg>
-                    Dark Mode
+                    {t('theme.darkMode')}
                   </>
                 ) : (
                   <>
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
-                    Light Mode
+                    {t('theme.lightMode')}
                   </>
                 )}
               </button>
@@ -309,7 +311,7 @@ export default function StaffLayout({ children }) {
                 </svg>
               </button>
               <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Staff Dashboard
+                {t('staffNav.staffDashboard')}
               </h1>
               <div className="w-8"></div>
             </div>

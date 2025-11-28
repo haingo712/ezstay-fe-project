@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import userManagementService from '@/services/userManagementService';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AdminUsersPage() {
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
@@ -65,40 +67,40 @@ export default function AdminUsersPage() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          All Users Management
+          {t('adminUsers.title')}
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Admin: Full control over all user accounts
+          {t('adminUsers.subtitle') || 'Admin: Full control over all user accounts'}
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-          <div className="text-sm text-gray-600 dark:text-gray-400">Total Users</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('adminUsers.stats.totalUsers') || 'Total Users'}</div>
           <div className="text-2xl font-bold text-gray-900 dark:text-white">
             {users.filter(u => u.roleId === 1).length}
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-          <div className="text-sm text-gray-600 dark:text-gray-400">Owners</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('adminUsers.stats.owners') || 'Owners'}</div>
           <div className="text-2xl font-bold text-gray-900 dark:text-white">
             {users.filter(u => u.roleId === 2).length}
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-          <div className="text-sm text-gray-600 dark:text-gray-400">Staff</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('adminUsers.stats.staff') || 'Staff'}</div>
           <div className="text-2xl font-bold text-gray-900 dark:text-white">
             {users.filter(u => u.roleId === 3).length}
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-          <div className="text-sm text-gray-600 dark:text-gray-400">Active</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('adminUsers.stats.active') || 'Active'}</div>
           <div className="text-2xl font-bold text-green-600 dark:text-green-400">
             {users.filter(u => u.isActive).length}
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-          <div className="text-sm text-gray-600 dark:text-gray-400">Inactive</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('adminUsers.stats.inactive') || 'Inactive'}</div>
           <div className="text-2xl font-bold text-red-600 dark:text-red-400">
             {users.filter(u => !u.isActive).length}
           </div>
@@ -124,11 +126,11 @@ export default function AdminUsersPage() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-600 dark:text-gray-400">
-            Loading users...
+            {t('common.loading') || 'Loading users...'}
           </div>
         ) : filteredUsers.length === 0 ? (
           <div className="p-8 text-center text-gray-600 dark:text-gray-400">
-            No users found
+            {t('adminUsers.noUsersFound') || 'No users found'}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -136,22 +138,22 @@ export default function AdminUsersPage() {
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    User
+                    {t('adminUsers.table.user') || 'User'}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    Email
+                    {t('adminUsers.table.email') || 'Email'}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    Phone
+                    {t('adminUsers.table.phone') || 'Phone'}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    Role
+                    {t('adminUsers.table.role') || 'Role'}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    Status
+                    {t('adminUsers.table.status') || 'Status'}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    Actions
+                    {t('adminUsers.table.actions') || 'Actions'}
                   </th>
                 </tr>
               </thead>
@@ -235,7 +237,7 @@ export default function AdminUsersPage() {
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  User Details
+                  {t('adminUsers.modal.userDetails') || 'User Details'}
                 </h2>
                 <button
                   onClick={() => setSelectedUser(null)}
@@ -251,7 +253,7 @@ export default function AdminUsersPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Full Name
+                      {t('profile.fullName') || 'Full Name'}
                     </label>
                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
                       {selectedUser.fullName || 'N/A'}
@@ -259,7 +261,7 @@ export default function AdminUsersPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Email
+                      {t('auth.email') || 'Email'}
                     </label>
                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
                       {selectedUser.email}
@@ -267,7 +269,7 @@ export default function AdminUsersPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Phone
+                      {t('profile.phone') || 'Phone'}
                     </label>
                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
                       {selectedUser.phone || 'N/A'}
@@ -275,7 +277,7 @@ export default function AdminUsersPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Role
+                      {t('adminUsers.table.role') || 'Role'}
                     </label>
                     <p className="mt-1">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${

@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import userManagementService from '@/services/userManagementService';
 import AuthService from '@/services/authService';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function UserManagementPage() {
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const [users, setUsers] = useState([]);
   const [ownerRequests, setOwnerRequests] = useState([]);
@@ -206,10 +208,10 @@ export default function UserManagementPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            👥 User & Owner Management
+            👥 {t('staffUsers.title')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage user and property owner accounts
+            {t('staffUsers.subtitle') || 'Manage user and property owner accounts'}
           </p>
         </div>
         <button
@@ -219,42 +221,42 @@ export default function UserManagementPage() {
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Create Account
+          {t('staffUsers.createAccount')}
         </button>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-blue-100 text-sm">Total Users</p>
+          <p className="text-blue-100 text-sm">{t('staffUsers.stats.totalUsers') || 'Total Users'}</p>
           <p className="text-3xl font-bold mt-2">{users.filter(u => u.roleId === 1).length}</p>
         </div>
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-green-100 text-sm">Total Owners</p>
+          <p className="text-green-100 text-sm">{t('staffUsers.stats.totalOwners') || 'Total Owners'}</p>
           <p className="text-3xl font-bold mt-2">{users.filter(u => u.roleId === 2).length}</p>
         </div>
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-emerald-100 text-sm">Active</p>
+          <p className="text-emerald-100 text-sm">{t('staffUsers.stats.active') || 'Active'}</p>
           <p className="text-3xl font-bold mt-2">{users.filter(u => u.isActive && (u.roleId === 1 || u.roleId === 2)).length}</p>
         </div>
         <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-red-100 text-sm">Inactive</p>
+          <p className="text-red-100 text-sm">{t('staffUsers.stats.inactive') || 'Inactive'}</p>
           <p className="text-3xl font-bold mt-2">{users.filter(u => !u.isActive && (u.roleId === 1 || u.roleId === 2)).length}</p>
         </div>
       </div>
 
       <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-          <button onClick={() => setActiveTab('all')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'all' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>All</button>
-          <button onClick={() => setActiveTab('users')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'users' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>Users</button>
-          <button onClick={() => setActiveTab('owners')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'owners' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>Owners</button>
+          <button onClick={() => setActiveTab('all')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'all' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>{t('staffUsers.tabs.all')}</button>
+          <button onClick={() => setActiveTab('users')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'users' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>{t('staffUsers.tabs.users')}</button>
+          <button onClick={() => setActiveTab('owners')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'owners' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>{t('staffUsers.tabs.owners')}</button>
           <button onClick={() => setActiveTab('owner-requests')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'owner-requests' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
-            Owner Requests
+            {t('staffUsers.tabs.ownerRequests')}
             {ownerRequests.length > 0 && (
               <span className="ml-2 inline-block py-0.5 px-2.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{ownerRequests.length}</span>
             )}
           </button>
-          <button onClick={() => setActiveTab('active')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'active' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>Active</button>
-          <button onClick={() => setActiveTab('inactive')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'inactive' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>Inactive</button>
+          <button onClick={() => setActiveTab('active')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'active' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>{t('staffUsers.tabs.active')}</button>
+          <button onClick={() => setActiveTab('inactive')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'inactive' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>{t('staffUsers.tabs.inactive')}</button>
         </nav>
       </div>
 
@@ -264,8 +266,8 @@ export default function UserManagementPage() {
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ACCOUNT ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">REASON</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('staffUsers.table.accountId') || 'ACCOUNT ID'}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('staffUsers.table.reason') || 'REASON'}</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">SUBMITTED AT</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">STATUS</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ACTIONS</th>

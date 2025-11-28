@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { reviewAPI } from "@/utils/api";
+import { useTranslation } from "@/hooks/useTranslation";
 
-function StatusBadge({ status }) {
+function StatusBadge({ status, t }) {
     // Backend có thể trả về số (0,1,2) hoặc string
     const statusValue = typeof status === 'string' ? status.toLowerCase() : status;
 
@@ -17,6 +18,7 @@ function StatusBadge({ status }) {
 }
 
 export default function StaffReportsPage() {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(true);
     const [reports, setReports] = useState([]);
     const [error, setError] = useState(null);
@@ -113,31 +115,31 @@ export default function StaffReportsPage() {
         return reviewId.toString().includes(query) || reason.toLowerCase().includes(query.toLowerCase());
     });
 
-    if (loading) return <div className="p-6">Đang tải báo cáo...</div>;
-    if (error) return <div className="p-6 text-red-600">{error}</div>;
+    if (loading) return <div className="p-6">{t('staffReports.loading')}</div>;
+    if (error) return <div className="p-6 text-red-600">{t('staffReports.error')}</div>;
 
     return (
         <div className="p-6">
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-semibold">Review Reports</h1>
-                    <p className="text-sm text-gray-500">Quản lý các báo cáo đánh giá từ chủ nhà</p>
+                    <h1 className="text-2xl font-semibold">{t('staffReports.title')}</h1>
+                    <p className="text-sm text-gray-500">{t('staffReports.subtitle') || 'Quản lý các báo cáo đánh giá từ chủ nhà'}</p>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm kiếm reviewId hoặc lý do..." className="px-3 py-2 border rounded-md w-64 bg-white dark:bg-gray-700" />
+                    <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('staffReports.searchPlaceholder') || 'Tìm kiếm reviewId hoặc lý do...'} className="px-3 py-2 border rounded-md w-64 bg-white dark:bg-gray-700" />
                     <div className="flex items-center space-x-2">
-                        <button onClick={() => setFilter('all')} className={`px-3 py-2 rounded-md ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700'}`}>All</button>
-                        <button onClick={() => setFilter('pending')} className={`px-3 py-2 rounded-md ${filter === 'pending' ? 'bg-yellow-500 text-white' : 'bg-gray-100 dark:bg-gray-700'}`}>Pending</button>
-                        <button onClick={() => setFilter('approved')} className={`px-3 py-2 rounded-md ${filter === 'approved' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-gray-700'}`}>Approved</button>
-                        <button onClick={() => setFilter('rejected')} className={`px-3 py-2 rounded-md ${filter === 'rejected' ? 'bg-red-600 text-white' : 'bg-gray-100 dark:bg-gray-700'}`}>Rejected</button>
+                        <button onClick={() => setFilter('all')} className={`px-3 py-2 rounded-md ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700'}`}>{t('staffReports.filters.all')}</button>
+                        <button onClick={() => setFilter('pending')} className={`px-3 py-2 rounded-md ${filter === 'pending' ? 'bg-yellow-500 text-white' : 'bg-gray-100 dark:bg-gray-700'}`}>{t('staffReports.filters.pending')}</button>
+                        <button onClick={() => setFilter('approved')} className={`px-3 py-2 rounded-md ${filter === 'approved' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-gray-700'}`}>{t('staffReports.filters.approved')}</button>
+                        <button onClick={() => setFilter('rejected')} className={`px-3 py-2 rounded-md ${filter === 'rejected' ? 'bg-red-600 text-white' : 'bg-gray-100 dark:bg-gray-700'}`}>{t('staffReports.filters.rejected')}</button>
                     </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filtered.length === 0 && (
-                    <div className="col-span-full p-6 bg-white dark:bg-gray-800 rounded">Không tìm thấy báo cáo</div>
+                    <div className="col-span-full p-6 bg-white dark:bg-gray-800 rounded">{t('staffReports.empty')}</div>
                 )}
 
                 {filtered.map(r => {
@@ -172,8 +174,8 @@ export default function StaffReportsPage() {
                             <div className="mt-4 flex items-center justify-between">
                                 <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleString()}</p>
                                 <div className="flex items-center gap-2">
-                                    <button disabled={processing === r.id || isApproved} onClick={() => handleApprove(r.id)} className="px-3 py-1 bg-green-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed">{processing === r.id ? 'Đang...' : 'Approve'}</button>
-                                    <button disabled={processing === r.id || isRejected} onClick={() => openReject(r.id)} className="px-3 py-1 bg-red-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed">Reject</button>
+                                    <button disabled={processing === r.id || isApproved} onClick={() => handleApprove(r.id)} className="px-3 py-1 bg-green-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed">{processing === r.id ? t('common.processing') || 'Đang...' : t('staffReports.actions.approve')}</button>
+                                    <button disabled={processing === r.id || isRejected} onClick={() => openReject(r.id)} className="px-3 py-1 bg-red-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed">{t('staffReports.actions.reject')}</button>
                                 </div>
                             </div>
                         </div>
@@ -184,12 +186,12 @@ export default function StaffReportsPage() {
             {rejectModal.open && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-                        <h3 className="text-lg font-semibold mb-2">Từ chối báo cáo</h3>
-                        <p className="text-sm text-gray-500 mb-4">Bạn đang từ chối báo cáo này. Vui lòng nhập lý do:</p>
+                        <h3 className="text-lg font-semibold mb-2">{t('staffReports.modal.rejectTitle')}</h3>
+                        <p className="text-sm text-gray-500 mb-4">{t('staffReports.modal.rejectMessage') || 'Bạn đang từ chối báo cáo này. Vui lòng nhập lý do:'}</p>
                         <textarea value={rejectModal.reason} onChange={(e) => setRejectModal(prev => ({ ...prev, reason: e.target.value }))} rows={4} className="w-full p-2 border rounded mb-4" />
                         <div className="flex justify-end gap-2">
-                            <button onClick={() => setRejectModal({ open: false, id: null, reason: '' })} className="px-3 py-2 rounded border">Hủy</button>
-                            <button onClick={handleReject} className="px-3 py-2 rounded bg-red-600 text-white">Xác nhận từ chối</button>
+                            <button onClick={() => setRejectModal({ open: false, id: null, reason: '' })} className="px-3 py-2 rounded border">{t('common.cancel')}</button>
+                            <button onClick={handleReject} className="px-3 py-2 rounded bg-red-600 text-white">{t('staffReports.modal.confirmReject') || 'Xác nhận từ chối'}</button>
                         </div>
                     </div>
                 </div>

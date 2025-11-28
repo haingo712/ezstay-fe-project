@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import amenityService from '@/services/amenityService';
 import SafeImage from '@/components/SafeImage';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AmenityManagementPage() {
+  const { t } = useTranslation();
   const [amenities, setAmenities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -190,10 +192,10 @@ export default function AmenityManagementPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            🛠️ Amenity Management
+            🛠️ {t('staffAmenities.title')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage system amenities and facilities
+            {t('staffAmenities.subtitle') || 'Manage system amenities and facilities'}
           </p>
         </div>
         <button
@@ -203,13 +205,13 @@ export default function AmenityManagementPage() {
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Add Amenity
+          {t('staffAmenities.addAmenity')}
         </button>
       </div>
 
       {/* Stats Card */}
       <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-        <p className="text-purple-100 text-sm">Total Amenities</p>
+        <p className="text-purple-100 text-sm">{t('staffAmenities.totalAmenities') || 'Total Amenities'}</p>
         <p className="text-4xl font-bold mt-2">{amenities.length}</p>
       </div>
 
@@ -217,16 +219,16 @@ export default function AmenityManagementPage() {
       {loading ? (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-600 dark:text-gray-400 mt-4">Loading...</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-4">{t('common.loading')}</p>
         </div>
       ) : amenities.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center">
           <div className="text-6xl mb-4">🏗️</div>
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            No Amenities Found
+            {t('staffAmenities.noAmenitiesFound') || 'No Amenities Found'}
           </h3>
           <p className="text-gray-600 dark:text-gray-400">
-            Add your first amenity to get started!
+            {t('staffAmenities.addFirstAmenity') || 'Add your first amenity to get started!'}
           </p>
         </div>
       ) : (
@@ -262,13 +264,13 @@ export default function AmenityManagementPage() {
                     onClick={() => openEditModal(amenity)}
                     className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 font-medium text-sm"
                   >
-                    Edit
+                    {t('common.edit')}
                   </button>
                   <button
                     onClick={() => handleDeleteAmenity(amenity.id)}
                     className="flex-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 dark:bg-red-900 dark:text-red-200 font-medium text-sm"
                   >
-                    Delete
+                    {t('common.delete')}
                   </button>
                 </div>
               </div>
@@ -283,7 +285,7 @@ export default function AmenityManagementPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                ➕ Add New Amenity
+                ➕ {t('staffAmenities.modal.createTitle')}
               </h2>
               
               <form onSubmit={handleCreateAmenity} className="space-y-4">
@@ -306,7 +308,7 @@ export default function AmenityManagementPage() {
                 {/* Image Upload */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Image *
+                    {t('staffAmenities.modal.image')} *
                   </label>
                   <input
                     type="file"
@@ -335,14 +337,14 @@ export default function AmenityManagementPage() {
                     type="submit"
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
                   >
-                    Add
+                    {t('common.add')}
                   </button>
                   <button
                     type="button"
                     onClick={closeModals}
                     className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </form>
@@ -357,14 +359,14 @@ export default function AmenityManagementPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                ✏️ Edit Amenity
+                ✏️ {t('staffAmenities.modal.editTitle')}
               </h2>
               
               <form onSubmit={handleUpdateAmenity} className="space-y-4">
                 {/* Amenity Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Amenity Name *
+                    {t('staffAmenities.modal.name')} *
                   </label>
                   <input
                     type="text"
@@ -380,7 +382,7 @@ export default function AmenityManagementPage() {
                 {/* Current Image */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Current Image
+                    {t('staffAmenities.modal.currentImage')}
                   </label>
                   <div className="h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center relative">
                     <SafeImage
@@ -396,7 +398,7 @@ export default function AmenityManagementPage() {
                 {/* Upload New Image (Optional) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Upload New Image (Optional)
+                    {t('staffAmenities.modal.uploadNewImage') || 'Upload New Image (Optional)'}
                   </label>
                   <input
                     type="file"
@@ -405,7 +407,7 @@ export default function AmenityManagementPage() {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Leave empty to keep current image
+                    {t('staffAmenities.modal.leaveEmpty') || 'Leave empty to keep current image'}
                   </p>
                   
                   {/* New Image Preview */}
@@ -430,14 +432,14 @@ export default function AmenityManagementPage() {
                     type="submit"
                     className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
                   >
-                    Update
+                    {t('common.update')}
                   </button>
                   <button
                     type="button"
                     onClick={closeModals}
                     className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </form>

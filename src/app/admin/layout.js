@@ -7,6 +7,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function AdminLayout({ children }) {
   const [mounted, setMounted] = useState(false);
@@ -16,20 +17,21 @@ export default function AdminLayout({ children }) {
   const { logout, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { language, changeLanguage } = useLanguage();
+  const { t } = useTranslation();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const handleLogout = () => {
-    if (confirm('Are you sure you want to logout?')) {
+    if (confirm(t('common.logoutConfirm') || 'Are you sure you want to logout?')) {
       logout();
     }
   };
 
   const navigation = [
     {
-      name: "Dashboard",
+      name: t('adminNav.dashboard'),
       href: "/admin",
       icon: (
         <svg
@@ -48,7 +50,7 @@ export default function AdminLayout({ children }) {
       ),
     },
     {
-      name: "System Overview",
+      name: t('adminNav.systemOverview'),
       href: "/admin/overview",
       icon: (
         <svg
@@ -67,7 +69,7 @@ export default function AdminLayout({ children }) {
       ),
     },
     {
-      name: "User Management",
+      name: t('adminNav.userManagement'),
       href: "/admin/users",
       icon: (
         <svg
@@ -86,7 +88,7 @@ export default function AdminLayout({ children }) {
       ),
     },
     {
-      name: "Staff Management",
+      name: t('adminNav.staffManagement'),
       href: "/admin/staff-management",
       icon: (
         <svg
@@ -105,7 +107,7 @@ export default function AdminLayout({ children }) {
       ),
     },
     {
-      name: "Payment Gateways",
+      name: t('adminNav.paymentGateways'),
       href: "/admin/payment-gateways",
       icon: (
         <svg
@@ -124,7 +126,7 @@ export default function AdminLayout({ children }) {
       ),
     },
     {
-      name: "Financial Reports",
+      name: t('adminNav.financialReports'),
       href: "/admin/financial-reports",
       icon: (
         <svg
@@ -143,7 +145,7 @@ export default function AdminLayout({ children }) {
       ),
     },
     {
-      name: "Notifications",
+      name: t('adminNav.notifications'),
       href: "/admin/notifications",
       icon: (
         <svg
@@ -184,7 +186,7 @@ export default function AdminLayout({ children }) {
           >
             <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Admin Panel
+                {t('adminNav.adminPanel')}
               </h2>
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -305,14 +307,14 @@ export default function AdminLayout({ children }) {
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                       </svg>
-                      Dark Mode
+                      {t('theme.darkMode')}
                     </>
                   ) : (
                     <>
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                       </svg>
-                      Light Mode
+                      {t('theme.lightMode')}
                     </>
                   )}
                 </button>
@@ -326,7 +328,7 @@ export default function AdminLayout({ children }) {
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
-                Logout
+                {t('nav.logout')}
               </button>
             </div>
           </div>
@@ -362,7 +364,7 @@ export default function AdminLayout({ children }) {
                 </svg>
               </button>
               <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Admin Panel
+                {t('adminNav.adminPanel')}
               </h1>
               <div></div>
             </div>

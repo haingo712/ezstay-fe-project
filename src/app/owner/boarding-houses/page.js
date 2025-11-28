@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { boardingHouseAPI, roomAPI } from "@/utils/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "@/hooks/useTranslation";
 import AddressSelector from "@/components/AddressSelector";
 import vietnamAddressService from "@/services/vietnamAddressService";
 import notification from "@/utils/notification";
 
 // Image Gallery Component for Boarding House - 3 Thumbnails Layout
-function ImageCarousel({ images, houseName }) {
+function ImageCarousel({ images, houseName, t }) {
   const [showGallery, setShowGallery] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
 
@@ -90,7 +91,7 @@ function ImageCarousel({ images, houseName }) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                       <div className="text-lg font-bold">+{displayImages.length - 3}</div>
-                      <div className="text-xs">more photos</div>
+                      <div className="text-xs">{t('ownerBoardingHouses.card.morePhotos')}</div>
                     </div>
                   </div>
                 )}
@@ -105,7 +106,7 @@ function ImageCarousel({ images, houseName }) {
             <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
             </svg>
-            {displayImages.length} photos
+            {displayImages.length} {t('ownerBoardingHouses.card.photos')}
           </div>
         )}
       </div>
@@ -121,7 +122,7 @@ function ImageCarousel({ images, houseName }) {
             <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-sm -mx-4 px-4 py-3 mb-4 flex items-center justify-between">
               <div className="text-white">
                 <h3 className="font-semibold text-lg">{houseName}</h3>
-                <p className="text-sm text-gray-300">{displayImages.length} photos</p>
+                <p className="text-sm text-gray-300">{displayImages.length} {t('ownerBoardingHouses.card.photos')}</p>
               </div>
               <button
                 onClick={(e) => {
@@ -181,6 +182,7 @@ function ImageCarousel({ images, houseName }) {
 
 export default function BoardingHousesPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const [boardingHouses, setBoardingHouses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -215,7 +217,7 @@ export default function BoardingHousesPage() {
   const fetchBoardingHouses = async () => {
     if (!user || !user.id) {
       console.log("❌ No user ID available for fetching boarding houses");
-      setError("User not authenticated");
+      setError(t('ownerBoardingHouses.errors.notAuthenticated'));
       setLoading(false);
       return;
     }
@@ -254,7 +256,7 @@ export default function BoardingHousesPage() {
       setBoardingHouses(housesWithDetails);
     } catch (e) { 
       console.error("Error fetching boarding houses:", e); 
-      setError("Unable to load boarding houses: " + (e.message || e)); 
+      setError(t('ownerBoardingHouses.errors.loadFailed') + ": " + (e.message || e)); 
     }
     finally { setLoading(false); }
   };
@@ -264,9 +266,9 @@ export default function BoardingHousesPage() {
     
     // Validate house name (required, max 100 characters)
     if (!houseData.houseName.trim()) {
-      errors.houseName = 'Boarding house name is required';
+      errors.houseName = t('ownerBoardingHouses.modal.houseNameRequired');
     } else if (houseData.houseName.length > 100) {
-      errors.houseName = 'Boarding house name cannot exceed 100 characters';
+      errors.houseName = t('ownerBoardingHouses.modal.houseNameMaxLength');
     }
     
     // Validate address using the Vietnam address service
@@ -289,7 +291,7 @@ export default function BoardingHousesPage() {
     const invalidFiles = files.filter(file => !validTypes.includes(file.type));
     
     if (invalidFiles.length > 0) {
-      notification.error(`Invalid file types: ${invalidFiles.map(f => f.name).join(', ')}. Please upload only image files.`);
+      notification.error(t('ownerBoardingHouses.messages.invalidFileTypes'));
       return;
     }
 
@@ -320,17 +322,17 @@ export default function BoardingHousesPage() {
       
       // Validate required fields before submission
       if (!houseData.addressData.provinceCode) {
-        notification.warning('Please select a province');
+        notification.warning(t('ownerBoardingHouses.messages.selectProvince'));
         setSubmitting(false);
         return;
       }
       if (!houseData.addressData.wardCode) {
-        notification.warning('Please select a ward');
+        notification.warning(t('ownerBoardingHouses.messages.selectWard'));
         setSubmitting(false);
         return;
       }
       if (!houseData.addressData.address) {
-        notification.warning('Please enter detailed address');
+        notification.warning(t('ownerBoardingHouses.messages.enterAddress'));
         setSubmitting(false);
         return;
       }
@@ -385,7 +387,7 @@ export default function BoardingHousesPage() {
       console.log("✅ Create response:", res);
       
       if (res && res.isSuccess !== false) { 
-        notification.success(`Boarding house created successfully${selectedImages.length > 0 ? ` with ${selectedImages.length} image(s)` : ''}!`); 
+        notification.success(t('ownerBoardingHouses.messages.createSuccess') + (selectedImages.length > 0 ? ` ${t('ownerBoardingHouses.messages.createSuccessWithImages').replace('{{count}}', selectedImages.length)}` : '') + '!'); 
         setShowModal(false); 
         // Reset form
         setHouseData({ 
@@ -405,7 +407,7 @@ export default function BoardingHousesPage() {
         fetchBoardingHouses(); 
       }
       else {
-        notification.error('Create failed: ' + (res?.message || JSON.stringify(res)));
+        notification.error(t('ownerBoardingHouses.errors.createFailed') + ': ' + (res?.message || JSON.stringify(res)));
       }
     } catch (e) { 
       console.error("❌ Create error:", e); 
@@ -474,7 +476,7 @@ export default function BoardingHousesPage() {
       
       const res = await boardingHouseAPI.update(editingHouse.id, formData);
       if (res && res.isSuccess !== false) { 
-        notification.success(`Boarding house updated successfully${selectedImages.length > 0 ? ` with ${selectedImages.length} new image(s)` : ''}!`); 
+        notification.success(t('ownerBoardingHouses.messages.updateSuccess') + (selectedImages.length > 0 ? ` ${t('ownerBoardingHouses.messages.updateSuccessWithImages').replace('{{count}}', selectedImages.length)}` : '') + '!'); 
         setShowModal(false); 
         setEditingHouse(null); 
         // Reset form
@@ -494,7 +496,7 @@ export default function BoardingHousesPage() {
         setFormErrors({});
         fetchBoardingHouses(); 
       }
-      else notification.error('Update failed: ' + (res?.message || JSON.stringify(res)));
+      else notification.error(t('ownerBoardingHouses.errors.updateFailed') + ': ' + (res?.message || JSON.stringify(res)));
     } catch (e) { 
       console.error("❌ Update error:", e); 
       console.error("❌ Error response:", e.response?.data);
@@ -504,7 +506,7 @@ export default function BoardingHousesPage() {
   };
 
   const handleDelete = async (houseId) => {
-    const confirmed = await notification.confirm('Are you sure you want to delete this boarding house? All rooms will be deleted if allowed.');
+    const confirmed = await notification.confirm(t('ownerBoardingHouses.messages.deleteConfirm'));
     if (!confirmed) return;
     try {
       // Try to delete all rooms first (best effort)
@@ -517,31 +519,31 @@ export default function BoardingHousesPage() {
 
       const res = await boardingHouseAPI.delete(houseId);
       if (res && res.isSuccess !== false) {
-        notification.success('Boarding house deleted successfully!');
+        notification.success(t('ownerBoardingHouses.messages.deleteSuccess'));
         fetchBoardingHouses();
         return;
       }
       // Check for specific backend error message
       const msg = res?.message || '';
       if (msg.includes('Không thể kiểm tra phòng') || msg.includes('phòng trong nhà trọ')) {
-        const goToRooms = await notification.confirm('You need to delete all rooms in this boarding house first. Go to Room Management page?');
+        const goToRooms = await notification.confirm(t('ownerBoardingHouses.messages.deleteRoomsFirst'));
         if (goToRooms) {
           window.location.href = `/owner/rooms?houseId=${houseId}`;
         }
         return;
       }
-      notification.error('Delete boarding house failed: ' + msg);
+      notification.error(t('ownerBoardingHouses.errors.deleteFailed') + ': ' + msg);
     } catch (e) {
       console.error('Error deleting boarding house', e);
       const msg = e?.data?.message || e?.message || String(e);
       if (msg.includes('Không thể kiểm tra phòng') || msg.includes('phòng trong nhà trọ')) {
-        const goToRooms = await notification.confirm('You need to delete all rooms in this boarding house first. Go to Room Management page?');
+        const goToRooms = await notification.confirm(t('ownerBoardingHouses.messages.deleteRoomsFirst'));
         if (goToRooms) {
           window.location.href = `/owner/rooms?houseId=${houseId}`;
         }
         return;
       }
-      notification.error('Error deleting boarding house: ' + msg);
+      notification.error(t('ownerBoardingHouses.errors.deleteFailed') + ': ' + msg);
     }
   };
 
@@ -574,7 +576,7 @@ export default function BoardingHousesPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Checking authentication...</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('ownerBoardingHouses.checkingAuth')}</p>
         </div>
       </div>
     );
@@ -584,10 +586,10 @@ export default function BoardingHousesPage() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Authentication Required</h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">You need to login to access this page.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{t('ownerBoardingHouses.authRequired')}</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{t('ownerBoardingHouses.authRequiredDesc')}</p>
           <Link href="/login" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-            Go to Login
+            {t('ownerBoardingHouses.goToLogin')}
           </Link>
         </div>
       </div>
@@ -598,41 +600,41 @@ export default function BoardingHousesPage() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Access Denied</h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">You need Owner role to access this page.</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Current role: {user.role} (Type: {typeof user.role})</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{t('ownerBoardingHouses.accessDenied')}</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{t('ownerBoardingHouses.accessDeniedDesc')}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('ownerBoardingHouses.currentRole')}: {user.role} (Type: {typeof user.role})</p>
         </div>
       </div>
     );
   }
   
-  if (loading) return <div className="min-h-screen bg-gray-50 p-6">Loading boarding houses...</div>;
+  if (loading) return <div className="min-h-screen bg-gray-50 p-6">{t('ownerBoardingHouses.loading')}</div>;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Boarding House Management</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage all your boarding houses</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{t('ownerBoardingHouses.title')}</h1>
+          <p className="text-gray-600 dark:text-gray-400">{t('ownerBoardingHouses.subtitle')}</p>
           {error && <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">{error}</div>}
         </div>
 
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Boarding House List</h2>
-          <button onClick={() => { setEditingHouse(null); setHouseData({ houseName: '', description: '', addressData: { provinceCode: null, provinceName: '', wardCode: null, wardName: '', address: '' } }); setFormErrors({}); setShowModal(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">+ Add New Boarding House</button>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('ownerBoardingHouses.listTitle')}</h2>
+          <button onClick={() => { setEditingHouse(null); setHouseData({ houseName: '', description: '', addressData: { provinceCode: null, provinceName: '', wardCode: null, wardName: '', address: '' } }); setFormErrors({}); setShowModal(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">{t('ownerBoardingHouses.addNew')}</button>
         </div>
 
         {boardingHouses.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No boarding houses yet</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">Start by creating your first boarding house</p>
-            <button onClick={() => setShowModal(true)} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">Create First Boarding House</button>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('ownerBoardingHouses.emptyState.title')}</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{t('ownerBoardingHouses.emptyState.description')}</p>
+            <button onClick={() => setShowModal(true)} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">{t('ownerBoardingHouses.emptyState.createFirst')}</button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {boardingHouses.map((house) => (
               <div key={house.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                <ImageCarousel images={house.imageUrls} houseName={house.houseName} />
+                <ImageCarousel images={house.imageUrls} houseName={house.houseName} t={t} />
                 <div className="p-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{house.houseName}</h3>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mb-2 line-clamp-2">{house.description}</p>
@@ -650,15 +652,15 @@ export default function BoardingHousesPage() {
                     </div>
                   )}
                   <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div className="text-center"><div className="text-lg font-bold text-gray-900 dark:text-white">{house.totalRooms}</div><div className="text-xs text-gray-500 dark:text-gray-400">Total Rooms</div></div>
-                    <div className="text-center"><div className="text-lg font-bold text-green-600">{house.occupiedRooms}</div><div className="text-xs text-gray-500 dark:text-gray-400">Occupied</div></div>
-                    <div className="text-center"><div className="text-lg font-bold text-blue-600">{house.vacantRooms}</div><div className="text-xs text-gray-500 dark:text-gray-400">Vacant</div></div>
+                    <div className="text-center"><div className="text-lg font-bold text-gray-900 dark:text-white">{house.totalRooms}</div><div className="text-xs text-gray-500 dark:text-gray-400">{t('ownerBoardingHouses.card.totalRooms')}</div></div>
+                    <div className="text-center"><div className="text-lg font-bold text-green-600">{house.occupiedRooms}</div><div className="text-xs text-gray-500 dark:text-gray-400">{t('ownerBoardingHouses.card.occupied')}</div></div>
+                    <div className="text-center"><div className="text-lg font-bold text-blue-600">{house.vacantRooms}</div><div className="text-xs text-gray-500 dark:text-gray-400">{t('ownerBoardingHouses.card.vacant')}</div></div>
                   </div>
                   <div className="flex justify-end space-x-3 mt-4">
-                    <Link href={`/owner/rooms?houseId=${house.id}&houseName=${encodeURIComponent(house.houseName)}`} className="text-blue-500 hover:underline text-sm font-medium">Manage Rooms</Link>
-                    <Link href={`/owner/boarding-houses/${house.id}/contracts`} className="text-purple-500 hover:underline text-sm font-medium">Manage Contracts</Link>
-                    <button onClick={() => handleEdit(house)} className="text-yellow-500 hover:underline text-sm font-medium">Edit</button>
-                    <button onClick={() => handleDelete(house.id)} className="text-red-500 hover:underline text-sm font-medium">Delete</button>
+                    <Link href={`/owner/rooms?houseId=${house.id}&houseName=${encodeURIComponent(house.houseName)}`} className="text-blue-500 hover:underline text-sm font-medium">{t('ownerBoardingHouses.card.manageRooms')}</Link>
+                    <Link href={`/owner/boarding-houses/${house.id}/contracts`} className="text-purple-500 hover:underline text-sm font-medium">{t('ownerBoardingHouses.card.manageContracts')}</Link>
+                    <button onClick={() => handleEdit(house)} className="text-yellow-500 hover:underline text-sm font-medium">{t('ownerBoardingHouses.card.edit')}</button>
+                    <button onClick={() => handleDelete(house.id)} className="text-red-500 hover:underline text-sm font-medium">{t('ownerBoardingHouses.card.delete')}</button>
                   </div>
                 </div>
               </div>
@@ -678,7 +680,7 @@ export default function BoardingHousesPage() {
                   </svg>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {editingHouse ? "Edit Boarding House" : "Create New Boarding House"}
+                  {editingHouse ? t('ownerBoardingHouses.modal.editTitle') : t('ownerBoardingHouses.modal.createTitle')}
                 </h2>
               </div>
               <button
@@ -712,7 +714,7 @@ export default function BoardingHousesPage() {
               <div className="relative">
                 <label htmlFor="houseName" className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                   <span className="flex items-center">
-                    🏠 Boarding House Name <span className="text-red-500 ml-1">*</span>
+                    🏠 {t('ownerBoardingHouses.modal.houseName')} <span className="text-red-500 ml-1">*</span>
                   </span>
                 </label>
                 <div className="relative">
@@ -729,7 +731,7 @@ export default function BoardingHousesPage() {
                     className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 font-medium hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm ${
                       formErrors.houseName ? 'border-red-500 bg-red-50 dark:bg-red-900/20 ring-1 ring-red-200 dark:ring-red-800' : 'border-gray-300 dark:border-gray-600'
                     }`}
-                    placeholder="Enter boarding house name (max 100 characters)"
+                    placeholder={t('ownerBoardingHouses.modal.houseNamePlaceholder')}
                     maxLength="100"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -746,7 +748,7 @@ export default function BoardingHousesPage() {
                     <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
-                    📝 {houseData.houseName.length}/100 characters
+                    📝 {houseData.houseName.length}/100 {t('ownerBoardingHouses.modal.characters')}
                   </p>
                 </div>
               </div>
@@ -755,7 +757,7 @@ export default function BoardingHousesPage() {
               <div className="relative">
                 <label htmlFor="description" className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                   <span className="flex items-center">
-                    📝 Boarding House Description
+                    📝 {t('ownerBoardingHouses.modal.description')}
                   </span>
                 </label>
                 <div className="relative">
@@ -765,7 +767,7 @@ export default function BoardingHousesPage() {
                     value={houseData.description} 
                     onChange={(e) => setHouseData({ ...houseData, description: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 font-medium resize-none hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm"
-                    placeholder="Detailed description of the boarding house (optional)... E.g.: Clean boarding house, good security, near schools..."
+                    placeholder={t('ownerBoardingHouses.modal.descriptionPlaceholder')}
                   />
                   <div className="absolute top-3 right-3 pointer-events-none">
                     <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -779,10 +781,10 @@ export default function BoardingHousesPage() {
               <div className="relative">
                 <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                   <span className="flex items-center">
-                    📸 Boarding House Images
+                    📸 {t('ownerBoardingHouses.modal.images')}
                   </span>
                 </label>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Upload multiple images of your boarding house (optional)</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{t('ownerBoardingHouses.modal.imagesDesc')}</p>
                 
                 {/* File Input */}
                 <div className="relative">
@@ -801,8 +803,8 @@ export default function BoardingHousesPage() {
                     <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Click to select images</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">PNG, JPG, GIF, WEBP up to 10MB each</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">{t('ownerBoardingHouses.modal.clickToSelect')}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('ownerBoardingHouses.modal.fileTypes')}</p>
                   </label>
                 </div>
 
@@ -836,7 +838,7 @@ export default function BoardingHousesPage() {
                 {selectedImages.length > 0 && (
                   <div className="mt-3 flex items-center justify-between">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      <span className="font-semibold">{selectedImages.length}</span> image(s) selected
+                      <span className="font-semibold">{selectedImages.length}</span> {t('ownerBoardingHouses.modal.imagesSelected')}
                     </p>
                     <button
                       type="button"
@@ -846,7 +848,7 @@ export default function BoardingHousesPage() {
                       }}
                       className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
                     >
-                      Clear all
+                      {t('ownerBoardingHouses.modal.clearAll')}
                     </button>
                   </div>
                 )}
@@ -857,7 +859,7 @@ export default function BoardingHousesPage() {
               <div className="relative">
                 <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-4">
                   <span className="flex items-center">
-                    📍 Address Information <span className="text-red-500 ml-1">*</span>
+                    📍 {t('ownerBoardingHouses.modal.address')} <span className="text-red-500 ml-1">*</span>
                   </span>
                 </label>
                 
@@ -904,7 +906,7 @@ export default function BoardingHousesPage() {
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  Cancel
+                  {t('ownerBoardingHouses.modal.cancel')}
                 </button>
                 <button 
                   type="submit" 
@@ -918,14 +920,14 @@ export default function BoardingHousesPage() {
                   {submitting ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      {editingHouse ? 'Saving...' : 'Creating...'}
+                      {editingHouse ? t('ownerBoardingHouses.modal.saving') : t('ownerBoardingHouses.modal.creating')}
                     </>
                   ) : (
                     <>
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      {editingHouse ? 'Save Changes' : 'Create Boarding House'}
+                      {editingHouse ? t('ownerBoardingHouses.modal.save') : t('ownerBoardingHouses.modal.create')}
                     </>
                   )}
                 </button>

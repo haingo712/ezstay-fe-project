@@ -4,11 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import { useAuth } from '../../hooks/useAuth';
+import { useTranslation } from '../../hooks/useTranslation';
 import { boardingHouseAPI, roomAPI, amenityAPI, API_GATEWAY_URL } from '../../utils/api';
 import authService from '../../services/authService';
 
 // Component con cho Boarding House Card
-const BoardingHouseCard = ({ house, onEdit, onDelete, onClick }) => (
+const BoardingHouseCard = ({ house, onEdit, onDelete, onClick, t }) => (
   <div
     className="border dark:border-gray-600 rounded-xl p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group"
     onClick={() => onClick()}
@@ -20,7 +21,7 @@ const BoardingHouseCard = ({ house, onEdit, onDelete, onClick }) => (
             {house.name}
           </h3>
           <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
-            Active
+            {t('ownerDashboard.boardingHouse.active')}
           </span>
         </div>
 
@@ -34,25 +35,25 @@ const BoardingHouseCard = ({ house, onEdit, onDelete, onClick }) => (
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3">
-            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Units</p>
+            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">{t('ownerDashboard.boardingHouse.units')}</p>
             <p className="text-lg font-bold text-blue-900 dark:text-blue-100">{house.totalRooms || 0}</p>
           </div>
           <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3">
-            <p className="text-xs text-green-600 dark:text-green-400 font-medium">Rented</p>
+            <p className="text-xs text-green-600 dark:text-green-400 font-medium">{t('ownerDashboard.boardingHouse.rented')}</p>
             <p className="text-lg font-bold text-green-900 dark:text-green-100">{house.occupiedRooms || 0}</p>
           </div>
           <div className="bg-yellow-50 dark:bg-yellow-900/30 rounded-lg p-3">
-            <p className="text-xs text-yellow-600 dark:text-yellow-400 font-medium">Vacant</p>
+            <p className="text-xs text-yellow-600 dark:text-yellow-400 font-medium">{t('ownerDashboard.boardingHouse.vacant')}</p>
             <p className="text-lg font-bold text-yellow-900 dark:text-yellow-100">{(house.totalRooms || 0) - (house.occupiedRooms || 0)}</p>
           </div>
           <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3">
-            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">Income</p>
+            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">{t('ownerDashboard.boardingHouse.income')}</p>
             <p className="text-sm font-bold text-purple-900 dark:text-purple-100">{(house.monthlyRevenue || 0).toLocaleString()}₫</p>
           </div>
         </div>
 
         <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-          <span>Created {new Date(house.createdAt).toLocaleDateString()}</span>
+          <span>{t('ownerDashboard.boardingHouse.created')} {new Date(house.createdAt).toLocaleDateString()}</span>
           <span className="mx-2">•</span>
           <span>ID: {house.id}</span>
         </div>
@@ -183,7 +184,7 @@ const ActivityItem = ({ type, message, time }) => {
 };
 
 // Component for Room List
-const RoomList = ({ houseId }) => {
+const RoomList = ({ houseId, t }) => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -222,10 +223,10 @@ const RoomList = ({ houseId }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
         </div>
-        <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Units Yet</h4>
-        <p className="text-gray-500 dark:text-gray-400 mb-4">Start creating units for this boarding house</p>
+        <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('ownerDashboard.emptyState.noUnits') || 'No Units Yet'}</h4>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">{t('ownerDashboard.emptyState.startCreating') || 'Start creating units for this boarding house'}</p>
         <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
-          Create First Unit
+          {t('ownerDashboard.emptyState.createFirstUnit') || 'Create First Unit'}
         </button>
       </div>
     );
@@ -241,14 +242,14 @@ const RoomList = ({ houseId }) => {
               ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
               : 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
               }`}>
-              {room.isAvailable ? 'Vacant' : 'Rented'}
+              {room.isAvailable ? t('ownerDashboard.boardingHouse.vacant') : t('ownerDashboard.boardingHouse.rented')}
             </span>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-            Area: {room.area}m²
+            {t('common.area') || 'Area'}: {room.area}m²
           </p>
           <p className="text-lg font-semibold text-gray-900 dark:text-white">
-            {room.price?.toLocaleString()}₫/month
+            {room.price?.toLocaleString()}₫/{t('common.month') || 'month'}
           </p>
         </div>
       ))}
@@ -257,24 +258,24 @@ const RoomList = ({ houseId }) => {
 };
 
 // Mock Modal Components (will implement detailed functionality later)
-const AddBoardingHouseModal = ({ isOpen, onClose, onSuccess, editHouse }) => {
+const AddBoardingHouseModal = ({ isOpen, onClose, onSuccess, editHouse, t }) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {editHouse ? 'Edit' : 'Create'} Boarding House
+          {editHouse ? t('common.edit') : t('common.create')} {t('ownerDashboard.stats.boardingHouses')}
         </h3>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Form implementation coming soon...
+          {t('common.comingSoon') || 'Form implementation coming soon...'}
         </p>
         <div className="flex space-x-3">
           <button
             onClick={onClose}
             className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg"
           >
-            Cancel
+            {t('ownerDashboard.modal.cancel')}
           </button>
           <button
             onClick={() => {
@@ -283,7 +284,7 @@ const AddBoardingHouseModal = ({ isOpen, onClose, onSuccess, editHouse }) => {
             }}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
           >
-            Save
+            {t('common.save')}
           </button>
         </div>
       </div>
@@ -291,24 +292,24 @@ const AddBoardingHouseModal = ({ isOpen, onClose, onSuccess, editHouse }) => {
   );
 };
 
-const AddRoomModal = ({ isOpen, onClose, onSuccess, boardingHouses, selectedHouseId }) => {
+const AddRoomModal = ({ isOpen, onClose, onSuccess, boardingHouses, selectedHouseId, t }) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Create Room
+          {t('ownerDashboard.quickActions.createRoom')}
         </h3>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Form implementation coming soon...
+          {t('common.comingSoon') || 'Form implementation coming soon...'}
         </p>
         <div className="flex space-x-3">
           <button
             onClick={onClose}
             className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg"
           >
-            Cancel
+            {t('ownerDashboard.modal.cancel')}
           </button>
           <button
             onClick={() => {
@@ -317,7 +318,7 @@ const AddRoomModal = ({ isOpen, onClose, onSuccess, boardingHouses, selectedHous
             }}
             className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
           >
-            Save
+            {t('common.save')}
           </button>
         </div>
       </div>
@@ -327,6 +328,7 @@ const AddRoomModal = ({ isOpen, onClose, onSuccess, boardingHouses, selectedHous
 
 export default function OwnerDashboard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
 
   // State management
@@ -441,8 +443,8 @@ export default function OwnerDashboard() {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto mb-6"></div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Loading Dashboard</h3>
-            <p className="text-gray-600 dark:text-gray-400">Loading your boarding houses...</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('ownerDashboard.loading')}</h3>
+            <p className="text-gray-600 dark:text-gray-400">{t('ownerDashboard.loadingHouses')}</p>
           </div>
         </div>
       </ProtectedRoute>
@@ -460,13 +462,13 @@ export default function OwnerDashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Something went wrong</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('ownerDashboard.error')}</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
             <button
               onClick={loadDashboardData}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200"
             >
-              Try Again
+              {t('ownerDashboard.tryAgain')}
             </button>
           </div>
         </div>
@@ -483,10 +485,10 @@ export default function OwnerDashboard() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div className="mb-4 sm:mb-0">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  Owner Dashboard
+                  {t('ownerDashboard.title')}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">
-                  Manage your boarding houses and rooms
+                  {t('ownerDashboard.subtitle')}
                 </p>
               </div>
               <div className="flex items-center space-x-3">
@@ -497,7 +499,7 @@ export default function OwnerDashboard() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  <span>Add Boarding House</span>
+                  <span>{t('ownerDashboard.quickActions.addBoardingHouse')}</span>
                 </button>
               </div>
             </div>
@@ -511,7 +513,7 @@ export default function OwnerDashboard() {
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/50 dark:to-blue-800/50 rounded-2xl p-6 border border-blue-200 dark:border-blue-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">Boarding Houses</p>
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">{t('ownerDashboard.stats.boardingHouses')}</p>
                   <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{stats.totalProperties}</p>
                 </div>
                 <div className="p-3 bg-blue-200 dark:bg-blue-700 rounded-xl">
@@ -526,7 +528,7 @@ export default function OwnerDashboard() {
             <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/50 dark:to-green-800/50 rounded-2xl p-6 border border-green-200 dark:border-green-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-1">Total Rooms</p>
+                  <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-1">{t('ownerDashboard.stats.totalRooms')}</p>
                   <p className="text-3xl font-bold text-green-900 dark:text-green-100">{stats.totalRooms}</p>
                 </div>
                 <div className="p-3 bg-green-200 dark:bg-green-700 rounded-xl">
@@ -541,10 +543,10 @@ export default function OwnerDashboard() {
             <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/50 dark:to-yellow-800/50 rounded-2xl p-6 border border-yellow-200 dark:border-yellow-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-1">Occupied</p>
+                  <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-1">{t('ownerDashboard.stats.occupied')}</p>
                   <p className="text-3xl font-bold text-yellow-900 dark:text-yellow-100">{stats.occupiedRooms}</p>
                   <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                    {stats.totalRooms > 0 ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0}% occupancy
+                    {stats.totalRooms > 0 ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0}% {t('common.occupancy') || 'occupancy'}
                   </p>
                 </div>
                 <div className="p-3 bg-yellow-200 dark:bg-yellow-700 rounded-xl">
@@ -559,7 +561,7 @@ export default function OwnerDashboard() {
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/50 dark:to-purple-800/50 rounded-2xl p-6 border border-purple-200 dark:border-purple-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400 mb-1">Monthly Revenue</p>
+                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400 mb-1">{t('ownerDashboard.stats.monthlyRevenue')}</p>
                   <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
                     {stats.monthlyRevenue.toLocaleString()}₫
                   </p>
@@ -582,10 +584,10 @@ export default function OwnerDashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                        Boarding House Management
+                        {t('ownerDashboard.management.title')}
                       </h2>
                       <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-                        Manage your boarding houses and create rooms
+                        {t('ownerDashboard.subtitle')}
                       </p>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -612,16 +614,16 @@ export default function OwnerDashboard() {
                         </svg>
                       </div>
                       <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-3">
-                        Start Your Boarding House Business
+                        {t('ownerDashboard.emptyState.title')}
                       </h3>
                       <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
-                        You haven't added any boarding houses yet. Create your first boarding house to start managing rooms and tenants.
+                        {t('ownerDashboard.emptyState.description')}
                       </p>
                       <button
                         onClick={() => setShowAddHouseModal(true)}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
                       >
-                        Create First Boarding House
+                        {t('ownerDashboard.emptyState.createFirst')}
                       </button>
                     </div>
                   ) : (
@@ -630,6 +632,7 @@ export default function OwnerDashboard() {
                         <BoardingHouseCard
                           key={house.id}
                           house={house}
+                          t={t}
                           onEdit={(house) => {
                             setSelectedHouse(house);
                             setShowAddHouseModal(true);
@@ -654,25 +657,25 @@ export default function OwnerDashboard() {
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border dark:border-gray-700">
                 <div className="p-6 border-b dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Quick Actions
+                    {t('ownerDashboard.quickActions.title')}
                   </h3>
                 </div>
                 <div className="p-6 space-y-3">
                   <QuickAction
                     icon="plus"
-                    title="New Boarding House"
-                    description="Create boarding house"
+                    title={t('ownerDashboard.quickActions.addBoardingHouse')}
+                    description={t('common.create') + ' ' + t('ownerDashboard.stats.boardingHouses').toLowerCase()}
                     color="blue"
                     onClick={() => setShowAddHouseModal(true)}
                   />
                   <QuickAction
                     icon="room"
-                    title="Create Room"
-                    description="Add room to house"
+                    title={t('ownerDashboard.quickActions.createRoom')}
+                    description={t('common.add') || 'Add room to house'}
                     color="green"
                     onClick={() => {
                       if (boardingHouses.length === 0) {
-                        alert("Please create a boarding house first");
+                        alert(t('ownerDashboard.modal.createBoardingHouseFirst'));
                         return;
                       }
                       setShowAddRoomModal(true);
@@ -680,37 +683,37 @@ export default function OwnerDashboard() {
                   />
                   <QuickAction
                     icon="bank"
-                    title="Bank Account"
-                    description="Manage payment account"
+                    title={t('ownerDashboard.quickActions.bankAccount')}
+                    description={t('common.manage') || 'Manage payment account'}
                     color="purple"
                     onClick={() => router.push('/owner/bank-account')}
                   />
                   <QuickAction
                     icon="payment"
-                    title="Payment Management"
-                    description="Track transactions"
+                    title={t('ownerDashboard.quickActions.paymentManagement')}
+                    description={t('common.track') || 'Track transactions'}
                     color="indigo"
                     onClick={() => router.push('/owner/payment-management')}
                   />
                   <QuickAction
                     icon="chart"
-                    title="Reports"
-                    description="View analytics"
+                    title={t('ownerDashboard.quickActions.reports')}
+                    description={t('common.viewAnalytics') || 'View analytics'}
                     color="yellow"
-                    onClick={() => alert("Reports coming soon!")}
+                    onClick={() => alert(t('common.comingSoon') || "Reports coming soon!")}
                   />
                   <QuickAction
-                    icon="settings"
-                    title="Quản lý thông báo"
-                    description="Xem tất cả thông báo của bạn"
+                    icon="bell"
+                    title={t('ownerDashboard.quickActions.manageNotifications')}
+                    description={t('common.viewAll') || 'View all notifications'}
                     color="gray"
                     onClick={() => router.push('/owner/notifications')}
                   />
                   {/* Notification quick card removed per request (bell) */}
                   <QuickAction
                     icon="settings"
-                    title="Account Settings"
-                    description="Manage profile"
+                    title={t('ownerDashboard.quickActions.accountSettings')}
+                    description={t('common.manageProfile') || 'Manage profile'}
                     color="gray"
                     onClick={() => router.push('/profile')}
                   />
@@ -721,25 +724,25 @@ export default function OwnerDashboard() {
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border dark:border-gray-700">
                 <div className="p-6 border-b dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Recent Activity
+                    {t('ownerDashboard.recentActivity.title')}
                   </h3>
                 </div>
                 <div className="p-6">
                   <div className="space-y-4">
                     <ActivityItem
                       type="inquiry"
-                      message="New tenant inquiry received"
-                      time="2 hours ago"
+                      message={t('ownerDashboard.activity.newInquiry') || "New tenant inquiry received"}
+                      time={t('common.hoursAgo', { count: 2 }) || "2 hours ago"}
                     />
                     <ActivityItem
                       type="payment"
-                      message="Monthly rent payment received"
-                      time="1 day ago"
+                      message={t('ownerDashboard.activity.rentReceived') || "Monthly rent payment received"}
+                      time={t('common.daysAgo', { count: 1 }) || "1 day ago"}
                     />
                     <ActivityItem
                       type="maintenance"
-                      message="Room maintenance request submitted"
-                      time="2 days ago"
+                      message={t('ownerDashboard.activity.maintenanceRequest') || "Room maintenance request submitted"}
+                      time={t('common.daysAgo', { count: 2 }) || "2 days ago"}
                     />
                   </div>
                 </div>
@@ -758,6 +761,7 @@ export default function OwnerDashboard() {
             }}
             onSuccess={loadDashboardData}
             editHouse={selectedHouse}
+            t={t}
           />
         )}
 
@@ -768,6 +772,7 @@ export default function OwnerDashboard() {
             onSuccess={loadDashboardData}
             boardingHouses={boardingHouses}
             selectedHouseId={selectedHouse?.id}
+            t={t}
           />
         )}
       </div>

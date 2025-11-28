@@ -137,7 +137,6 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
     doc.setFontSize(9);
     doc.setTextColor(200, 0, 0);
     doc.setFont(undefined, 'italic');
-    doc.text('Note: Tenant information will be completed upon signing', 20, yPos);
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
     doc.setFont(undefined, 'normal');

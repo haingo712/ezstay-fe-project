@@ -113,7 +113,7 @@ export default function UserChatsPage() {
       await loadChatRooms();
     } catch (error) {
       console.error('Error sending message:', error);
-      notification.error('Failed to send message. Please try again.');
+      notification.error(t('chat.sendFailed'));
     } finally {
       setSending(false);
     }
@@ -172,8 +172,8 @@ export default function UserChatsPage() {
     closeContextMenu();
     
     const confirmed = await notification.confirm(
-      'Are you sure you want to revoke this message? This action cannot be undone.',
-      'Revoke Message'
+      t('chat.revokeConfirm'),
+      t('chat.revokeMessage')
     );
     
     if (!confirmed) return;
@@ -181,13 +181,13 @@ export default function UserChatsPage() {
     try {
       setRevokingMessageId(messageId);
       await chatService.revokeMessage(messageId);
-      notification.success('Message revoked successfully');
+      notification.success(t('chat.revokeSuccess'));
       
       // Reload messages
       await loadMessages(selectedChatRoom.id);
     } catch (error) {
       console.error('Error revoking message:', error);
-      notification.error('Failed to revoke message. Please try again.');
+      notification.error(t('chat.revokeFailed'));
     } finally {
       setRevokingMessageId(null);
     }
@@ -233,9 +233,9 @@ export default function UserChatsPage() {
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / (1000 * 60));
 
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    if (diffInMinutes < 1) return t('chat.justNow');
+    if (diffInMinutes < 60) return `${diffInMinutes}${t('chat.minutesAgo')}`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}${t('chat.hoursAgo')}`;
     return date.toLocaleDateString();
   };
 
@@ -475,9 +475,9 @@ export default function UserChatsPage() {
                                   {isOwn && (
                                     <span className="ml-1">
                                       {isRead ? (
-                                        <CheckCheck className="h-3.5 w-3.5 text-blue-200" title="Read" />
+                                        <CheckCheck className="h-3.5 w-3.5 text-blue-200" title={t('chat.read')} />
                                       ) : (
-                                        <Check className="h-3.5 w-3.5 text-blue-200" title="Sent" />
+                                        <Check className="h-3.5 w-3.5 text-blue-200" title={t('chat.sent')} />
                                       )}
                                     </span>
                                   )}
@@ -488,7 +488,7 @@ export default function UserChatsPage() {
                                   <button
                                     onClick={() => handleRevokeMessage(message.id || message.Id)}
                                     className="absolute -left-8 top-1/2 -translate-y-1/2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                                    title="Revoke message"
+                                    title={t('chat.revokeMessage')}
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
@@ -615,7 +615,7 @@ export default function UserChatsPage() {
             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <Trash2 className="h-4 w-4" />
-            Revoke Message
+            {t('chat.revokeMessage')}
           </button>
         </div>
       )}
