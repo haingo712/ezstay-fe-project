@@ -69,7 +69,7 @@ export default function ContractsManagementPage() {
   // New contract creation states
   const [createStep, setCreateStep] = useState(1); // 1: contract, 2: identity profile, 3: utility readings, 4: services
   const [creatingContract, setCreatingContract] = useState(false);
-  
+
   // Service states
   const [availableServices, setAvailableServices] = useState([]);
   const [selectedServices, setSelectedServices] = useState([]);
@@ -305,7 +305,7 @@ export default function ContractsManagementPage() {
       console.log("📄 Total contracts:", enrichedContracts.length);
       console.log("🏠 Contracts for this house:", houseContracts.length);
       console.log("📄 Filtered contracts:", houseContracts);
-      
+
       // Temporary: Show all contracts if filter returns empty (for debugging)
       if (houseContracts.length === 0 && enrichedContracts.length > 0) {
         console.warn("⚠️ No contracts matched this house - showing all contracts for debugging");
@@ -620,8 +620,24 @@ export default function ContractsManagementPage() {
   const handleEditContract = async (contract) => {
     console.log("✏️ Opening edit contract modal for:", contract.id);
     console.log("📋 Contract data received:", contract);
+    console.log("🏛️ Current provinces state:", provinces.length, "provinces loaded");
 
     try {
+      // Ensure provinces are loaded first
+      let currentProvinces = provinces;
+      if (provinces.length === 0) {
+        console.log("⏳ Provinces not loaded yet, fetching...");
+        try {
+          const response = await fetch('/data/vietnam-provinces.json');
+          const data = await response.json();
+          currentProvinces = data || [];
+          setProvinces(currentProvinces);
+          console.log("✅ Provinces loaded:", currentProvinces.length);
+        } catch (err) {
+          console.error("❌ Error loading provinces:", err);
+        }
+      }
+
       // Fetch full contract details to ensure we have all data
       console.log("🔄 Fetching full contract details...");
       const fullContract = await contractService.getById(contract.id);
@@ -735,15 +751,23 @@ export default function ContractsManagementPage() {
         isLoadingProfilesRef.current = true; // Mark that we've loaded profiles from backend
         console.log("✅ Profiles populated:", mappedProfiles.length, "profile(s)");
 
-        // Load wards for the first profile's province (for initial display)
-        if (mappedProfiles[0].provinceId) {
-          const provinceCode = parseInt(mappedProfiles[0].provinceId);
-          const selectedProvince = provinces.find(p => p.code === provinceCode);
-          if (selectedProvince) {
-            setWards(selectedProvince.wards || []);
-            console.log("🏘️ Wards loaded for first profile province:", provinceCode, "count:", selectedProvince.wards?.length);
+        // Load wards for ALL profiles that have provinceId
+        // Use currentProvinces (fetched above) instead of provinces state which might be stale
+        const newWardsByProfile = {};
+        mappedProfiles.forEach((profile, index) => {
+          if (profile.provinceId) {
+            const provinceCode = parseInt(profile.provinceId);
+            const selectedProvince = currentProvinces.find(p => p.code === provinceCode);
+            if (selectedProvince) {
+              newWardsByProfile[index] = selectedProvince.wards || [];
+              console.log(`🏘️ Wards loaded for profile ${index} province ${provinceCode}:`, selectedProvince.wards?.length, "wards");
+            } else {
+              console.log(`❌ Province ${provinceCode} not found in currentProvinces (${currentProvinces.length} provinces)`);
+            }
           }
-        }
+        });
+        setWardsByProfile(newWardsByProfile);
+        console.log("🏘️ WardsByProfile set for all profiles:", newWardsByProfile);
       } else {
         console.log("⚠️ No identity profiles found for this contract");
         // Generate empty profiles based on numberOfOccupants
@@ -777,31 +801,101 @@ export default function ContractsManagementPage() {
       }
 
       // Populate utility readings if exists
-      if (fullContract.utilityReadings && fullContract.utilityReadings.length > 0) {
-        console.log("⚡ Utility readings found:", fullContract.utilityReadings);
+      // Backend returns ElectricityReading and WaterReading as separate objects
+      console.log("⚡ Checking utility readings...");
+      console.log("⚡ ElectricityReading:", fullContract.electricityReading || fullContract.ElectricityReading);
+      console.log("⚡ WaterReading:", fullContract.waterReading || fullContract.WaterReading);
 
-        const electricityReading = fullContract.utilityReadings.find(r => r.utilityType === 0 || r.utilityType === "Electricity");
-        const waterReading = fullContract.utilityReadings.find(r => r.utilityType === 1 || r.utilityType === "Water");
+      const electricityReading = fullContract.electricityReading || fullContract.ElectricityReading;
+      const waterReading = fullContract.waterReading || fullContract.WaterReading;
 
+      if (electricityReading || waterReading) {
         setUtilityReadingData({
           electricityReading: {
-            price: electricityReading?.price?.toString() || "",
-            note: electricityReading?.note || "",
-            currentIndex: electricityReading?.currentIndex?.toString() || ""
+            price: electricityReading?.price?.toString() || electricityReading?.Price?.toString() || "",
+            note: electricityReading?.note || electricityReading?.Note || "",
+            currentIndex: electricityReading?.currentIndex?.toString() || electricityReading?.CurrentIndex?.toString() || ""
           },
           waterReading: {
-            price: waterReading?.price?.toString() || "",
-            note: waterReading?.note || "",
-            currentIndex: waterReading?.currentIndex?.toString() || ""
+            price: waterReading?.price?.toString() || waterReading?.Price?.toString() || "",
+            note: waterReading?.note || waterReading?.Note || "",
+            currentIndex: waterReading?.currentIndex?.toString() || waterReading?.CurrentIndex?.toString() || ""
           }
         });
 
         console.log("⚡ Utility data populated:", {
-          electricity: electricityReading?.currentIndex,
-          water: waterReading?.currentIndex
+          electricity: electricityReading?.currentIndex || electricityReading?.CurrentIndex,
+          water: waterReading?.currentIndex || waterReading?.CurrentIndex
+        });
+      } else if (fullContract.utilityReadings && fullContract.utilityReadings.length > 0) {
+        // Fallback: old format with utilityReadings array
+        console.log("⚡ Using legacy utilityReadings array:", fullContract.utilityReadings);
+
+        const elecReading = fullContract.utilityReadings.find(r =>
+          r.utilityType === 0 || r.utilityType === "Electricity" || r.type === "Electric" || r.Type === "Electric"
+        );
+        const watReading = fullContract.utilityReadings.find(r =>
+          r.utilityType === 1 || r.utilityType === "Water" || r.type === "Water" || r.Type === "Water"
+        );
+
+        setUtilityReadingData({
+          electricityReading: {
+            price: elecReading?.price?.toString() || "",
+            note: elecReading?.note || "",
+            currentIndex: elecReading?.currentIndex?.toString() || ""
+          },
+          waterReading: {
+            price: watReading?.price?.toString() || "",
+            note: watReading?.note || "",
+            currentIndex: watReading?.currentIndex?.toString() || ""
+          }
         });
       } else {
         console.log("⚠️ No utility readings found for this contract");
+      }
+
+      // Populate selected services from contract data
+      console.log("🛠️ Checking services...");
+      const contractServices = fullContract.serviceInfors || fullContract.ServiceInfors;
+      console.log("🛠️ Contract services:", contractServices);
+
+      if (contractServices && contractServices.length > 0) {
+        // Fetch available services to get full service data with ids
+        try {
+          const services = await serviceService.getAll();
+          console.log("📋 Available services for matching:", services);
+
+          // Match contract services with available services by serviceName
+          const matchedServices = contractServices.map(contractService => {
+            const serviceName = contractService.serviceName || contractService.ServiceName || "";
+            const matchedService = services.find(s =>
+              s.serviceName === serviceName || s.ServiceName === serviceName
+            );
+            if (matchedService) {
+              return {
+                id: matchedService.id || matchedService.Id,
+                serviceName: matchedService.serviceName || matchedService.ServiceName,
+                price: matchedService.price || matchedService.Price
+              };
+            }
+            // Fallback if no match found
+            return {
+              id: contractService.id || contractService.Id || null,
+              serviceName: serviceName,
+              price: contractService.price || contractService.Price || 0
+            };
+          }).filter(s => s.id !== null); // Only include services that were matched
+
+          setSelectedServices(matchedServices);
+          setAvailableServices(services || []);
+          console.log("✅ Services matched and populated:", matchedServices.length, "service(s)");
+        } catch (error) {
+          console.error("❌ Error fetching services for matching:", error);
+          setSelectedServices([]);
+        }
+      } else {
+        console.log("⚠️ No services found for this contract");
+        setSelectedServices([]);
       }
 
       // Set modal type and open modal
@@ -1147,7 +1241,7 @@ export default function ContractsManagementPage() {
       });
 
       const requestData = {
-        ProfilesInContract: profiles.map(p => {
+        ProfilesInContract: profiles.map((p, index) => {
           // Generate a new GUID for userId if not provided (backend requires UserId)
           const userId = p.userId && p.userId !== "" ? p.userId : '00000000-0000-0000-0000-000000000000'; // Use null GUID if no userId
 
@@ -1159,8 +1253,10 @@ export default function ContractsManagementPage() {
             DateOfBirth: new Date(p.dateOfBirth).toISOString(),
             Phone: p.phoneNumber || "", // Backend expects 'Phone', frontend uses 'phoneNumber'
             Email: p.email || "",
-            ProvinceName: p.provinceName || "",
-            WardName: p.wardName || "",
+            ProvinceId: String(p.provinceId || ""), // Add ProvinceId
+            ProvinceName: p.provinceName || getProvinceName(p.provinceId),
+            WardId: String(p.wardId || ""), // Add WardId
+            WardName: p.wardName || getWardName(index, p.wardId),
             Address: p.address || "",
             TemporaryResidence: p.temporaryResidence || "",
             CitizenIdNumber: p.citizenIdNumber || "",
@@ -1178,7 +1274,6 @@ export default function ContractsManagementPage() {
         RoomPrice: parseFloat(roomPrice),
         NumberOfOccupants: parseInt(contractData.numberOfOccupants),
         Notes: contractData.notes || null,
-        ServiceInfors: [], // Empty array for now - can be extended later
         ElectricityReading: {
           Price: utilityReadingData.electricityReading.price ? parseFloat(utilityReadingData.electricityReading.price) : null,
           Note: utilityReadingData.electricityReading.note || null,
@@ -1190,8 +1285,8 @@ export default function ContractsManagementPage() {
           CurrentIndex: parseFloat(utilityReadingData.waterReading.currentIndex)
         },
         ServiceInfors: selectedServices.map(s => ({
-          ServiceName: s.serviceName,
-          Price: s.price
+          ServiceName: s.serviceName || s.ServiceName || s.name,
+          Price: parseFloat(s.price || s.Price || 0)
         }))
       };
 
@@ -3072,8 +3167,8 @@ export default function ContractsManagementPage() {
                         {/* Gender */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Gender *</label>
-                          <select 
-                            value={profile.gender || "Male"} 
+                          <select
+                            value={profile.gender || "Male"}
                             onChange={(e) => updateProfile(profileIndex, 'gender', e.target.value)}
                             className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700"
                           >
@@ -3565,18 +3660,17 @@ export default function ContractsManagementPage() {
                               </button>
                             )}
                           </div>
-                          
+
                           <div className="space-y-2 max-h-96 overflow-y-auto">
                             {availableServices.map((service) => {
                               const isSelected = selectedServices.some(s => s.id === service.id);
                               return (
                                 <label
                                   key={service.id}
-                                  className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                                    isSelected
-                                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                      : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700'
-                                  }`}
+                                  className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all ${isSelected
+                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                    : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700'
+                                    }`}
                                 >
                                   <input
                                     type="checkbox"
