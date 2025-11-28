@@ -191,7 +191,7 @@ export const boardingHouseAPI = {
   // Update with FormData (supports multiple image upload)
   update: (id, formData) => api.putFormData(`/api/BoardingHouses/${id}`, formData),
   delete: (id) => api.delete(`/api/BoardingHouses/${id}`),
-  
+
   // Ranking & Analytics APIs
   // Get ranked boarding houses by Rating or Sentiment (using Python ML)
   // @param type: "Rating" or "Sentiment"
@@ -201,10 +201,10 @@ export const boardingHouseAPI = {
     const params = new URLSearchParams({ type, order, limit: limit.toString() });
     return api.get(`/api/BoardingHouses/rank?${params.toString()}`);
   },
-  
+
   // Get rating summary for a boarding house (star distribution + reviews)
   getRatingSummary: (id) => api.get(`/api/BoardingHouses/${id}/rating-feedback`),
-  
+
   // Get sentiment summary for a boarding house (positive/neutral/negative analysis using Python ML)
   getSentimentSummary: (id) => api.get(`/api/BoardingHouses/${id}/sentiment-feedback`)
 };
@@ -260,9 +260,20 @@ export const amenityAPI = {
 };
 
 // Payment API
+// Helper function to get auth token for payment API
+const getPaymentAuthToken = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('authToken') ||
+      localStorage.getItem('ezstay_token') ||
+      localStorage.getItem('token');
+  }
+  return null;
+};
+
+// Payment API - uses external payment service
 export const paymentAPI = {
-  // Bank Account Management
-  getAllBankAccounts: (odataParams = {}) => {
+  // Bank Account Management - using external API
+  getAllBankAccounts: async (odataParams = {}) => {
     const queryParams = new URLSearchParams();
 
     if (odataParams.$filter) queryParams.append('$filter', odataParams.$filter);
@@ -272,14 +283,149 @@ export const paymentAPI = {
     if (odataParams.$count !== undefined) queryParams.append('$count', odataParams.$count);
 
     const queryString = queryParams.toString();
-    const endpoint = queryString ? `/api/BankAccount/getAll?${queryString}` : '/api/BankAccount/getAll';
+    // Use all-by-user endpoint to get bank accounts for current user
+    const endpoint = queryString
+      ? `https://payment-api-r4zy.onrender.com/api/Bank/bank-account/by-user?${queryString}`
+      : 'https://payment-api-r4zy.onrender.com/api/Bank/bank-account/by-user';
 
-    return api.get(endpoint);
+    const token = getPaymentAuthToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    console.log('📥 Fetching bank accounts from:', endpoint);
+    console.log('🔑 Using token:', token ? 'Present' : 'Missing');
+    const response = await fetch(endpoint, { method: 'GET', headers });
+    console.log('📊 Response status:', response.status);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error fetching bank accounts:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('✅ Bank accounts loaded:', data);
+    return data;
   },
-  getBankAccountById: (id) => api.get(`/api/BankAccount/bank-account/${id}`),
-  createBankAccount: (data) => api.post('/api/BankAccount/bank-account', data),
-  updateBankAccount: (id, data) => api.put(`/api/BankAccount/bank-account/${id}`, data),
-  deleteBankAccount: (id) => api.delete(`/api/BankAccount/bank-account/${id}`),
+
+  getBankAccountById: async (id) => {
+    const token = getPaymentAuthToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`https://payment-api-r4zy.onrender.com/api/Bank/bank-account/${id}`, {
+      method: 'GET',
+      headers
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return response.json();
+  },
+
+  createBankAccount: async (data) => {
+    const token = getPaymentAuthToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch('https://payment-api-r4zy.onrender.com/api/Bank/bank-account', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      // Backend returns error message as plain text or JSON
+      const errorText = await response.text();
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.Message || errorJson || errorMessage;
+      } catch {
+        // If not JSON, use plain text
+        if (errorText) errorMessage = errorText;
+      }
+      console.error('❌ Create bank account error:', errorMessage);
+      throw new Error(errorMessage);
+    }
+    return response.json();
+  },
+
+  updateBankAccount: async (id, data) => {
+    const token = getPaymentAuthToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`https://payment-api-r4zy.onrender.com/api/Bank/bank-account/${id}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      // Backend returns error message as plain text or JSON
+      const errorText = await response.text();
+      console.log('❌ Error response text:', errorText);
+      let errorMessage = `HTTP error! status: ${response.status}`;
+
+      if (errorText) {
+        try {
+          const errorJson = JSON.parse(errorText);
+          console.log('❌ Error JSON:', errorJson);
+
+          // Handle ApiResponse format from backend
+          if (errorJson.success === false && errorJson.message) {
+            errorMessage = errorJson.message;
+          }
+          // Handle Problem Details format (RFC 7807)
+          else if (errorJson.errors) {
+            // Get first error message from errors object
+            const firstErrorKey = Object.keys(errorJson.errors)[0];
+            if (firstErrorKey && Array.isArray(errorJson.errors[firstErrorKey])) {
+              errorMessage = errorJson.errors[firstErrorKey][0];
+            } else if (firstErrorKey) {
+              errorMessage = errorJson.errors[firstErrorKey];
+            }
+          } else {
+            // Try multiple possible error message fields
+            errorMessage = errorJson.message
+              || errorJson.Message
+              || errorJson.detail
+              || errorJson.Detail
+              || errorJson.error
+              || errorJson.Error
+              || (errorJson.title !== 'Bad Request' ? errorJson.title : null)
+              || (typeof errorJson === 'string' ? errorJson : null)
+              || errorMessage;
+          }
+        } catch {
+          // If not JSON, use plain text directly
+          errorMessage = errorText;
+        }
+      }
+
+      console.error('❌ Update bank account error:', errorMessage);
+      throw new Error(errorMessage);
+    }
+    // Handle empty or non-JSON response
+    const text = await response.text();
+    if (!text) return { success: true };
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { success: true, message: text };
+    }
+  },
+
+  deleteBankAccount: async (id) => {
+    const token = getPaymentAuthToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`https://payment-api-r4zy.onrender.com/api/Bank/bank-account/${id}`, {
+      method: 'DELETE',
+      headers
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
 
   // Transactions
   getTransactions: () => api.get('/api/BankAccount/transactions')
