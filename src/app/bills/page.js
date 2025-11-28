@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 import utilityBillService from '@/services/utilityBillService';
 
 export default function TenantBillsPage() {
     const { user } = useAuth();
     const router = useRouter();
+    const { t } = useTranslation();
 
     const [loading, setLoading] = useState(true);
     const [bills, setBills] = useState([]);
@@ -112,7 +114,7 @@ export default function TenantBillsPage() {
                 <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                        <p className="mt-4 text-gray-600">Đang tải hóa đơn...</p>
+                        <p className="mt-4 text-gray-600">{t('bills.loading')}</p>
                     </div>
                 </div>
             </ProtectedRoute>
@@ -132,10 +134,10 @@ export default function TenantBillsPage() {
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
-                            Quay lại trang chủ
+                            {t('bills.backToHome')}
                         </button>
-                        <h1 className="text-3xl font-bold text-gray-900">💰 Hóa đơn tiện ích</h1>
-                        <p className="mt-2 text-gray-600">Quản lý và thanh toán hóa đơn điện nước</p>
+                        <h1 className="text-3xl font-bold text-gray-900">💰 {t('bills.title')}</h1>
+                        <p className="mt-2 text-gray-600">{t('bills.subtitle')}</p>
                     </div>
 
                     {/* Statistics Cards */}
@@ -143,7 +145,7 @@ export default function TenantBillsPage() {
                         <div className="bg-white rounded-lg shadow p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm text-gray-600">Tổng hóa đơn</p>
+                                    <p className="text-sm text-gray-600">{t('bills.totalBills')}</p>
                                     <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
                                 </div>
                                 <div className="bg-blue-100 p-3 rounded-full">
@@ -157,7 +159,7 @@ export default function TenantBillsPage() {
                         <div className="bg-white rounded-lg shadow p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm text-gray-600">Chưa thanh toán</p>
+                                    <p className="text-sm text-gray-600">{t('bills.unpaid')}</p>
                                     <p className="text-2xl font-bold text-yellow-600">{stats.unpaid}</p>
                                 </div>
                                 <div className="bg-yellow-100 p-3 rounded-full">
@@ -174,7 +176,7 @@ export default function TenantBillsPage() {
                         <div className="bg-white rounded-lg shadow p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm text-gray-600">Đã thanh toán</p>
+                                    <p className="text-sm text-gray-600">{t('bills.paid')}</p>
                                     <p className="text-2xl font-bold text-green-600">{stats.paid}</p>
                                 </div>
                                 <div className="bg-green-100 p-3 rounded-full">
@@ -188,7 +190,7 @@ export default function TenantBillsPage() {
                         <div className="bg-white rounded-lg shadow p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm text-gray-600">Quá hạn</p>
+                                    <p className="text-sm text-gray-600">{t('bills.overdue')}</p>
                                     <p className="text-2xl font-bold text-red-600">{stats.overdue}</p>
                                 </div>
                                 <div className="bg-red-100 p-3 rounded-full">
@@ -206,31 +208,31 @@ export default function TenantBillsPage() {
                             {/* Status Filter */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Trạng thái
+                                    {t('bills.status')}
                                 </label>
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 >
-                                    <option value="all">Tất cả</option>
-                                    <option value="Unpaid">Chưa thanh toán</option>
-                                    <option value="Paid">Đã thanh toán</option>
-                                    <option value="Overdue">Quá hạn</option>
-                                    <option value="Cancelled">Đã hủy</option>
+                                    <option value="all">{t('bills.all')}</option>
+                                    <option value="Unpaid">{t('bills.unpaid')}</option>
+                                    <option value="Paid">{t('bills.paid')}</option>
+                                    <option value="Overdue">{t('bills.overdue')}</option>
+                                    <option value="Cancelled">{t('bills.cancelled')}</option>
                                 </select>
                             </div>
 
                             {/* Search */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Tìm kiếm
+                                    {t('bills.search')}
                                 </label>
                                 <input
                                     type="text"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="Tìm theo ghi chú, số tiền..."
+                                    placeholder={t('bills.searchPlaceholder')}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
@@ -256,22 +258,22 @@ export default function TenantBillsPage() {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Mã hóa đơn
+                                            {t('bills.billId')}
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Ngày tạo
+                                            {t('bills.createdDate')}
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Số tiền
+                                            {t('bills.amount')}
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Trạng thái
+                                            {t('bills.status')}
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Phương thức
+                                            {t('bills.paymentMethod')}
                                         </th>
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Thao tác
+                                            {t('bills.actions')}
                                         </th>
                                     </tr>
                                 </thead>
@@ -282,7 +284,7 @@ export default function TenantBillsPage() {
                                                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                 </svg>
-                                                <p className="mt-2">Không có hóa đơn nào</p>
+                                                <p className="mt-2">{t('bills.noBills')}</p>
                                             </td>
                                         </tr>
                                     ) : (
@@ -312,7 +314,7 @@ export default function TenantBillsPage() {
                                                             onClick={() => handleViewDetail(bill)}
                                                             className="text-blue-600 hover:text-blue-900 mr-4"
                                                         >
-                                                            Xem
+                                                            {t('bills.view')}
                                                         </button>
                                                         <button
                                                             onClick={() => handlePayBill(bill.id)}
@@ -322,7 +324,7 @@ export default function TenantBillsPage() {
                                                                 }`}
                                                             disabled={bill.status === 'Unpaid'}
                                                         >
-                                                            💳 Thanh toán
+                                                            💳 {t('bills.pay')}
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -342,22 +344,22 @@ export default function TenantBillsPage() {
                                         disabled={currentPage === 1}
                                         className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
                                     >
-                                        Trước
+                                        {t('bills.previous')}
                                     </button>
                                     <button
                                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                         disabled={currentPage === totalPages}
                                         className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
                                     >
-                                        Sau
+                                        {t('bills.next')}
                                     </button>
                                 </div>
                                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                                     <div>
                                         <p className="text-sm text-gray-700">
-                                            Hiển thị <span className="font-medium">{startIndex + 1}</span> đến{' '}
-                                            <span className="font-medium">{Math.min(endIndex, filteredBills.length)}</span> trong{' '}
-                                            <span className="font-medium">{filteredBills.length}</span> kết quả
+                                            {t('bills.showing')} <span className="font-medium">{startIndex + 1}</span> {t('bills.to')}{' '}
+                                            <span className="font-medium">{Math.min(endIndex, filteredBills.length)}</span> {t('bills.of')}{' '}
+                                            <span className="font-medium">{filteredBills.length}</span> {t('bills.results')}
                                         </p>
                                     </div>
                                     <div>
@@ -401,7 +403,7 @@ export default function TenantBillsPage() {
                             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                                 <div className="p-6">
                                     <div className="flex justify-between items-start mb-6">
-                                        <h2 className="text-2xl font-bold text-gray-900">Chi tiết hóa đơn</h2>
+                                        <h2 className="text-2xl font-bold text-gray-900">{t('bills.billDetails')}</h2>
                                         <button
                                             onClick={() => setShowDetailModal(false)}
                                             className="text-gray-400 hover:text-gray-600"
@@ -415,11 +417,11 @@ export default function TenantBillsPage() {
                                     <div className="space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <p className="text-sm text-gray-600">Mã hóa đơn</p>
+                                                <p className="text-sm text-gray-600">{t('bills.billId')}</p>
                                                 <p className="font-medium">{selectedBill.id.substring(0, 8).toUpperCase()}</p>
                                             </div>
                                             <div>
-                                                <p className="text-sm text-gray-600">Trạng thái</p>
+                                                <p className="text-sm text-gray-600">{t('bills.status')}</p>
                                                 <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${utilityBillService.getStatusLabel(selectedBill.status).bgColor} ${utilityBillService.getStatusLabel(selectedBill.status).textColor}`}>
                                                     {utilityBillService.getStatusLabel(selectedBill.status).label}
                                                 </span>
@@ -428,30 +430,30 @@ export default function TenantBillsPage() {
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <p className="text-sm text-gray-600">Ngày tạo</p>
+                                                <p className="text-sm text-gray-600">{t('bills.createdDate')}</p>
                                                 <p className="font-medium">{utilityBillService.formatDate(selectedBill.createdAt)}</p>
                                             </div>
                                             <div>
-                                                <p className="text-sm text-gray-600">Ngày thanh toán</p>
+                                                <p className="text-sm text-gray-600">{t('bills.paymentDate')}</p>
                                                 <p className="font-medium">{utilityBillService.formatDate(selectedBill.paymentDate)}</p>
                                             </div>
                                         </div>
 
                                         <div className="border-t pt-4">
-                                            <p className="text-sm text-gray-600">Số tiền</p>
+                                            <p className="text-sm text-gray-600">{t('bills.amount')}</p>
                                             <p className="text-2xl font-bold text-blue-600">{utilityBillService.formatCurrency(selectedBill.amount)}</p>
                                         </div>
 
                                         {selectedBill.paymentMethod && (
                                             <div>
-                                                <p className="text-sm text-gray-600">Phương thức thanh toán</p>
+                                                <p className="text-sm text-gray-600">{t('bills.paymentMethod')}</p>
                                                 <p className="font-medium">{selectedBill.paymentMethod}</p>
                                             </div>
                                         )}
 
                                         {selectedBill.note && (
                                             <div>
-                                                <p className="text-sm text-gray-600">Ghi chú</p>
+                                                <p className="text-sm text-gray-600">{t('bills.note')}</p>
                                                 <p className="font-medium">{selectedBill.note}</p>
                                             </div>
                                         )}
@@ -462,7 +464,7 @@ export default function TenantBillsPage() {
                                                     onClick={() => setShowDetailModal(false)}
                                                     className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                                                 >
-                                                    Đóng
+                                                    {t('bills.close')}
                                                 </button>
                                                 {selectedBill.status === 'Unpaid' && (
                                                     <button
@@ -472,7 +474,7 @@ export default function TenantBillsPage() {
                                                         }}
                                                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                                     >
-                                                        Thanh toán
+                                                        {t('bills.pay')}
                                                     </button>
                                                 )}
                                             </div>

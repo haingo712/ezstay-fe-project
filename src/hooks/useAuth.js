@@ -96,15 +96,22 @@ export function useAuth() {
 
   // Method to load avatar for navbar
   const loadUserAvatar = useCallback(async () => {
-    if (user) {
+    if (user && !user.avatar) {
       try {
+        console.log("🖼️ Fetching user profile for avatar...");
         const profileData = await profileService.getProfile();
-        const updatedUser = { ...user, avatar: profileData.avata || null };
-        setUser(updatedUser);
-        console.log("🖼️ Updated user avatar:", updatedUser.avatar);
+        if (profileData) {
+          const updatedUser = { ...user, avatar: profileData.avata || profileData.avatar || null };
+          setUser(updatedUser);
+          console.log("✅ Updated user avatar:", updatedUser.avatar);
+        } else {
+          console.log("⚠️ No profile data returned");
+        }
       } catch (err) {
         console.log("⚠️ Could not load avatar for navbar:", err.message);
       }
+    } else if (user?.avatar) {
+      console.log("ℹ️ Avatar already loaded:", user.avatar);
     }
   }, [user]);
 

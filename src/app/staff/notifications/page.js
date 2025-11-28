@@ -1,6 +1,7 @@
 ﻿"use client";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/utils/api";
+import { useTranslation } from "@/hooks/useTranslation";
 
 // Function to mark notification as read
 async function markAsReadNotification(id) {
@@ -89,6 +90,7 @@ async function createScheduledNotification(data) {
 }
 
 export default function StaffNotificationsPage() {
+    const { t } = useTranslation();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");

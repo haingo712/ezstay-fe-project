@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import reviewService from '@/services/reviewService';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Star, Calendar, User, MessageSquare, ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -13,6 +14,7 @@ export default function ReviewDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const reviewId = params.id;
 
   const [review, setReview] = useState(null);
@@ -63,15 +65,15 @@ export default function ReviewDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this review?')) return;
+    if (!confirm(t('reviewDetail.confirmDelete'))) return;
 
     try {
       await reviewService.deleteReview(reviewId);
-      alert('Review deleted successfully!');
+      alert(t('reviewDetail.deleteSuccess'));
       router.push('/profile/rental-history');
     } catch (error) {
       console.error('Error deleting review:', error);
-      alert('Failed to delete review');
+      alert(t('reviewDetail.deleteFailed'));
     }
   };
 
@@ -112,10 +114,10 @@ export default function ReviewDetailPage() {
           <div className="text-center py-12">
             <MessageSquare className="h-16 w-16 text-red-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              {error?.includes('Server error') ? 'Server Error' : 'Review Not Found'}
+              {error?.includes('Server error') ? t('reviewDetail.serverError') : t('reviewDetail.reviewNotFound')}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
-              {error || 'The review you are looking for does not exist.'}
+              {error || t('reviewDetail.doesNotExist')}
             </p>
             
             {/* Debug info for development */}
@@ -136,13 +138,13 @@ export default function ReviewDetailPage() {
                 className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Go Back
+                {t('reviewDetail.goBack')}
               </button>
               <button
                 onClick={() => loadReview()}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Try Again
+                {t('reviewDetail.tryAgain')}
               </button>
             </div>
           </div>
@@ -165,7 +167,7 @@ export default function ReviewDetailPage() {
           className="inline-flex items-center gap-2 px-4 py-2 mb-6 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t('reviewDetail.back')}
         </button>
 
         {/* Review Card */}
@@ -179,7 +181,7 @@ export default function ReviewDetailPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Anonymous User
+                    {t('reviewDetail.anonymousUser')}
                   </h3>
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                     <Calendar className="h-4 w-4" />
@@ -200,14 +202,14 @@ export default function ReviewDetailPage() {
                 <button
                   onClick={handleEdit}
                   className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                  title="Edit Review"
+                  title={t('reviewDetail.editReview')}
                 >
                   <Edit className="h-5 w-5" />
                 </button>
                 <button
                   onClick={handleDelete}
                   className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                  title="Delete Review"
+                  title={t('reviewDetail.deleteReview')}
                 >
                   <Trash2 className="h-5 w-5" />
                 </button>
@@ -219,7 +221,7 @@ export default function ReviewDetailPage() {
           {review.imageUrl && (
             <div className="mb-6">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Review Image
+                {t('reviewDetail.reviewImage')}
               </h4>
               <div className="relative h-64 md:h-96 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
                 <SafeImage
@@ -236,7 +238,7 @@ export default function ReviewDetailPage() {
           {/* Content */}
           <div className="mb-6">
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Review Content
+              {t('reviewDetail.reviewContent')}
             </h4>
             <p className="text-gray-900 dark:text-white leading-relaxed">
               {review.content}
@@ -246,20 +248,20 @@ export default function ReviewDetailPage() {
           {/* Metadata */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
             <div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract ID:</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('reviewDetail.contractId')}:</span>
               <p className="text-sm text-gray-600 dark:text-gray-400 font-mono">
                 {review.contractId || 'N/A'}
               </p>
             </div>
             <div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Post ID:</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('reviewDetail.postId')}:</span>
               <p className="text-sm text-gray-600 dark:text-gray-400 font-mono">
                 {review.postId || 'N/A'}
               </p>
             </div>
             {review.reviewDeadline && (
               <div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Review Deadline:</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('reviewDetail.reviewDeadline')}:</span>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {new Date(review.reviewDeadline).toLocaleDateString()}
                 </p>
@@ -267,7 +269,7 @@ export default function ReviewDetailPage() {
             )}
             {review.updatedAt && review.updatedAt !== review.createdAt && (
               <div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Last Updated:</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('reviewDetail.lastUpdated')}:</span>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {new Date(review.updatedAt).toLocaleDateString()}
                 </p>
@@ -279,11 +281,11 @@ export default function ReviewDetailPage() {
           {review.imageId && (
             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Attached Image
+                {t('reviewDetail.attachedImage')}
               </h4>
               <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-center">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Image ID: {review.imageId}
+                  {t('reviewDetail.imageId')}: {review.imageId}
                 </p>
                 {/* TODO: Load actual image from ImageAPI if needed */}
               </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 import { rentalPostService } from '@/services/rentalPostService';
 import boardingHouseService from '@/services/boardingHouseService';
 import roomService from '@/services/roomService';
@@ -9,6 +10,7 @@ import { FileText, Plus, Edit2, Trash2, Copy, X, Building, Home } from 'lucide-r
 
 export default function PostsPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
@@ -139,10 +141,10 @@ export default function PostsPage() {
   };
 
   const getStatusText = (post) => {
-    if (!post.isActive) return 'Inactive';
-    if (post.isApproved === null) return 'Pending';
-    if (post.isApproved === 0) return 'Rejected';
-    return 'Active';
+    if (!post.isActive) return t('ownerPosts.status.inactive');
+    if (post.isApproved === null) return t('ownerPosts.status.pending');
+    if (post.isApproved === 0) return t('ownerPosts.status.rejected');
+    return t('ownerPosts.status.active');
   };
 
   const filteredPosts = posts.filter(post => {
@@ -196,10 +198,10 @@ export default function PostsPage() {
 
   const validateForm = () => {
     const errors = {};
-    if (!postData.boardingHouseId) errors.boardingHouseId = 'Please select a boarding house';
-    if (!postData.title.trim()) errors.title = 'Title is required';
-    if (!postData.description.trim()) errors.description = 'Description is required';
-    if (!postData.contactPhone.trim()) errors.contactPhone = 'Contact phone is required';
+    if (!postData.boardingHouseId) errors.boardingHouseId = t('ownerPosts.validation.selectBoardingHouse');
+    if (!postData.title.trim()) errors.title = t('ownerPosts.validation.titleRequired');
+    if (!postData.description.trim()) errors.description = t('ownerPosts.validation.descriptionRequired');
+    if (!postData.contactPhone.trim()) errors.contactPhone = t('ownerPosts.validation.contactPhoneRequired');
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -211,13 +213,13 @@ export default function PostsPage() {
     try {
       if (editingPost) {
         await rentalPostService.updatePost(editingPost.id, postData);
-        alert('Post updated successfully!');
+        alert(t('ownerPosts.messages.updateSuccess'));
       } else {
         const response = await rentalPostService.createPost(postData);
         if (response.isSuccess) {
-          alert(response.message || 'Post created successfully!');
+          alert(response.message || t('ownerPosts.messages.createSuccess'));
         } else {
-          alert(response.message || 'Failed to create post');
+          alert(response.message || t('ownerPosts.messages.createFailed'));
           return;
         }
       }
@@ -234,19 +236,19 @@ export default function PostsPage() {
       setImagePreviews([]);
     } catch (error) {
       console.error('Error submitting post:', error);
-      alert(error.response?.data?.message || 'Failed to submit post');
+      alert(error.response?.data?.message || t('ownerPosts.messages.createFailed'));
     }
   };
 
   const handleDeletePost = async (postId) => {
-    if (confirm('Are you sure you want to delete this post?')) {
+    if (confirm(t('ownerPosts.messages.deleteConfirm'))) {
       try {
         await rentalPostService.deletePost(postId, user.id);
         await loadPosts();
-        alert('Post deleted successfully!');
+        alert(t('ownerPosts.messages.deleteSuccess'));
       } catch (error) {
         console.error('Error deleting post:', error);
-        alert(error.response?.data?.message || 'Failed to delete post');
+        alert(error.response?.data?.message || t('ownerPosts.messages.deleteFailed'));
       }
     }
   };
@@ -263,10 +265,10 @@ export default function PostsPage() {
       };
       await rentalPostService.createPost(duplicatedData);
       await loadPosts();
-      alert('Post duplicated successfully!');
+      alert(t('ownerPosts.messages.duplicateSuccess'));
     } catch (error) {
       console.error('Error duplicating post:', error);
-      alert(error.response?.data?.message || 'Failed to duplicate post');
+      alert(error.response?.data?.message || t('ownerPosts.messages.duplicateFailed'));
     }
   };
 
@@ -280,19 +282,19 @@ export default function PostsPage() {
     const validFiles = newFiles.filter(file => {
       if (!file.type.startsWith('image/')) return false;
       if (file.size > maxFileSize) {
-        alert(`${file.name} is too large. Maximum file size is 5MB.`);
+        alert(t('ownerPosts.messages.fileTooLarge').replace('{{name}}', file.name));
         return false;
       }
       return true;
     });
     
     if (validFiles.length === 0) {
-      alert('No valid images selected');
+      alert(t('ownerPosts.messages.noValidImages'));
       return;
     }
     
     if (validFiles.length !== newFiles.length) {
-      alert('Some files were skipped because they are not valid images or too large');
+      alert(t('ownerPosts.messages.someFilesSkipped'));
     }
     
     // Limit total images (e.g., max 10)
@@ -300,7 +302,7 @@ export default function PostsPage() {
     const maxImages = 10;
     
     if (existingCount >= maxImages) {
-      alert(`Maximum ${maxImages} images allowed`);
+      alert(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
       return;
     }
     
@@ -308,7 +310,7 @@ export default function PostsPage() {
     const filesToAdd = validFiles.slice(0, availableSlots);
     
     if (filesToAdd.length < validFiles.length) {
-      alert(`Only ${filesToAdd.length} images added. Maximum ${maxImages} images allowed.`);
+      alert(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
     }
     
     // Add to existing images
@@ -384,7 +386,7 @@ export default function PostsPage() {
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
     
     if (imageFiles.length === 0) {
-      alert('Please drop image files only');
+      alert(t('ownerPosts.messages.onlyImagesAllowed'));
       return;
     }
 
@@ -393,7 +395,7 @@ export default function PostsPage() {
     const maxImages = 10;
     
     if (existingCount >= maxImages) {
-      alert(`Maximum ${maxImages} images allowed`);
+      alert(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
       return;
     }
     
@@ -401,7 +403,7 @@ export default function PostsPage() {
     const filesToAdd = imageFiles.slice(0, availableSlots);
     
     if (filesToAdd.length < imageFiles.length) {
-      alert(`Only ${filesToAdd.length} images added. Maximum ${maxImages} images allowed.`);
+      alert(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
     }
     
     const updatedImages = [...postData.images, ...filesToAdd];
@@ -418,7 +420,7 @@ export default function PostsPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading posts...</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('ownerPosts.loading')}</p>
         </div>
       </div>
     );
@@ -431,15 +433,15 @@ export default function PostsPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Posts Management</h1>
-              <p className="text-gray-600 dark:text-gray-400">Create and manage rental listings</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{t('ownerPosts.title')}</h1>
+              <p className="text-gray-600 dark:text-gray-400">{t('ownerPosts.subtitle')}</p>
             </div>
             <button
               onClick={handleNewPost}
               className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
             >
               <Plus className="w-5 h-5" />
-              <span>Create Post</span>
+              <span>{t('ownerPosts.createPost')}</span>
             </button>
           </div>
         </div>
@@ -449,7 +451,7 @@ export default function PostsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('ownerPosts.stats.total')}</p>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
               </div>
               <FileText className="w-10 h-10 text-blue-500" />
@@ -458,7 +460,7 @@ export default function PostsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Active</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('ownerPosts.stats.active')}</p>
                 <p className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.active}</p>
               </div>
               <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
@@ -469,7 +471,7 @@ export default function PostsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Pending</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('ownerPosts.stats.pending')}</p>
                 <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{stats.pending}</p>
               </div>
               <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
@@ -480,7 +482,7 @@ export default function PostsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Inactive</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('ownerPosts.stats.inactive')}</p>
                 <p className="text-3xl font-bold text-gray-600 dark:text-gray-400">{stats.inactive}</p>
               </div>
               <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
@@ -493,10 +495,10 @@ export default function PostsPage() {
         {/* Tabs */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-1 mb-6 inline-flex">
           {[
-            { id: 'all', label: 'All', count: stats.total },
-            { id: 'active', label: 'Active', count: stats.active },
-            { id: 'pending', label: 'Pending', count: stats.pending },
-            { id: 'inactive', label: 'Inactive', count: stats.inactive },
+            { id: 'all', label: t('ownerPosts.tabs.all'), count: stats.total },
+            { id: 'active', label: t('ownerPosts.tabs.active'), count: stats.active },
+            { id: 'pending', label: t('ownerPosts.tabs.pending'), count: stats.pending },
+            { id: 'inactive', label: t('ownerPosts.tabs.inactive'), count: stats.inactive },
           ].map(tab => (
             <button
               key={tab.id}
@@ -516,13 +518,13 @@ export default function PostsPage() {
         {filteredPosts.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center">
             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No posts found</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">Create your first rental post</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('ownerPosts.emptyState.title')}</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">{t('ownerPosts.emptyState.description')}</p>
             <button
               onClick={handleNewPost}
               className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors"
             >
-              Create Post
+              {t('ownerPosts.createPost')}
             </button>
           </div>
         ) : (
@@ -595,13 +597,13 @@ export default function PostsPage() {
                     {/* Boarding House */}
                     <div className="flex items-center text-gray-600 dark:text-gray-400">
                       <Building className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span className="font-medium truncate">{post.houseName || 'No house specified'}</span>
+                      <span className="font-medium truncate">{post.houseName || t('ownerPosts.card.noHouse')}</span>
                     </div>
                     
                     {/* Rooms */}
                     <div className="flex items-center text-gray-600 dark:text-gray-400">
                       <Home className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span className="truncate">{post.roomName || 'All rooms'}</span>
+                      <span className="truncate">{post.roomName || t('ownerPosts.card.allRooms')}</span>
                     </div>
                     
                     {/* Contact Phone */}
@@ -622,7 +624,7 @@ export default function PostsPage() {
                     
                     {/* Created date */}
                     <div className="text-xs text-gray-500 dark:text-gray-500 mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-                      Created: {formatDate(post.createdAt)}
+                      {t('ownerPosts.card.created')}: {formatDate(post.createdAt)}
                     </div>
                   </div>
                 </div>
@@ -642,7 +644,7 @@ export default function PostsPage() {
                   <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {editingPost ? 'Edit Post' : 'Create Post'}
+                  {editingPost ? t('ownerPosts.editPost') : t('ownerPosts.createPost')}
                 </h2>
               </div>
               <button
@@ -673,7 +675,7 @@ export default function PostsPage() {
                 <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                   <span className="flex items-center">
                     <Building className="w-4 h-4 mr-2" />
-                    Boarding House <span className="text-red-500 ml-1">*</span>
+                    {t('ownerPosts.form.boardingHouse')} <span className="text-red-500 ml-1">*</span>
                   </span>
                 </label>
                 <select
@@ -684,7 +686,7 @@ export default function PostsPage() {
                   }`}
                   disabled={editingPost}
                 >
-                  <option value="">Select a boarding house</option>
+                  <option value="">{t('ownerPosts.form.selectBoardingHouse')}</option>
                   {boardingHouses.map((house) => (
                     <option key={house.id} value={house.id}>
                       {house.houseName}
@@ -696,7 +698,7 @@ export default function PostsPage() {
                 )}
                 {boardingHouses.length === 0 && (
                   <p className="mt-2 text-sm text-yellow-600 dark:text-yellow-400">
-                    No boarding houses found. Please create a boarding house first.
+                    {t('ownerPosts.form.noBoardingHouses')}
                   </p>
                 )}
               </div>
@@ -707,17 +709,17 @@ export default function PostsPage() {
                   <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                     <span className="flex items-center">
                       <Home className="w-4 h-4 mr-2" />
-                      Select Rooms (Optional - Leave empty for whole house)
+                      {t('ownerPosts.form.rooms')}
                     </span>
                   </label>
                   {loadingRooms ? (
                     <div className="text-center py-4">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Loading rooms...</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('ownerPosts.form.loadingRooms')}</p>
                     </div>
                   ) : availableRooms.length === 0 ? (
                     <p className="text-sm text-yellow-600 dark:text-yellow-400 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                      No available rooms in this boarding house.
+                      {t('ownerPosts.form.noRooms')}
                     </p>
                   ) : (
                     <div className="border border-gray-300 dark:border-gray-600 rounded-xl p-4 max-h-60 overflow-y-auto bg-white/70 dark:bg-gray-700/70">
@@ -743,8 +745,8 @@ export default function PostsPage() {
                   )}
                   <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                     {postData.roomIds.length > 0 
-                      ? `Selected ${postData.roomIds.length} room(s)` 
-                      : 'No rooms selected - post will apply to entire boarding house'}
+                      ? t('ownerPosts.form.selectedRooms').replace('{{count}}', postData.roomIds.length)
+                      : t('ownerPosts.form.noRoomsSelected')}
                   </p>
                 </div>
               )}
@@ -753,7 +755,7 @@ export default function PostsPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                   <span className="flex items-center">
-                     Title <span className="text-red-500 ml-1">*</span>
+                     {t('ownerPosts.form.title')} <span className="text-red-500 ml-1">*</span>
                   </span>
                 </label>
                 <input
@@ -766,7 +768,7 @@ export default function PostsPage() {
                   className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-white ${
                     formErrors.title ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300 dark:border-gray-600'
                   }`}
-                  placeholder="Enter post title"
+                  placeholder={t('ownerPosts.form.titlePlaceholder')}
                 />
                 {formErrors.title && (
                   <p className="mt-2 text-sm text-red-600 dark:text-red-400">{formErrors.title}</p>
@@ -777,7 +779,7 @@ export default function PostsPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                   <span className="flex items-center">
-                     Description <span className="text-red-500 ml-1">*</span>
+                     {t('ownerPosts.form.description')} <span className="text-red-500 ml-1">*</span>
                   </span>
                 </label>
                 <textarea
@@ -790,7 +792,7 @@ export default function PostsPage() {
                   className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-white resize-none ${
                     formErrors.description ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300 dark:border-gray-600'
                   }`}
-                  placeholder="Describe the room and rental details..."
+                  placeholder={t('ownerPosts.form.descriptionPlaceholder')}
                 />
                 {formErrors.description && (
                   <p className="mt-2 text-sm text-red-600 dark:text-red-400">{formErrors.description}</p>
@@ -801,7 +803,7 @@ export default function PostsPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                   <span className="flex items-center">
-                     Contact Phone <span className="text-red-500 ml-1">*</span>
+                     {t('ownerPosts.form.contactPhone')} <span className="text-red-500 ml-1">*</span>
                   </span>
                 </label>
                 <input
@@ -814,7 +816,7 @@ export default function PostsPage() {
                   className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-white ${
                     formErrors.contactPhone ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300 dark:border-gray-600'
                   }`}
-                  placeholder="Enter contact phone number"
+                  placeholder={t('ownerPosts.form.contactPhonePlaceholder')}
                 />
                 {formErrors.contactPhone && (
                   <p className="mt-2 text-sm text-red-600 dark:text-red-400">{formErrors.contactPhone}</p>
@@ -825,7 +827,7 @@ export default function PostsPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                   <span className="flex items-center">
-                    📷 Images <span className="text-gray-500 text-xs ml-2">(Optional - Select or drag multiple)</span>
+                    📷 {t('ownerPosts.form.images')} <span className="text-gray-500 text-xs ml-2">{t('ownerPosts.form.imagesHint')}</span>
                   </span>
                 </label>
                 
@@ -855,32 +857,32 @@ export default function PostsPage() {
                       {isDragging ? '📥' : '🖼️'}
                     </div>
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {isDragging ? 'Drop images here' : 'Drag & drop images here'}
+                      {isDragging ? t('ownerPosts.form.dropHere') : t('ownerPosts.form.dragDrop')}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                      or
+                      {t('ownerPosts.form.or')}
                     </p>
                     <button
                       type="button"
                       onClick={() => document.getElementById('image-upload-input').click()}
                       className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800 font-medium text-sm transition-colors"
                     >
-                      Browse Files
+                      {t('ownerPosts.form.browseFiles')}
                     </button>
                   </div>
                 </div>
                 <div className="mt-2 flex items-start justify-between gap-2">
                   <p className="text-xs text-gray-500 dark:text-gray-400 flex-1">
-                    💡 Drag & drop or click to select multiple images<br/>
-                    Max: 10 images, 5MB each. Recommended: 1200x800px
+                    💡 {t('ownerPosts.form.dragDropHint')}<br/>
+                    {t('ownerPosts.form.maxImages')}
                   </p>
                   {postData.images.length > 0 && (
                     <div className="flex flex-col items-end gap-1">
                       <span className="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded whitespace-nowrap">
-                        {postData.images.length}/10 images
+                        {t('ownerPosts.form.imagesCount').replace('{{count}}', postData.images.length)}
                       </span>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatFileSize(postData.images.reduce((acc, img) => acc + img.size, 0))} total
+                        {formatFileSize(postData.images.reduce((acc, img) => acc + img.size, 0))} {t('ownerPosts.form.totalSize').replace('{{size}}', '')}
                       </span>
                     </div>
                   )}
@@ -891,7 +893,7 @@ export default function PostsPage() {
                   <div className="mt-4">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Selected Images ({imagePreviews.length})
+                        {t('ownerPosts.form.selectedImages').replace('{{count}}', imagePreviews.length)}
                       </p>
                       <div className="flex gap-2">
                         {imagePreviews.length < 10 && (
@@ -900,7 +902,7 @@ export default function PostsPage() {
                             onClick={() => document.getElementById('image-upload-input').click()}
                             className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
                           >
-                            + Add More
+                            {t('ownerPosts.form.addMore')}
                           </button>
                         )}
                         <button
@@ -912,7 +914,7 @@ export default function PostsPage() {
                           }}
                           className="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                         >
-                          Clear All
+                          {t('ownerPosts.form.clearAll')}
                         </button>
                       </div>
                     </div>
@@ -973,13 +975,13 @@ export default function PostsPage() {
                   }}
                   className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
                 >
-                  Cancel
+                  {t('ownerPosts.buttons.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg hover:shadow-xl"
                 >
-                  {editingPost ? 'Update' : 'Create'}
+                  {editingPost ? t('ownerPosts.buttons.update') : t('ownerPosts.buttons.create')}
                 </button>
               </div>
             </form>

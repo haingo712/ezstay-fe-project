@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { useAuth } from '../../hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 import favoritePostService from '@/services/favoritePostService';
 import { rentalPostService } from '@/services/rentalPostService';
 import { Building, Calendar, Heart, Home, Trash2 } from 'lucide-react';
@@ -31,6 +32,7 @@ export default function FavoritesPage() {
   const [postToFavoriteMap, setPostToFavoriteMap] = useState({});
   const router = useRouter();
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (authLoading) {
@@ -165,7 +167,7 @@ export default function FavoritesPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center py-20">
               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-500 mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">Đang tải danh sách yêu thích...</p>
+              <p className="text-gray-600 dark:text-gray-400">{t('favorites.loading')}</p>
             </div>
           </div>
         </div>
@@ -185,12 +187,12 @@ export default function FavoritesPage() {
               <Heart className="w-12 h-12 text-red-500 fill-red-500" />
             </div>
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-3">
-              Bài viết yêu thích
+              {t('favorites.title')}
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
               {posts.length > 0
-                ? `Bạn đang lưu ${posts.length} bài viết yêu thích`
-                : 'Hãy lưu lại những bài viết mà bạn quan tâm để xem lại nhanh chóng.'}
+                ? t('favorites.subtitle').replace('{count}', posts.length)
+                : t('favorites.emptySubtitle')}
             </p>
           </div>
 
@@ -198,13 +200,13 @@ export default function FavoritesPage() {
             <div className="text-center py-20">
               <Heart className="w-20 h-20 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Bạn chưa lưu bài viết nào. Khám phá thêm và nhấn biểu tượng trái tim để lưu lại nhé!
+                {t('favorites.emptyDescription')}
               </p>
               <button
                 onClick={() => router.push('/rental-posts')}
                 className="px-6 py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors"
               >
-                Khám phá bài viết
+                {t('favorites.explore')}
               </button>
             </div>
           ) : (
@@ -252,7 +254,7 @@ export default function FavoritesPage() {
                           handleRemoveFavorite(favorite?.id, postIdNormalized);
                         }}
                         className="absolute top-4 left-4 p-2 bg-white dark:bg-gray-900/80 rounded-full shadow-lg hover:scale-110 transition-transform"
-                        title="Xóa khỏi yêu thích"
+                        title={t('favorites.removeFromFavorites')}
                       >
                         <Trash2 className="w-5 h-5 text-red-500" />
                       </button>
@@ -278,11 +280,11 @@ export default function FavoritesPage() {
                       <div className="space-y-2 mb-4">
                         <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
                           <Building className="w-4 h-4 mr-2" />
-                          <span className="truncate">{post.houseName || 'Chưa cập nhật'}</span>
+                          <span className="truncate">{post.houseName || t('favorites.notUpdated')}</span>
                         </div>
                         <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
                           <Home className="w-4 h-4 mr-2" />
-                          <span className="truncate">{post.roomName || 'Chưa cập nhật'}</span>
+                          <span className="truncate">{post.roomName || t('favorites.notUpdated')}</span>
                         </div>
                         <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
                           <Calendar className="w-4 h-4 mr-2" />
@@ -296,10 +298,10 @@ export default function FavoritesPage() {
                         </div>
                         <div className="ml-3 min-w-0">
                           <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                            👤 {post.authorName || 'Unknown Author'}
+                            👤 {post.authorName || t('favorites.unknownAuthor')}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            📞 {post.contactPhone || 'No phone'}
+                            📞 {post.contactPhone || t('favorites.noPhone')}
                           </p>
                         </div>
                       </div>

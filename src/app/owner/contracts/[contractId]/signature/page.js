@@ -5,8 +5,10 @@ import otpService from "@/services/otpService";
 import contractService from "@/services/contractService";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "react-toastify";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function ContractSignaturePage() {
+    const { t } = useTranslation();
     const router = useRouter();
     const params = useParams();
     const searchParams = useSearchParams();
@@ -47,7 +49,7 @@ export default function ContractSignaturePage() {
 
             } catch (error) {
                 console.error('Error loading contract:', error);
-                toast.error('Không thể tải thông tin hợp đồng');
+                toast.error(t('signaturePage.errors.loadFailed'));
             } finally {
                 setLoading(false);
             }
@@ -97,10 +99,10 @@ export default function ContractSignaturePage() {
 
             setOtpTimer(300); // Reset to 5 minutes
             setOtpCode(''); // Clear current input
-            toast.success('Mã OTP mới đã được gửi');
+            toast.success(t('signaturePage.messages.otpSent'));
         } catch (error) {
             console.error('Error resending OTP:', error);
-            toast.error('Lỗi khi gửi lại mã OTP');
+            toast.error(t('signaturePage.errors.resendFailed'));
         } finally {
             setResending(false);
         }
@@ -108,12 +110,12 @@ export default function ContractSignaturePage() {
 
     const handleConfirm = async () => {
         if (!otpCode || otpCode.length !== 6) {
-            toast.error('Vui lòng nhập mã OTP 6 chữ số');
+            toast.error(t('signaturePage.errors.invalidOtp'));
             return;
         }
 
         if (!otpId) {
-            toast.error('Không tìm thấy phiên OTP. Vui lòng thử lại.');
+            toast.error(t('signaturePage.errors.otpSessionNotFound'));
             return;
         }
 
@@ -128,12 +130,12 @@ export default function ContractSignaturePage() {
             const result = await otpService.verifyContractOtp(otpId, otpCode);
             console.log('✅ OTP verified:', result);
             
-            toast.success('OTP đã xác thực! Đang upload chữ ký...');
+            toast.success(t('signaturePage.messages.otpVerified'));
 
             // Step 2: Get signature data and upload
             const pendingSignature = sessionStorage.getItem('pendingSignature');
             if (!pendingSignature) {
-                toast.error('Không tìm thấy dữ liệu chữ ký. Vui lòng thử lại.');
+                toast.error(t('signaturePage.errors.signatureDataNotFound'));
                 setVerifying(false);
                 return;
             }
@@ -158,19 +160,19 @@ export default function ContractSignaturePage() {
             }
 
             if (!signatureUrl) {
-                toast.error('Lỗi khi upload chữ ký. Vui lòng thử lại.');
+                toast.error(t('signaturePage.errors.uploadFailed'));
                 setVerifying(false);
                 return;
             }
 
-            toast.success('Chữ ký đã upload! Đang ký hợp đồng...');
+            toast.success(t('signaturePage.messages.signatureUploaded'));
 
             // Step 4: Sign contract with signature URL
             await contractService.signContract(contractId, signatureUrl);
             console.log('✅ Contract signed successfully');
 
             // Step 5: Generate and upload signed PDF with embedded signature
-            toast.info('Đang tạo file PDF hợp đồng...');
+            toast.info(t('signaturePage.messages.generatingPdf'));
             const contractPdfService = (await import('@/services/contractPdfService')).default;
             
             try {
@@ -181,18 +183,18 @@ export default function ContractSignaturePage() {
                     null // owner signature (if you have it, pass it here)
                 );
                 console.log('✅ Signed PDF generated and uploaded:', pdfResult.pdfUrl);
-                toast.success('File PDF hợp đồng đã được tạo thành công!');
+                toast.success(t('signaturePage.messages.pdfGenerated'));
             } catch (pdfError) {
                 console.error('⚠️ Error generating PDF, but contract is already signed:', pdfError);
                 // Don't fail the whole process if PDF generation fails
                 // The contract signature is already saved
-                toast.warning('Hợp đồng đã ký nhưng không thể tạo PDF. Vui lòng liên hệ hỗ trợ.');
+                toast.warning(t('signaturePage.messages.pdfWarning'));
             }
 
             // Step 6: Clean up
             sessionStorage.removeItem('pendingSignature');
             
-            toast.success('Hợp đồng đã được ký thành công! 🎉');
+            toast.success(t('signaturePage.messages.signSuccess'));
 
             // Navigate back to contracts page
             setTimeout(() => {
@@ -208,11 +210,11 @@ export default function ContractSignaturePage() {
             console.error('Error details:', error.response?.data);
             
             if (error.response?.status === 400) {
-                toast.error('Mã OTP không đúng hoặc đã hết hạn');
+                toast.error(t('signaturePage.errors.otpInvalidExpired'));
             } else if (error.response?.status === 404) {
-                toast.error('Không tìm thấy phiên OTP. Vui lòng thử lại.');
+                toast.error(t('signaturePage.errors.otpSessionNotFound'));
             } else {
-                toast.error('Có lỗi xảy ra. Vui lòng thử lại.');
+                toast.error(t('signaturePage.errors.generalError'));
             }
         } finally {
             setVerifying(false);
@@ -232,7 +234,7 @@ export default function ContractSignaturePage() {
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Đang tải...</p>
+                    <p className="mt-4 text-gray-600">{t('signaturePage.loading')}</p>
                 </div>
             </div>
         );
@@ -249,7 +251,7 @@ export default function ContractSignaturePage() {
                     {/* Header */}
                     <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-200 dark:border-gray-700">
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                            Signature Setting
+                            {t('signaturePage.title')}
                         </h1>
                         <button
                             onClick={handleCancel}
@@ -262,7 +264,7 @@ export default function ContractSignaturePage() {
                     {/* Signature Method */}
                     <div className="mb-6">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                            Signature Method <span className="text-red-500">*</span>
+                            {t('signaturePage.signatureMethod')} <span className="text-red-500">*</span>
                         </label>
                         <div className="flex items-center space-x-3 p-4 border-2 border-blue-500 rounded-lg bg-blue-50 dark:bg-blue-900/20">
                             <input
@@ -272,7 +274,7 @@ export default function ContractSignaturePage() {
                                 className="w-5 h-5 text-blue-600"
                             />
                             <label className="text-base font-medium text-gray-900 dark:text-white">
-                                Ký ảnh xác thực SMS OTP eContract
+                                {t('signaturePage.signMethodSmsOtp')}
                             </label>
                         </div>
                     </div>
@@ -281,7 +283,7 @@ export default function ContractSignaturePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Full Name
+                                {t('signaturePage.fullName')}
                             </label>
                             <input
                                 type="text"
@@ -292,7 +294,7 @@ export default function ContractSignaturePage() {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Phone Number
+                                {t('signaturePage.phoneNumber')}
                             </label>
                             <input
                                 type="text"
@@ -306,17 +308,17 @@ export default function ContractSignaturePage() {
                     {/* Verification Info */}
                     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
                         <p className="text-sm text-blue-800 dark:text-blue-200">
-                            Verification code sent to phone number <strong>{maskedPhone}</strong>
+                            {t('signaturePage.verificationInfo')} <strong>{maskedPhone}</strong>
                         </p>
                         <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                            Please enter the OTP to complete the contract signing
+                            {t('signaturePage.enterOtpHint')}
                         </p>
                     </div>
 
                     {/* OTP Input */}
                     <div className="mb-6">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            OTP
+                            {t('signaturePage.otp')}
                         </label>
                         <input
                             type="text"
@@ -332,7 +334,7 @@ export default function ContractSignaturePage() {
                     {/* Timer and Resend */}
                     <div className="flex justify-between items-center text-sm mb-8">
                         <span className="text-gray-600 dark:text-gray-400">
-                            OTP is valid for{' '}
+                            {t('signaturePage.otpValidFor')}{' '}
                             <strong className="text-red-600 dark:text-red-400">
                                 {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
                             </strong>
@@ -342,7 +344,7 @@ export default function ContractSignaturePage() {
                             disabled={otpTimer > 240 || resending}
                             className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 font-medium disabled:text-gray-400 disabled:cursor-not-allowed"
                         >
-                            {resending ? 'Sending...' : 'Resend OTP'}
+                            {resending ? t('signaturePage.sending') : t('signaturePage.resendOtp')}
                         </button>
                     </div>
 
@@ -353,7 +355,7 @@ export default function ContractSignaturePage() {
                             disabled={verifying}
                             className="px-8 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50"
                         >
-                            Cancel
+                            {t('signaturePage.cancel')}
                         </button>
                         <button
                             onClick={handleConfirm}
@@ -366,10 +368,10 @@ export default function ContractSignaturePage() {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
-                                    Verifying...
+                                    {t('signaturePage.verifying')}
                                 </span>
                             ) : (
-                                'Confirm'
+                                t('signaturePage.confirm')
                             )}
                         </button>
                     </div>

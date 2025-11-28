@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { apiFetch } from "@/utils/api";
+import { useTranslation } from "@/hooks/useTranslation";
 
 // Hàm đánh dấu đã đọc notification
 async function markAsReadNotification(id) {
@@ -113,6 +114,7 @@ async function deleteNotification(id) {
 
 
 export default function OwnerNotificationsPage() {
+    const { t } = useTranslation();
     const [notifications, setNotifications] = useState([]);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef();
@@ -173,7 +175,7 @@ export default function OwnerNotificationsPage() {
             setShowUpdateModalId(null);
             await fetchNotifications();
         } catch (err) {
-            setUpdateError("Không thể cập nhật. Vui lòng thử lại.");
+            setUpdateError(t('ownerNotifications.errors.updateFailed'));
         } finally {
             setUpdateLoading(false);
         }
@@ -210,7 +212,7 @@ export default function OwnerNotificationsPage() {
             setShowAddByRoleModal(false);
             await fetchNotifications();
         } catch (err) {
-            setAddByRoleError("Không thể tạo thông báo theo vai trò. Vui lòng thử lại.");
+            setAddByRoleError(t('ownerNotifications.errors.addByRoleFailed'));
         } finally {
             setAddByRoleLoading(false);
         }
@@ -244,7 +246,7 @@ export default function OwnerNotificationsPage() {
             await fetchNotifications(); // Cập nhật lại danh sách
         } catch (err) {
             console.error("Error scheduling notification:", err);
-            setAddScheduleError("Không thể hẹn giờ thông báo. Vui lòng thử lại.");
+            setAddScheduleError(t('ownerNotifications.errors.scheduleFailed'));
         } finally {
             setAddScheduleLoading(false);
         }
@@ -258,7 +260,7 @@ export default function OwnerNotificationsPage() {
             const data = await apiFetch("/api/Notification/all-by-user");
             setNotifications(Array.isArray(data) ? data : []);
         } catch (err) {
-            setError("Không thể tải thông báo. Vui lòng thử lại.");
+            setError(t('ownerNotifications.errors.loadFailed'));
         } finally {
             setLoading(false);
         }
@@ -337,7 +339,7 @@ export default function OwnerNotificationsPage() {
             setShowAddModal(false);
             await fetchNotifications();
         } catch (err) {
-            setAddError("Không thể thêm thông báo. Vui lòng thử lại.");
+            setAddError(t('ownerNotifications.errors.addFailed'));
         } finally {
             setAddLoading(false);
         }
@@ -359,14 +361,14 @@ export default function OwnerNotificationsPage() {
         <ProtectedRoute roles={["Owner"]}>
             {/* Đã xoá Bell icon gần About */}
             <div className="max-w-2xl mx-auto py-10 px-4">
-                <h1 className="text-2xl font-bold mb-6">Thông báo của bạn</h1>
+                <h1 className="text-2xl font-bold mb-6">{t('ownerNotifications.title')}</h1>
 
                 {/* Nút mở modal thêm notification */}
                 <button
                     className="mb-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                     onClick={() => { setShowAddModal(true); setAddError(null); }}
                 >
-                    Thêm thông báo
+                    {t('ownerNotifications.addNotification')}
                 </button>
 
                 {/* Nút mở modal thêm notification theo vai trò */}
@@ -374,7 +376,7 @@ export default function OwnerNotificationsPage() {
                     className="mb-6 ml-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
                     onClick={() => { setShowAddByRoleModal(true); setAddByRoleError(null); }}
                 >
-                    Thêm thông báo theo vai trò
+                    {t('ownerNotifications.addByRole')}
                 </button>
 
                 {/* Nút mở modal thêm notification hẹn giờ */}
@@ -382,7 +384,7 @@ export default function OwnerNotificationsPage() {
                     className="mb-6 ml-4 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
                     onClick={() => { setShowScheduleModal(true); setAddScheduleError(null); }}
                 >
-                    Thêm thông báo hẹn giờ
+                    {t('ownerNotifications.addScheduled')}
                 </button>
 
                 {/* Modal thêm notification */}
@@ -396,19 +398,19 @@ export default function OwnerNotificationsPage() {
                             >
                                 &times;
                             </button>
-                            <h2 className="text-lg font-bold mb-4">Thêm thông báo mới</h2>
+                            <h2 className="text-lg font-bold mb-4">{t('ownerNotifications.modal.addTitle')}</h2>
                             <form onSubmit={handleAddNotification}>
                                 <div className="mb-2">
-                                    <label className="block font-medium mb-1">Tiêu đề</label>
+                                    <label className="block font-medium mb-1">{t('ownerNotifications.modal.title')}</label>
                                     <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full border rounded px-3 py-2" required />
                                 </div>
                                 <div className="mb-2">
-                                    <label className="block font-medium mb-1">Nội dung</label>
+                                    <label className="block font-medium mb-1">{t('ownerNotifications.modal.content')}</label>
                                     <textarea value={message} onChange={e => setMessage(e.target.value)} className="w-full border rounded px-3 py-2" required />
                                 </div>
                                 {addError && <div className="text-red-500 mb-2">{addError}</div>}
                                 <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" disabled={addLoading}>
-                                    {addLoading ? "Đang thêm..." : "Thêm thông báo"}
+                                    {addLoading ? t('ownerNotifications.modal.adding') : t('ownerNotifications.modal.add')}
                                 </button>
                             </form>
                         </div>
@@ -426,29 +428,29 @@ export default function OwnerNotificationsPage() {
                             >
                                 &times;
                             </button>
-                            <h2 className="text-lg font-bold mb-4">Thêm thông báo theo vai trò</h2>
+                            <h2 className="text-lg font-bold mb-4">{t('ownerNotifications.modal.addByRoleTitle')}</h2>
                             <form onSubmit={handleAddByRoleNotification}>
                                 <div className="mb-2">
-                                    <label className="block font-medium mb-1">Tiêu đề</label>
+                                    <label className="block font-medium mb-1">{t('ownerNotifications.modal.title')}</label>
                                     <input type="text" value={byRoleTitle} onChange={e => setByRoleTitle(e.target.value)} className="w-full border rounded px-3 py-2" required />
                                 </div>
                                 <div className="mb-2">
-                                    <label className="block font-medium mb-1">Nội dung</label>
+                                    <label className="block font-medium mb-1">{t('ownerNotifications.modal.content')}</label>
                                     <textarea value={byRoleMessage} onChange={e => setByRoleMessage(e.target.value)} className="w-full border rounded px-3 py-2" required />
                                 </div>
                                 <div className="mb-2">
-                                    <label className="block font-medium mb-1">Loại thông báo</label>
+                                    <label className="block font-medium mb-1">{t('ownerNotifications.modal.notificationType')}</label>
                                     <select value={byRoleType} onChange={e => setByRoleType(e.target.value)} className="w-full border rounded px-3 py-2" required>
-                                        <option value="">Chọn loại</option>
+                                        <option value="">{t('ownerNotifications.modal.selectType')}</option>
                                         {notificationTypes.map(type => (
                                             <option key={type.id} value={type.id}>{type.name}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div className="mb-2">
-                                    <label className="block font-medium mb-1">Vai trò đích</label>
+                                    <label className="block font-medium mb-1">{t('ownerNotifications.modal.targetRole')}</label>
                                     <select value={byRoleTargetRoles[0] || ""} onChange={e => setByRoleTargetRoles([e.target.value])} className="w-full border rounded px-3 py-2" required>
-                                        <option value="">Chọn vai trò</option>
+                                        <option value="">{t('ownerNotifications.modal.selectRole')}</option>
                                         {allRoles.map(role => (
                                             <option key={role.id} value={role.id}>{role.name}</option>
                                         ))}
@@ -456,7 +458,7 @@ export default function OwnerNotificationsPage() {
                                 </div>
                                 {addByRoleError && <div className="text-red-500 mb-2">{addByRoleError}</div>}
                                 <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" disabled={addByRoleLoading}>
-                                    {addByRoleLoading ? "Đang thêm..." : "Thêm thông báo theo vai trò"}
+                                    {addByRoleLoading ? t('ownerNotifications.modal.adding') : t('ownerNotifications.modal.addByRoleBtn')}
                                 </button>
                             </form>
                         </div>
@@ -474,51 +476,51 @@ export default function OwnerNotificationsPage() {
                             >
                                 &times;
                             </button>
-                            <h2 className="text-lg font-bold mb-4">Thêm thông báo hẹn giờ</h2>
+                            <h2 className="text-lg font-bold mb-4">{t('ownerNotifications.modal.scheduledTitle')}</h2>
                             <form onSubmit={handleScheduleNotification}>
                                 <div className="mb-2">
-                                    <label className="block font-medium mb-1">Tiêu đề</label>
+                                    <label className="block font-medium mb-1">{t('ownerNotifications.modal.title')}</label>
                                     <input type="text" value={scheduleTitle} onChange={e => setScheduleTitle(e.target.value)} className="w-full border rounded px-3 py-2" required />
                                 </div>
                                 <div className="mb-2">
-                                    <label className="block font-medium mb-1">Nội dung</label>
+                                    <label className="block font-medium mb-1">{t('ownerNotifications.modal.content')}</label>
                                     <textarea value={scheduleMessage} onChange={e => setScheduleMessage(e.target.value)} className="w-full border rounded px-3 py-2" required />
                                 </div>
                                 <div className="mb-2">
-                                    <label className="block font-medium mb-1">Loại thông báo</label>
+                                    <label className="block font-medium mb-1">{t('ownerNotifications.modal.notificationType')}</label>
                                     <select value={scheduleType} onChange={e => setScheduleType(e.target.value)} className="w-full border rounded px-3 py-2" required>
-                                        <option value="">Chọn loại</option>
+                                        <option value="">{t('ownerNotifications.modal.selectType')}</option>
                                         {notificationTypes.map(type => (
                                             <option key={type.id} value={type.id}>{type.name}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div className="mb-2">
-                                    <label className="block font-medium mb-1">Vai trò đích</label>
+                                    <label className="block font-medium mb-1">{t('ownerNotifications.modal.targetRole')}</label>
                                     <select value={scheduleTargetRoles[0] || ""} onChange={e => setScheduleTargetRoles([e.target.value])} className="w-full border rounded px-3 py-2" required>
-                                        <option value="">Chọn vai trò</option>
+                                        <option value="">{t('ownerNotifications.modal.selectRole')}</option>
                                         {allRoles.map(role => (
                                             <option key={role.id} value={role.id}>{role.name}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div className="mb-2">
-                                    <label className="block font-medium mb-1">Thời gian hẹn</label>
+                                    <label className="block font-medium mb-1">{t('ownerNotifications.modal.scheduledTime')}</label>
                                     <input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="w-full border rounded px-3 py-2" required />
                                 </div>
                                 {addScheduleError && <div className="text-red-500 mb-2">{addScheduleError}</div>}
                                 <button type="submit" className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700" disabled={addScheduleLoading}>
-                                    {addScheduleLoading ? "Đang hẹn giờ..." : "Hẹn giờ thông báo"}
+                                    {addScheduleLoading ? t('ownerNotifications.modal.scheduling') : t('ownerNotifications.modal.scheduleBtn')}
                                 </button>
                             </form>
                         </div>
                     </div>
                 )}
 
-                {loading && <div>Đang tải thông báo...</div>}
+                {loading && <div>{t('ownerNotifications.loading')}</div>}
                 {error && <div className="text-red-500 mb-4">{error}</div>}
                 {!loading && notifications.length === 0 && (
-                    <div className="text-gray-500">Không có thông báo nào.</div>
+                    <div className="text-gray-500">{t('ownerNotifications.noNotifications')}</div>
                 )}
                 <ul className="space-y-4">
                     {currentNotifications.map((n) => (
@@ -540,7 +542,7 @@ export default function OwnerNotificationsPage() {
                                 </div>
                                 <div className="flex flex-col items-end">
                                     <span className={`mb-2 px-2 py-1 rounded text-xs ${n.isRead ? "bg-gray-200 text-gray-500" : "bg-blue-100 text-blue-700"}`}>
-                                        {n.isRead ? "Đã đọc" : "Chưa đọc"}
+                                        {n.isRead ? t('ownerNotifications.read') : t('ownerNotifications.unread')}
                                     </span>
                                     <div className="flex gap-2">
                                         <button
@@ -548,7 +550,7 @@ export default function OwnerNotificationsPage() {
                                             onClick={e => { e.stopPropagation(); openUpdateModal(n); }}
                                             type="button"
                                         >
-                                            Sửa
+                                            {t('ownerNotifications.edit')}
                                         </button>
                                         <button
                                             className="text-red-600 hover:underline text-xs disabled:opacity-50"
@@ -556,11 +558,11 @@ export default function OwnerNotificationsPage() {
                                             disabled={deleteLoadingId === n.id}
                                             type="button"
                                         >
-                                            {deleteLoadingId === n.id ? "Đang xóa..." : "Xóa"}
+                                            {deleteLoadingId === n.id ? t('ownerNotifications.deleting') : t('ownerNotifications.delete')}
                                         </button>
                                     </div>
                                     {deleteErrorId === n.id && (
-                                        <div className="text-xs text-red-500 mt-1">Lỗi xóa!</div>
+                                        <div className="text-xs text-red-500 mt-1">{t('ownerNotifications.deleteError')}</div>
                                     )}
                                 </div>
                             </div>
@@ -579,19 +581,19 @@ export default function OwnerNotificationsPage() {
                             >
                                 &times;
                             </button>
-                            <h2 className="text-lg font-bold mb-4">Cập nhật thông báo</h2>
+                            <h2 className="text-lg font-bold mb-4">{t('ownerNotifications.modal.updateTitle')}</h2>
                             <form onSubmit={handleUpdateNotification}>
                                 <div className="mb-2">
-                                    <label className="block font-medium mb-1">Tiêu đề</label>
+                                    <label className="block font-medium mb-1">{t('ownerNotifications.modal.title')}</label>
                                     <input type="text" value={updateTitle} onChange={e => setUpdateTitle(e.target.value)} className="w-full border rounded px-3 py-2" required />
                                 </div>
                                 <div className="mb-2">
-                                    <label className="block font-medium mb-1">Nội dung</label>
+                                    <label className="block font-medium mb-1">{t('ownerNotifications.modal.content')}</label>
                                     <textarea value={updateMessage} onChange={e => setUpdateMessage(e.target.value)} className="w-full border rounded px-3 py-2" required />
                                 </div>
                                 {updateError && <div className="text-red-500 mb-2">{updateError}</div>}
                                 <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" disabled={updateLoading}>
-                                    {updateLoading ? "Đang cập nhật..." : "Cập nhật"}
+                                    {updateLoading ? t('ownerNotifications.modal.updating') : t('ownerNotifications.modal.update')}
                                 </button>
                             </form>
                         </div>
@@ -606,7 +608,7 @@ export default function OwnerNotificationsPage() {
                             disabled={currentPage === 1}
                             className="px-4 py-2 mx-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
                         >
-                            Trước
+                            {t('ownerNotifications.previous')}
                         </button>
                         {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
                             <button
@@ -622,7 +624,7 @@ export default function OwnerNotificationsPage() {
                             disabled={currentPage === totalPages}
                             className="px-4 py-2 mx-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
                         >
-                            Sau
+                            {t('ownerNotifications.next')}
                         </button>
                     </div>
                 )}
