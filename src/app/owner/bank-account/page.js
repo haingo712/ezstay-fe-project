@@ -223,7 +223,6 @@ export default function BankAccountPage() {
 
             // Fetch detail to get bankGatewayId (required by API)
             const detail = await paymentAPI.getBankAccountById(account.id);
-
             const updatedData = {
                 BankGatewayId: detail.bankGateway?.id || detail.bankGatewayId,
                 AccountNumber: detail.accountNumber || account.accountNumber,
