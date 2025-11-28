@@ -25,14 +25,14 @@ export default function AdminPage() {
     try {
       setLoading(true);
       const accounts = await userManagementService.getAllAccounts();
-      
+
       if (Array.isArray(accounts)) {
         const users = accounts.filter(a => a.roleId === 1);
         const owners = accounts.filter(a => a.roleId === 2);
         const staff = accounts.filter(a => a.roleId === 3);
         const activeUsers = accounts.filter(a => a.isActive && (a.roleId === 1 || a.roleId === 2));
         const inactiveUsers = accounts.filter(a => !a.isActive && (a.roleId === 1 || a.roleId === 2));
-        
+
         setStats({
           totalUsers: users.length,
           totalOwners: owners.length,
@@ -104,7 +104,7 @@ export default function AdminPage() {
             <div className="text-4xl opacity-50">👤</div>
           </div>
         </div>
-        
+
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
@@ -116,7 +116,7 @@ export default function AdminPage() {
             <div className="text-4xl opacity-50">🏠</div>
           </div>
         </div>
-        
+
         <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
@@ -128,7 +128,7 @@ export default function AdminPage() {
             <div className="text-4xl opacity-50">👔</div>
           </div>
         </div>
-        
+
         <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>

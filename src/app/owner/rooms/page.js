@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import roomService from '@/services/roomService';
 import amenityService from '@/services/amenityService';
+import imageService from '@/services/imageService';
 import SafeImage from '@/components/SafeImage';
 import notification from '@/utils/notification';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -19,7 +20,9 @@ function RoomsPageContent() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [amenities, setAmenities] = useState([]);
   const [loadingAmenities, setLoadingAmenities] = useState(false);
@@ -33,11 +36,13 @@ function RoomsPageContent() {
   });
 
   const [editRoom, setEditRoom] = useState({
+    roomName: '',
     area: '',
     price: '',
     roomStatus: 0,
     imageFiles: [],
-    selectedAmenities: []
+    selectedAmenities: [],
+    currentImages: [] // Track current images that can be deleted
   });
   const [editImagePreviews, setEditImagePreviews] = useState([]);
 
@@ -56,7 +61,10 @@ function RoomsPageContent() {
       setLoadingAmenities(true);
       const data = await amenityService.getAllAmenities();
       console.log('🎯 Loaded amenities:', data);
-      setAmenities(Array.isArray(data) ? data : []);
+      // Handle both { value: [...] } and direct array format
+      const amenityList = data?.value || (Array.isArray(data) ? data : []);
+      console.log('🎯 Amenity list:', amenityList);
+      setAmenities(amenityList);
     } catch (error) {
       console.error('Error loading amenities:', error);
       setAmenities([]);
@@ -77,7 +85,7 @@ function RoomsPageContent() {
         console.log('🖼️ First room imageUrl:', data[0].imageUrl);
         console.log('🏷️ First room roomStatus:', data[0].roomStatus, 'Type:', typeof data[0].roomStatus);
         console.log('🏷️ First room RoomStatus:', data[0].RoomStatus, 'Type:', typeof data[0].RoomStatus);
-        
+
         // Check all rooms status
         data.forEach((room, idx) => {
           console.log(`Room ${idx}: roomStatus=${room.roomStatus}, RoomStatus=${room.RoomStatus}`);
@@ -150,6 +158,14 @@ function RoomsPageContent() {
     });
   };
 
+  // Remove current image (from backend)
+  const removeCurrentImage = (index) => {
+    setEditRoom(prev => ({
+      ...prev,
+      currentImages: prev.currentImages.filter((_, i) => i !== index)
+    }));
+  };
+
   const handleEditImageChange = (e) => {
     const files = Array.from(e.target.files || []);
 
@@ -200,12 +216,13 @@ function RoomsPageContent() {
         formData.append('ImageUrl', file);
       });
 
-      // Note: Backend needs to uncomment Amenities field in CreateRoom.cs for this to work
-      // Prepare amenities data (currently backend has this commented out)
+      // Prepare amenities data - use simple AmenityIds array format
+      // FormData binding: AmenityIds=guid1&AmenityIds=guid2
       if (newRoom.selectedAmenities && newRoom.selectedAmenities.length > 0) {
         newRoom.selectedAmenities.forEach((amenityId) => {
-          formData.append('Amenities', JSON.stringify({ AmenityId: amenityId }));
+          formData.append('AmenityIds', amenityId);
         });
+        console.log('📤 Sending amenities:', newRoom.selectedAmenities);
       }
 
       console.log('📤 Sending create room request:', {
@@ -240,47 +257,47 @@ function RoomsPageContent() {
   const handleUpdateRoom = async (e) => {
     e.preventDefault();
 
-    if (!editRoom.area || !editRoom.price) {
+    if (!editRoom.roomName || !editRoom.area || !editRoom.price) {
       notification.warning('Please fill in all required fields!');
       return;
     }
 
+    // Validate: must have at least 1 image (existing or new)
+    const hasExistingImages = editRoom.currentImages && editRoom.currentImages.length > 0;
+    const hasNewImages = editRoom.imageFiles && editRoom.imageFiles.length > 0;
+
+    if (!hasExistingImages && !hasNewImages) {
+      notification.warning('Room must have at least one image!');
+      return;
+    }
+
     try {
-      // Create FormData for file upload to backend
-      const formData = new FormData();
-      formData.append('RoomName', selectedRoom.roomName); // ✅ Backend requires RoomName
-      formData.append('Area', editRoom.area);
-      formData.append('Price', editRoom.price);
-      formData.append('RoomStatus', editRoom.roomStatus);
-
-      // Append new images if user selected any
-      if (editRoom.imageFiles.length > 0) {
-        editRoom.imageFiles.forEach((file) => {
-          formData.append('ImageUrl', file);
-        });
-        console.log('📤 Updating with', editRoom.imageFiles.length, 'new images');
+      // Step 1: Upload new images to ImageAPI first (if any)
+      let newImageUrls = [];
+      if (hasNewImages) {
+        console.log('📤 Uploading', editRoom.imageFiles.length, 'new images to ImageAPI...');
+        newImageUrls = await imageService.uploadMultiple(editRoom.imageFiles);
+        console.log('✅ New images uploaded:', newImageUrls);
       }
 
-      // Note: Backend needs to uncomment Amenities field in UpdateRoom.cs for this to work
-      if (editRoom.selectedAmenities && editRoom.selectedAmenities.length > 0) {
-        editRoom.selectedAmenities.forEach((amenityId) => {
-          formData.append('Amenities', JSON.stringify({ AmenityId: amenityId }));
-        });
-        console.log('📤 Updating with', editRoom.selectedAmenities.length, 'amenities');
-      } else {
-        console.log('📤 Updating without new images - keeping existing images');
-      }
+      // Step 2: Combine existing URLs + new URLs
+      const allImageUrls = [...(editRoom.currentImages || []), ...newImageUrls];
+      console.log('📤 All image URLs:', allImageUrls);
+
+      // Step 3: Send JSON data to RoomAPI (no FormData needed)
+      const updateData = {
+        roomName: editRoom.roomName,
+        area: parseFloat(editRoom.area),
+        price: parseFloat(editRoom.price),
+        roomStatus: editRoom.roomStatus,
+        imageUrls: allImageUrls,
+        amenityIds: editRoom.selectedAmenities || []
+      };
 
       console.log('📤 Sending update request for room:', selectedRoom.id);
-      console.log('📤 Update data:', {
-        roomName: selectedRoom.roomName,
-        area: editRoom.area,
-        price: editRoom.price,
-        roomStatus: editRoom.roomStatus,
-        newImagesCount: editRoom.imageFiles.length
-      });
+      console.log('📤 Update data:', updateData);
 
-      const result = await roomService.update(selectedRoom.id, formData);
+      const result = await roomService.update(selectedRoom.id, updateData);
 
       console.log('✅ Update response:', result);
 
@@ -288,7 +305,7 @@ function RoomsPageContent() {
 
       setShowEditModal(false);
       setSelectedRoom(null);
-      setEditRoom({ area: '', price: '', roomStatus: 0, imageFiles: [] });
+      setEditRoom({ roomName: '', area: '', price: '', roomStatus: 0, imageFiles: [], currentImages: [], selectedAmenities: [] });
 
       // Cleanup preview URLs
       editImagePreviews.forEach(url => URL.revokeObjectURL(url));
@@ -316,44 +333,109 @@ function RoomsPageContent() {
     }
   };
 
-  const openEditModal = (room) => {
-    setSelectedRoom(room);
-    setEditRoom({
-      area: room.area,
-      price: room.price,
-      roomStatus: room.roomStatus || 0,
-      imageFiles: []
-    });
-    setEditImagePreviews([]);
+  const openEditModal = async (room) => {
     setShowEditModal(true);
+    setLoadingDetail(true);
+    try {
+      // Fetch room detail with amenities from API
+      const roomDetail = await roomService.getById(room.id);
+      console.log('📦 Room detail for edit:', roomDetail);
+      setSelectedRoom(roomDetail);
+
+      // Get current images from response
+      const currentImages = roomDetail.images ||
+        (Array.isArray(roomDetail.imageUrl) ? roomDetail.imageUrl :
+          (roomDetail.imageUrl ? [roomDetail.imageUrl] : []));
+
+      setEditRoom({
+        roomName: roomDetail.roomName || roomDetail.RoomName || '',
+        area: roomDetail.area,
+        price: roomDetail.price,
+        roomStatus: normalizeStatus(roomDetail.roomStatus),
+        imageFiles: [],
+        selectedAmenities: roomDetail.amenities?.map(a => a.id) || [],
+        currentImages: currentImages
+      });
+    } catch (error) {
+      console.error('Error fetching room detail:', error);
+      // Fallback to basic room data
+      setSelectedRoom(room);
+
+      const currentImages = room.images ||
+        (Array.isArray(room.imageUrl) ? room.imageUrl :
+          (room.imageUrl ? [room.imageUrl] : []));
+
+      setEditRoom({
+        roomName: room.roomName || room.RoomName || '',
+        area: room.area,
+        price: room.price,
+        roomStatus: normalizeStatus(room.roomStatus),
+        imageFiles: [],
+        selectedAmenities: room.amenities?.map(a => a.id) || [],
+        currentImages: currentImages
+      });
+    } finally {
+      setLoadingDetail(false);
+    }
+    setEditImagePreviews([]);
+  };
+
+  const openDetailModal = async (room) => {
+    setShowDetailModal(true);
+    setLoadingDetail(true);
+    try {
+      // Fetch room detail with amenities from API
+      const roomDetail = await roomService.getById(room.id);
+      console.log('📦 Room detail with amenities:', roomDetail);
+      setSelectedRoom(roomDetail);
+    } catch (error) {
+      console.error('Error fetching room detail:', error);
+      // Fallback to basic room data
+      setSelectedRoom(room);
+    } finally {
+      setLoadingDetail(false);
+    }
   };
 
   const closeModals = () => {
     setShowCreateModal(false);
     setShowEditModal(false);
+    setShowDetailModal(false);
     setSelectedRoom(null);
-    setNewRoom({ roomName: '', area: '', price: '', imageFiles: [] });
+    setNewRoom({ roomName: '', area: '', price: '', imageFiles: [], selectedAmenities: [] });
 
     // Cleanup all preview URLs
     imagePreviews.forEach(url => URL.revokeObjectURL(url));
     setImagePreviews([]);
 
-    setEditRoom({ area: '', price: '', roomStatus: 0, imageFiles: [] });
+    setEditRoom({ area: '', price: '', roomStatus: 0, imageFiles: [], selectedAmenities: [] });
     editImagePreviews.forEach(url => URL.revokeObjectURL(url));
     setEditImagePreviews([]);
   };
 
-  const getRoomStatusText = (status, t) => {
-    switch (status) {
-      case 0: return t ? t('ownerRooms.status.available') : 'Available';
-      case 1: return t ? t('ownerRooms.status.occupied') : 'Occupied';
-      case 2: return t ? t('ownerRooms.status.maintenance') : 'Maintenance';
+  // Helper to normalize status to number (backend may return string or number)
+  const normalizeStatus = (status) => {
+    if (typeof status === 'number') return status;
+    if (typeof status === 'string') {
+      const statusMap = { 'available': 0, 'occupied': 1, 'maintenance': 2 };
+      return statusMap[status.toLowerCase()] ?? -1;
+    }
+    return -1;
+  };
+
+  const getRoomStatusText = (status) => {
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
+      case 0: return 'Available';
+      case 1: return 'Occupied';
+      case 2: return 'Maintenance';
       default: return 'Unknown';
     }
   };
 
   const getRoomStatusColor = (status) => {
-    switch (status) {
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
       case 0: return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 1: return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       case 2: return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
@@ -411,16 +493,16 @@ function RoomsPageContent() {
           <p className="text-4xl font-bold mt-2">{rooms.length}</p>
         </div>
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-green-100 text-sm">{t('ownerRooms.stats.available')}</p>
-          <p className="text-4xl font-bold mt-2">{rooms.filter(r => r.roomStatus === 0).length}</p>
+          <p className="text-green-100 text-sm">Available</p>
+          <p className="text-4xl font-bold mt-2">{rooms.filter(r => normalizeStatus(r.roomStatus) === 0).length}</p>
         </div>
         <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-red-100 text-sm">{t('ownerRooms.stats.occupied')}</p>
-          <p className="text-4xl font-bold mt-2">{rooms.filter(r => r.roomStatus === 1).length}</p>
+          <p className="text-red-100 text-sm">Occupied</p>
+          <p className="text-4xl font-bold mt-2">{rooms.filter(r => normalizeStatus(r.roomStatus) === 1).length}</p>
         </div>
         <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-yellow-100 text-sm">{t('ownerRooms.stats.maintenance')}</p>
-          <p className="text-4xl font-bold mt-2">{rooms.filter(r => r.roomStatus === 2).length}</p>
+          <p className="text-yellow-100 text-sm">Maintenance</p>
+          <p className="text-4xl font-bold mt-2">{rooms.filter(r => normalizeStatus(r.roomStatus) === 2).length}</p>
         </div>
       </div>
 
@@ -488,10 +570,13 @@ function RoomsPageContent() {
 
               {/* Content */}
               <div className="p-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                <h3
+                  className="text-lg font-semibold text-gray-900 dark:text-white mb-2 cursor-pointer hover:text-blue-600"
+                  onClick={() => openDetailModal(room)}
+                >
                   {room.roomName || `Room ${room.id?.substring(0, 8)}`}
                 </h3>
-                <div className="space-y-1 mb-4">
+                <div className="space-y-1 mb-3">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     📐 {t('ownerRooms.room.area')}: {room.area} m²
                   </p>
@@ -500,8 +585,33 @@ function RoomsPageContent() {
                   </p>
                 </div>
 
+                {/* Amenities preview */}
+                {room.amenities && room.amenities.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex flex-wrap gap-1">
+                      {room.amenities.slice(0, 3).map((amenity) => (
+                        <span
+                          key={amenity.id}
+                          className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                        >
+                          {amenity.amenityName}
+                        </span>
+                      ))}
+                      {room.amenities.length > 3 && (
+                        <span className="text-xs text-gray-500">+{room.amenities.length - 3} more</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Actions */}
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => openDetailModal(room)}
+                    className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 font-medium text-sm"
+                  >
+                    👁️ View
+                  </button>
                   <button
                     onClick={() => openEditModal(room)}
                     className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 font-medium text-sm"
@@ -643,8 +753,8 @@ function RoomsPageContent() {
                         >
                           <input
                             type="checkbox"
-                            checked={(editRoom.selectedAmenities || []).includes(amenity.id)}
-                            onChange={() => toggleEditAmenity(amenity.id)}
+                            checked={(newRoom.selectedAmenities || []).includes(amenity.id)}
+                            onChange={() => toggleAmenity(amenity.id)}
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                           />
                           {amenity.imageUrl && (
@@ -699,6 +809,21 @@ function RoomsPageContent() {
               </h2>
 
               <form onSubmit={handleUpdateRoom} className="space-y-4">
+                {/* Room Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Room Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editRoom.roomName || ''}
+                    onChange={(e) => setEditRoom({ ...editRoom, roomName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="Enter room name"
+                  />
+                </div>
+
                 {/* Area */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -741,21 +866,20 @@ function RoomsPageContent() {
                     onChange={(e) => setEditRoom({ ...editRoom, roomStatus: parseInt(e.target.value) })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
-                    <option value={0}>{t('ownerRooms.status.available')}</option>
-                    <option value={1}>{t('ownerRooms.status.occupied')}</option>
-                    <option value={2}>{t('ownerRooms.status.maintenance')}</option>
+                    <option value={0}>Available</option>
+                    <option value={1}>Maintenance</option>
                   </select>
                 </div>
 
                 {/* Current Images */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('ownerRooms.modal.images')}
+                    Current Images {editRoom.currentImages?.length > 0 && `(${editRoom.currentImages.length})`}
                   </label>
-                  {selectedRoom.images && selectedRoom.images.length > 0 ? (
+                  {editRoom.currentImages && editRoom.currentImages.length > 0 ? (
                     <div className="grid grid-cols-3 gap-2">
-                      {selectedRoom.images.map((imageUrl, index) => (
-                        <div key={index} className="h-24 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden relative">
+                      {editRoom.currentImages.map((imageUrl, index) => (
+                        <div key={index} className="h-24 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden relative group">
                           <SafeImage
                             src={imageUrl}
                             alt={`${selectedRoom.roomName} - Image ${index + 1}`}
@@ -763,24 +887,28 @@ function RoomsPageContent() {
                             fallbackIcon="🚪"
                             objectFit="cover"
                           />
+                          {/* Delete button */}
+                          <button
+                            type="button"
+                            onClick={() => removeCurrentImage(index)}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                            title="Remove this image"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
                         </div>
                       ))}
                     </div>
-                  ) : selectedRoom.imageUrl ? (
-                    <div className="h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center relative">
-                      <SafeImage
-                        src={selectedRoom.imageUrl}
-                        alt={selectedRoom.roomName}
-                        fill
-                        fallbackIcon="🚪"
-                        objectFit="contain"
-                      />
-                    </div>
                   ) : (
-                    <div className="h-40 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-4xl">
-                      🚪
+                    <div className="h-24 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-gray-500">
+                      No images
                     </div>
                   )}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Hover over an image and click ✕ to remove it
+                  </p>
                 </div>
 
                 {/* Upload New Images (Optional) */}
@@ -830,6 +958,48 @@ function RoomsPageContent() {
                   )}
                 </div>
 
+                {/* Room Amenities */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    🏠 Room Amenities
+                  </label>
+                  {loadingAmenities ? (
+                    <div className="text-sm text-gray-500">Loading amenities...</div>
+                  ) : amenities.length === 0 ? (
+                    <div className="text-sm text-gray-500">No amenities available</div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-3">
+                      {amenities.map((amenity) => (
+                        <label
+                          key={amenity.id}
+                          className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={(editRoom.selectedAmenities || []).includes(amenity.id)}
+                            onChange={() => toggleEditAmenity(amenity.id)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          {amenity.imageUrl && (
+                            <div className="w-6 h-6 relative flex-shrink-0">
+                              <SafeImage
+                                src={amenity.imageUrl}
+                                alt={amenity.amenityName}
+                                fill
+                                objectFit="contain"
+                                fallbackIcon="🏠"
+                              />
+                            </div>
+                          )}
+                          <span className="text-sm text-gray-900 dark:text-white">
+                            {amenity.amenityName}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* Buttons */}
                 <div className="flex gap-2 pt-4">
                   <button
@@ -847,6 +1017,167 @@ function RoomsPageContent() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {showDetailModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {loadingDetail ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                  <p className="text-gray-600 dark:text-gray-400">Loading room details...</p>
+                </div>
+              ) : selectedRoom ? (
+                <>
+                  {/* Header */}
+                  <div className="flex justify-between items-start mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        🚪 {selectedRoom.roomName}
+                      </h2>
+                      <span className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-semibold ${getRoomStatusColor(selectedRoom.roomStatus)}`}>
+                        {getRoomStatusText(selectedRoom.roomStatus)}
+                      </span>
+                    </div>
+                    <button
+                      onClick={closeModals}
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Images Gallery */}
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">📷 Images</h3>
+                    {(selectedRoom.imageUrl && selectedRoom.imageUrl.length > 0) || (selectedRoom.images && selectedRoom.images.length > 0) ? (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {(selectedRoom.images || (Array.isArray(selectedRoom.imageUrl) ? selectedRoom.imageUrl : [selectedRoom.imageUrl])).map((img, index) => (
+                          <div key={index} className="relative h-32 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                            <SafeImage
+                              src={img}
+                              alt={`${selectedRoom.roomName} - Image ${index + 1}`}
+                              fill
+                              fallbackIcon="🚪"
+                              objectFit="cover"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="h-32 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-4xl">
+                        🚪
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Room Info */}
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">📋 Room Information</h3>
+                    <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Room ID</p>
+                        <p className="font-medium text-gray-900 dark:text-white text-sm break-all">{selectedRoom.id}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">House ID</p>
+                        <p className="font-medium text-gray-900 dark:text-white text-sm break-all">{selectedRoom.houseId}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">📐 Area</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{selectedRoom.area} m²</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">💰 Price</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{selectedRoom.price?.toLocaleString()} VND/month</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">📅 Created At</p>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {selectedRoom.createdAt ? new Date(selectedRoom.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">🔄 Updated At</p>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {selectedRoom.updatedAt && selectedRoom.updatedAt !== '0001-01-01T00:00:00'
+                            ? new Date(selectedRoom.updatedAt).toLocaleDateString('vi-VN')
+                            : 'Never'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Amenities */}
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">🏠 Amenities</h3>
+                    {selectedRoom.amenities && selectedRoom.amenities.length > 0 ? (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {selectedRoom.amenities.map((amenity) => (
+                          <div
+                            key={amenity.id}
+                            className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                          >
+                            {amenity.imageUrl ? (
+                              <div className="w-8 h-8 relative flex-shrink-0">
+                                <SafeImage
+                                  src={amenity.imageUrl}
+                                  alt={amenity.amenityName}
+                                  fill
+                                  objectFit="contain"
+                                  fallbackIcon="🏠"
+                                />
+                              </div>
+                            ) : (
+                              <span className="text-xl">🏠</span>
+                            )}
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              {amenity.amenityName}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <p className="text-gray-500 dark:text-gray-400">No amenities configured</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-600">
+                    <button
+                      onClick={() => {
+                        setShowDetailModal(false);
+                        openEditModal(selectedRoom);
+                      }}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                    >
+                      ✏️ Edit Room
+                    </button>
+                    <button
+                      onClick={closeModals}
+                      className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">Failed to load room details</p>
+                  <button onClick={closeModals} className="mt-4 px-4 py-2 bg-gray-600 text-white rounded-lg">
+                    Close
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

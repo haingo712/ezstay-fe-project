@@ -262,43 +262,7 @@ class RoomService {
   async update(id, data) {
     try {
       console.log(`🚪 Updating room ${id}...`);
-
-      // Check if data is FormData (for image upload)
-      if (data instanceof FormData) {
-        console.log("� Sending room FormData with optional image update");
-        console.log("� FormData contents:", {
-          area: data.get('Area'),
-          price: data.get('Price'),
-          roomStatus: data.get('RoomStatus'),
-          hasNewImage: !!data.get('ImageUrl')
-        });
-
-        // Call room update API with FormData
-        const response = await roomAPI.updateWithFormData(id, data);
-        console.log("✅ Room updated successfully with FormData:", response);
-
-        // Backend returns: { isSuccess: true, message: "...", data: {...} }
-        if (response && response.isSuccess) {
-          const roomData = response.data || response.result || response;
-          console.log("📦 Updated room data:", roomData);
-          console.log("🖼️ Filebase IPFS URL:", roomData?.ImageUrl || roomData?.imageUrl);
-
-          // Normalize response data
-          return {
-            ...roomData,
-            imageUrl: roomData.ImageUrl || roomData.imageUrl,
-            roomName: roomData.RoomName || roomData.roomName,
-            roomStatus: roomData.RoomStatus !== undefined ? roomData.RoomStatus : roomData.roomStatus,
-            houseId: roomData.HouseId || roomData.houseId
-          };
-        }
-
-        return response;
-      }
-
-      // Legacy: JSON data (no image)
-      console.log("📥 Received JSON data:", data);
-      console.log("� RoomStatus raw value:", data.roomStatus, "Type:", typeof data.roomStatus);
+      console.log("📥 Received data:", data);
 
       // Convert roomStatus to integer, handling both string and number types
       let roomStatus = 0; // Default to Available
@@ -328,13 +292,17 @@ class RoomService {
 
       console.log("✅ Final processed roomStatus:", roomStatus, "Type:", typeof roomStatus);
 
+      // New approach: Send JSON with imageUrls (URLs already uploaded to ImageAPI)
       const updateData = {
+        roomName: data.roomName,
         area: parseFloat(data.area),
         price: parseFloat(data.price),
-        roomStatus: roomStatus
+        roomStatus: roomStatus,
+        imageUrls: data.imageUrls || [],
+        amenityIds: data.amenityIds || []
       };
 
-      console.log("📤 Sending update JSON data (without roomName):", updateData);
+      console.log("📤 Sending update JSON data:", updateData);
 
       const response = await roomAPI.update(id, updateData);
       console.log("✅ Room updated successfully:", response);
@@ -355,10 +323,6 @@ class RoomService {
         console.log("Backend error details:", errorData);
 
         if (status === 400) {
-          // Handle specific validation errors
-          if (errorData.message && errorData.message.includes('RoomName')) {
-            throw new Error("Lỗi: Tên phòng không thể thay đổi. Chỉ có thể cập nhật diện tích, giá và trạng thái.");
-          }
           throw new Error(errorData.message || "Dữ liệu phòng không hợp lệ. Vui lòng kiểm tra lại các trường.");
         } else if (status === 404) {
           throw new Error("Không tìm thấy phòng. Phòng có thể đã bị xóa.");

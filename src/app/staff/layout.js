@@ -229,24 +229,6 @@ export default function StaffLayout({ children }) {
 
             {/* Settings Section */}
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
-              {/* Language Toggle Button */}
-              <button
-                onClick={() => changeLanguage(language === 'en' ? 'vi' : 'en')}
-                className="w-full flex items-center justify-center px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                {language === 'en' ? (
-                  <>
-                    <span className="mr-2">🇻🇳</span>
-                    Tiếng Việt
-                  </>
-                ) : (
-                  <>
-                    <span className="mr-2">🇬🇧</span>
-                    English
-                  </>
-                )}
-              </button>
-
               {/* Theme Toggle Button */}
               <button
                 onClick={toggleTheme}

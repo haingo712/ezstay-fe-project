@@ -24,17 +24,8 @@ export default function PaymentGatewaysPage() {
 
       // Handle OData response format
       const gatewayData = response.value || response;
-      
-      // Merge with stored statuses from localStorage
-      const storedStatuses = JSON.parse(localStorage.getItem('bankGatewayStatuses') || '{}');
-      const mergedData = gatewayData.map(gateway => ({
-        ...gateway,
-        isActive: storedStatuses.hasOwnProperty(gateway.id) 
-          ? storedStatuses[gateway.id] 
-          : gateway.isActive
-      }));
-      
-      setGateways(mergedData);
+
+      setGateways(gatewayData);
     } catch (err) {
       console.error('Error fetching gateways:', err);
       setError('Unable to load bank list. Please try again.');
@@ -60,13 +51,11 @@ export default function PaymentGatewaysPage() {
   const handleToggleGateway = async (id, currentStatus) => {
     try {
       const newStatus = !currentStatus;
-      
-      // Since external API is read-only, store status in localStorage
-      const storedStatuses = JSON.parse(localStorage.getItem('bankGatewayStatuses') || '{}');
-      storedStatuses[id] = newStatus;
-      localStorage.setItem('bankGatewayStatuses', JSON.stringify(storedStatuses));
 
-      // Update local state
+      // Call the backend API to toggle the gateway status
+      await paymentService.toggleBankGateway(id, newStatus);
+
+      // Update local state after successful API call
       setGateways(gateways.map(g =>
         g.id === id ? { ...g, isActive: newStatus } : g
       ));
@@ -193,8 +182,8 @@ export default function PaymentGatewaysPage() {
                 </div>
               </div>
               <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${gateway.isActive
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                 }`}>
                 {gateway.isActive ? '● Active' : '○ Inactive'}
               </span>
@@ -224,8 +213,8 @@ export default function PaymentGatewaysPage() {
               <button
                 onClick={() => handleToggleGateway(gateway.id, gateway.isActive)}
                 className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${gateway.isActive
-                    ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-200'
-                    : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-200'
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-200'
+                  : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-200'
                   }`}
               >
                 {gateway.isActive ? '🚫 Deactivate' : '✅ Activate'}

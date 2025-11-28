@@ -6,7 +6,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 // Function to mark notification as read
 async function markAsReadNotification(id) {
     try {
-        await apiFetch(/api/Notification/mark-read/+id, {
+        await apiFetch(`/api/Notification/mark-read/${id}`, {
             method: "PUT"
         });
     } catch (err) {
@@ -33,7 +33,7 @@ async function createNotification(data) {
 // Function to update notification
 async function updateNotification(id, data) {
     try {
-        const res = await apiFetch(/api/Notification/+id, {
+        const res = await apiFetch(`/api/Notification/${id}`, {
             method: "PUT",
             body: JSON.stringify(data),
             headers: {
@@ -49,7 +49,7 @@ async function updateNotification(id, data) {
 // Function to delete notification
 async function deleteNotification(id) {
     try {
-        await apiFetch(/api/Notification/+id, {
+        await apiFetch(`/api/Notification/${id}`, {
             method: "DELETE"
         });
     } catch (err) {
@@ -134,7 +134,7 @@ export default function StaffNotificationsPage() {
         title: "",
         message: "",
         notificationType: 0
-    })
+    });
 
     // Fetch notifications using GetByRoleOrUser API
     const fetchNotifications = async () => {
@@ -326,7 +326,7 @@ export default function StaffNotificationsPage() {
     // Handle delete notification
     const handleDeleteNotification = async (id, title) => {
         const confirmDelete = window.confirm(
-            Are you sure you want to delete notification:\n"+title+"?
+            `Are you sure you want to delete notification:\n"${title}"?`
         );
 
         if (!confirmDelete) return;
@@ -390,28 +390,28 @@ export default function StaffNotificationsPage() {
                     <div className="flex gap-2">
                         <button
                             onClick={() => setFilter("all")}
-                            className={px-4 py-2 rounded-lg font-medium transition-colors +(filter === "all"
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                                )}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === "all"
+                                ? "bg-blue-600 text-white"
+                                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                }`}
                         >
                             All ({notifications.length})
                         </button>
                         <button
                             onClick={() => setFilter("unread")}
-                            className={px-4 py-2 rounded-lg font-medium transition-colors +(filter === "unread"
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                                )}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === "unread"
+                                ? "bg-blue-600 text-white"
+                                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                }`}
                         >
                             Unread ({notifications.filter((n) => !n.isRead).length})
                         </button>
                         <button
                             onClick={() => setFilter("read")}
-                            className={px-4 py-2 rounded-lg font-medium transition-colors +(filter === "read"
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                                )}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === "read"
+                                ? "bg-blue-600 text-white"
+                                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                }`}
                         >
                             Read ({notifications.filter((n) => n.isRead).length})
                         </button>
@@ -454,20 +454,20 @@ export default function StaffNotificationsPage() {
                             <button
                                 type="button"
                                 onClick={() => setCreateType("single")}
-                                className={px-4 py-2 rounded-lg font-medium transition-colors +(createType === "single"
-                                        ? "bg-purple-600 text-white"
-                                        : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                                    )}
+                                className={`px-4 py-2 rounded-lg font-medium transition-colors ${createType === "single"
+                                    ? "bg-purple-600 text-white"
+                                    : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                    }`}
                             >
                                 Personal Notification
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setCreateType("by-role")}
-                                className={px-4 py-2 rounded-lg font-medium transition-colors +(createType === "by-role"
-                                        ? "bg-purple-600 text-white"
-                                        : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                                    )}
+                                className={`px-4 py-2 rounded-lg font-medium transition-colors ${createType === "by-role"
+                                    ? "bg-purple-600 text-white"
+                                    : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                    }`}
                             >
                                 Notification by Role
                             </button>
@@ -571,10 +571,10 @@ export default function StaffNotificationsPage() {
                                         ].map((role) => (
                                             <label
                                                 key={role.value}
-                                                className={lex items-center gap-2 px-4 py-3 border rounded-lg cursor-pointer transition-colors +(roleFormData.targetRoles.includes(role.value)
-                                                        ? "bg-purple-50 dark:bg-purple-900/20 border-purple-500"
-                                                        : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                                    )}
+                                                className={`flex items-center gap-2 px-4 py-3 border rounded-lg cursor-pointer transition-colors ${roleFormData.targetRoles.includes(role.value)
+                                                    ? "bg-purple-50 dark:bg-purple-900/20 border-purple-500"
+                                                    : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                    }`}
                                             >
                                                 <input
                                                     type="checkbox"
@@ -686,10 +686,10 @@ export default function StaffNotificationsPage() {
                                     ].map((role) => (
                                         <label
                                             key={role.value}
-                                            className={lex items-center gap-2 px-4 py-3 border rounded-lg cursor-pointer transition-colors +(scheduleFormData.targetRoles.includes(role.value)
-                                                    ? "bg-orange-50 dark:bg-orange-900/20 border-orange-500"
-                                                    : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                                )}
+                                            className={`flex items-center gap-2 px-4 py-3 border rounded-lg cursor-pointer transition-colors ${scheduleFormData.targetRoles.includes(role.value)
+                                                ? "bg-orange-50 dark:bg-orange-900/20 border-orange-500"
+                                                : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                }`}
                                         >
                                             <input
                                                 type="checkbox"
@@ -896,8 +896,7 @@ export default function StaffNotificationsPage() {
                             {filteredNotifications.map((notification) => (
                                 <div
                                     key={notification.id}
-                                    className={p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors +(!notification.isRead ? "bg-blue-50 dark:bg-blue-900/10" : ""
-                                        )}
+                                    className={`p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${!notification.isRead ? "bg-blue-50 dark:bg-blue-900/10" : ""}`}
                                 >
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1">
