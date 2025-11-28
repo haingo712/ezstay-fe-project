@@ -5,12 +5,12 @@ const imageService = {
   upload: async (file) => {
     try {
       console.log("📸 Uploading image...", file.name);
-      
+
       const formData = new FormData();
       formData.append('File', file);
-      
-      // ImageAPI có thể chạy trên port khác, cần check API Gateway routing
-      const response = await api.post('/api/Images/upload', formData);
+
+      // Use postFormData to send multipart/form-data (not JSON)
+      const response = await api.postFormData('/api/Images/upload', formData);
       console.log("✅ Image uploaded successfully:", response);
       console.log("📋 Response structure:", {
         url: response.url,
@@ -18,9 +18,9 @@ const imageService = {
         dataUrl: response.data?.url,
         fullResponse: response
       });
-      
+
       // Return the URL from response - ImageAPI returns { Url: "..." }
-      const imageUrl = response.data?.Url || response.Url || response.url || response.data?.url || response.data || response;
+      const imageUrl = response.Url || response.url || response.data?.Url || response.data?.url || response.data || response;
       console.log("🔗 Extracted image URL:", imageUrl);
       return imageUrl;
     } catch (error) {
@@ -55,7 +55,7 @@ const imageService = {
           reject(new Error('Failed to convert canvas to blob'));
           return;
         }
-        
+
         const file = new File([blob], filename, { type: 'image/png' });
         resolve(file);
       }, 'image/png', 0.95); // High quality PNG
@@ -74,11 +74,11 @@ const imageService = {
     const bstr = atob(arr[1]);
     let n = bstr.length;
     const u8arr = new Uint8Array(n);
-    
+
     while (n--) {
       u8arr[n] = bstr.charCodeAt(n);
     }
-    
+
     return new File([u8arr], filename, { type: mime });
   },
 
