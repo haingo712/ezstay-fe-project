@@ -2,6 +2,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import ClientThemeProvider from "@/components/ClientThemeProvider";
 import RoleRedirect from "@/components/RoleRedirect";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -52,6 +54,18 @@ export default function RootLayout({ children }) {
             <RoleRedirect>
               {children}
             </RoleRedirect>
+            <ToastContainer
+              position="top-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="colored"
+            />
           </ClientThemeProvider>
         </LanguageProvider>
       </body>
