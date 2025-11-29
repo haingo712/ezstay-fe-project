@@ -7,10 +7,12 @@ import amenityService from '@/services/amenityService';
 import imageService from '@/services/imageService';
 import SafeImage from '@/components/SafeImage';
 import notification from '@/utils/notification';
+import { useTranslation } from '@/hooks/useTranslation';
 
 function RoomsPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t } = useTranslation();
   const houseId = searchParams.get('houseId');
   const houseName = searchParams.get('houseName');
 
@@ -464,13 +466,13 @@ function RoomsPageContent() {
             <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back
+            {t('common.back')}
           </button>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            🚪 Rooms - {houseName || 'Boarding House'}
+            🚪 {t('ownerRooms.title')} - {houseName || 'Boarding House'}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage rooms in this boarding house
+            {t('ownerRooms.subtitle')}
           </p>
         </div>
         <button
@@ -480,14 +482,14 @@ function RoomsPageContent() {
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Add Room
+          {t('ownerRooms.addRoom')}
         </button>
       </div>
 
       {/* Stats Card */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-blue-100 text-sm">Total Rooms</p>
+          <p className="text-blue-100 text-sm">{t('ownerRooms.stats.totalRooms')}</p>
           <p className="text-4xl font-bold mt-2">{rooms.length}</p>
         </div>
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
@@ -508,16 +510,16 @@ function RoomsPageContent() {
       {loading ? (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-600 dark:text-gray-400 mt-4">Loading...</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-4">{t('common.loading')}</p>
         </div>
       ) : rooms.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center">
           <div className="text-6xl mb-4">🚪</div>
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            No Rooms Found
+            {t('ownerRooms.emptyState.title')}
           </h3>
           <p className="text-gray-600 dark:text-gray-400">
-            Add your first room to get started!
+            {t('ownerRooms.emptyState.description')}
           </p>
         </div>
       ) : (
@@ -541,7 +543,7 @@ function RoomsPageContent() {
                     {/* Image count badge */}
                     {room.images.length > 1 && (
                       <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
-                        📷 {room.images.length} photos
+                        📷 {room.images.length} {t('ownerRooms.room.photos')}
                       </div>
                     )}
                   </>
@@ -561,7 +563,7 @@ function RoomsPageContent() {
                 {/* Status Badge */}
                 <div className="absolute top-2 right-2">
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoomStatusColor(room.roomStatus)}`}>
-                    {getRoomStatusText(room.roomStatus)}
+                    {getRoomStatusText(room.roomStatus, t)}
                   </span>
                 </div>
               </div>
@@ -576,10 +578,10 @@ function RoomsPageContent() {
                 </h3>
                 <div className="space-y-1 mb-3">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    📐 Area: {room.area} m²
+                    📐 {t('ownerRooms.room.area')}: {room.area} m²
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    💰 Price: {room.price?.toLocaleString()} VND
+                    💰 {t('ownerRooms.room.price')}: {room.price?.toLocaleString()} VND
                   </p>
                 </div>
 
@@ -614,13 +616,13 @@ function RoomsPageContent() {
                     onClick={() => openEditModal(room)}
                     className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 font-medium text-sm"
                   >
-                    ✏️ Edit
+                    {t('common.edit')}
                   </button>
                   <button
                     onClick={() => handleDeleteRoom(room.id)}
                     className="flex-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 dark:bg-red-900 dark:text-red-200 font-medium text-sm"
                   >
-                    🗑️ Delete
+                    {t('common.delete')}
                   </button>
                 </div>
               </div>
@@ -635,14 +637,14 @@ function RoomsPageContent() {
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                ➕ Add New Room
+                ➕ {t('ownerRooms.modal.addTitle')}
               </h2>
 
               <form onSubmit={handleCreateRoom} className="space-y-4">
                 {/* Room Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Room Name *
+                    {t('ownerRooms.modal.roomName')} *
                   </label>
                   <input
                     type="text"
@@ -650,7 +652,7 @@ function RoomsPageContent() {
                     value={newRoom.roomName}
                     onChange={(e) => setNewRoom({ ...newRoom, roomName: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="e.g. Room 101, Room A1..."
+                    placeholder={t('ownerRooms.modal.roomNamePlaceholder')}
                     maxLength={50}
                   />
                 </div>
@@ -658,7 +660,7 @@ function RoomsPageContent() {
                 {/* Area */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Area (m²) *
+                    {t('ownerRooms.modal.areaLabel')} *
                   </label>
                   <input
                     type="number"
@@ -668,14 +670,14 @@ function RoomsPageContent() {
                     value={newRoom.area}
                     onChange={(e) => setNewRoom({ ...newRoom, area: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="e.g. 25.5"
+                    placeholder={t('ownerRooms.modal.areaPlaceholder')}
                   />
                 </div>
 
                 {/* Price */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Price (VND) *
+                    {t('ownerRooms.modal.priceLabel')} *
                   </label>
                   <input
                     type="number"
@@ -685,14 +687,14 @@ function RoomsPageContent() {
                     value={newRoom.price}
                     onChange={(e) => setNewRoom({ ...newRoom, price: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="e.g. 2000000"
+                    placeholder={t('ownerRooms.modal.pricePlaceholder')}
                   />
                 </div>
 
                 {/* Image Upload */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Room Images *
+                    {t('ownerRooms.modal.images')} *
                   </label>
                   <input
                     type="file"
@@ -702,7 +704,7 @@ function RoomsPageContent() {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    You can select multiple images at once
+                    {t('ownerRooms.modal.imagesHint')}
                   </p>
 
                   {/* Image Previews */}
@@ -736,12 +738,12 @@ function RoomsPageContent() {
                 {/* Room Amenities */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Room Amenities
+                    {t('ownerRooms.modal.amenities')}
                   </label>
                   {loadingAmenities ? (
-                    <div className="text-sm text-gray-500">Loading amenities...</div>
+                    <div className="text-sm text-gray-500">{t('ownerRooms.modal.loadingAmenities')}</div>
                   ) : amenities.length === 0 ? (
-                    <div className="text-sm text-gray-500">No amenities available</div>
+                    <div className="text-sm text-gray-500">{t('ownerRooms.modal.noAmenities')}</div>
                   ) : (
                     <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-3">
                       {amenities.map((amenity) => (
@@ -781,14 +783,14 @@ function RoomsPageContent() {
                     type="submit"
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
                   >
-                    Create
+                    {t('ownerRooms.modal.create')}
                   </button>
                   <button
                     type="button"
                     onClick={closeModals}
                     className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
                   >
-                    Cancel
+                    {t('ownerRooms.modal.cancel')}
                   </button>
                 </div>
               </form>
@@ -803,7 +805,7 @@ function RoomsPageContent() {
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                ✏️ Edit Room
+                ✏️ {t('ownerRooms.modal.editTitle')} - {selectedRoom.roomName}
               </h2>
 
               <form onSubmit={handleUpdateRoom} className="space-y-4">
@@ -825,7 +827,7 @@ function RoomsPageContent() {
                 {/* Area */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Area (m²) *
+                    {t('ownerRooms.modal.areaLabel')} *
                   </label>
                   <input
                     type="number"
@@ -841,7 +843,7 @@ function RoomsPageContent() {
                 {/* Price */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Price (VND) *
+                    {t('ownerRooms.modal.priceLabel')} *
                   </label>
                   <input
                     type="number"
@@ -857,7 +859,7 @@ function RoomsPageContent() {
                 {/* Room Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Status *
+                    {t('ownerRooms.modal.statusLabel')} *
                   </label>
                   <select
                     value={editRoom.roomStatus}
@@ -912,7 +914,7 @@ function RoomsPageContent() {
                 {/* Upload New Images (Optional) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Upload New Images (Optional)
+                    {t('ownerRooms.modal.images')} ({t('common.optional') || 'Optional'})
                   </label>
                   <input
                     type="file"
@@ -922,7 +924,7 @@ function RoomsPageContent() {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Leave empty to keep current images. You can select multiple images.
+                    {t('ownerRooms.modal.imagesHint')}
                   </p>
 
                   {/* New Image Previews */}
@@ -948,7 +950,7 @@ function RoomsPageContent() {
                             </svg>
                           </button>
                           <div className="absolute bottom-1 left-1 bg-blue-600 text-white text-xs px-2 py-0.5 rounded">
-                            New
+                            {t('common.new') || 'New'}
                           </div>
                         </div>
                       ))}
@@ -1004,14 +1006,14 @@ function RoomsPageContent() {
                     type="submit"
                     className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
                   >
-                    Update
+                    {t('ownerRooms.modal.update')}
                   </button>
                   <button
                     type="button"
                     onClick={closeModals}
                     className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
                   >
-                    Cancel
+                    {t('ownerRooms.modal.cancel')}
                   </button>
                 </div>
               </form>

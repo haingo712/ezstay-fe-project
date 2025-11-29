@@ -17,6 +17,32 @@
         "en": "Tiếng Anh",
         "vi": "Tiếng Việt"
     },
+    "theme": {
+        "darkMode": "Chế độ tối",
+        "lightMode": "Chế độ sáng"
+    },
+    "staffNav": {
+        "staffPanel": "Bảng Điều Khiển Staff",
+        "staffDashboard": "Dashboard Staff",
+        "overview": "Tổng quan",
+        "userManagement": "Quản lý Người dùng & Chủ trọ",
+        "postManagement": "Quản lý Bài đăng",
+        "amenityManagement": "Quản lý Tiện nghi",
+        "reports": "Báo cáo",
+        "notifications": "Thông báo",
+        "contentModeration": "Kiểm duyệt Nội dung",
+        "customerSupport": "Hỗ trợ Khách hàng"
+    },
+    "adminNav": {
+        "adminPanel": "Bảng Điều Khiển Admin",
+        "dashboard": "Trang chủ",
+        "systemOverview": "Tổng quan Hệ thống",
+        "userManagement": "Quản lý Người dùng",
+        "staffManagement": "Quản lý Nhân viên",
+        "paymentGateways": "Cổng Thanh toán",
+        "financialReports": "Báo cáo Tài chính",
+        "notifications": "Thông báo"
+    },
     "common": {
         "welcome": "Chào mừng đến với EZStay",
         "search": "Tìm kiếm",
@@ -33,7 +59,22 @@
         "confirm": "Xác nhận",
         "back": "Quay lại",
         "next": "Tiếp theo",
-        "previous": "Trước"
+        "previous": "Trước",
+        "create": "Tạo",
+        "add": "Thêm",
+        "manage": "Quản lý",
+        "track": "Theo dõi",
+        "viewAll": "Xem tất cả",
+        "viewAnalytics": "Xem phân tích",
+        "manageProfile": "Quản lý hồ sơ",
+        "comingSoon": "Sắp ra mắt...",
+        "close": "Đóng",
+        "processing": "Đang xử lý...",
+        "area": "Diện tích",
+        "month": "tháng",
+        "occupancy": "tỷ lệ lấp đầy",
+        "hoursAgo": "{{count}} giờ trước",
+        "daysAgo": "{{count}} ngày trước"
     },
     "auth": {
         "login": "Đăng nhập",
@@ -202,7 +243,9 @@
         "title": "Tin nhắn",
         "messages": "Tin nhắn",
         "searchPlaceholder": "Tìm kiếm cuộc trò chuyện...",
+        "searchConversations": "Tìm kiếm cuộc trò chuyện...",
         "noChats": "Chưa có cuộc trò chuyện",
+        "noConversations": "Chưa có cuộc trò chuyện",
         "noMessages": "Chưa có tin nhắn. Bắt đầu cuộc trò chuyện!",
         "typeMessage": "Nhập tin nhắn...",
         "send": "Gửi",
@@ -213,7 +256,15 @@
         "online": "Trực tuyến",
         "offline": "Ngoại tuyến",
         "selectConversation": "Chọn cuộc trò chuyện",
-        "startConversation": "Chọn một cuộc trò chuyện từ danh sách để bắt đầu chat"
+        "startConversation": "Chọn một cuộc trò chuyện từ danh sách để bắt đầu chat",
+        "sendFailed": "Gửi tin nhắn thất bại. Vui lòng thử lại.",
+        "revokeConfirm": "Bạn có chắc chắn muốn thu hồi tin nhắn này? Hành động này không thể hoàn tác.",
+        "revokeMessage": "Thu hồi tin nhắn",
+        "revokeSuccess": "Thu hồi tin nhắn thành công",
+        "revokeFailed": "Thu hồi tin nhắn thất bại. Vui lòng thử lại.",
+        "read": "Đã đọc",
+        "sent": "Đã gửi",
+        "messageRevoked": "Tin nhắn đã được thu hồi"
     },
     "bankAccount": {
         "title": "Tài Khoản Ngân Hàng",
@@ -260,6 +311,1565 @@
         "updateSuccess": "Cập nhật tài khoản ngân hàng thành công",
         "errorLoading": "Không thể tải danh sách tài khoản. Vui lòng thử lại.",
         "errorSaving": "Không thể lưu tài khoản. Vui lòng thử lại.",
-        "errorDeleting": "Không thể xóa tài khoản. Vui lòng thử lại."
+        "errorDeleting": "Không thể xóa tài khoản. Vui lòng thử lại.",
+        "errorToggle": "Không thể thay đổi trạng thái tài khoản. Vui lòng thử lại.",
+        "noBanksFound": "Không tìm thấy ngân hàng nào đang active. Vui lòng kiểm tra backend hoặc kích hoạt ngân hàng trong admin panel.",
+        "foundBanks": "Tìm thấy {{count}} ngân hàng",
+        "clickToDisable": "Click để tắt",
+        "clickToEnable": "Click để bật"
+    },
+    "favorites": {
+        "title": "Bài viết yêu thích",
+        "loading": "Đang tải danh sách yêu thích...",
+        "subtitle": "Bạn đang lưu {count} bài viết yêu thích",
+        "emptySubtitle": "Hãy lưu lại những bài viết mà bạn quan tâm để xem lại nhanh chóng.",
+        "emptyDescription": "Bạn chưa lưu bài viết nào. Khám phá thêm và nhấn biểu tượng trái tim để lưu lại nhé!",
+        "explore": "Khám phá bài viết",
+        "removeFromFavorites": "Xóa khỏi yêu thích",
+        "notUpdated": "Chưa cập nhật",
+        "unknownAuthor": "Không rõ tác giả",
+        "noPhone": "Không có SĐT"
+    },
+    "bills": {
+        "title": "Hóa đơn tiện ích",
+        "subtitle": "Quản lý và thanh toán hóa đơn điện nước",
+        "loading": "Đang tải hóa đơn...",
+        "backToHome": "Quay lại trang chủ",
+        "totalBills": "Tổng hóa đơn",
+        "unpaid": "Chưa thanh toán",
+        "paid": "Đã thanh toán",
+        "overdue": "Quá hạn",
+        "cancelled": "Đã hủy",
+        "status": "Trạng thái",
+        "all": "Tất cả",
+        "search": "Tìm kiếm",
+        "searchPlaceholder": "Tìm theo ghi chú, số tiền...",
+        "billId": "Mã hóa đơn",
+        "createdDate": "Ngày tạo",
+        "amount": "Số tiền",
+        "paymentMethod": "Phương thức",
+        "actions": "Thao tác",
+        "view": "Xem",
+        "pay": "Thanh toán",
+        "noBills": "Không có hóa đơn nào",
+        "showing": "Hiển thị",
+        "to": "đến",
+        "of": "trong",
+        "results": "kết quả",
+        "previous": "Trước",
+        "next": "Sau",
+        "billDetails": "Chi tiết hóa đơn",
+        "paymentDate": "Ngày thanh toán",
+        "note": "Ghi chú",
+        "close": "Đóng",
+        "errorLoading": "Không thể tải danh sách hóa đơn. Vui lòng thử lại."
+    },
+    "rentalHistory": {
+        "title": "Lịch sử thuê trọ",
+        "subtitle": "Xem tất cả hợp đồng thuê và viết đánh giá",
+        "loading": "Đang tải lịch sử thuê trọ...",
+        "noHistory": "Chưa có lịch sử thuê",
+        "noHistoryDesc": "Bạn chưa thuê phòng nào",
+        "room": "Phòng",
+        "boardingHouse": "Nhà trọ",
+        "checkIn": "Ngày vào",
+        "checkOut": "Ngày ra",
+        "monthlyRent": "Tiền thuê hàng tháng",
+        "deposit": "Tiền cọc",
+        "owner": "Chủ nhà",
+        "writeReview": "Viết đánh giá",
+        "active": "Đang thuê",
+        "pending": "Chờ xác nhận",
+        "expired": "Đã hết hạn",
+        "cancelled": "Đã hủy",
+        "reviewTitle": "Viết đánh giá của bạn",
+        "yourRating": "Đánh giá của bạn",
+        "yourReview": "Nhận xét của bạn",
+        "uploadImage": "Tải ảnh lên (Không bắt buộc)",
+        "submitReview": "Gửi đánh giá",
+        "submitting": "Đang gửi...",
+        "reviewSuccess": "Gửi đánh giá thành công!",
+        "reviewError": "Không thể gửi đánh giá. Vui lòng thử lại.",
+        "writeReviewPlaceholder": "Chia sẻ trải nghiệm của bạn về phòng này..."
+    },
+    "rentalPosts": {
+        "title": "Tất cả bài đăng cho thuê",
+        "subtitle": "Duyệt tất cả các tin đăng cho thuê từ chủ nhà đã xác minh",
+        "loading": "Đang tải bài đăng...",
+        "searchPlaceholder": "Tìm theo tiêu đề, mô tả, nhà trọ, phòng...",
+        "allStatus": "Tất cả trạng thái",
+        "available": "Còn trống",
+        "pending": "Chờ duyệt",
+        "inactive": "Không hoạt động",
+        "rejected": "Bị từ chối",
+        "showing": "Hiển thị",
+        "of": "trong",
+        "posts": "bài đăng",
+        "noPosts": "Không tìm thấy bài đăng",
+        "noPostsDesc": "Chưa có bài đăng cho thuê nào",
+        "adjustSearch": "Thử điều chỉnh tìm kiếm hoặc bộ lọc",
+        "viewDetails": "Xem chi tiết",
+        "loginToSave": "Vui lòng đăng nhập để lưu bài viết yêu thích!",
+        "favoriteError": "Không thể cập nhật yêu thích. Vui lòng thử lại."
+    },
+    "rentalPostDetail": {
+        "backToPosts": "Quay lại danh sách",
+        "loading": "Đang tải chi tiết bài đăng...",
+        "notFound": "Không tìm thấy bài đăng",
+        "goBack": "Quay lại",
+        "description": "Mô tả",
+        "roomInfo": "Thông tin phòng",
+        "location": "Địa điểm",
+        "price": "Giá",
+        "area": "Diện tích",
+        "maxTenants": "Số người tối đa",
+        "contactOwner": "Liên hệ chủ nhà",
+        "chatNow": "Nhắn tin ngay",
+        "reviews": "Đánh giá",
+        "noReviews": "Chưa có đánh giá",
+        "averageRating": "Đánh giá trung bình",
+        "groupByRoom": "Nhóm theo phòng",
+        "showAll": "Hiển thị tất cả",
+        "propertyDetails": "Chi tiết bất động sản",
+        "house": "Nhà trọ",
+        "room": "Phòng",
+        "contact": "Liên hệ",
+        "postedBy": "Đăng bởi",
+        "address": "Địa chỉ",
+        "chatWithOwner": "Nhắn tin với chủ nhà",
+        "callOwner": "Gọi chủ nhà",
+        "loginToChat": "Đăng nhập để nhắn tin",
+        "pleaseLogin": "Vui lòng đăng nhập để liên hệ chủ nhà",
+        "roomReviews": "Đánh giá phòng",
+        "beFirstToReview": "Chưa có đánh giá. Hãy là người đầu tiên đánh giá!",
+        "loadingReviews": "Đang tải đánh giá...",
+        "review": "đánh giá",
+        "reviewsCount": "đánh giá",
+        "available": "Còn trống",
+        "pending": "Đang chờ",
+        "rejected": "Bị từ chối",
+        "inactive": "Không hoạt động",
+        "loadFailed": "Không thể tải chi tiết bài đăng"
+    },
+    "searchRooms": {
+        "title": "Tìm kiếm phòng",
+        "filters": "Bộ lọc",
+        "showFilters": "Hiện bộ lọc",
+        "hideFilters": "Ẩn bộ lọc",
+        "keyword": "Từ khóa",
+        "keywordPlaceholder": "Tìm theo tên, địa chỉ...",
+        "location": "Địa điểm",
+        "allLocations": "Tất cả địa điểm",
+        "priceRange": "Khoảng giá",
+        "minPrice": "Giá tối thiểu",
+        "maxPrice": "Giá tối đa",
+        "areaRange": "Khoảng diện tích",
+        "minArea": "Diện tích tối thiểu",
+        "maxArea": "Diện tích tối đa",
+        "maxTenants": "Số người tối đa",
+        "amenities": "Tiện ích",
+        "rating": "Đánh giá tối thiểu",
+        "availability": "Tình trạng",
+        "all": "Tất cả",
+        "availableOnly": "Chỉ còn trống",
+        "rentedOnly": "Chỉ đã thuê",
+        "clearFilters": "Xóa bộ lọc",
+        "sortBy": "Sắp xếp theo",
+        "newest": "Mới nhất",
+        "priceLow": "Giá: Thấp đến cao",
+        "priceHigh": "Giá: Cao đến thấp",
+        "areaLarge": "Diện tích: Lớn đến nhỏ",
+        "areaSmall": "Diện tích: Nhỏ đến lớn",
+        "topRated": "Đánh giá cao nhất",
+        "gridView": "Xem dạng lưới",
+        "listView": "Xem dạng danh sách",
+        "noResults": "Không tìm thấy phòng",
+        "noResultsDesc": "Thử điều chỉnh tiêu chí tìm kiếm",
+        "resultsFound": "Tìm thấy {count} phòng"
+    },
+    "supportPage": {
+        "title": "Trung tâm hỗ trợ",
+        "subtitle": "Chúng tôi sẵn sàng hỗ trợ bạn 24/7",
+        "contactSupport": "Liên hệ hỗ trợ",
+        "aiAssistant": "Trợ lý AI",
+        "faq": "Câu hỏi thường gặp",
+        "sendRequest": "Gửi yêu cầu hỗ trợ",
+        "fullName": "Họ và tên",
+        "email": "Email",
+        "phone": "Số điện thoại",
+        "category": "Danh mục",
+        "categoryGeneral": "Câu hỏi chung",
+        "categoryTechnical": "Vấn đề kỹ thuật",
+        "categoryAccount": "Tài khoản",
+        "categoryPayment": "Thanh toán",
+        "categoryReport": "Báo cáo vi phạm",
+        "categoryOther": "Khác",
+        "subject": "Tiêu đề",
+        "subjectPlaceholder": "Mô tả ngắn gọn vấn đề của bạn",
+        "message": "Nội dung",
+        "messagePlaceholder": "Mô tả chi tiết vấn đề của bạn...",
+        "submit": "Gửi yêu cầu hỗ trợ",
+        "submitSuccess": "Yêu cầu hỗ trợ đã được gửi! Chúng tôi sẽ phản hồi trong vòng 24 giờ.",
+        "virtualAssistant": "Trợ lý ảo EZStay",
+        "askAnything": "Hỏi tôi bất cứ điều gì về dịch vụ của chúng tôi!",
+        "quickQuestions": "Câu hỏi nhanh",
+        "typePlaceholder": "Nhập câu hỏi của bạn...",
+        "send": "Gửi",
+        "faqTitle": "Câu hỏi thường gặp",
+        "faqSubtitle": "Tìm câu trả lời nhanh cho các câu hỏi phổ biến",
+        "cantFindAnswer": "Không tìm thấy câu trả lời bạn cần?",
+        "contactInfo": "Thông tin liên hệ",
+        "contactInfoSubtitle": "Nhiều cách để liên hệ với chúng tôi",
+        "hotline": "Đường dây nóng",
+        "address": "Địa chỉ",
+        "faqHowToFind": "Làm thế nào để tìm phòng phù hợp?",
+        "faqHowToFindAnswer": "Bạn có thể sử dụng thanh tìm kiếm trên trang chủ hoặc trang tìm kiếm để lọc theo khu vực, giá, diện tích và các tiện ích mong muốn. Hệ thống sẽ hiển thị các phòng phù hợp với tiêu chí của bạn.",
+        "faqContactOwner": "Tôi có thể liên hệ trực tiếp với chủ nhà không?",
+        "faqContactOwnerAnswer": "Có, sau khi xem chi tiết phòng, bạn có thể nhấp vào 'Liên hệ chủ nhà' để gửi tin nhắn hoặc gọi điện trực tiếp. Thông tin liên hệ sẽ được hiển thị sau khi bạn đăng ký tài khoản.",
+        "faqRegister": "Làm thế nào để đăng ký tài khoản?",
+        "faqRegisterAnswer": "Nhấp vào nút 'Đăng ký' ở góc trên bên phải, điền thông tin cá nhân và xác nhận email của bạn. Bạn có thể chọn đăng ký làm người thuê hoặc chủ nhà.",
+        "faqPostRoom": "Tôi có thể đăng tin cho thuê phòng không?",
+        "faqPostRoomAnswer": "Có, sau khi đăng ký tài khoản chủ nhà và xác minh thông tin, bạn có thể đăng tin cho thuê với đầy đủ hình ảnh, mô tả và thông tin liên hệ.",
+        "faqFees": "Phí dịch vụ của EZStay là bao nhiêu?",
+        "faqFeesAnswer": "EZStay miễn phí cho người tìm phòng. Đối với chủ nhà, chúng tôi có các gói dịch vụ linh hoạt với mức phí hợp lý để đăng và quản lý bất động sản cho thuê.",
+        "faqReport": "Làm thế nào để báo cáo tin đăng không phù hợp?",
+        "faqReportAnswer": "Bạn có thể nhấp vào nút 'Báo cáo' trên trang chi tiết phòng hoặc liên hệ với chúng tôi qua biểu mẫu hỗ trợ. Chúng tôi sẽ xem xét và xử lý sớm nhất có thể.",
+        "quickFindRooms": "Làm sao để tìm phòng?",
+        "quickContactOwner": "Làm sao để liên hệ chủ nhà?",
+        "quickFees": "Phí dịch vụ là bao nhiêu?",
+        "quickPostListing": "Làm sao để đăng tin?",
+        "frequentlyAskedQuestions": "Câu hỏi thường gặp",
+        "findQuickAnswers": "Tìm câu trả lời nhanh cho các câu hỏi phổ biến",
+        "contactInformation": "Thông tin liên hệ",
+        "multipleWays": "Nhiều cách để liên hệ với chúng tôi",
+        "emailLabel": "Email",
+        "hotlineLabel": "Đường dây nóng",
+        "addressLabel": "Địa chỉ"
+    },
+    "searchRooms": {
+        "loading": "Đang tải...",
+        "searchPlaceholder": "Tìm theo tên, địa chỉ, mô tả...",
+        "filters": "Bộ lọc",
+        "clearAll": "Xóa tất cả",
+        "location": "Vị trí",
+        "allAreas": "Tất cả khu vực",
+        "rentPrice": "Giá thuê (VND/tháng)",
+        "from": "Từ",
+        "to": "Đến",
+        "area": "Diện tích (m²)",
+        "maxOccupancy": "Số người tối đa",
+        "noRequirement": "Không yêu cầu",
+        "onePerson": "1 người",
+        "twoPeople": "2 người",
+        "threePeople": "3 người",
+        "fourPlusPeople": "4+ người",
+        "status": "Trạng thái",
+        "all": "Tất cả",
+        "available": "Còn trống",
+        "rented": "Đã cho thuê",
+        "minRating": "Đánh giá tối thiểu",
+        "starUp": "sao trở lên",
+        "starsUp": "sao trở lên",
+        "fiveStars": "5 sao",
+        "amenities": "Tiện ích",
+        "searchResults": "Kết quả tìm kiếm",
+        "foundRooms": "Tìm thấy {count} phòng",
+        "newest": "Mới nhất",
+        "priceLowHigh": "Giá: Thấp đến Cao",
+        "priceHighLow": "Giá: Cao đến Thấp",
+        "areaLargeSmall": "Diện tích: Lớn đến Nhỏ",
+        "areaSmallLarge": "Diện tích: Nhỏ đến Lớn",
+        "highestRated": "Đánh giá cao nhất",
+        "perMonth": "/tháng",
+        "sqm": "m²",
+        "people": "người",
+        "viewDetails": "Xem chi tiết",
+        "noResults": "Không tìm thấy kết quả",
+        "noRoomsMatch": "Không có phòng nào phù hợp với tiêu chí tìm kiếm của bạn",
+        "clearFilters": "Xóa bộ lọc"
+    },
+    "reviewDetail": {
+        "serverError": "Lỗi máy chủ",
+        "reviewNotFound": "Không tìm thấy đánh giá",
+        "doesNotExist": "Đánh giá bạn đang tìm kiếm không tồn tại.",
+        "goBack": "Quay lại",
+        "tryAgain": "Thử lại",
+        "back": "Quay lại",
+        "anonymousUser": "Người dùng ẩn danh",
+        "editReview": "Chỉnh sửa đánh giá",
+        "deleteReview": "Xóa đánh giá",
+        "reviewImage": "Hình ảnh đánh giá",
+        "reviewContent": "Nội dung đánh giá",
+        "contractId": "Mã hợp đồng",
+        "postId": "Mã bài đăng",
+        "reviewDeadline": "Hạn đánh giá",
+        "lastUpdated": "Cập nhật lần cuối",
+        "attachedImage": "Hình ảnh đính kèm",
+        "imageId": "Mã hình ảnh",
+        "confirmDelete": "Bạn có chắc chắn muốn xóa đánh giá này?",
+        "deleteSuccess": "Xóa đánh giá thành công!",
+        "deleteFailed": "Xóa đánh giá thất bại"
+    },
+    "ownerDashboard": {
+        "title": "Bảng điều khiển chủ nhà",
+        "subtitle": "Quản lý nhà trọ và phòng của bạn",
+        "loading": "Đang tải bảng điều khiển",
+        "loadingHouses": "Đang tải danh sách nhà trọ...",
+        "error": "Đã xảy ra lỗi",
+        "tryAgain": "Thử lại",
+        "stats": {
+            "boardingHouses": "Nhà trọ",
+            "totalRooms": "Tổng số phòng",
+            "occupied": "Đã thuê",
+            "monthlyRevenue": "Doanh thu tháng"
+        },
+        "boardingHouse": {
+            "active": "Hoạt động",
+            "inactive": "Không hoạt động",
+            "units": "Phòng",
+            "rented": "Đã thuê",
+            "vacant": "Trống",
+            "income": "Thu nhập",
+            "created": "Ngày tạo",
+            "noDescription": "Chưa có mô tả",
+            "viewDetails": "Xem chi tiết",
+            "viewRooms": "Xem phòng"
+        },
+        "quickActions": {
+            "title": "Thao tác nhanh",
+            "addBoardingHouse": "Thêm nhà trọ",
+            "createRoom": "Tạo phòng",
+            "bankAccount": "Tài khoản ngân hàng",
+            "paymentManagement": "Quản lý thanh toán",
+            "manageNotifications": "Quản lý thông báo",
+            "reports": "Báo cáo",
+            "accountSettings": "Cài đặt tài khoản"
+        },
+        "recentActivity": {
+            "title": "Hoạt động gần đây",
+            "noActivity": "Không có hoạt động gần đây"
+        },
+        "activity": {
+            "newInquiry": "Có yêu cầu thuê mới",
+            "rentReceived": "Đã nhận tiền thuê hàng tháng",
+            "maintenanceRequest": "Yêu cầu bảo trì phòng đã được gửi"
+        },
+        "emptyState": {
+            "title": "Bắt đầu kinh doanh nhà trọ",
+            "description": "Tạo nhà trọ đầu tiên để bắt đầu quản lý bất động sản",
+            "createFirst": "Tạo nhà trọ đầu tiên",
+            "noUnits": "Chưa có phòng",
+            "startCreating": "Bắt đầu tạo phòng cho nhà trọ này",
+            "createFirstUnit": "Tạo phòng đầu tiên"
+        },
+        "modal": {
+            "selectBoardingHouse": "Chọn nhà trọ",
+            "noBoardingHouses": "Không có nhà trọ nào",
+            "createBoardingHouseFirst": "Vui lòng tạo nhà trọ trước",
+            "cancel": "Hủy"
+        },
+        "tabs": {
+            "overview": "Tổng quan",
+            "management": "Quản lý"
+        },
+        "management": {
+            "title": "Quản lý nhà trọ",
+            "yourBoardingHouses": "Nhà trọ của bạn",
+            "searchPlaceholder": "Tìm kiếm nhà trọ...",
+            "addNew": "Thêm mới"
+        }
+    },
+    "ownerRooms": {
+        "title": "Phòng",
+        "subtitle": "Quản lý phòng trong nhà trọ này",
+        "addRoom": "Thêm phòng",
+        "stats": {
+            "totalRooms": "Tổng số phòng",
+            "available": "Còn trống",
+            "occupied": "Đã thuê",
+            "maintenance": "Bảo trì"
+        },
+        "status": {
+            "available": "Còn trống",
+            "occupied": "Đã thuê",
+            "maintenance": "Bảo trì"
+        },
+        "emptyState": {
+            "title": "Không tìm thấy phòng",
+            "description": "Thêm phòng đầu tiên để bắt đầu!"
+        },
+        "room": {
+            "area": "Diện tích",
+            "price": "Giá",
+            "photos": "ảnh"
+        },
+        "modal": {
+            "addTitle": "Thêm phòng mới",
+            "editTitle": "Chỉnh sửa phòng",
+            "roomName": "Tên phòng",
+            "roomNamePlaceholder": "VD: Phòng 101, Phòng A1...",
+            "areaLabel": "Diện tích (m²)",
+            "areaPlaceholder": "VD: 25.5",
+            "priceLabel": "Giá (VND)",
+            "pricePlaceholder": "VD: 2000000",
+            "images": "Hình ảnh phòng",
+            "imagesHint": "Bạn có thể chọn nhiều hình ảnh cùng lúc",
+            "amenities": "Tiện nghi",
+            "loadingAmenities": "Đang tải tiện nghi...",
+            "noAmenities": "Không có tiện nghi",
+            "statusLabel": "Trạng thái phòng",
+            "cancel": "Hủy",
+            "create": "Tạo phòng",
+            "update": "Cập nhật phòng",
+            "creating": "Đang tạo...",
+            "updating": "Đang cập nhật..."
+        },
+        "messages": {
+            "createSuccess": "Tạo phòng thành công!",
+            "updateSuccess": "Cập nhật phòng thành công!",
+            "deleteSuccess": "Xóa phòng thành công!",
+            "deleteConfirm": "Bạn có chắc chắn muốn xóa phòng này?",
+            "selectImage": "Vui lòng chọn ít nhất một hình ảnh"
+        }
+    },
+    "ownerNotifications": {
+        "title": "Thông báo của bạn",
+        "addNotification": "Thêm thông báo",
+        "addByRole": "Thêm thông báo theo vai trò",
+        "addScheduled": "Thêm thông báo hẹn giờ",
+        "loading": "Đang tải thông báo...",
+        "noNotifications": "Không có thông báo nào.",
+        "read": "Đã đọc",
+        "unread": "Chưa đọc",
+        "edit": "Sửa",
+        "delete": "Xóa",
+        "deleting": "Đang xóa...",
+        "deleteError": "Lỗi xóa!",
+        "previous": "Trước",
+        "next": "Sau",
+        "modal": {
+            "addTitle": "Thêm thông báo mới",
+            "addByRoleTitle": "Thêm thông báo theo vai trò",
+            "scheduledTitle": "Thêm thông báo hẹn giờ",
+            "updateTitle": "Cập nhật thông báo",
+            "title": "Tiêu đề",
+            "content": "Nội dung",
+            "notificationType": "Loại thông báo",
+            "selectType": "Chọn loại",
+            "targetRole": "Vai trò đích",
+            "selectRole": "Chọn vai trò",
+            "scheduledTime": "Thời gian hẹn",
+            "adding": "Đang thêm...",
+            "add": "Thêm thông báo",
+            "addByRoleBtn": "Thêm thông báo theo vai trò",
+            "scheduling": "Đang hẹn giờ...",
+            "scheduleBtn": "Hẹn giờ thông báo",
+            "updating": "Đang cập nhật...",
+            "update": "Cập nhật"
+        },
+        "errors": {
+            "loadFailed": "Không thể tải thông báo. Vui lòng thử lại.",
+            "addFailed": "Không thể thêm thông báo. Vui lòng thử lại.",
+            "addByRoleFailed": "Không thể tạo thông báo theo vai trò. Vui lòng thử lại.",
+            "scheduleFailed": "Không thể hẹn giờ thông báo. Vui lòng thử lại.",
+            "updateFailed": "Không thể cập nhật. Vui lòng thử lại."
+        }
+    },
+    "ownerPosts": {
+        "title": "Quản lý bài đăng",
+        "subtitle": "Tạo và quản lý tin cho thuê",
+        "loading": "Đang tải bài đăng...",
+        "createPost": "Tạo bài đăng",
+        "editPost": "Chỉnh sửa bài đăng",
+        "stats": {
+            "total": "Tổng",
+            "active": "Hoạt động",
+            "pending": "Chờ duyệt",
+            "inactive": "Không hoạt động"
+        },
+        "status": {
+            "active": "Hoạt động",
+            "pending": "Chờ duyệt",
+            "rejected": "Bị từ chối",
+            "inactive": "Không hoạt động"
+        },
+        "tabs": {
+            "all": "Tất cả",
+            "active": "Hoạt động",
+            "pending": "Chờ duyệt",
+            "inactive": "Không hoạt động"
+        },
+        "emptyState": {
+            "title": "Không tìm thấy bài đăng",
+            "description": "Tạo bài đăng cho thuê đầu tiên của bạn"
+        },
+        "card": {
+            "moreImages": "+{{count}} ảnh",
+            "noHouse": "Chưa chỉ định nhà trọ",
+            "allRooms": "Tất cả phòng",
+            "images": "{{count}} ảnh",
+            "imagesPlural": "{{count}} ảnh",
+            "created": "Ngày tạo"
+        },
+        "form": {
+            "boardingHouse": "Nhà trọ",
+            "selectBoardingHouse": "Chọn nhà trọ",
+            "noBoardingHouses": "Không tìm thấy nhà trọ. Vui lòng tạo nhà trọ trước.",
+            "rooms": "Chọn phòng (Tùy chọn - Để trống cho toàn bộ nhà)",
+            "loadingRooms": "Đang tải phòng...",
+            "noRooms": "Không có phòng trống trong nhà trọ này.",
+            "selectedRooms": "Đã chọn {{count}} phòng",
+            "noRoomsSelected": "Chưa chọn phòng - bài đăng áp dụng cho toàn bộ nhà trọ",
+            "title": "Tiêu đề",
+            "titlePlaceholder": "Nhập tiêu đề bài đăng",
+            "description": "Mô tả",
+            "descriptionPlaceholder": "Mô tả phòng và chi tiết cho thuê...",
+            "contactPhone": "Số điện thoại liên hệ",
+            "contactPhonePlaceholder": "Nhập số điện thoại liên hệ",
+            "images": "Hình ảnh",
+            "imagesHint": "(Tùy chọn - Chọn hoặc kéo thả nhiều ảnh)",
+            "dragDrop": "Kéo thả hình ảnh vào đây",
+            "dropHere": "Thả ảnh vào đây",
+            "or": "hoặc",
+            "browseFiles": "Chọn tệp",
+            "dragDropHint": "Kéo thả hoặc nhấp để chọn nhiều ảnh",
+            "maxImages": "Tối đa: 10 ảnh, 5MB/ảnh. Khuyến nghị: 1200x800px",
+            "imagesCount": "{{count}}/10 ảnh",
+            "totalSize": "Tổng {{size}}",
+            "selectedImages": "Ảnh đã chọn ({{count}})",
+            "addMore": "+ Thêm ảnh",
+            "clearAll": "Xóa tất cả"
+        },
+        "validation": {
+            "selectBoardingHouse": "Vui lòng chọn nhà trọ",
+            "titleRequired": "Tiêu đề là bắt buộc",
+            "descriptionRequired": "Mô tả là bắt buộc",
+            "contactPhoneRequired": "Số điện thoại liên hệ là bắt buộc"
+        },
+        "messages": {
+            "createSuccess": "Tạo bài đăng thành công!",
+            "updateSuccess": "Cập nhật bài đăng thành công!",
+            "deleteSuccess": "Xóa bài đăng thành công!",
+            "duplicateSuccess": "Nhân bản bài đăng thành công!",
+            "deleteConfirm": "Bạn có chắc chắn muốn xóa bài đăng này?",
+            "createFailed": "Không thể tạo bài đăng",
+            "updateFailed": "Không thể cập nhật bài đăng",
+            "deleteFailed": "Không thể xóa bài đăng",
+            "duplicateFailed": "Không thể nhân bản bài đăng",
+            "fileTooLarge": "{{name}} quá lớn. Kích thước tối đa là 5MB.",
+            "noValidImages": "Không có ảnh hợp lệ được chọn",
+            "someFilesSkipped": "Một số tệp bị bỏ qua vì không phải ảnh hợp lệ hoặc quá lớn",
+            "maxImagesReached": "Cho phép tối đa {{max}} ảnh",
+            "onlyImagesAllowed": "Vui lòng chỉ thả tệp hình ảnh"
+        },
+        "buttons": {
+            "cancel": "Hủy",
+            "create": "Tạo",
+            "update": "Cập nhật"
+        }
+    },
+    "paymentManagement": {
+        "title": "Quản Lý Thanh Toán",
+        "subtitle": "Theo dõi và quản lý các giao dịch thanh toán",
+        "loading": "Đang tải dữ liệu thanh toán...",
+        "bankAccount": "Tài Khoản Ngân Hàng",
+        "stats": {
+            "totalTransactions": "Tổng giao dịch",
+            "completed": "Hoàn thành",
+            "pending": "Chờ xử lý",
+            "failed": "Thất bại",
+            "totalIncome": "Tổng thu nhập"
+        },
+        "status": {
+            "completed": "Hoàn thành",
+            "pending": "Chờ xử lý",
+            "failed": "Thất bại"
+        },
+        "filter": {
+            "search": "Tìm kiếm",
+            "searchPlaceholder": "Tên người thuê, phòng, mã giao dịch...",
+            "fromDate": "Từ ngày",
+            "toDate": "Đến ngày",
+            "status": "Trạng thái",
+            "all": "Tất cả",
+            "completed": "Hoàn thành",
+            "pending": "Chờ",
+            "failed": "Thất bại",
+            "showing": "Hiển thị",
+            "of": "/",
+            "transactions": "giao dịch"
+        },
+        "table": {
+            "transactionId": "Mã GD",
+            "tenant": "Người thuê",
+            "room": "Phòng",
+            "amount": "Số tiền",
+            "bank": "Ngân hàng",
+            "status": "Trạng thái",
+            "createdDate": "Ngày tạo",
+            "actions": "Thao tác",
+            "viewDetails": "Chi tiết"
+        },
+        "pagination": {
+            "showing": "Hiển thị",
+            "to": "đến",
+            "of": "trong tổng số",
+            "transactions": "giao dịch",
+            "previous": "Trước",
+            "next": "Sau"
+        },
+        "emptyState": {
+            "title": "Không có giao dịch",
+            "description": "Chưa có giao dịch thanh toán nào",
+            "noMatchingResults": "Không tìm thấy giao dịch phù hợp với bộ lọc",
+            "clearFilter": "Xóa bộ lọc"
+        },
+        "modal": {
+            "title": "Chi Tiết Giao Dịch",
+            "transactionId": "Mã giao dịch",
+            "status": "Trạng thái",
+            "tenant": "Người thuê",
+            "room": "Phòng",
+            "bank": "Ngân hàng",
+            "accountNumber": "Số tài khoản",
+            "amount": "Số tiền",
+            "description": "Mô tả",
+            "createdDate": "Ngày tạo",
+            "completedDate": "Ngày hoàn thành",
+            "close": "Đóng"
+        },
+        "errors": {
+            "loadFailed": "Không thể tải danh sách thanh toán. Vui lòng thử lại."
+        }
+    },
+    "ownerBoardingHouses": {
+        "title": "Quản Lý Nhà Trọ",
+        "subtitle": "Quản lý tất cả nhà trọ của bạn",
+        "listTitle": "Danh Sách Nhà Trọ",
+        "addNew": "+ Thêm Nhà Trọ Mới",
+        "loading": "Đang tải danh sách nhà trọ...",
+        "checkingAuth": "Đang kiểm tra xác thực...",
+        "authRequired": "Yêu Cầu Đăng Nhập",
+        "authRequiredDesc": "Bạn cần đăng nhập để truy cập trang này.",
+        "goToLogin": "Đến Trang Đăng Nhập",
+        "accessDenied": "Từ Chối Truy Cập",
+        "accessDeniedDesc": "Bạn cần có quyền Chủ trọ để truy cập trang này.",
+        "currentRole": "Vai trò hiện tại",
+        "emptyState": {
+            "title": "Chưa có nhà trọ nào",
+            "description": "Bắt đầu bằng cách tạo nhà trọ đầu tiên",
+            "createFirst": "Tạo Nhà Trọ Đầu Tiên"
+        },
+        "card": {
+            "totalRooms": "Tổng Phòng",
+            "occupied": "Đã Thuê",
+            "vacant": "Còn Trống",
+            "manageRooms": "Quản Lý Phòng",
+            "manageContracts": "Quản Lý Hợp Đồng",
+            "edit": "Sửa",
+            "delete": "Xóa",
+            "photos": "ảnh",
+            "morePhotos": "ảnh khác"
+        },
+        "modal": {
+            "createTitle": "Tạo Nhà Trọ Mới",
+            "editTitle": "Chỉnh Sửa Nhà Trọ",
+            "houseName": "Tên Nhà Trọ",
+            "houseNamePlaceholder": "Nhập tên nhà trọ (tối đa 100 ký tự)",
+            "houseNameRequired": "Tên nhà trọ là bắt buộc",
+            "houseNameMaxLength": "Tên nhà trọ không được vượt quá 100 ký tự",
+            "characters": "ký tự",
+            "description": "Mô Tả Nhà Trọ",
+            "descriptionPlaceholder": "Mô tả chi tiết về nhà trọ (tùy chọn)... Ví dụ: Nhà trọ sạch sẽ, an ninh tốt, gần trường học...",
+            "images": "Hình Ảnh Nhà Trọ",
+            "imagesDesc": "Tải lên nhiều hình ảnh nhà trọ (tùy chọn)",
+            "clickToSelect": "Nhấn để chọn hình ảnh",
+            "fileTypes": "PNG, JPG, GIF, WEBP tối đa 10MB mỗi ảnh",
+            "imagesSelected": "ảnh đã chọn",
+            "clearAll": "Xóa tất cả",
+            "address": "Thông Tin Địa Chỉ",
+            "cancel": "Hủy",
+            "create": "Tạo Nhà Trọ",
+            "save": "Lưu Thay Đổi",
+            "creating": "Đang tạo...",
+            "saving": "Đang lưu..."
+        },
+        "messages": {
+            "createSuccess": "Tạo nhà trọ thành công",
+            "createSuccessWithImages": "với {{count}} hình ảnh",
+            "updateSuccess": "Cập nhật nhà trọ thành công",
+            "updateSuccessWithImages": "với {{count}} hình ảnh mới",
+            "deleteSuccess": "Xóa nhà trọ thành công!",
+            "deleteConfirm": "Bạn có chắc muốn xóa nhà trọ này? Tất cả phòng sẽ bị xóa nếu được phép.",
+            "deleteRoomsFirst": "Bạn cần xóa tất cả phòng trong nhà trọ này trước. Chuyển đến trang Quản Lý Phòng?",
+            "selectProvince": "Vui lòng chọn tỉnh/thành phố",
+            "selectWard": "Vui lòng chọn phường/xã",
+            "enterAddress": "Vui lòng nhập địa chỉ chi tiết",
+            "invalidFileTypes": "Loại file không hợp lệ. Vui lòng chỉ tải lên file hình ảnh."
+        },
+        "errors": {
+            "loadFailed": "Không thể tải danh sách nhà trọ",
+            "createFailed": "Tạo thất bại",
+            "updateFailed": "Cập nhật thất bại",
+            "deleteFailed": "Xóa nhà trọ thất bại",
+            "notAuthenticated": "Người dùng chưa xác thực"
+        }
+    },
+    "ownerServices": {
+        "title": "Quản Lý Dịch Vụ",
+        "subtitle": "Tạo và quản lý các dịch vụ bổ sung (dọn dẹp, giặt ủi, đỗ xe, v.v.)",
+        "addService": "Thêm Dịch Vụ",
+        "stats": {
+            "totalServices": "Tổng Dịch Vụ"
+        },
+        "emptyState": {
+            "title": "Chưa có dịch vụ nào",
+            "description": "Tạo dịch vụ đầu tiên để cung cấp các tiện ích cho người thuê",
+            "createFirst": "Tạo Dịch Vụ Đầu Tiên"
+        },
+        "list": {
+            "serviceId": "Mã dịch vụ",
+            "edit": "Sửa",
+            "delete": "Xóa"
+        },
+        "modal": {
+            "createTitle": "Tạo Dịch Vụ",
+            "editTitle": "Sửa Dịch Vụ",
+            "serviceName": "Tên Dịch Vụ",
+            "serviceNamePlaceholder": "Ví dụ: Dịch vụ dọn dẹp, Giặt ủi, Đỗ xe",
+            "serviceNameRequired": "Tên dịch vụ là bắt buộc",
+            "price": "Giá (VND)",
+            "pricePlaceholder": "50000",
+            "priceRequired": "Giá phải từ 0 trở lên",
+            "cancel": "Hủy",
+            "create": "Tạo Dịch Vụ",
+            "update": "Cập Nhật Dịch Vụ",
+            "saving": "Đang lưu..."
+        },
+        "messages": {
+            "createSuccess": "Tạo dịch vụ thành công!",
+            "updateSuccess": "Cập nhật dịch vụ thành công!",
+            "deleteSuccess": "Xóa dịch vụ thành công!",
+            "deleteConfirm": "Bạn có chắc muốn xóa dịch vụ này?"
+        },
+        "errors": {
+            "loadFailed": "Không thể tải danh sách dịch vụ",
+            "createFailed": "Không thể tạo dịch vụ",
+            "updateFailed": "Không thể cập nhật dịch vụ",
+            "deleteFailed": "Không thể xóa dịch vụ"
+        }
+    },
+    "ownerBoardingHouseDetail": {
+        "notFound": {
+            "title": "Không tìm thấy nhà trọ",
+            "description": "Nhà trọ bạn đang tìm kiếm không tồn tại hoặc bạn không có quyền xem."
+        },
+        "info": {
+            "address": "Địa chỉ",
+            "phone": "Điện thoại",
+            "email": "Email",
+            "type": "Loại"
+        },
+        "actions": {
+            "manageContracts": "Quản Lý Hợp Đồng",
+            "editHouse": "Sửa Nhà Trọ",
+            "refresh": "Làm Mới"
+        },
+        "stats": {
+            "totalRooms": "Tổng Phòng",
+            "available": "Còn Trống",
+            "occupied": "Đã Thuê",
+            "contracts": "Hợp Đồng",
+            "occupancyRate": "Tỷ Lệ Lấp Đầy"
+        },
+        "rooms": {
+            "title": "Phòng",
+            "addRoom": "Thêm Phòng",
+            "empty": {
+                "title": "Chưa có phòng nào",
+                "description": "Bắt đầu bằng cách thêm một số phòng vào nhà trọ này."
+            },
+            "price": "Giá",
+            "area": "Diện tích",
+            "capacity": "Sức chứa",
+            "people": "người",
+            "rating": "Đánh giá",
+            "createContract": "Tạo Hợp Đồng"
+        },
+        "quickActions": {
+            "title": "Thao Tác Nhanh",
+            "manageContracts": "Quản Lý Hợp Đồng",
+            "manageContractsDesc": "Xem và quản lý tất cả hợp đồng",
+            "roomManagement": "Quản Lý Phòng",
+            "roomManagementDesc": "Thêm hoặc sửa phòng",
+            "tenantManagement": "Quản Lý Người Thuê",
+            "tenantManagementDesc": "Xem thông tin người thuê",
+            "reports": "Báo Cáo",
+            "reportsDesc": "Xem báo cáo tài chính"
+        }
+    },
+    "ownerContracts": {
+        "title": "Quản Lý Hợp Đồng",
+        "subtitle": "Quản lý tất cả hợp đồng thuê trên các nhà trọ của bạn",
+        "addContract": "Thêm Hợp Đồng",
+        "backToProperties": "Quay Lại Nhà Trọ",
+        "searchPlaceholder": "Tìm kiếm hợp đồng theo người thuê, phòng, hoặc mã hợp đồng...",
+        "contract": "Hợp Đồng",
+        "room": "Phòng",
+        "tenant": "Người Thuê",
+        "period": "Thời Hạn",
+        "filters": {
+            "allStatus": "Tất Cả Trạng Thái",
+            "active": "Đang Hoạt Động",
+            "expired": "Hết Hạn",
+            "terminated": "Đã Hủy"
+        },
+        "emptyState": {
+            "title": "Không tìm thấy hợp đồng",
+            "noContracts": "Chưa có hợp đồng nào được tạo cho nhà trọ này.",
+            "noMatchingFilters": "Không có hợp đồng nào khớp với bộ lọc hiện tại."
+        },
+        "actions": {
+            "view": "Xem",
+            "edit": "Sửa",
+            "sign": "Ký",
+            "cancel": "Hủy",
+            "extend": "Gia Hạn",
+            "download": "Tải PDF",
+            "previewPdf": "Xem PDF",
+            "printPdf": "In PDF",
+            "cancelContract": "Hủy Hợp Đồng",
+            "extendContract": "Gia Hạn Hợp Đồng",
+            "signature": "Chữ Ký",
+            "uploadImages": "Tải Ảnh Lên",
+            "delete": "Xóa"
+        },
+        "modal": {
+            "contractDetails": "Chi Tiết Hợp Đồng",
+            "deleteContract": "Xóa Hợp Đồng",
+            "cancelContract": "Hủy Hợp Đồng",
+            "extendContract": "Gia Hạn Hợp Đồng",
+            "uploadImages": "Tải Ảnh Hợp Đồng",
+            "cancelReason": "Lý do hủy hợp đồng",
+            "newEndDate": "Ngày kết thúc mới",
+            "confirmDelete": "Bạn có chắc chắn muốn xóa hợp đồng này?",
+            "confirmCancel": "Bạn có chắc chắn muốn hủy hợp đồng này?",
+            "selectImages": "Chọn ảnh để tải lên",
+            "noImagesSelected": "Chưa chọn ảnh nào",
+            "confirm": "Xác Nhận",
+            "close": "Đóng",
+            "upload": "Tải Lên"
+        },
+        "toast": {
+            "invalidCitizenId": "Vui lòng nhập CMND/CCCD hợp lệ (9-12 số)",
+            "noUserFound": "Không tìm thấy người dùng với CMND/CCCD này",
+            "verifyId": "Vui lòng kiểm tra lại mã số.",
+            "invalidResponse": "Phản hồi không hợp lệ từ máy chủ. Vui lòng thử lại.",
+            "idNotInDb": "Mã số có thể không tồn tại trong cơ sở dữ liệu.",
+            "unauthorized": "Không có quyền truy cập. Vui lòng đăng nhập lại.",
+            "searchFailed": "Lỗi tìm kiếm người dùng. Vui lòng thử lại.",
+            "profileAutoFilled": "Đã tự động điền thông tin cho {{name}}!",
+            "selectImage": "Vui lòng chọn ít nhất một ảnh",
+            "imagesUploaded": "Tải ảnh hợp đồng thành công!",
+            "uploadError": "Lỗi tải ảnh hợp đồng",
+            "loadServicesFailed": "Lỗi tải danh sách dịch vụ",
+            "contractIdNotFound": "Không tìm thấy ID hợp đồng",
+            "loadContractFailed": "Không thể tải thông tin hợp đồng",
+            "createSignatureFirst": "Vui lòng tạo chữ ký trước",
+            "enterFullName": "Vui lòng nhập họ tên",
+            "emailNotFound": "Không tìm thấy email người dùng",
+            "contractInfoNotFound": "Không tìm thấy thông tin hợp đồng",
+            "otpCreateError": "Lỗi tạo mã OTP. Vui lòng thử lại.",
+            "otpSent": "Mã OTP đã được gửi đến email {{email}}",
+            "otpSendError": "Lỗi khi gửi mã OTP. Vui lòng thử lại.",
+            "invalidInfo": "Thông tin không hợp lệ",
+            "newOtpSent": "Mã OTP mới đã được gửi",
+            "resendOtpError": "Lỗi gửi lại mã OTP. Vui lòng thử lại.",
+            "enterOtp": "Vui lòng nhập mã OTP",
+            "otpMustBe6": "Mã OTP phải có 6 chữ số",
+            "otpInfoNotFound": "Không tìm thấy thông tin OTP",
+            "invalidOtp": "Mã OTP không hợp lệ",
+            "signatureNotFound": "Không tìm thấy chữ ký",
+            "contractSigned": "Ký hợp đồng thành công!",
+            "confirmSignatureError": "Lỗi xác nhận chữ ký. Vui lòng thử lại.",
+            "uploadImageFile": "Vui lòng tải lên file ảnh"
+        }
+    },
+    "contractDetail": {
+        "title": "Chi Tiết Hợp Đồng",
+        "status": "Trạng thái",
+        "notFound": "Không tìm thấy hợp đồng",
+        "contractInfo": "Thông Tin Hợp Đồng",
+        "room": "Phòng",
+        "monthlyRent": "Tiền Thuê Hàng Tháng",
+        "deposit": "Tiền Đặt Cọc",
+        "checkinDate": "Ngày Nhận Phòng",
+        "checkoutDate": "Ngày Trả Phòng",
+        "numberOfOccupants": "Số Người Ở",
+        "tenantInfo": "Thông Tin Người Thuê",
+        "fullName": "Họ Tên",
+        "phoneNumber": "Số Điện Thoại",
+        "citizenId": "CMND/CCCD",
+        "signatures": "Chữ Ký",
+        "ownerSignature": "Chữ Ký Chủ Trọ",
+        "tenantSignature": "Chữ Ký Người Thuê",
+        "contractPDF": "Hợp Đồng PDF",
+        "contractPDFDescription": "Xem hoặc tải xuống hợp đồng dạng PDF với chữ ký đã được in sẵn",
+        "errors": {
+            "loadFailed": "Không thể tải thông tin hợp đồng"
+        }
+    },
+    "signaturePage": {
+        "title": "Cài Đặt Chữ Ký",
+        "signatureMethod": "Phương Thức Ký",
+        "signMethodSmsOtp": "Ký ảnh xác thực SMS OTP eContract",
+        "fullName": "Họ Tên",
+        "phoneNumber": "Số Điện Thoại",
+        "verificationInfo": "Mã xác thực đã được gửi đến số điện thoại",
+        "enterOtpHint": "Vui lòng nhập mã OTP để hoàn tất ký hợp đồng",
+        "otp": "OTP",
+        "otpValidFor": "OTP còn hiệu lực trong",
+        "resendOtp": "Gửi Lại OTP",
+        "sending": "Đang gửi...",
+        "confirm": "Xác Nhận",
+        "verifying": "Đang xác thực...",
+        "cancel": "Hủy",
+        "loading": "Đang tải...",
+        "messages": {
+            "otpSent": "Mã OTP mới đã được gửi",
+            "otpVerified": "OTP đã xác thực! Đang upload chữ ký...",
+            "signatureUploaded": "Chữ ký đã upload! Đang ký hợp đồng...",
+            "generatingPdf": "Đang tạo file PDF hợp đồng...",
+            "pdfGenerated": "File PDF hợp đồng đã được tạo thành công!",
+            "pdfWarning": "Hợp đồng đã ký nhưng không thể tạo PDF. Vui lòng liên hệ hỗ trợ.",
+            "signSuccess": "Hợp đồng đã được ký thành công! 🎉"
+        },
+        "errors": {
+            "loadFailed": "Không thể tải thông tin hợp đồng",
+            "resendFailed": "Lỗi khi gửi lại mã OTP",
+            "invalidOtp": "Vui lòng nhập mã OTP 6 chữ số",
+            "otpSessionNotFound": "Không tìm thấy phiên OTP. Vui lòng thử lại.",
+            "signatureDataNotFound": "Không tìm thấy dữ liệu chữ ký. Vui lòng thử lại.",
+            "uploadFailed": "Lỗi khi upload chữ ký. Vui lòng thử lại.",
+            "otpInvalidExpired": "Mã OTP không đúng hoặc đã hết hạn",
+            "generalError": "Có lỗi xảy ra. Vui lòng thử lại."
+        }
+    },
+    "ownerReviews": {
+        "title": "📝 Quản Lý Đánh Giá",
+        "subtitle": "Xem và phản hồi đánh giá từ khách hàng",
+        "loading": "Đang tải đánh giá...",
+        "stats": {
+            "totalReviews": "Tổng Đánh Giá",
+            "pending": "Chưa Phản Hồi",
+            "responded": "Đã Phản Hồi",
+            "avgRating": "Đánh Giá TB"
+        },
+        "tabs": {
+            "all": "Tất Cả",
+            "pending": "Chưa Phản Hồi",
+            "responded": "Đã Phản Hồi",
+            "positive": "Tích Cực (4-5⭐)",
+            "negative": "Tiêu Cực (1-2⭐)"
+        },
+        "emptyState": {
+            "title": "Chưa có đánh giá nào",
+            "description": "Các đánh giá từ khách hàng sẽ hiển thị ở đây"
+        },
+        "status": {
+            "responded": "✓ Đã phản hồi",
+            "pending": "⏳ Chưa phản hồi",
+            "reportProcessing": "⚠️ Đang xử lý báo cáo",
+            "reportApproved": "✓ Báo cáo đã duyệt",
+            "reportRejected": "✗ Báo cáo bị từ chối",
+            "hidden": "🔒 Ẩn"
+        },
+        "review": {
+            "userId": "User ID",
+            "roomId": "Room ID",
+            "contractId": "Contract ID"
+        },
+        "actions": {
+            "report": "Báo Cáo",
+            "viewReport": "Xem Báo Cáo",
+            "reply": "Phản Hồi",
+            "editReply": "Chỉnh Sửa Phản Hồi"
+        },
+        "replySection": {
+            "ownerReply": "Phản Hồi Của Chủ Nhà",
+            "edited": "đã chỉnh sửa"
+        },
+        "modal": {
+            "replyToReview": "Phản Hồi Đánh Giá",
+            "editReply": "Chỉnh Sửa Phản Hồi",
+            "replyContent": "Nội dung phản hồi",
+            "replyPlaceholder": "Nhập nội dung phản hồi của bạn...",
+            "imageOptional": "Hình ảnh (Tùy chọn)",
+            "cancel": "Hủy",
+            "update": "Cập Nhật",
+            "sendReply": "Gửi Phản Hồi",
+            "sending": "Đang gửi...",
+            "viewReport": "Xem Báo Cáo",
+            "reportReview": "Báo Cáo Đánh Giá",
+            "statusLabel": "Trạng thái",
+            "statusPending": "⏳ Đang chờ xử lý",
+            "statusApproved": "✓ Đã duyệt",
+            "statusRejected": "✗ Đã từ chối",
+            "rejectReason": "Lý do từ chối",
+            "reportReason": "Lý do báo cáo",
+            "reportPlaceholder": "Nhập lý do báo cáo đánh giá này (ví dụ: nội dung không phù hợp, spam, thông tin sai lệch...)",
+            "maxChars": "Tối đa 1000 ký tự",
+            "evidenceImages": "Hình ảnh minh chứng (Tùy chọn)",
+            "multipleImages": "Có thể chọn nhiều hình ảnh",
+            "close": "Đóng",
+            "updateReport": "Cập Nhật Báo Cáo",
+            "sendReport": "Gửi Báo Cáo"
+        },
+        "messages": {
+            "replySuccess": "Gửi phản hồi thành công!",
+            "replyUpdateSuccess": "Cập nhật phản hồi thành công!",
+            "replyDeleteSuccess": "Xóa phản hồi thành công!",
+            "replyDeleteConfirm": "Bạn có chắc chắn muốn xóa phản hồi này?",
+            "reportSuccess": "Gửi báo cáo thành công!",
+            "reportUpdateSuccess": "Cập nhật báo cáo thành công!",
+            "enterReply": "Vui lòng nhập nội dung phản hồi",
+            "enterReason": "Vui lòng nhập lý do báo cáo",
+            "selectReason": "Vui lòng chọn lý do báo cáo"
+        },
+        "errors": {
+            "loadFailed": "Không thể tải danh sách đánh giá. Vui lòng thử lại.",
+            "replyFailed": "Không thể gửi phản hồi. Vui lòng thử lại.",
+            "deleteReplyFailed": "Không thể xóa phản hồi. Vui lòng thử lại.",
+            "reportFailed": "Không thể gửi báo cáo. Vui lòng thử lại."
+        }
+    },
+    "staffDashboard": {
+        "title": "Bảng Điều Khiển Staff",
+        "welcome": "Chào mừng trở lại, Quản lý Staff! 👋",
+        "subtitle": "Đây là những gì đang xảy ra với kiểm duyệt nội dung và hỗ trợ người dùng hôm nay.",
+        "reviewReports": "Xem Báo Cáo",
+        "stats": {
+            "pendingPosts": "Bài Đăng Chờ Duyệt",
+            "activeUsers": "Người Dùng Hoạt Động",
+            "supportTickets": "Yêu Cầu Hỗ Trợ",
+            "flaggedContent": "Nội Dung Bị Gắn Cờ",
+            "approvedToday": "Đã Duyệt Hôm Nay",
+            "rejectedToday": "Đã Từ Chối Hôm Nay",
+            "totalPosts": "Tổng Bài Đăng",
+            "avgResponseTime": "Thời Gian Phản Hồi TB"
+        },
+        "notifications": {
+            "title": "Thông Báo",
+            "new": "mới",
+            "viewAll": "Xem Tất Cả →",
+            "loading": "Đang tải...",
+            "empty": "Không có thông báo",
+            "markAsRead": "Đánh dấu đã đọc",
+            "justNow": "Vừa xong",
+            "minutesAgo": "{{count}} phút trước",
+            "hoursAgo": "{{count}} giờ trước",
+            "daysAgo": "{{count}} ngày trước"
+        },
+        "recentActivity": {
+            "title": "Hoạt Động Gần Đây",
+            "viewAll": "Xem Tất Cả",
+            "user": "Người dùng"
+        },
+        "pendingTasks": {
+            "title": "Công Việc Chờ Xử Lý",
+            "tasks": "công việc",
+            "due": "Hạn",
+            "assignee": "Người phụ trách"
+        },
+        "systemHealth": {
+            "title": "Tình Trạng Hệ Thống",
+            "server": "Máy Chủ",
+            "database": "Cơ Sở Dữ Liệu",
+            "healthy": "Hoạt động tốt",
+            "apiResponse": "Phản Hồi API",
+            "uptime": "Thời Gian Hoạt Động",
+            "activeConnections": "Kết Nối Đang Hoạt Động",
+            "errorRate": "Tỷ Lệ Lỗi"
+        },
+        "topIssues": {
+            "title": "Vấn Đề Hàng Đầu"
+        },
+        "quickActions": {
+            "title": "Thao Tác Nhanh",
+            "reviewPosts": "Xem Bài Đăng",
+            "pending": "chờ duyệt",
+            "supportTickets": "Yêu Cầu Hỗ Trợ",
+            "open": "đang mở",
+            "manageUsers": "Quản Lý Người Dùng",
+            "active": "hoạt động",
+            "viewReports": "Xem Báo Cáo",
+            "analyticsInsights": "Phân tích & thông tin"
+        }
+    },
+    "staffUsers": {
+        "title": "Quản Lý Người Dùng",
+        "tabs": {
+            "all": "Tất Cả",
+            "users": "Người Dùng",
+            "owners": "Chủ Trọ",
+            "active": "Hoạt Động",
+            "inactive": "Không Hoạt Động",
+            "ownerRequests": "Yêu Cầu Làm Chủ Trọ"
+        },
+        "createAccount": "Tạo Tài Khoản",
+        "table": {
+            "name": "Tên",
+            "email": "Email",
+            "phone": "Số Điện Thoại",
+            "role": "Vai Trò",
+            "status": "Trạng Thái",
+            "actions": "Thao Tác"
+        },
+        "roles": {
+            "user": "Người dùng",
+            "owner": "Chủ trọ",
+            "staff": "Nhân viên",
+            "admin": "Quản trị viên"
+        },
+        "status": {
+            "active": "Hoạt động",
+            "inactive": "Không hoạt động"
+        },
+        "actions": {
+            "view": "Xem",
+            "edit": "Sửa",
+            "toggleStatus": "Thay Đổi Trạng Thái",
+            "approve": "Phê Duyệt",
+            "reject": "Từ Chối"
+        },
+        "modal": {
+            "createTitle": "Tạo Tài Khoản Mới",
+            "editTitle": "Sửa Tài Khoản",
+            "viewTitle": "Chi Tiết Người Dùng",
+            "rejectTitle": "Từ Chối Yêu Cầu",
+            "fullName": "Họ Tên",
+            "email": "Email",
+            "phone": "Số Điện Thoại",
+            "password": "Mật Khẩu",
+            "role": "Vai Trò",
+            "rejectReason": "Lý Do Từ Chối",
+            "rejectPlaceholder": "Nhập lý do từ chối..."
+        },
+        "toast": {
+            "createSuccess": "Tạo tài khoản thành công!",
+            "updateSuccess": "Cập nhật tài khoản thành công!",
+            "statusUpdated": "Cập nhật trạng thái tài khoản thành công!",
+            "approveSuccess": "Phê duyệt yêu cầu thành công",
+            "rejectSuccess": "Từ chối yêu cầu thành công",
+            "createFailed": "Không thể tạo tài khoản",
+            "updateFailed": "Không thể cập nhật tài khoản",
+            "statusFailed": "Không thể cập nhật trạng thái tài khoản",
+            "approveFailed": "Không thể phê duyệt yêu cầu",
+            "rejectFailed": "Không thể từ chối yêu cầu"
+        }
+    },
+    "staffReports": {
+        "title": "Quản Lý Báo Cáo Đánh Giá",
+        "filters": {
+            "all": "Tất Cả",
+            "pending": "Chờ Xử Lý",
+            "approved": "Đã Duyệt",
+            "rejected": "Đã Từ Chối"
+        },
+        "table": {
+            "reviewer": "Người Đánh Giá",
+            "content": "Nội Dung",
+            "reason": "Lý Do",
+            "status": "Trạng Thái",
+            "createdAt": "Ngày Tạo",
+            "actions": "Thao Tác"
+        },
+        "status": {
+            "pending": "Chờ Xử Lý",
+            "approved": "Đã Duyệt",
+            "rejected": "Đã Từ Chối"
+        },
+        "actions": {
+            "approve": "Phê Duyệt",
+            "reject": "Từ Chối"
+        },
+        "modal": {
+            "rejectTitle": "Từ Chối Báo Cáo",
+            "rejectReason": "Lý Do Từ Chối",
+            "rejectPlaceholder": "Nhập lý do từ chối..."
+        },
+        "toast": {
+            "approveConfirm": "Bạn có chắc chắn muốn duyệt báo cáo này?",
+            "approveSuccess": "Duyệt báo cáo thành công!",
+            "rejectSuccess": "Từ chối báo cáo thành công!",
+            "processFailed": "Xử lý thất bại, vui lòng thử lại",
+            "enterReason": "Vui lòng nhập lý do từ chối"
+        },
+        "loading": "Đang tải báo cáo...",
+        "empty": "Không tìm thấy báo cáo",
+        "error": "Không thể tải danh sách báo cáo"
+    },
+    "staffPosts": {
+        "title": "Duyệt Bài Đăng",
+        "tabs": {
+            "pending": "Chờ Duyệt",
+            "approved": "Đã Duyệt",
+            "rejected": "Đã Từ Chối"
+        },
+        "table": {
+            "title": "Tiêu Đề",
+            "owner": "Chủ Sở Hữu",
+            "price": "Giá",
+            "location": "Địa Điểm",
+            "status": "Trạng Thái",
+            "createdAt": "Ngày Tạo",
+            "actions": "Thao Tác"
+        },
+        "actions": {
+            "approve": "Phê Duyệt",
+            "reject": "Từ Chối",
+            "view": "Xem Chi Tiết"
+        },
+        "toast": {
+            "approveSuccess": "Phê duyệt bài đăng thành công!",
+            "rejectSuccess": "Từ chối bài đăng thành công!",
+            "approveFailed": "Không thể phê duyệt bài đăng. Vui lòng thử lại.",
+            "rejectFailed": "Không thể từ chối bài đăng. Vui lòng thử lại."
+        },
+        "loading": "Đang tải bài đăng...",
+        "empty": "Không có bài đăng cần duyệt",
+        "error": "Lỗi Tải Bài Đăng",
+        "retry": "Thử Lại"
+    },
+    "staffNotifications": {
+        "title": "Quản Lý Thông Báo",
+        "tabs": {
+            "all": "Tất Cả",
+            "unread": "Chưa Đọc",
+            "read": "Đã Đọc"
+        },
+        "createNotification": "Tạo Thông Báo",
+        "form": {
+            "title": "Tiêu Đề",
+            "message": "Nội Dung",
+            "targetRole": "Đối Tượng",
+            "schedule": "Lên Lịch (Tùy chọn)",
+            "allRoles": "Tất Cả",
+            "users": "Người Dùng",
+            "owners": "Chủ Trọ",
+            "staff": "Nhân Viên"
+        },
+        "actions": {
+            "send": "Gửi Thông Báo",
+            "markRead": "Đánh Dấu Đã Đọc",
+            "delete": "Xóa"
+        },
+        "toast": {
+            "sendSuccess": "Gửi thông báo thành công!",
+            "deleteSuccess": "Xóa thông báo thành công!",
+            "sendFailed": "Không thể gửi thông báo",
+            "deleteFailed": "Không thể xóa thông báo"
+        }
+    },
+    "staffAmenities": {
+        "title": "Quản Lý Tiện Nghi",
+        "addAmenity": "Thêm Tiện Nghi",
+        "table": {
+            "image": "Hình Ảnh",
+            "name": "Tên",
+            "actions": "Thao Tác"
+        },
+        "modal": {
+            "createTitle": "Tạo Tiện Nghi Mới",
+            "editTitle": "Sửa Tiện Nghi",
+            "name": "Tên Tiện Nghi",
+            "namePlaceholder": "Nhập tên tiện nghi",
+            "image": "Hình Ảnh",
+            "selectImage": "Chọn Hình Ảnh",
+            "currentImage": "Hình Ảnh Hiện Tại"
+        },
+        "toast": {
+            "createSuccess": "Tạo tiện nghi thành công!",
+            "updateSuccess": "Cập nhật tiện nghi thành công!",
+            "deleteSuccess": "Xóa tiện nghi thành công!",
+            "createFailed": "Không thể tạo tiện nghi!",
+            "updateFailed": "Không thể cập nhật tiện nghi!",
+            "deleteFailed": "Không thể xóa tiện nghi!",
+            "deleteConfirm": "Bạn có chắc chắn muốn xóa tiện nghi này?",
+            "nameRequired": "Vui lòng nhập tên tiện nghi và chọn hình ảnh!"
+        }
+    },
+    "adminDashboard": {
+        "title": "Bảng Điều Khiển Admin",
+        "subtitle": "Tổng quan thống kê hệ thống và thao tác nhanh",
+        "stats": {
+            "totalUsers": "Tổng Người Dùng",
+            "totalOwners": "Tổng Chủ Trọ",
+            "totalStaff": "Tổng Nhân Viên",
+            "totalPosts": "Tổng Bài Đăng"
+        },
+        "accountStatus": {
+            "title": "Trạng Thái Tài Khoản",
+            "active": "Tài Khoản Hoạt Động",
+            "inactive": "Tài Khoản Không Hoạt Động"
+        },
+        "systemHealth": {
+            "title": "Tình Trạng Hệ Thống",
+            "apiStatus": "Trạng Thái API",
+            "database": "Cơ Sở Dữ Liệu",
+            "online": "Trực Tuyến",
+            "connected": "Đã Kết Nối"
+        },
+        "quickActions": {
+            "title": "Thao Tác Nhanh",
+            "manageUsers": "Quản Lý Người Dùng",
+            "manageUsersDesc": "Xem và quản lý tài khoản người dùng",
+            "manageStaff": "Quản Lý Nhân Viên",
+            "manageStaffDesc": "Xem và quản lý tài khoản nhân viên",
+            "systemOverview": "Tổng Quan Hệ Thống",
+            "systemOverviewDesc": "Xem thống kê chi tiết hệ thống",
+            "financialReports": "Báo Cáo Tài Chính",
+            "financialReportsDesc": "Xem doanh thu và dữ liệu tài chính"
+        }
+    },
+    "adminUsers": {
+        "title": "Quản Lý Người Dùng",
+        "tabs": {
+            "all": "Tất Cả",
+            "users": "Người Dùng",
+            "owners": "Chủ Trọ",
+            "active": "Hoạt Động",
+            "inactive": "Không Hoạt Động"
+        },
+        "createAccount": "Tạo Tài Khoản",
+        "table": {
+            "name": "Tên",
+            "email": "Email",
+            "phone": "Số Điện Thoại",
+            "role": "Vai Trò",
+            "status": "Trạng Thái",
+            "actions": "Thao Tác"
+        }
+    },
+    "adminStaffManagement": {
+        "title": "Quản Lý Nhân Viên",
+        "addStaff": "Thêm Nhân Viên",
+        "table": {
+            "name": "Tên",
+            "email": "Email",
+            "phone": "Số Điện Thoại",
+            "status": "Trạng Thái",
+            "createdAt": "Ngày Tạo",
+            "actions": "Thao Tác"
+        },
+        "modal": {
+            "createTitle": "Tạo Tài Khoản Nhân Viên",
+            "editTitle": "Sửa Tài Khoản Nhân Viên",
+            "fullName": "Họ Tên",
+            "email": "Email",
+            "phone": "Số Điện Thoại",
+            "password": "Mật Khẩu"
+        },
+        "toast": {
+            "createSuccess": "Tạo tài khoản nhân viên thành công!",
+            "updateSuccess": "Cập nhật tài khoản nhân viên thành công!",
+            "deleteSuccess": "Xóa tài khoản nhân viên thành công!",
+            "statusUpdated": "Cập nhật trạng thái nhân viên thành công!"
+        }
+    },
+    "adminOverview": {
+        "title": "Tổng Quan Hệ Thống",
+        "stats": {
+            "totalAccounts": "Tổng Tài Khoản",
+            "activeToday": "Hoạt Động Hôm Nay",
+            "newThisMonth": "Mới Trong Tháng",
+            "growthRate": "Tốc Độ Tăng Trưởng"
+        },
+        "charts": {
+            "userGrowth": "Tăng Trưởng Người Dùng",
+            "accountTypes": "Loại Tài Khoản",
+            "activityOverview": "Tổng Quan Hoạt Động"
+        }
+    },
+    "adminFinancial": {
+        "title": "Báo Cáo Tài Chính",
+        "stats": {
+            "totalRevenue": "Tổng Doanh Thu",
+            "monthlyRevenue": "Doanh Thu Tháng",
+            "transactions": "Giao Dịch",
+            "avgTransaction": "TB Giao Dịch"
+        },
+        "charts": {
+            "revenueOverTime": "Doanh Thu Theo Thời Gian",
+            "revenueByCategory": "Doanh Thu Theo Danh Mục"
+        },
+        "filters": {
+            "thisMonth": "Tháng Này",
+            "lastMonth": "Tháng Trước",
+            "thisYear": "Năm Nay",
+            "custom": "Tùy Chỉnh"
+        }
+    },
+    "adminPaymentGateways": {
+        "title": "Cổng Thanh Toán",
+        "subtitle": "Cấu hình và quản lý phương thức thanh toán",
+        "gateways": {
+            "vnpay": "VNPay",
+            "momo": "MoMo",
+            "zalopay": "ZaloPay",
+            "bankTransfer": "Chuyển Khoản Ngân Hàng"
+        },
+        "status": {
+            "active": "Hoạt Động",
+            "inactive": "Không Hoạt Động"
+        },
+        "actions": {
+            "configure": "Cấu Hình",
+            "enable": "Kích Hoạt",
+            "disable": "Vô Hiệu Hóa"
+        }
+    },
+    "adminNotifications": {
+        "title": "Trung Tâm Thông Báo",
+        "tabs": {
+            "all": "Tất Cả",
+            "system": "Hệ Thống",
+            "users": "Người Dùng"
+        },
+        "createNotification": "Tạo Thông Báo",
+        "broadcastTitle": "Phát Thông Báo",
+        "form": {
+            "title": "Tiêu Đề",
+            "message": "Nội Dung",
+            "targetAudience": "Đối Tượng Nhận",
+            "allUsers": "Tất Cả Người Dùng",
+            "owners": "Chỉ Chủ Trọ",
+            "staff": "Chỉ Nhân Viên"
+        }
+    },
+    "staffPosts": {
+        "title": "Duyệt Bài Đăng",
+        "subtitle": "Kiểm duyệt bài đăng cho thuê",
+        "error": "Lỗi Tải Bài Đăng",
+        "retry": "Thử Lại",
+        "empty": "Không tìm thấy bài đăng",
+        "loading": "Đang tải bài đăng...",
+        "tabs": {
+            "pending": "Chờ Duyệt",
+            "approved": "Đã Duyệt",
+            "rejected": "Đã Từ Chối"
+        },
+        "actions": {
+            "approve": "Duyệt",
+            "reject": "Từ Chối",
+            "viewDetails": "Xem Chi Tiết"
+        },
+        "modal": {
+            "rejectTitle": "Từ Chối Bài Đăng",
+            "rejectMessage": "Vui lòng nhập lý do từ chối:",
+            "confirmReject": "Xác Nhận Từ Chối"
+        }
+    },
+    "staffReports": {
+        "title": "Báo Cáo Đánh Giá",
+        "subtitle": "Quản lý các báo cáo đánh giá từ chủ nhà",
+        "searchPlaceholder": "Tìm kiếm reviewId hoặc lý do...",
+        "empty": "Không tìm thấy báo cáo",
+        "loading": "Đang tải báo cáo...",
+        "error": "Lỗi tải báo cáo",
+        "filters": {
+            "all": "Tất Cả",
+            "pending": "Chờ Xử Lý",
+            "approved": "Đã Duyệt",
+            "rejected": "Đã Từ Chối"
+        },
+        "actions": {
+            "approve": "Duyệt",
+            "reject": "Từ Chối"
+        },
+        "modal": {
+            "rejectTitle": "Từ Chối Báo Cáo",
+            "rejectMessage": "Bạn đang từ chối báo cáo này. Vui lòng nhập lý do:",
+            "confirmReject": "Xác Nhận Từ Chối"
+        }
+    },
+    "staffManagement": {
+        "title": "Quản Lý Nhân Viên",
+        "subtitle": "Quản lý tài khoản nhân viên (Chỉ Admin)",
+        "searchPlaceholder": "🔍 Tìm theo tên, email, điện thoại hoặc ID...",
+        "loading": "Đang tải tài khoản nhân viên...",
+        "exportCSV": "Xuất CSV",
+        "createStaff": "Tạo Tài Khoản Nhân Viên",
+        "noStaffMatching": "Không tìm thấy nhân viên phù hợp với",
+        "clearSearch": "Xóa tìm kiếm",
+        "stats": {
+            "totalStaff": "Tổng Nhân Viên",
+            "active": "Đang Hoạt Động",
+            "inactive": "Không Hoạt Động"
+        },
+        "table": {
+            "staffInfo": "Thông Tin Nhân Viên",
+            "contact": "Liên Hệ",
+            "status": "Trạng Thái",
+            "createdDate": "Ngày Tạo",
+            "actions": "Hành Động"
+        },
+        "status": {
+            "active": "Hoạt Động",
+            "inactive": "Không Hoạt Động"
+        },
+        "actions": {
+            "ban": "Khóa",
+            "unban": "Mở Khóa",
+            "createStaff": "Tạo Nhân Viên",
+            "updateStaff": "Cập Nhật Nhân Viên",
+            "editAccount": "Sửa Tài Khoản",
+            "banAccount": "Khóa Tài Khoản",
+            "unbanAccount": "Mở Khóa Tài Khoản",
+            "deleteAccount": "Xóa Tài Khoản",
+            "confirmDelete": "Có, Xóa"
+        },
+        "form": {
+            "fullName": "Họ Tên",
+            "email": "Email",
+            "phone": "Điện Thoại",
+            "password": "Mật Khẩu",
+            "newPassword": "Mật Khẩu Mới",
+            "passwordPlaceholder": "Để trống nếu giữ nguyên mật khẩu hiện tại",
+            "passwordHint": "Để trống nếu giữ nguyên mật khẩu hiện tại",
+            "accountId": "ID Tài Khoản"
+        },
+        "modal": {
+            "createTitle": "Tạo Tài Khoản Nhân Viên",
+            "editTitle": "Sửa Tài Khoản Nhân Viên",
+            "viewTitle": "Chi Tiết Tài Khoản Nhân Viên",
+            "deleteTitle": "Xóa Tài Khoản Nhân Viên",
+            "deleteMessage": "Bạn có chắc muốn xóa vĩnh viễn",
+            "deleteWarning": "Hành động này không thể hoàn tác!"
+        }
+    },
+    "adminOverview": {
+        "title": "Tổng Quan Hệ Thống",
+        "subtitle": "Thống kê và phân tích chi tiết",
+        "loading": "Đang tải dữ liệu...",
+        "userStats": "Thống Kê Người Dùng",
+        "ownerStats": "Thống Kê Chủ Nhà",
+        "staffStats": "Thống Kê Nhân Viên",
+        "summary": "Tóm Tắt",
+        "totalUsers": "Tổng Người Dùng",
+        "activeUsers": "Người Dùng Hoạt Động",
+        "inactiveUsers": "Người Dùng Không Hoạt Động",
+        "totalOwners": "Tổng Chủ Nhà",
+        "activeOwners": "Chủ Nhà Hoạt Động",
+        "inactiveOwners": "Chủ Nhà Không Hoạt Động",
+        "totalStaff": "Tổng Nhân Viên",
+        "activeStaff": "Nhân Viên Hoạt Động",
+        "inactiveStaff": "Nhân Viên Không Hoạt Động",
+        "totalAccounts": "Tổng Tài Khoản",
+        "totalActive": "Tổng Hoạt Động",
+        "totalInactive": "Tổng Không Hoạt Động",
+        "activityRate": "Tỷ Lệ Hoạt Động",
+        "active": "hoạt động",
+        "ofTotal": "tổng số"
     }
 }

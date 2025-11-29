@@ -8,6 +8,7 @@ import imageService from "@/services/imageService";
 import serviceService from "@/services/serviceService";
 import utilityReadingService, { UtilityType } from "@/services/utilityReadingService";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "@/hooks/useTranslation";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import api from "@/utils/api";
@@ -17,6 +18,7 @@ import { generateContractPDF as generatePDF, previewContractPDF as previewPDF, d
 
 
 export default function ContractsManagementPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -439,7 +441,7 @@ export default function ContractsManagementPage() {
 
   const searchIdentityProfileByCCCD = async (profileIndex, citizenId) => {
     if (!citizenId || citizenId.trim().length < 9) {
-      toast.error('Please enter a valid citizen ID (9-12 digits)');
+      toast.error(t('ownerContracts.toast.invalidCitizenId'));
       return;
     }
 
@@ -467,7 +469,7 @@ export default function ContractsManagementPage() {
       // Check for empty response (204 No Content)
       if (!response || response === '' || (typeof response === 'string' && response.trim() === '')) {
         console.log('❌ Empty response - likely 204 No Content or user not found');
-        toast.warning('No user found with this Citizen ID. Please verify the ID is correct.');
+        toast.warning(t('ownerContracts.toast.noUserFound') + ' ' + t('ownerContracts.toast.verifyId'));
         return;
       }
 
@@ -484,7 +486,7 @@ export default function ContractsManagementPage() {
         } catch (e) {
           console.error('❌ Failed to parse JSON:', e);
           console.error('❌ Raw response:', response);
-          toast.error('Invalid response from server. Please try again.');
+          toast.error(t('ownerContracts.toast.invalidResponse'));
           return;
         }
       }
@@ -501,7 +503,7 @@ export default function ContractsManagementPage() {
         console.log('❌ No user found - userData is null or missing id');
         console.log('❌ userData value:', userData);
         console.log('❌ userData.id value:', userData?.id);
-        toast.warning('No user found with this Citizen ID. Please check the ID and try again.');
+        toast.warning(t('ownerContracts.toast.noUserFound') + ' ' + t('ownerContracts.toast.verifyId'));
         return;
       }
 
@@ -560,7 +562,7 @@ export default function ContractsManagementPage() {
         return newProfiles;
       });
 
-      toast.success(`Profile auto-filled for ${userData.fullName}!`);
+      toast.success(t('ownerContracts.toast.profileAutoFilled', { name: userData.fullName }));
 
     } catch (error) {
       console.error('❌ Error searching user:', error);
@@ -569,13 +571,13 @@ export default function ContractsManagementPage() {
       console.error('❌ Error data:', error.response?.data);
 
       if (error.response?.status === 404) {
-        toast.info('No user found with this Citizen ID');
+        toast.info(t('ownerContracts.toast.noUserFound'));
       } else if (error.response?.status === 204) {
-        toast.warning('No user found with this Citizen ID. The ID may not exist in database.');
+        toast.warning(t('ownerContracts.toast.noUserFound') + ' ' + t('ownerContracts.toast.idNotInDb'));
       } else if (error.response?.status === 401) {
-        toast.error('Unauthorized. Please login again.');
+        toast.error(t('ownerContracts.toast.unauthorized'));
       } else {
-        toast.error('Failed to search user. Please try again.');
+        toast.error(t('ownerContracts.toast.searchFailed'));
       }
     } finally {
       setSearchingCCCD(prev => ({ ...prev, [profileIndex]: false }));
@@ -993,7 +995,7 @@ export default function ContractsManagementPage() {
 
   const handleConfirmUploadImages = async () => {
     if (contractImages.length === 0) {
-      toast.error("Please select at least one image");
+      toast.error(t('ownerContracts.toast.selectImage'));
       return;
     }
 
@@ -1042,12 +1044,12 @@ export default function ContractsManagementPage() {
         setContractImages([]);
         setContractImagePreviews([]);
         setUploadProgress(0);
-        toast.success("Contract images uploaded successfully!");
+        toast.success(t('ownerContracts.toast.imagesUploaded'));
       }, 500);
     } catch (error) {
       console.error("❌ Upload error:", error);
       console.error("❌ Error response:", error.response?.data);
-      toast.error("Error uploading contract images: " + (error.response?.data?.message || error.message || "Unknown error"));
+      toast.error(t('ownerContracts.toast.uploadError') + ": " + (error.response?.data?.message || error.message || ""));
     } finally {
       setIsUploading(false);
     }
@@ -1194,7 +1196,7 @@ export default function ContractsManagementPage() {
       setAvailableServices(services || []);
     } catch (error) {
       console.error("❌ Error fetching services:", error);
-      toast.error("Failed to load services");
+      toast.error(t('ownerContracts.toast.loadServicesFailed'));
       setAvailableServices([]);
     } finally {
       setLoadingServices(false);
@@ -1738,7 +1740,7 @@ export default function ContractsManagementPage() {
       // Fetch full contract details from backend
       const contractId = contract?.id || contract?.Id;
       if (!contractId) {
-        toast.error('Không tìm thấy ID hợp đồng');
+        toast.error(t('ownerContracts.toast.contractIdNotFound'));
         return;
       }
 
@@ -1774,7 +1776,7 @@ export default function ContractsManagementPage() {
 
     } catch (error) {
       console.error('❌ Error loading contract:', error);
-      toast.error('Không thể tải thông tin hợp đồng');
+      toast.error(t('ownerContracts.toast.loadContractFailed'));
     }
   };
 
@@ -1786,13 +1788,13 @@ export default function ContractsManagementPage() {
 
     if (!signaturePreview) {
       console.log('❌ No signature preview');
-      toast.error('Vui lòng tạo chữ ký trước');
+      toast.error(t('ownerContracts.toast.createSignatureFirst'));
       return;
     }
 
     if (!signatureName.trim()) {
       console.log('❌ No signature name');
-      toast.error('Please enter your full name');
+      toast.error(t('ownerContracts.toast.enterFullName'));
       return;
     }
 
@@ -1807,7 +1809,7 @@ export default function ContractsManagementPage() {
         user?.Email;
 
       if (!userEmail) {
-        toast.error('User email not found');
+        toast.error(t('ownerContracts.toast.emailNotFound'));
         setSendingOtp(false);
         return;
       }
@@ -1817,7 +1819,7 @@ export default function ContractsManagementPage() {
       // Get contract ID
       const contractId = selectedContract?.id || selectedContract?.Id;
       if (!contractId) {
-        toast.error('Không tìm thấy thông tin hợp đồng');
+        toast.error(t('ownerContracts.toast.contractInfoNotFound'));
         setSendingOtp(false);
         return;
       }
@@ -1836,7 +1838,7 @@ export default function ContractsManagementPage() {
 
       if (!otpId) {
         console.error('❌ No OTP ID in response:', otpResult);
-        toast.error('Error creating OTP. Please try again.');
+        toast.error(t('ownerContracts.toast.otpCreateError'));
         setSendingOtp(false);
         return;
       }
@@ -1847,7 +1849,7 @@ export default function ContractsManagementPage() {
       setCurrentOtpId(otpId);
       setSignatureEmail(ownerEmail);
 
-      toast.success(`Mã OTP đã được gửi đến email ${ownerEmail}`);
+      toast.success(t('ownerContracts.toast.otpSent', { email: ownerEmail }));
 
       // Move to OTP verification step
       setSignatureStep(2);
@@ -1857,7 +1859,7 @@ export default function ContractsManagementPage() {
     } catch (error) {
       console.error('❌ Error sending OTP:', error);
       console.error('❌ Error response:', error.response?.data);
-      toast.error('Lỗi khi gửi mã OTP. Vui lòng thử lại.');
+      toast.error(t('ownerContracts.toast.otpSendError'));
     } finally {
       setSendingOtp(false);
     }
@@ -1872,7 +1874,7 @@ export default function ContractsManagementPage() {
       // Get contract ID
       const contractId = selectedContract?.id || selectedContract?.Id;
       if (!contractId || !signatureEmail) {
-        toast.error('Invalid information');
+        toast.error(t('ownerContracts.toast.invalidInfo'));
         setSendingOtp(false);
         return;
       }
@@ -1882,7 +1884,7 @@ export default function ContractsManagementPage() {
       const otpId = otpResult?.otpId || otpResult?.id || otpResult?.Id || otpResult?.data?.id;
 
       if (!otpId) {
-        toast.error('Error sending OTP');
+        toast.error(t('ownerContracts.toast.otpSendError'));
         setSendingOtp(false);
         return;
       }
@@ -1892,11 +1894,11 @@ export default function ContractsManagementPage() {
 
       setOtpTimer(300); // Reset timer to 5 minutes
       setCanResendOtp(false);
-      toast.success('New OTP code has been sent');
+      toast.success(t('ownerContracts.toast.newOtpSent'));
 
     } catch (error) {
       console.error('❌ Error resending OTP:', error);
-      toast.error('Error resending OTP. Please try again.');
+      toast.error(t('ownerContracts.toast.resendOtpError'));
     } finally {
       setSendingOtp(false);
     }
@@ -1905,12 +1907,12 @@ export default function ContractsManagementPage() {
   // Handle Confirm OTP and save signature (Step 2 → Complete)
   const handleConfirmSignature = async () => {
     if (!otpCode.trim()) {
-      toast.error('Please enter OTP code');
+      toast.error(t('ownerContracts.toast.enterOtp'));
       return;
     }
 
     if (otpCode.length !== 6) {
-      toast.error('OTP must be 6 digits');
+      toast.error(t('ownerContracts.toast.otpMustBe6'));
       return;
     }
 
@@ -1920,14 +1922,14 @@ export default function ContractsManagementPage() {
       console.log('🔑 OTP ID:', currentOtpId);
 
       if (!currentOtpId) {
-        toast.error('OTP information not found');
+        toast.error(t('ownerContracts.toast.otpInfoNotFound'));
         setVerifyingOtp(false);
         return;
       }
 
       const contractId = selectedContract?.id || selectedContract?.Id;
       if (!contractId) {
-        toast.error('Contract information not found');
+        toast.error(t('ownerContracts.toast.contractInfoNotFound'));
         setVerifyingOtp(false);
         return;
       }
@@ -1938,7 +1940,7 @@ export default function ContractsManagementPage() {
       console.log('✅ OTP verified:', verifyResult);
 
       if (!verifyResult || !verifyResult.success) {
-        toast.error(verifyResult?.message || 'Invalid OTP code');
+        toast.error(verifyResult?.message || t('ownerContracts.toast.invalidOtp'));
         setVerifyingOtp(false);
         return;
       }
@@ -1948,7 +1950,7 @@ export default function ContractsManagementPage() {
       console.log('� Signature preview length:', signaturePreview?.length);
 
       if (!signaturePreview) {
-        toast.error('Signature not found');
+        toast.error(t('ownerContracts.toast.signatureNotFound'));
         setVerifyingOtp(false);
         return;
       }
@@ -1960,7 +1962,7 @@ export default function ContractsManagementPage() {
       const result = await contractService.signContract(contractId, signaturePreview);
       console.log('✅ Contract signed:', result);
 
-      toast.success('Contract signed successfully!');
+      toast.success(t('ownerContracts.toast.contractSigned'));
 
       // Reset states and close modal
       setShowSignatureModal(false);
@@ -1977,7 +1979,7 @@ export default function ContractsManagementPage() {
     } catch (error) {
       console.error('❌ Error confirming signature:', error);
       console.error('❌ Error response:', error.response?.data);
-      toast.error(error.response?.data?.message || 'Error confirming signature. Please try again.');
+      toast.error(error.response?.data?.message || t('ownerContracts.toast.confirmSignatureError'));
     } finally {
       setVerifyingOtp(false);
     }
@@ -2000,7 +2002,7 @@ export default function ContractsManagementPage() {
 
   const generateManualSignature = () => {
     if (!signatureName.trim()) {
-      toast.error('Please enter your full name');
+      toast.error(t('ownerContracts.toast.enterFullName'));
       return;
     }
 
@@ -2044,7 +2046,7 @@ export default function ContractsManagementPage() {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
+        toast.error(t('ownerContracts.toast.uploadImageFile'));
         return;
       }
 
@@ -2210,7 +2212,7 @@ export default function ContractsManagementPage() {
   });
 
   if (!mounted) {
-    return <div>Loading...</div>;
+    return <div>{t('common.loading')}</div>;
   }
 
   if (loading) {
@@ -2228,10 +2230,10 @@ export default function ContractsManagementPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Contract Management
+              {t('ownerContracts.title')}
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Manage all rental contracts across your properties
+              {t('ownerContracts.subtitle')}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0">
@@ -2245,13 +2247,13 @@ export default function ContractsManagementPage() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Add Contract
+              {t('ownerContracts.addContract')}
             </button>
             <button
               onClick={() => router.push('/owner/boarding-houses')}
               className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors"
             >
-              ← Back to Properties
+              ← {t('ownerContracts.backToProperties')}
             </button>
           </div>
         </div>
@@ -2263,7 +2265,7 @@ export default function ContractsManagementPage() {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Search contracts by tenant, room, or contract ID..."
+              placeholder={t('ownerContracts.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -2274,10 +2276,10 @@ export default function ContractsManagementPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           >
-            <option value="all">All Status</option>
-            <option value="Active">Active</option>
-            <option value="Expired">Expired</option>
-            <option value="Terminated">Terminated</option>
+            <option value="all">{t('ownerContracts.filters.allStatus')}</option>
+            <option value="Active">{t('ownerContracts.filters.active')}</option>
+            <option value="Expired">{t('ownerContracts.filters.expired')}</option>
+            <option value="Terminated">{t('ownerContracts.filters.terminated')}</option>
           </select>
         </div>
       </div>
@@ -2288,12 +2290,12 @@ export default function ContractsManagementPage() {
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📋</div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              No contracts found
+              {t('ownerContracts.emptyState.title')}
             </h3>
             <p className="text-gray-500 dark:text-gray-400">
               {contracts.length === 0
-                ? "No contracts have been created for this house yet."
-                : "No contracts match your current filters."
+                ? t('ownerContracts.emptyState.noContracts')
+                : t('ownerContracts.emptyState.noMatchingFilters')
               }
             </p>
           </div>
@@ -2305,7 +2307,7 @@ export default function ContractsManagementPage() {
                   <div className="flex-1">
                     <div className="flex items-center space-x-4 mb-2">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        Contract #{contract.id?.slice(0, 8) || 'N/A'}
+                        {t('ownerContracts.contract')} #{contract.id?.slice(0, 8) || 'N/A'}
                       </h3>
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${contract.contractStatus === 'Active'
                         ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
@@ -2318,17 +2320,17 @@ export default function ContractsManagementPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 dark:text-gray-400">
                       <div>
-                        <strong>Room:</strong> {contract.roomName || 'N/A'}
+                        <strong>{t('ownerContracts.room')}:</strong> {contract.roomName || 'N/A'}
                       </div>
                       <div>
-                        <strong>Tenant:</strong> {
+                        <strong>{t('ownerContracts.tenant')}:</strong> {
                           contract.identityProfiles?.[0]?.fullName ||
                           contract.tenantId ||
                           'N/A'
                         }
                       </div>
                       <div>
-                        <strong>Period:</strong> {
+                        <strong>{t('ownerContracts.period')}:</strong> {
                           contract.checkinDate && contract.checkoutDate
                             ? `${new Date(contract.checkinDate).toLocaleDateString()} - ${new Date(contract.checkoutDate).toLocaleDateString()}`
                             : 'N/A'
@@ -2341,7 +2343,7 @@ export default function ContractsManagementPage() {
                       onClick={() => handleViewContract(contract)}
                       className="px-3 py-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 text-sm font-medium"
                     >
-                      View
+                      {t('common.view')}
                     </button>
 
                     {/* Edit - Hidden for Active contracts */}
@@ -2358,13 +2360,13 @@ export default function ContractsManagementPage() {
                       onClick={() => previewContractPDF(contract)}
                       className="px-3 py-1 text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 text-sm font-medium"
                     >
-                      Preview PDF
+                      {t('ownerContracts.actions.previewPdf')}
                     </button>
                     <button
                       onClick={() => generateContractPDF(contract)}
                       className="px-3 py-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200 text-sm font-medium"
                     >
-                      Print PDF
+                      {t('ownerContracts.actions.printPdf')}
                     </button>
 
                     {/* Cancel Contract - Only for Active contracts */}
@@ -2373,7 +2375,7 @@ export default function ContractsManagementPage() {
                         onClick={() => handleCancelContract(contract)}
                         className="px-3 py-1 text-orange-600 hover:text-orange-800 dark:text-orange-400 dark:hover:text-orange-200 text-sm font-medium"
                       >
-                        Cancel Contract
+                        {t('ownerContracts.actions.cancelContract')}
                       </button>
                     )}
 
@@ -2383,7 +2385,7 @@ export default function ContractsManagementPage() {
                         onClick={() => handleExtendContract(contract)}
                         className="px-3 py-1 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200 text-sm font-medium"
                       >
-                        Extend Contract
+                        {t('ownerContracts.actions.extendContract')}
                       </button>
                     )}
 
@@ -2415,7 +2417,7 @@ export default function ContractsManagementPage() {
                         onClick={() => handleUploadContractImages(contract)}
                         className="px-3 py-1 text-cyan-600 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-200 text-sm font-medium"
                       >
-                        Upload Images
+                        {t('ownerContracts.actions.uploadImages')}
                       </button>
                     )}
 
@@ -2443,11 +2445,11 @@ export default function ContractsManagementPage() {
             <div className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {modalType === 'view' && 'Contract Details'}
-                  {modalType === 'delete' && 'Delete Contract'}
-                  {modalType === 'cancel' && 'Cancel Contract'}
-                  {modalType === 'extend' && 'Extend Contract'}
-                  {modalType === 'uploadImages' && 'Upload Contract Images'}
+                  {modalType === 'view' && t('ownerContracts.modal.contractDetails')}
+                  {modalType === 'delete' && t('ownerContracts.modal.deleteContract')}
+                  {modalType === 'cancel' && t('ownerContracts.modal.cancelContract')}
+                  {modalType === 'extend' && t('ownerContracts.modal.extendContract')}
+                  {modalType === 'uploadImages' && t('ownerContracts.modal.uploadImages')}
                 </h3>
                 <button
                   onClick={() => {

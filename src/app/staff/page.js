@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { apiFetch } from '@/utils/api';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function StaffDashboard() {
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
@@ -266,9 +268,9 @@ export default function StaffDashboard() {
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-sm">
         <div className="p-6 text-white">
-          <h1 className="text-2xl font-bold mb-2">Welcome back, Staff Manager! 👋</h1>
+          <h1 className="text-2xl font-bold mb-2">{t('staffDashboard.welcome')}</h1>
           <p className="text-purple-100">
-            Here's what's happening with content moderation and user support today.
+            {t('staffDashboard.subtitle')}
           </p>
           <div className="mt-4">
             <a
@@ -278,7 +280,7 @@ export default function StaffDashboard() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Review Reports
+              {t('staffDashboard.reviewReports')}
             </a>
           </div>
         </div>
@@ -294,7 +296,7 @@ export default function StaffDashboard() {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Posts</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('staffDashboard.stats.pendingPosts')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pendingPosts}</p>
             </div>
           </div>
@@ -308,7 +310,7 @@ export default function StaffDashboard() {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Users</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('staffDashboard.stats.activeUsers')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.activeUsers.toLocaleString()}</p>
             </div>
           </div>
@@ -322,7 +324,7 @@ export default function StaffDashboard() {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Support Tickets</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('staffDashboard.stats.supportTickets')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.supportTickets}</p>
             </div>
           </div>
@@ -336,7 +338,7 @@ export default function StaffDashboard() {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Flagged Content</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('staffDashboard.stats.flaggedContent')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.flaggedContent}</p>
             </div>
           </div>
@@ -348,10 +350,10 @@ export default function StaffDashboard() {
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">📬 Thông báo</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">📬 {t('staffDashboard.notifications.title')}</h2>
               {notifications.filter(n => !n.isRead).length > 0 && (
                 <span className="px-2 py-1 text-xs font-medium bg-red-600 text-white rounded-full">
-                  {notifications.filter(n => !n.isRead).length} mới
+                  {notifications.filter(n => !n.isRead).length} {t('staffDashboard.notifications.new')}
                 </span>
               )}
             </div>
@@ -359,7 +361,7 @@ export default function StaffDashboard() {
               href="/staff/notifications"
               className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium"
             >
-              Xem tất cả →
+              {t('staffDashboard.notifications.viewAll')}
             </Link>
           </div>
         </div>
@@ -367,12 +369,12 @@ export default function StaffDashboard() {
           {loadingNotifications ? (
             <div className="p-8 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-purple-600 border-t-transparent"></div>
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Đang tải...</p>
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{t('staffDashboard.notifications.loading')}</p>
             </div>
           ) : notifications.length === 0 ? (
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
               <p className="text-xl mb-2">📭</p>
-              <p>Không có thông báo nào</p>
+              <p>{t('staffDashboard.notifications.empty')}</p>
             </div>
           ) : (
             notifications.map((notification) => (
@@ -406,9 +408,9 @@ export default function StaffDashboard() {
                         handleMarkAsRead(notification.id);
                       }}
                       className="flex-shrink-0 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
-                      title="Đánh dấu đã đọc"
+                      title={t('staffDashboard.notifications.markAsRead')}
                     >
-                      Đánh dấu đã đọc
+                      {t('staffDashboard.notifications.markAsRead')}
                     </button>
                   )}
                 </div>
@@ -423,25 +425,25 @@ export default function StaffDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="text-center">
             <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.approvedToday}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Approved Today</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('staffDashboard.stats.approvedToday')}</p>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="text-center">
             <p className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.rejectedToday}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Rejected Today</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('staffDashboard.stats.rejectedToday')}</p>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="text-center">
             <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.totalPosts.toLocaleString()}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Total Posts</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('staffDashboard.stats.totalPosts')}</p>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="text-center">
             <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.responseTime}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Avg Response Time</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('staffDashboard.stats.avgResponseTime')}</p>
           </div>
         </div>
       </div>
@@ -451,12 +453,12 @@ export default function StaffDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Activity</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('staffDashboard.recentActivity.title')}</h2>
               <Link
                 href="/staff/logs"
                 className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
               >
-                View All
+                {t('staffDashboard.recentActivity.viewAll')}
               </Link>
             </div>
           </div>
@@ -483,7 +485,7 @@ export default function StaffDashboard() {
                     </p>
                     <div className="flex items-center mt-2 space-x-2">
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        User: {activity.user}
+                        {t('staffDashboard.recentActivity.user')}: {activity.user}
                       </span>
                       <span className={`px-2 py-1 text-xs rounded-full ${activity.action === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
                         activity.action === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
@@ -504,9 +506,9 @@ export default function StaffDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Pending Tasks</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('staffDashboard.pendingTasks.title')}</h2>
               <span className="text-sm text-gray-500 dark:text-gray-400">
-                {pendingTasks.length} tasks
+                {pendingTasks.length} {t('staffDashboard.pendingTasks.tasks')}
               </span>
             </div>
           </div>
@@ -528,8 +530,8 @@ export default function StaffDashboard() {
                         {task.description}
                       </p>
                       <div className="flex items-center mt-2 space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                        <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
-                        <span>Assignee: {task.assignee}</span>
+                        <span>{t('staffDashboard.pendingTasks.due')}: {new Date(task.dueDate).toLocaleDateString()}</span>
+                        <span>{t('staffDashboard.pendingTasks.assignee')}: {task.assignee}</span>
                         <span className="capitalize">{task.category.replace('_', ' ')}</span>
                       </div>
                     </div>
@@ -545,39 +547,39 @@ export default function StaffDashboard() {
         {/* System Health */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">System Health</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('staffDashboard.systemHealth.title')}</h2>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
                 <div className="flex items-center justify-center mb-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">Server</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{t('staffDashboard.systemHealth.server')}</span>
                 </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Healthy</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{t('staffDashboard.systemHealth.healthy')}</p>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center mb-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">Database</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{t('staffDashboard.systemHealth.database')}</span>
                 </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Healthy</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{t('staffDashboard.systemHealth.healthy')}</p>
               </div>
               <div className="text-center">
                 <p className="text-lg font-bold text-gray-900 dark:text-white">{systemHealth.apiResponseTime}</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">API Response</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{t('staffDashboard.systemHealth.apiResponse')}</p>
               </div>
               <div className="text-center">
                 <p className="text-lg font-bold text-gray-900 dark:text-white">{systemHealth.uptime}</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Uptime</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{t('staffDashboard.systemHealth.uptime')}</p>
               </div>
               <div className="text-center">
                 <p className="text-lg font-bold text-gray-900 dark:text-white">{systemHealth.activeConnections}</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Active Connections</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{t('staffDashboard.systemHealth.activeConnections')}</p>
               </div>
               <div className="text-center">
                 <p className="text-lg font-bold text-gray-900 dark:text-white">{systemHealth.errorRate}</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Error Rate</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{t('staffDashboard.systemHealth.errorRate')}</p>
               </div>
             </div>
           </div>
@@ -586,7 +588,7 @@ export default function StaffDashboard() {
         {/* Top Issues */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Top Issues</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('staffDashboard.topIssues.title')}</h2>
           </div>
           <div className="p-6">
             <div className="space-y-4">
@@ -616,7 +618,7 @@ export default function StaffDashboard() {
       {/* Quick Actions */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Quick Actions</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('staffDashboard.quickActions.title')}</h2>
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -630,8 +632,8 @@ export default function StaffDashboard() {
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">Review Posts</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">{stats.pendingPosts} pending</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{t('staffDashboard.quickActions.reviewPosts')}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{stats.pendingPosts} {t('staffDashboard.quickActions.pending')}</p>
               </div>
             </Link>
 
@@ -645,8 +647,8 @@ export default function StaffDashboard() {
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">Support Tickets</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">{stats.supportTickets} open</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{t('staffDashboard.quickActions.supportTickets')}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{stats.supportTickets} {t('staffDashboard.quickActions.open')}</p>
               </div>
             </Link>
 
@@ -660,8 +662,8 @@ export default function StaffDashboard() {
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">Manage Users</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">{stats.activeUsers.toLocaleString()} active</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{t('staffDashboard.quickActions.manageUsers')}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{stats.activeUsers.toLocaleString()} {t('staffDashboard.quickActions.active')}</p>
               </div>
             </Link>
 
@@ -675,8 +677,8 @@ export default function StaffDashboard() {
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">View Reports</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Analytics & insights</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{t('staffDashboard.quickActions.viewReports')}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{t('staffDashboard.quickActions.analyticsInsights')}</p>
               </div>
             </Link>
           </div>

@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 import serviceService from '@/services/serviceService';
 import { toast } from 'react-toastify';
 
 export default function OwnerServicesPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { t } = useTranslation();
   
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +33,7 @@ export default function OwnerServicesPage() {
       setServices(data || []);
     } catch (error) {
       console.error('❌ Error loading services:', error);
-      toast.error('Failed to load services');
+      toast.error(t('ownerServices.errors.loadFailed'));
       setServices([]);
     } finally {
       setLoading(false);
@@ -60,11 +62,11 @@ export default function OwnerServicesPage() {
     const newErrors = {};
     
     if (!formData.serviceName || !formData.serviceName.trim()) {
-      newErrors.serviceName = 'Service name is required';
+      newErrors.serviceName = t('ownerServices.modal.serviceNameRequired');
     }
     
     if (formData.price === '' || formData.price === null || formData.price < 0) {
-      newErrors.price = 'Price must be 0 or greater';
+      newErrors.price = t('ownerServices.modal.priceRequired');
     }
     
     setErrors(newErrors);
@@ -87,32 +89,32 @@ export default function OwnerServicesPage() {
 
       if (modalMode === 'create') {
         await serviceService.create(payload);
-        toast.success('Service created successfully!');
+        toast.success(t('ownerServices.messages.createSuccess'));
       } else {
         await serviceService.update(selectedServiceId, payload);
-        toast.success('Service updated successfully!');
+        toast.success(t('ownerServices.messages.updateSuccess'));
       }
 
       setShowModal(false);
       await loadServices();
     } catch (error) {
       console.error('❌ Error submitting service:', error);
-      toast.error(error.response?.data?.message || `Failed to ${modalMode} service`);
+      toast.error(error.response?.data?.message || t(`ownerServices.errors.${modalMode}Failed`));
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (serviceId) => {
-    if (!confirm('Are you sure you want to delete this service?')) return;
+    if (!confirm(t('ownerServices.messages.deleteConfirm'))) return;
 
     try {
       await serviceService.remove(serviceId);
-      toast.success('Service deleted successfully!');
+      toast.success(t('ownerServices.messages.deleteSuccess'));
       await loadServices();
     } catch (error) {
       console.error('❌ Error deleting service:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete service');
+      toast.error(error.response?.data?.message || t('ownerServices.errors.deleteFailed'));
     }
   };
 
@@ -130,9 +132,9 @@ export default function OwnerServicesPage() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Service Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('ownerServices.title')}</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Create and manage extra services (cleaning, laundry, parking, etc.)
+              {t('ownerServices.subtitle')}
             </p>
           </div>
           <div className="flex gap-3 mt-4 sm:mt-0">
@@ -143,7 +145,7 @@ export default function OwnerServicesPage() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Add Service
+              {t('ownerServices.addService')}
             </button>
           </div>
         </div>
@@ -154,7 +156,7 @@ export default function OwnerServicesPage() {
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/50 dark:to-blue-800/50 rounded-2xl p-6 border border-blue-200 dark:border-blue-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">Total Services</p>
+              <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">{t('ownerServices.stats.totalServices')}</p>
               <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{services.length}</p>
             </div>
             <div className="p-3 bg-blue-200 dark:bg-blue-700 rounded-xl">
@@ -171,9 +173,9 @@ export default function OwnerServicesPage() {
         {services.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🛎️</div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No services yet</h3>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('ownerServices.emptyState.title')}</h3>
             <p className="text-gray-500 dark:text-gray-400 mb-4">
-              Create your first service to offer extras to tenants
+              {t('ownerServices.emptyState.description')}
             </p>
             <button
               onClick={handleOpenCreate}
@@ -182,7 +184,7 @@ export default function OwnerServicesPage() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Create First Service
+              {t('ownerServices.emptyState.createFirst')}
             </button>
           </div>
         ) : (
@@ -200,7 +202,7 @@ export default function OwnerServicesPage() {
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Service ID: {service.id}
+                      {t('ownerServices.list.serviceId')}: {service.id}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2 ml-4">
@@ -208,13 +210,13 @@ export default function OwnerServicesPage() {
                       onClick={() => handleOpenEdit(service)}
                       className="px-4 py-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg text-sm font-medium transition-colors"
                     >
-                      ✏️ Edit
+                      ✏️ {t('ownerServices.list.edit')}
                     </button>
                     <button
                       onClick={() => handleDelete(service.id)}
                       className="px-4 py-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg text-sm font-medium transition-colors"
                     >
-                      🗑️ Delete
+                      🗑️ {t('ownerServices.list.delete')}
                     </button>
                   </div>
                 </div>
@@ -230,7 +232,7 @@ export default function OwnerServicesPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {modalMode === 'create' ? '➕ Create Service' : '✏️ Edit Service'}
+                {modalMode === 'create' ? `➕ ${t('ownerServices.modal.createTitle')}` : `✏️ ${t('ownerServices.modal.editTitle')}`}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
@@ -243,7 +245,7 @@ export default function OwnerServicesPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Service Name *
+                  {t('ownerServices.modal.serviceName')} *
                 </label>
                 <input
                   type="text"
@@ -255,7 +257,7 @@ export default function OwnerServicesPage() {
                   className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
                     errors.serviceName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                   }`}
-                  placeholder="e.g. Cleaning Service, Laundry, Parking"
+                  placeholder={t('ownerServices.modal.serviceNamePlaceholder')}
                 />
                 {errors.serviceName && (
                   <p className="text-red-500 text-xs mt-1">{errors.serviceName}</p>
@@ -264,7 +266,7 @@ export default function OwnerServicesPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Price (VND) *
+                  {t('ownerServices.modal.price')} *
                 </label>
                 <input
                   type="number"
@@ -278,7 +280,7 @@ export default function OwnerServicesPage() {
                   className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${
                     errors.price ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                   }`}
-                  placeholder="50000"
+                  placeholder={t('ownerServices.modal.pricePlaceholder')}
                 />
                 {errors.price && (
                   <p className="text-red-500 text-xs mt-1">{errors.price}</p>
@@ -292,7 +294,7 @@ export default function OwnerServicesPage() {
                 disabled={submitting}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
               >
-                Cancel
+                {t('ownerServices.modal.cancel')}
               </button>
               <button
                 onClick={handleSubmit}
@@ -305,10 +307,10 @@ export default function OwnerServicesPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Saving...
+                    {t('ownerServices.modal.saving')}
                   </>
                 ) : (
-                  modalMode === 'create' ? 'Create Service' : 'Update Service'
+                  modalMode === 'create' ? t('ownerServices.modal.create') : t('ownerServices.modal.update')
                 )}
               </button>
             </div>
