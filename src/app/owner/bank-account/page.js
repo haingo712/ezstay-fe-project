@@ -90,6 +90,7 @@ export default function BankAccountPage() {
             }
         } catch (err) {
             console.error('Error loading bank accounts:', err);
+            setError(t('bankAccount.errorLoading'));
             setBankAccounts([]);
         } finally {
             setLoading(false);
@@ -164,7 +165,7 @@ export default function BankAccountPage() {
             });
         } catch (err) {
             console.error('Error saving bank account:', err);
-            setError(err.message || 'Unable to save bank account. Please try again.');
+            setError(err.message || t('bankAccount.errorSaving'));
         } finally {
             setLoading(false);
         }
@@ -237,14 +238,12 @@ export default function BankAccountPage() {
             await loadBankAccounts();
         } catch (err) {
             console.error('Error toggling bank account status:', err);
-            setError(err.message || 'Unable to change account status. Please try again.');
-            // Revert optimistic update on error
-            await loadBankAccounts();
+            setError(err.message || t('bankAccount.errorToggle'));
         }
     };
 
     const handleDelete = async (account) => {
-        if (!confirm(`Are you sure you want to delete account ${account.bankName} - ${account.accountNumber}?`)) {
+        if (!confirm(t('bankAccount.deleteConfirm'))) {
             return;
         }
 
@@ -258,7 +257,7 @@ export default function BankAccountPage() {
             }
         } catch (err) {
             console.error('Error deleting bank account:', err);
-            setError(err.message || 'Unable to delete bank account. Please try again.');
+            setError(err.message || t('bankAccount.errorDeleting'));
         }
     };
 
@@ -464,8 +463,8 @@ export default function BankAccountPage() {
                                                     </option>
                                                 ))}
                                             </select>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                                {availableBanks.length} banks available
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                {t('bankAccount.foundBanks').replace('{{count}}', availableBanks.length)}
                                             </p>
                                         </div>
                                     )}

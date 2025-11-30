@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 import { paymentAPI } from '@/utils/api';
 
 export default function PaymentManagementPage() {
     const { user } = useAuth();
     const router = useRouter();
+    const { t } = useTranslation();
 
     const [loading, setLoading] = useState(true);
     const [payments, setPayments] = useState([]);
@@ -87,7 +89,7 @@ export default function PaymentManagementPage() {
             setPayments(mockPayments);
         } catch (err) {
             console.error('Error loading payments:', err);
-            setError('Không thể tải danh sách thanh toán. Vui lòng thử lại.');
+            setError(t('paymentManagement.errors.loadFailed'));
             setPayments([]);
         } finally {
             setLoading(false);
@@ -137,9 +139,9 @@ export default function PaymentManagementPage() {
 
     const getStatusBadge = (status) => {
         const statusConfig = {
-            completed: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-400', label: 'Hoàn thành' },
-            pending: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-800 dark:text-yellow-400', label: 'Chờ xử lý' },
-            failed: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-400', label: 'Thất bại' }
+            completed: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-400', label: t('paymentManagement.status.completed') },
+            pending: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-800 dark:text-yellow-400', label: t('paymentManagement.status.pending') },
+            failed: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-400', label: t('paymentManagement.status.failed') }
         };
         const config = statusConfig[status] || statusConfig.pending;
         return (
@@ -159,7 +161,7 @@ export default function PaymentManagementPage() {
                 <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                        <p className="mt-4 text-gray-600 dark:text-gray-400">Đang tải dữ liệu thanh toán...</p>
+                        <p className="mt-4 text-gray-600 dark:text-gray-400">{t('paymentManagement.loading')}</p>
                     </div>
                 </div>
             </ProtectedRoute>
@@ -184,10 +186,10 @@ export default function PaymentManagementPage() {
                                 </button>
                                 <div>
                                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                                        💰 Quản Lý Thanh Toán
+                                        💰 {t('paymentManagement.title')}
                                     </h1>
                                     <p className="text-gray-600 dark:text-gray-400 mt-1">
-                                        Theo dõi và quản lý các giao dịch thanh toán
+                                        {t('paymentManagement.subtitle')}
                                     </p>
                                 </div>
                             </div>
@@ -199,7 +201,7 @@ export default function PaymentManagementPage() {
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                 </svg>
-                                Tài Khoản Ngân Hàng
+                                {t('paymentManagement.bankAccountBtn')}
                             </button>
                         </div>
                     </div>
@@ -211,7 +213,7 @@ export default function PaymentManagementPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Tổng giao dịch</p>
+                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('paymentManagement.stats.total')}</p>
                                     <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.total}</p>
                                 </div>
                                 <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
@@ -225,7 +227,7 @@ export default function PaymentManagementPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Hoàn thành</p>
+                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('paymentManagement.stats.completed')}</p>
                                     <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{stats.completed}</p>
                                 </div>
                                 <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
@@ -239,7 +241,7 @@ export default function PaymentManagementPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Chờ xử lý</p>
+                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('paymentManagement.stats.pending')}</p>
                                     <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{stats.pending}</p>
                                 </div>
                                 <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
@@ -253,7 +255,7 @@ export default function PaymentManagementPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Thất bại</p>
+                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('paymentManagement.stats.failed')}</p>
                                     <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{stats.failed}</p>
                                 </div>
                                 <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
@@ -266,7 +268,7 @@ export default function PaymentManagementPage() {
 
                         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-sm p-6 text-white">
                             <div>
-                                <p className="text-sm font-medium opacity-90">Tổng thu nhập</p>
+                                <p className="text-sm font-medium opacity-90">{t('paymentManagement.stats.totalIncome')}</p>
                                 <p className="text-xl font-bold mt-1">{formatCurrency(stats.totalAmount)}</p>
                             </div>
                         </div>
@@ -290,13 +292,13 @@ export default function PaymentManagementPage() {
                             {/* Search */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    🔍 Tìm kiếm
+                                    🔍 {t('paymentManagement.filter.search')}
                                 </label>
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Tên người thuê, phòng, mã giao dịch..."
+                                    placeholder={t('paymentManagement.filter.searchPlaceholder')}
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                                 />
                             </div>
@@ -305,7 +307,7 @@ export default function PaymentManagementPage() {
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        📅 Từ ngày
+                                        📅 {t('paymentManagement.filter.fromDate')}
                                     </label>
                                     <input
                                         type="date"
@@ -316,7 +318,7 @@ export default function PaymentManagementPage() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        📅 Đến ngày
+                                        📅 {t('paymentManagement.filter.toDate')}
                                     </label>
                                     <input
                                         type="date"
@@ -330,7 +332,7 @@ export default function PaymentManagementPage() {
                             {/* Status Filter */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    📊 Trạng thái
+                                    📊 {t('paymentManagement.filter.status')}
                                 </label>
                                 <div className="flex gap-2">
                                     <button
@@ -340,7 +342,7 @@ export default function PaymentManagementPage() {
                                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                             }`}
                                     >
-                                        Tất cả
+                                        {t('paymentManagement.filter.all')}
                                     </button>
                                     <button
                                         onClick={() => setFilterStatus('completed')}
@@ -349,7 +351,7 @@ export default function PaymentManagementPage() {
                                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                             }`}
                                     >
-                                        Hoàn thành
+                                        {t('paymentManagement.filter.completed')}
                                     </button>
                                     <button
                                         onClick={() => setFilterStatus('pending')}
@@ -358,7 +360,7 @@ export default function PaymentManagementPage() {
                                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                             }`}
                                     >
-                                        Chờ
+                                        {t('paymentManagement.filter.pending')}
                                     </button>
                                     <button
                                         onClick={() => setFilterStatus('failed')}
@@ -367,7 +369,7 @@ export default function PaymentManagementPage() {
                                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                             }`}
                                     >
-                                        Thất bại
+                                        {t('paymentManagement.filter.failed')}
                                     </button>
                                 </div>
                             </div>
@@ -375,7 +377,7 @@ export default function PaymentManagementPage() {
 
                         {/* Results count */}
                         <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                            Hiển thị <span className="font-semibold text-blue-600 dark:text-blue-400">{filteredPayments.length}</span> / {payments.length} giao dịch
+                            {t('paymentManagement.filter.showing')} <span className="font-semibold text-blue-600 dark:text-blue-400">{filteredPayments.length}</span> / {payments.length} {t('paymentManagement.filter.transactions')}
                         </div>
                     </div>
 
@@ -388,28 +390,28 @@ export default function PaymentManagementPage() {
                                         <thead className="bg-gray-50 dark:bg-gray-700">
                                             <tr>
                                                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                    Mã GD
+                                                    {t('paymentManagement.table.transactionId')}
                                                 </th>
                                                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                    Người thuê
+                                                    {t('paymentManagement.table.tenant')}
                                                 </th>
                                                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                    Phòng
+                                                    {t('paymentManagement.table.room')}
                                                 </th>
                                                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                    Số tiền
+                                                    {t('paymentManagement.table.amount')}
                                                 </th>
                                                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                    Ngân hàng
+                                                    {t('paymentManagement.table.bank')}
                                                 </th>
                                                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                    Trạng thái
+                                                    {t('paymentManagement.table.status')}
                                                 </th>
                                                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                    Ngày tạo
+                                                    {t('paymentManagement.table.createdAt')}
                                                 </th>
                                                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                    Thao tác
+                                                    {t('paymentManagement.table.actions')}
                                                 </th>
                                             </tr>
                                         </thead>
@@ -455,7 +457,7 @@ export default function PaymentManagementPage() {
                                                             onClick={() => setSelectedPayment(payment)}
                                                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
                                                         >
-                                                            Chi tiết
+                                                            {t('paymentManagement.table.viewDetails')}
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -469,9 +471,9 @@ export default function PaymentManagementPage() {
                             {totalPages > 1 && (
                                 <div className="flex items-center justify-between bg-white dark:bg-gray-800 px-6 py-4 rounded-xl shadow-sm">
                                     <div className="text-sm text-gray-700 dark:text-gray-300">
-                                        Hiển thị <span className="font-medium">{indexOfFirstItem + 1}</span> đến{' '}
-                                        <span className="font-medium">{Math.min(indexOfLastItem, filteredPayments.length)}</span> trong tổng số{' '}
-                                        <span className="font-medium">{filteredPayments.length}</span> giao dịch
+                                        {t('paymentManagement.pagination.showing')} <span className="font-medium">{indexOfFirstItem + 1}</span> {t('paymentManagement.pagination.to')}{' '}
+                                        <span className="font-medium">{Math.min(indexOfLastItem, filteredPayments.length)}</span> {t('paymentManagement.pagination.of')}{' '}
+                                        <span className="font-medium">{filteredPayments.length}</span> {t('paymentManagement.pagination.transactions')}
                                     </div>
                                     <div className="flex gap-2">
                                         <button
@@ -479,7 +481,7 @@ export default function PaymentManagementPage() {
                                             disabled={currentPage === 1}
                                             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            Trước
+                                            {t('paymentManagement.pagination.prev')}
                                         </button>
                                         {[...Array(totalPages)].map((_, index) => (
                                             <button
@@ -498,7 +500,7 @@ export default function PaymentManagementPage() {
                                             disabled={currentPage === totalPages}
                                             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            Sau
+                                            {t('paymentManagement.pagination.next')}
                                         </button>
                                     </div>
                                 </div>
@@ -513,12 +515,12 @@ export default function PaymentManagementPage() {
                                     </svg>
                                 </div>
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                                    Không có giao dịch
+                                    {t('paymentManagement.emptyState.title')}
                                 </h3>
                                 <p className="text-gray-600 dark:text-gray-400 mb-6">
                                     {searchQuery || filterStatus !== 'all' || dateRange.from || dateRange.to
-                                        ? 'Không tìm thấy giao dịch phù hợp với bộ lọc'
-                                        : 'Chưa có giao dịch thanh toán nào'}
+                                        ? t('paymentManagement.emptyState.noResults')
+                                        : t('paymentManagement.emptyState.noTransactions')}
                                 </p>
                                 {(searchQuery || filterStatus !== 'all' || dateRange.from || dateRange.to) && (
                                     <button
@@ -532,7 +534,7 @@ export default function PaymentManagementPage() {
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                         </svg>
-                                        Xóa bộ lọc
+                                        {t('paymentManagement.emptyState.clearFilter')}
                                     </button>
                                 )}
                             </div>
@@ -546,7 +548,7 @@ export default function PaymentManagementPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                             <div className="p-6 border-b dark:border-gray-700 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-800">
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                    Chi Tiết Giao Dịch
+                                    {t('paymentManagement.modal.title')}
                                 </h3>
                                 <button
                                     onClick={() => setSelectedPayment(null)}
@@ -561,7 +563,7 @@ export default function PaymentManagementPage() {
                                 <div className="grid grid-cols-2 gap-6">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                            Mã giao dịch
+                                            {t('paymentManagement.modal.transactionId')}
                                         </label>
                                         <p className="text-lg font-mono font-semibold text-gray-900 dark:text-white">
                                             {selectedPayment.transactionId}
@@ -569,13 +571,13 @@ export default function PaymentManagementPage() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                            Trạng thái
+                                            {t('paymentManagement.modal.status')}
                                         </label>
                                         {getStatusBadge(selectedPayment.status)}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                            Người thuê
+                                            {t('paymentManagement.modal.tenant')}
                                         </label>
                                         <p className="text-lg text-gray-900 dark:text-white">
                                             {selectedPayment.tenantName}
@@ -583,7 +585,7 @@ export default function PaymentManagementPage() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                            Phòng
+                                            {t('paymentManagement.modal.room')}
                                         </label>
                                         <p className="text-lg text-gray-900 dark:text-white">
                                             {selectedPayment.roomName}
@@ -591,7 +593,7 @@ export default function PaymentManagementPage() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                            Ngân hàng
+                                            {t('paymentManagement.modal.bank')}
                                         </label>
                                         <p className="text-lg text-gray-900 dark:text-white">
                                             {selectedPayment.bankName}
@@ -599,7 +601,7 @@ export default function PaymentManagementPage() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                            Số tài khoản
+                                            {t('paymentManagement.modal.accountNumber')}
                                         </label>
                                         <p className="text-lg font-mono text-gray-900 dark:text-white">
                                             {selectedPayment.accountNumber}
@@ -607,7 +609,7 @@ export default function PaymentManagementPage() {
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                            Số tiền
+                                            {t('paymentManagement.modal.amount')}
                                         </label>
                                         <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                                             {formatCurrency(selectedPayment.amount)}
@@ -615,7 +617,7 @@ export default function PaymentManagementPage() {
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                            Mô tả
+                                            {t('paymentManagement.modal.description')}
                                         </label>
                                         <p className="text-gray-900 dark:text-white">
                                             {selectedPayment.description}
@@ -623,7 +625,7 @@ export default function PaymentManagementPage() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                            Ngày tạo
+                                            {t('paymentManagement.modal.createdAt')}
                                         </label>
                                         <p className="text-gray-900 dark:text-white">
                                             {new Date(selectedPayment.createdAt).toLocaleString('vi-VN')}
@@ -632,7 +634,7 @@ export default function PaymentManagementPage() {
                                     {selectedPayment.completedAt && (
                                         <div>
                                             <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                                Ngày hoàn thành
+                                                {t('paymentManagement.modal.completedAt')}
                                             </label>
                                             <p className="text-gray-900 dark:text-white">
                                                 {new Date(selectedPayment.completedAt).toLocaleString('vi-VN')}
@@ -646,7 +648,7 @@ export default function PaymentManagementPage() {
                                     onClick={() => setSelectedPayment(null)}
                                     className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
                                 >
-                                    Đóng
+                                    {t('paymentManagement.modal.close')}
                                 </button>
                             </div>
                         </div>

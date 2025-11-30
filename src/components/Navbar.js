@@ -94,11 +94,24 @@ import { useLanguage } from "@/context/LanguageContext";
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
-  const { isAuthenticated, user, logout, refreshUserInfo } = useAuth();
+  const { isAuthenticated, user, logout, refreshUserInfo, loadUserAvatar } = useAuth();
   const { language, changeLanguage, t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
+
+  // Load user avatar when user logs in
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log("📸 Navbar: User authenticated, checking avatar...");
+      if (!user.avatar && !user.avata) {
+        console.log("📸 Navbar: No avatar found, loading...");
+        loadUserAvatar();
+      } else {
+        console.log("📸 Navbar: Avatar already present:", user.avatar || user.avata);
+      }
+    }
+  }, [isAuthenticated, user?.id]); // Only re-run when authentication status or user ID changes
 
   // Get user role from user object or default to guest
   const userRole = user?.role || "guest";
@@ -106,12 +119,18 @@ export default function Navbar() {
   // Get email from various possible JWT claim locations
   const userEmail = user?.email ||
     user?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
+    user?.fullName ||
+    user?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
     "Guest User";
+
+  // Get avatar URL from user object (note: backend uses 'avata' not 'avatar')
+  const userAvatar = user?.avatar || user?.avata || null;
 
   // Debug logging
   console.log("Navbar - User:", user);
   console.log("Navbar - UserRole:", userRole, "Type:", typeof userRole);
   console.log("Navbar - UserEmail:", userEmail);
+  console.log("Navbar - UserAvatar:", userAvatar);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -189,6 +208,43 @@ export default function Navbar() {
             <div className="flex items-center space-x-4">
               {/* Chuông thông báo */}
               <GlobalNotificationBell />
+
+              {/* Language Switcher */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
+                  className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 flex items-center space-x-1"
+                  title="Change Language"
+                >
+                  <span className="text-sm font-medium">{language === 'vi' ? '🇻🇳' : '🇺🇸'}</span>
+                  <span className="text-xs">{language === 'vi' ? 'VI' : 'EN'}</span>
+                </button>
+                {isLanguageMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-50 py-1">
+                    <button
+                      onClick={() => {
+                        changeLanguage('vi');
+                        setIsLanguageMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 ${language === 'vi' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-200'}`}
+                    >
+                      <span>🇻🇳</span>
+                      <span>Tiếng Việt</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        changeLanguage('en');
+                        setIsLanguageMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 ${language === 'en' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-200'}`}
+                    >
+                      <span>🇺🇸</span>
+                      <span>English</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Theme Toggle Button */}
               <button
                 onClick={toggleTheme}
@@ -227,14 +283,15 @@ export default function Navbar() {
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full text-white font-bold text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 overflow-hidden"
                   >
-                    {user?.avatar ? (
+                    {userAvatar ? (
                       <img
-                        src={user.avatar}
+                        src={userAvatar}
                         alt="User Avatar"
                         className="w-full h-full object-cover"
-                        onError={() => {
+                        onError={(e) => {
                           // On error, hide image and show letter
-                          console.log("Avatar failed to load, showing letter");
+                          e.target.style.display = 'none';
+                          e.target.parentElement.innerHTML = `<span>${userEmail.charAt(0).toUpperCase()}</span>`;
                         }}
                       />
                     ) : (
@@ -246,6 +303,8 @@ export default function Navbar() {
                       <div className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 border-b dark:border-gray-600">
                         <p className="font-semibold truncate">{userEmail}</p>
                       </div>
+                      
+                      {/* Hồ sơ - Hiện cho tất cả roles */}
                       <Link
                         href="/profile"
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -253,43 +312,63 @@ export default function Navbar() {
                       >
                         {t('nav.profile')}
                       </Link>
-                      <Link
-                        href="/chat"
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        {t('nav.myChats')}
-                      </Link>
-                      <Link
-                        href="/profile/rental-history"
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        {t('nav.rentalHistory')}
-                      </Link>
 
-                      <Link
-                        href="/bills"
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        {t('nav.myBills')}
-                      </Link>
+                      {/* Tin nhắn - Chỉ cho User và Owner */}
+                      {(userRole === 1 || userRole === "user" || userRole === 2 || userRole === "owner") && (
+                        <Link
+                          href="/chat"
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          {t('nav.myChats')}
+                        </Link>
+                      )}
 
-                      <Link
-                        href={getUserDashboardLink()}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        {t('nav.dashboard')}
-                      </Link>
-                      <Link
-                        href="/register-owner"
-                        className="block w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        🏠 Register as Owner
-                      </Link>
+                      {/* Lịch sử thuê - Chỉ cho User */}
+                      {(userRole === 1 || userRole === "user") && (
+                        <Link
+                          href="/profile/rental-history"
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          {t('nav.rentalHistory')}
+                        </Link>
+                      )}
+
+                      {/* Hóa đơn - Chỉ cho User và Owner */}
+                      {(userRole === 1 || userRole === "user" || userRole === 2 || userRole === "owner") && (
+                        <Link
+                          href="/bills"
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          {t('nav.myBills')}
+                        </Link>
+                      )}
+
+                      {/* Bảng điều khiển - Chỉ cho Owner, Staff, Admin */}
+                      {(userRole === 2 || userRole === "owner" || userRole === 3 || userRole === "staff" || userRole === 4 || userRole === "admin") && (
+                        <Link
+                          href={getUserDashboardLink()}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          {t('nav.dashboard')}
+                        </Link>
+                      )}
+
+                      {/* Register as Owner - Chỉ cho User */}
+                      {(userRole === 1 || userRole === "user") && (
+                        <Link
+                          href="/register-owner"
+                          className="block w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          🏠 Register as Owner
+                        </Link>
+                      )}
+
+                      {/* Đăng xuất - Hiện cho tất cả roles */}
                       <button
                         onClick={handleLogout}
                         className="block w-full px-4 py-2 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"

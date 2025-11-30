@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import userManagementService from '@/services/userManagementService';
 import AuthService from '@/services/authService';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function StaffManagementPage() {
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -300,7 +302,7 @@ export default function StaffManagementPage() {
     if (!selectedStaff) return;
     
     try {
-      console.log('🗑️ Deleting staff ID:', selectedStaff.id);
+      console.log(' Deleting staff ID:', selectedStaff.id);
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts/${selectedStaff.id}`, {
         method: 'DELETE',
@@ -368,10 +370,10 @@ export default function StaffManagementPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            👥 Staff Management
+            👥 {t('staffManagement.title')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage staff accounts (Admin only)
+            {t('staffManagement.subtitle')}
           </p>
         </div>
         <div className="flex gap-3">
@@ -383,7 +385,7 @@ export default function StaffManagementPage() {
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            Export CSV
+            {t('staffManagement.exportCSV')}
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
@@ -392,22 +394,22 @@ export default function StaffManagementPage() {
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Create Staff Account
+            {t('staffManagement.createStaff')}
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-purple-100 text-sm">Total Staff</p>
+          <p className="text-purple-100 text-sm">{t('staffManagement.stats.totalStaff')}</p>
           <p className="text-3xl font-bold mt-2">{staffList.length}</p>
         </div>
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-emerald-100 text-sm">Active</p>
+          <p className="text-emerald-100 text-sm">{t('staffManagement.stats.active')}</p>
           <p className="text-3xl font-bold mt-2">{staffList.filter(s => s.isActive).length}</p>
         </div>
         <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-red-100 text-sm">Inactive</p>
+          <p className="text-red-100 text-sm">{t('staffManagement.stats.inactive')}</p>
           <p className="text-3xl font-bold mt-2">{staffList.filter(s => !s.isActive).length}</p>
         </div>
       </div>
@@ -416,7 +418,7 @@ export default function StaffManagementPage() {
         <div className="flex-1 relative">
           <input
             type="text"
-            placeholder="🔍 Search by name, email, phone, or ID..."
+            placeholder={t('staffManagement.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -462,7 +464,7 @@ export default function StaffManagementPage() {
         {loading ? (
           <div className="p-8 text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">Loading staff accounts...</p>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">{t('staffManagement.loading')}</p>
           </div>
         ) : filteredAndSortedStaff.length === 0 ? (
           <div className="p-8 text-center text-gray-600 dark:text-gray-400">
@@ -471,12 +473,12 @@ export default function StaffManagementPage() {
                 <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                <p className="text-lg font-medium">No staff found matching "{searchQuery}"</p>
+                <p className="text-lg font-medium">{t('staffManagement.noStaffMatching')} "{searchQuery}"</p>
                 <button
                   onClick={() => setSearchQuery('')}
                   className="mt-2 text-purple-600 hover:text-purple-700 dark:text-purple-400"
                 >
-                  Clear search
+                  {t('staffManagement.clearSearch')}
                 </button>
               </>
             ) : (
@@ -506,7 +508,7 @@ export default function StaffManagementPage() {
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                   >
                     <div className="flex items-center gap-2">
-                      Staff Info
+                      {t('staffManagement.table.staffInfo')}
                       {sortConfig.key === 'fullName' && (
                         <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -519,7 +521,7 @@ export default function StaffManagementPage() {
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                   >
                     <div className="flex items-center gap-2">
-                      Contact
+                      {t('staffManagement.table.contact')}
                       {sortConfig.key === 'email' && (
                         <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -532,7 +534,7 @@ export default function StaffManagementPage() {
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                   >
                     <div className="flex items-center gap-2">
-                      Status
+                      {t('staffManagement.table.status')}
                       {sortConfig.key === 'isActive' && (
                         <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -545,7 +547,7 @@ export default function StaffManagementPage() {
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                   >
                     <div className="flex items-center gap-2">
-                      Created Date
+                      {t('staffManagement.table.createdDate')}
                       {sortConfig.key === 'createdAt' && (
                         <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -554,7 +556,7 @@ export default function StaffManagementPage() {
                     </div>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    Actions
+                    {t('staffManagement.table.actions')}
                   </th>
                 </tr>
               </thead>
@@ -590,7 +592,7 @@ export default function StaffManagementPage() {
                           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
                           : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                       }`}>
-                        {staff.isActive ? 'Active' : 'Inactive'}
+                        {staff.isActive ? t('staffManagement.status.active') : t('staffManagement.status.inactive')}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
@@ -604,13 +606,13 @@ export default function StaffManagementPage() {
                         }}
                         className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                       >
-                        View
+                        {t('common.view')}
                       </button>
                       <button
                         onClick={() => handleEditStaff(staff)}
                         className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
                       >
-                        Edit
+                        {t('common.edit')}
                       </button>
                       <button
                         onClick={() => handleStatusToggle(staff.id, staff.isActive)}
@@ -620,7 +622,7 @@ export default function StaffManagementPage() {
                             : 'text-green-600 hover:text-green-900 dark:text-green-400'
                         }`}
                       >
-                        {staff.isActive ? 'Ban' : 'Unban'}
+                        {staff.isActive ? t('staffManagement.actions.ban') : t('staffManagement.actions.unban')}
                       </button>
                     </td>
                   </tr>
@@ -637,12 +639,12 @@ export default function StaffManagementPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                Create Staff Account
+                {t('staffManagement.modal.createTitle')}
               </h2>
               <form onSubmit={handleCreateStaff} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Full Name
+                    {t('staffManagement.form.fullName')}
                   </label>
                   <input
                     type="text"
@@ -654,7 +656,7 @@ export default function StaffManagementPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Email
+                    {t('staffManagement.form.email')}
                   </label>
                   <input
                     type="email"
@@ -666,7 +668,7 @@ export default function StaffManagementPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Phone
+                    {t('staffManagement.form.phone')}
                   </label>
                   <input
                     type="tel"
@@ -678,7 +680,7 @@ export default function StaffManagementPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Password
+                    {t('staffManagement.form.password')}
                   </label>
                   <input
                     type="password"
@@ -693,14 +695,14 @@ export default function StaffManagementPage() {
                     type="submit"
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
-                    Create Staff
+                    {t('staffManagement.actions.createStaff')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
                     className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </form>
@@ -714,12 +716,12 @@ export default function StaffManagementPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                Edit Staff Account
+                {t('staffManagement.modal.editTitle')}
               </h2>
               <form onSubmit={handleUpdateStaff} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Full Name
+                    {t('staffManagement.form.fullName')}
                   </label>
                   <input
                     type="text"
@@ -730,7 +732,7 @@ export default function StaffManagementPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Email
+                    {t('staffManagement.form.email')}
                   </label>
                   <input
                     type="email"
@@ -741,7 +743,7 @@ export default function StaffManagementPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Phone
+                    {t('staffManagement.form.phone')}
                   </label>
                   <input
                     type="tel"
@@ -752,17 +754,17 @@ export default function StaffManagementPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    New Password
+                    {t('staffManagement.form.newPassword')}
                   </label>
                   <input
                     type="password"
                     value={editStaff.password}
                     onChange={(e) => setEditStaff({...editStaff, password: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Leave empty to keep current password"
+                    placeholder={t('staffManagement.form.passwordPlaceholder')}
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Leave empty to keep current password
+                    {t('staffManagement.form.passwordHint')}
                   </p>
                 </div>
                 <div className="flex gap-2 pt-4">
@@ -770,7 +772,7 @@ export default function StaffManagementPage() {
                     type="submit"
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
                   >
-                    Update Staff
+                    {t('staffManagement.actions.updateStaff')}
                   </button>
                   <button
                     type="button"
@@ -780,7 +782,7 @@ export default function StaffManagementPage() {
                     }}
                     className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </form>
@@ -798,19 +800,19 @@ export default function StaffManagementPage() {
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2">
-              Delete Staff Account
+              {t('staffManagement.modal.deleteTitle')}
             </h2>
             <p className="text-center text-gray-600 dark:text-gray-400 mb-6">
-              Are you sure you want to permanently delete <span className="font-semibold text-gray-900 dark:text-white">{selectedStaff.fullName || selectedStaff.email}</span>?
+              {t('staffManagement.modal.deleteMessage')} <span className="font-semibold text-gray-900 dark:text-white">{selectedStaff.fullName || selectedStaff.email}</span>?
               <br />
-              <span className="text-red-600 dark:text-red-400 font-medium">This action cannot be undone!</span>
+              <span className="text-red-600 dark:text-red-400 font-medium">{t('staffManagement.modal.deleteWarning')}</span>
             </p>
             <div className="flex gap-3">
               <button
                 onClick={handleDeleteStaff}
                 className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
               >
-                Yes, Delete
+                {t('staffManagement.actions.confirmDelete')}
               </button>
               <button
                 onClick={() => {
@@ -819,7 +821,7 @@ export default function StaffManagementPage() {
                 }}
                 className="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 font-medium"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -833,7 +835,7 @@ export default function StaffManagementPage() {
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    Staff Account Details
+                    {t('staffManagement.modal.viewTitle')}
                   </h2>
                   <span className="inline-block mt-2 px-3 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
                     STAFF
@@ -851,35 +853,35 @@ export default function StaffManagementPage() {
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Full Name</label>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('staffManagement.form.fullName')}</label>
                   <p className="text-gray-900 dark:text-white mt-1">{selectedStaff.fullName || 'N/A'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('staffManagement.form.email')}</label>
                   <p className="text-gray-900 dark:text-white mt-1">{selectedStaff.email}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Phone</label>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('staffManagement.form.phone')}</label>
                   <p className="text-gray-900 dark:text-white mt-1">{selectedStaff.phone || 'N/A'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Account ID</label>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('staffManagement.form.accountId')}</label>
                   <p className="text-gray-900 dark:text-white mt-1">{selectedStaff.id}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</label>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('staffManagement.table.status')}</label>
                   <p className="mt-1">
                     <span className={`px-3 py-1 text-xs font-medium rounded-full ${
                       selectedStaff.isActive
                         ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
                         : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                     }`}>
-                      {selectedStaff.isActive ? 'Active' : 'Inactive'}
+                      {selectedStaff.isActive ? t('staffManagement.status.active') : t('staffManagement.status.inactive')}
                     </span>
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</label>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('staffManagement.table.createdDate')}</label>
                   <p className="text-gray-900 dark:text-white mt-1">{formatDate(selectedStaff.createdAt)}</p>
                 </div>
               </div>
@@ -892,7 +894,7 @@ export default function StaffManagementPage() {
                   }}
                   className="px-4 py-2 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-200 rounded-lg font-medium"
                 >
-                  Edit Account
+                  {t('staffManagement.actions.editAccount')}
                 </button>
                 <button
                   onClick={() => {
@@ -905,7 +907,7 @@ export default function StaffManagementPage() {
                       : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-200'
                   }`}
                 >
-                  {selectedStaff.isActive ? 'Ban Account' : 'Unban Account'}
+                  {selectedStaff.isActive ? t('staffManagement.actions.banAccount') : t('staffManagement.actions.unbanAccount')}
                 </button>
                 <button
                   onClick={() => {
@@ -914,13 +916,13 @@ export default function StaffManagementPage() {
                   }}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
                 >
-                  Delete Account
+                  {t('staffManagement.actions.deleteAccount')}
                 </button>
                 <button
                   onClick={() => setShowViewModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 font-medium"
                 >
-                  Close
+                  {t('common.close')}
                 </button>
               </div>
             </div>

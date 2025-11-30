@@ -4,8 +4,10 @@ import { useParams, useRouter } from "next/navigation";
 import boardingHouseService from "@/services/boardingHouseService";
 import roomService from "@/services/roomService";
 import Link from "next/link";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function OwnerBoardingHouseDetail() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const houseId = params.id;
@@ -62,7 +64,7 @@ export default function OwnerBoardingHouseDetail() {
   };
 
   if (!mounted) {
-    return <div>Loading...</div>;
+    return <div>{t('common.loading')}</div>;
   }
 
   if (loading) {
@@ -77,10 +79,10 @@ export default function OwnerBoardingHouseDetail() {
     return (
       <div className="text-center py-12">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-          House not found
+          {t('ownerBoardingHouseDetail.notFound.title')}
         </h3>
         <p className="text-gray-500 dark:text-gray-400">
-          The boarding house you're looking for doesn't exist or you don't have permission to view it.
+          {t('ownerBoardingHouseDetail.notFound.description')}
         </p>
       </div>
     );
@@ -97,7 +99,7 @@ export default function OwnerBoardingHouseDetail() {
                 onClick={() => router.back()}
                 className="inline-flex items-center px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
               >
-                ← Back
+                ← {t('common.back')}
               </button>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                 {houseData.houseName}
@@ -112,16 +114,16 @@ export default function OwnerBoardingHouseDetail() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
               <div>
-                <strong>📍 Address:</strong> {houseData.address}
+                <strong>📍 {t('ownerBoardingHouseDetail.info.address')}:</strong> {houseData.address}
               </div>
               <div>
-                <strong>📞 Phone:</strong> {houseData.phoneNumber || 'N/A'}
+                <strong>📞 {t('ownerBoardingHouseDetail.info.phone')}:</strong> {houseData.phoneNumber || 'N/A'}
               </div>
               <div>
-                <strong>📧 Email:</strong> {houseData.email || 'N/A'}
+                <strong>📧 {t('ownerBoardingHouseDetail.info.email')}:</strong> {houseData.email || 'N/A'}
               </div>
               <div>
-                <strong>🏢 Type:</strong> {houseData.houseType || 'N/A'}
+                <strong>🏢 {t('ownerBoardingHouseDetail.info.type')}:</strong> {houseData.houseType || 'N/A'}
               </div>
             </div>
             {houseData.description && (
@@ -135,19 +137,19 @@ export default function OwnerBoardingHouseDetail() {
               href={`/owner/boarding-houses/${houseId}/contracts`}
               className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
             >
-              📋 Manage Contracts
+              📋 {t('ownerBoardingHouseDetail.actions.manageContracts')}
             </Link>
             <button
               onClick={() => {/* Add edit functionality */}}
               className="inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-colors"
             >
-              ✏️ Edit House
+               {t('ownerBoardingHouseDetail.actions.editHouse')}
             </button>
             <button
               onClick={fetchData}
               className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors"
             >
-              🔄 Refresh
+              🔄 {t('ownerBoardingHouseDetail.actions.refresh')}
             </button>
           </div>
         </div>
@@ -161,7 +163,7 @@ export default function OwnerBoardingHouseDetail() {
               <div className="text-blue-600 dark:text-blue-400 text-2xl">🏠</div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Rooms</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('ownerBoardingHouseDetail.stats.totalRooms')}</p>
               <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.totalRooms}</p>
             </div>
           </div>
@@ -173,7 +175,7 @@ export default function OwnerBoardingHouseDetail() {
               <div className="text-green-600 dark:text-green-400 text-2xl">✅</div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Available</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('ownerBoardingHouseDetail.stats.available')}</p>
               <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.availableRooms}</p>
             </div>
           </div>
@@ -185,7 +187,7 @@ export default function OwnerBoardingHouseDetail() {
               <div className="text-red-600 dark:text-red-400 text-2xl">🚫</div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Occupied</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('ownerBoardingHouseDetail.stats.occupied')}</p>
               <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.occupiedRooms}</p>
             </div>
           </div>
@@ -197,7 +199,7 @@ export default function OwnerBoardingHouseDetail() {
               <div className="text-purple-600 dark:text-purple-400 text-2xl">📋</div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Contracts</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('ownerBoardingHouseDetail.stats.contracts')}</p>
               <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.totalContracts}</p>
             </div>
           </div>
@@ -209,7 +211,7 @@ export default function OwnerBoardingHouseDetail() {
               <div className="text-yellow-600 dark:text-yellow-400 text-2xl">⭐</div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Occupancy Rate</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('ownerBoardingHouseDetail.stats.occupancyRate')}</p>
               <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                 {stats.totalRooms > 0 ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0}%
               </p>
@@ -223,13 +225,13 @@ export default function OwnerBoardingHouseDetail() {
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Rooms ({rooms.length})
+              {t('ownerBoardingHouseDetail.rooms.title')} ({rooms.length})
             </h2>
             <button
               onClick={() => {/* Add create room functionality */}}
               className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
             >
-              + Add Room
+              + {t('ownerBoardingHouseDetail.rooms.addRoom')}
             </button>
           </div>
         </div>
@@ -238,10 +240,10 @@ export default function OwnerBoardingHouseDetail() {
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🏠</div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              No rooms found
+              {t('ownerBoardingHouseDetail.rooms.empty.title')}
             </h3>
             <p className="text-gray-500 dark:text-gray-400">
-              Start by adding some rooms to this boarding house.
+              {t('ownerBoardingHouseDetail.rooms.empty.description')}
             </p>
           </div>
         ) : (
@@ -266,16 +268,16 @@ export default function OwnerBoardingHouseDetail() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-600 dark:text-gray-400">
                       <div>
-                        <strong>💰 Price:</strong> ${room.pricePerMonth}/month
+                        <strong>💰 {t('ownerBoardingHouseDetail.rooms.price')}:</strong> ${room.pricePerMonth}/{t('common.month')}
                       </div>
                       <div>
-                        <strong>📐 Area:</strong> {room.area}m²
+                        <strong>📐 {t('ownerBoardingHouseDetail.rooms.area')}:</strong> {room.area}m²
                       </div>
                       <div>
-                        <strong>👥 Capacity:</strong> {room.capacity} people
+                        <strong>👥 {t('ownerBoardingHouseDetail.rooms.capacity')}:</strong> {room.capacity} {t('ownerBoardingHouseDetail.rooms.people')}
                       </div>
                       <div>
-                        <strong>🌟 Rating:</strong> {room.averageRating || 'N/A'}
+                        <strong>🌟 {t('ownerBoardingHouseDetail.rooms.rating')}:</strong> {room.averageRating || 'N/A'}
                       </div>
                     </div>
                   </div>
@@ -284,20 +286,20 @@ export default function OwnerBoardingHouseDetail() {
                       onClick={() => {/* Add view room functionality */}}
                       className="px-3 py-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 text-sm font-medium"
                     >
-                      View
+                      {t('common.view')}
                     </button>
                     <button
                       onClick={() => {/* Add edit room functionality */}}
                       className="px-3 py-1 text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-200 text-sm font-medium"
                     >
-                      Edit
+                      {t('common.edit')}
                     </button>
                     {room.status === 'Available' && (
                       <button
                         onClick={() => {/* Add create contract functionality */}}
                         className="px-3 py-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200 text-sm font-medium"
                       >
-                        Create Contract
+                        {t('ownerBoardingHouseDetail.rooms.createContract')}
                       </button>
                     )}
                   </div>
@@ -311,7 +313,7 @@ export default function OwnerBoardingHouseDetail() {
       {/* Quick Actions */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Quick Actions
+          {t('ownerBoardingHouseDetail.quickActions.title')}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
@@ -320,8 +322,8 @@ export default function OwnerBoardingHouseDetail() {
           >
             <div className="text-blue-600 dark:text-blue-400 text-2xl mr-3">📋</div>
             <div>
-              <h3 className="font-medium text-gray-900 dark:text-white">Manage Contracts</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">View and manage all contracts</p>
+              <h3 className="font-medium text-gray-900 dark:text-white">{t('ownerBoardingHouseDetail.quickActions.manageContracts')}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('ownerBoardingHouseDetail.quickActions.manageContractsDesc')}</p>
             </div>
           </Link>
 
@@ -331,8 +333,8 @@ export default function OwnerBoardingHouseDetail() {
           >
             <div className="text-green-600 dark:text-green-400 text-2xl mr-3">🏠</div>
             <div>
-              <h3 className="font-medium text-gray-900 dark:text-white">Room Management</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Add or edit rooms</p>
+              <h3 className="font-medium text-gray-900 dark:text-white">{t('ownerBoardingHouseDetail.quickActions.roomManagement')}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('ownerBoardingHouseDetail.quickActions.roomManagementDesc')}</p>
             </div>
           </button>
 
@@ -342,8 +344,8 @@ export default function OwnerBoardingHouseDetail() {
           >
             <div className="text-purple-600 dark:text-purple-400 text-2xl mr-3">👥</div>
             <div>
-              <h3 className="font-medium text-gray-900 dark:text-white">Tenant Management</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">View tenant information</p>
+              <h3 className="font-medium text-gray-900 dark:text-white">{t('ownerBoardingHouseDetail.quickActions.tenantManagement')}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('ownerBoardingHouseDetail.quickActions.tenantManagementDesc')}</p>
             </div>
           </button>
 
@@ -353,8 +355,8 @@ export default function OwnerBoardingHouseDetail() {
           >
             <div className="text-yellow-600 dark:text-yellow-400 text-2xl mr-3">📊</div>
             <div>
-              <h3 className="font-medium text-gray-900 dark:text-white">Reports</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">View financial reports</p>
+              <h3 className="font-medium text-gray-900 dark:text-white">{t('ownerBoardingHouseDetail.quickActions.reports')}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('ownerBoardingHouseDetail.quickActions.reportsDesc')}</p>
             </div>
           </button>
         </div>

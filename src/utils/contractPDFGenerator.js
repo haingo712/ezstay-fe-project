@@ -19,21 +19,58 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   
   const doc = new jsPDF();
   
-  // Get tenant information from identity profiles (use IdentityProfiles for PascalCase or identityProfiles for camelCase)
-  const identityProfiles = contract.IdentityProfiles || contract.identityProfiles || [];
+  console.log('📄 PDF Generator - Full contract object:', JSON.stringify(contract, null, 2));
+  
+  // Get tenant/owner information from multiple possible sources
+  // Try identityProfiles first (array format)
+  let identityProfiles = contract.IdentityProfiles || contract.identityProfiles || [];
+  
+  // Try other possible field names
+  if (identityProfiles.length === 0) {
+    identityProfiles = contract.tenants || contract.Tenants || 
+                       contract.occupants || contract.Occupants ||
+                       contract.users || contract.Users ||
+                       contract.profiles || contract.Profiles || [];
+  }
+  
   console.log('👤 Identity Profiles Array Length:', identityProfiles.length);
+  console.log('👤 Identity Profiles:', identityProfiles);
   
   if (identityProfiles.length === 0) {
     console.warn('⚠️ WARNING: No identity profiles found in contract!');
-    console.warn('⚠️ Contract may not have tenant information populated.');
-    console.warn('⚠️ Please ensure contract.identityProfiles or contract.IdentityProfiles is populated.');
+    console.warn('⚠️ Available contract keys:', Object.keys(contract));
   }
   
+  // Tenant is at position [0], Owner is at position [1] (if present)
   const tenant = identityProfiles[0] || {};
+  const ownerFromProfiles = identityProfiles[1] || {};
+  
+  // Try to get owner info from alternative sources if not in identityProfiles
+  const ownerInfo = contract.owner || contract.Owner || contract.ownerInfo || contract.OwnerInfo || ownerFromProfiles;
+  
   console.log('👤 Primary Tenant:', tenant);
+  console.log('👤 Owner from profiles:', ownerFromProfiles);
+  console.log('👤 Owner info (alternative):', ownerInfo);
+  
+  // Get owner information with fallbacks
+  const ownerName = ownerInfo.fullName || ownerInfo.FullName || 
+                    ownerInfo.name || ownerInfo.Name ||
+                    contract.ownerName || contract.OwnerName ||
+                    'EZStay Property Management';
+  const ownerPhone = ownerInfo.phoneNumber || ownerInfo.PhoneNumber || 
+                     ownerInfo.phone || ownerInfo.Phone ||
+                     contract.ownerPhone || contract.OwnerPhone || 'N/A';
+  const ownerEmail = ownerInfo.email || ownerInfo.Email ||
+                     contract.ownerEmail || contract.OwnerEmail || 'N/A';
+  const ownerAddress = ownerInfo.address || ownerInfo.Address ||
+                       contract.ownerAddress || contract.OwnerAddress || 'Ho Chi Minh City, Vietnam';
+  const ownerCitizenId = ownerInfo.citizenIdNumber || ownerInfo.CitizenIdNumber ||
+                         ownerInfo.citizenId || ownerInfo.CitizenId || 'N/A';
+  
+  console.log('📋 Final Owner Info - Name:', ownerName, 'Phone:', ownerPhone, 'Email:', ownerEmail);
   
   if (Object.keys(tenant).length === 0) {
-    console.error('❌ ERROR: Tenant object is empty! Party B will show N/A values.');
+    console.warn('⚠️ WARNING: Tenant object is empty! Party B will show placeholder values.');
   }
   
   // Get dates with proper validation
@@ -119,12 +156,17 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   doc.text('THE CONTRACTING PARTIES:', 20, yPos);
   yPos += 10;
   
+  // Party A - Owner Information
   doc.setFont(undefined, 'normal');
-  doc.text('Party A (Lessor): EZStay Property Management', 20, yPos);
+  doc.text(`Party A (Lessor): ${ownerName}`, 20, yPos);
   yPos += 7;
-  doc.text('Address: Ho Chi Minh City, Vietnam', 20, yPos);
+  doc.text(`Address: ${ownerAddress}`, 20, yPos);
   yPos += 7;
-  doc.text('Phone: +84 xxx xxx xxx', 20, yPos);
+  doc.text(`Phone: ${ownerPhone}`, 20, yPos);
+  yPos += 7;
+  doc.text(`Email: ${ownerEmail}`, 20, yPos);
+  yPos += 7;
+  doc.text(`Citizen ID: ${ownerCitizenId}`, 20, yPos);
   yPos += 7;
   doc.text(`Owner ID: ${contract.ownerId?.slice(0, 8) || contract.OwnerId?.slice(0, 8) || 'N/A'}`, 20, yPos);
   yPos += 10;
@@ -137,7 +179,6 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
     doc.setFontSize(9);
     doc.setTextColor(200, 0, 0);
     doc.setFont(undefined, 'italic');
-    doc.text('Note: Tenant information will be completed upon signing', 20, yPos);
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
     doc.setFont(undefined, 'normal');
@@ -840,7 +881,10 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   
   const summaryData = [
     ['Contract ID', contract.id?.slice(0, 13) || 'N/A'],
+    ['Owner (Party A)', ownerName],
+    ['Tenant (Party B)', tenant.fullName || tenant.FullName || tenantName || 'N/A'],
     ['Room', roomName],
+    ['Room ID', contract.roomId?.slice(0, 13) || contract.RoomId?.slice(0, 13) || 'N/A'],
     ['Monthly Rent', `${monthlyRent.toLocaleString()} VND`],
     ['Deposit', `${depositAmount.toLocaleString()} VND`],
     ['Duration', `${Math.round((checkoutDate - checkinDate) / (1000 * 60 * 60 * 24))} days`],
@@ -906,11 +950,14 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   
   doc.setFont(undefined, 'normal');
   doc.setFontSize(10);
-  doc.text('EZStay Property Management', 55, yPos, { align: 'center' });
+  // Use owner name from identityProfiles[1]
+  doc.text(ownerName, 55, yPos, { align: 'center' });
   doc.text(tenant.fullName || tenant.FullName || tenantName || 'Tenant Name', 155, yPos, { align: 'center' });
   yPos += 7;
   
-  doc.text('Ho Chi Minh City, Vietnam', 55, yPos, { align: 'center' });
+  // Use owner address
+  const shortOwnerAddress = ownerAddress.length > 30 ? ownerAddress.substring(0, 27) + '...' : ownerAddress;
+  doc.text(shortOwnerAddress, 55, yPos, { align: 'center' });
   const signatureAddress = tenant.address || tenant.Address || tenantAddress || 'Address';
   const shortAddress = signatureAddress.length > 30 ? signatureAddress.substring(0, 27) + '...' : signatureAddress;
   doc.text(shortAddress, 155, yPos, { align: 'center' });
@@ -975,8 +1022,9 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   doc.text('___________________________', 155, yPos, { align: 'center' });
   yPos += 7;
   
-  doc.text('Representative Name', 55, yPos, { align: 'center' });
-  doc.text(tenant.fullName || 'Tenant Name', 155, yPos, { align: 'center' });
+  // Display actual owner name and tenant name under signatures
+  doc.text(ownerName, 55, yPos, { align: 'center' });
+  doc.text(tenant.fullName || tenant.FullName || tenantName || 'Tenant Name', 155, yPos, { align: 'center' });
   yPos += 20;
   
   // Verification note

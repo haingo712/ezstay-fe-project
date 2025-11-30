@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import userManagementService from '@/services/userManagementService';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function SystemOverviewPage() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState({
     users: [],
     owners: [],
@@ -45,42 +47,42 @@ export default function SystemOverviewPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          📊 System Overview
+          📊 {t('adminOverview.title')}
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Detailed statistics and analytics
+          {t('adminOverview.subtitle')}
         </p>
       </div>
 
       {stats.loading ? (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-600 dark:text-gray-400 mt-4">Loading data...</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-4">{t('adminOverview.loading')}</p>
         </div>
       ) : (
         <>
           {/* User Statistics */}
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              User Statistics
+              {t('adminOverview.userStats')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <StatCard
-                title="Total Users"
+                title={t('adminOverview.totalUsers')}
                 value={stats.users.length}
-                subtitle={`${stats.users.filter(u => u.isActive).length} active`}
+                subtitle={`${stats.users.filter(u => u.isActive).length} ${t('adminOverview.active')}`}
                 color="from-blue-500 to-blue-600"
               />
               <StatCard
-                title="Active Users"
+                title={t('adminOverview.activeUsers')}
                 value={stats.users.filter(u => u.isActive).length}
-                subtitle={`${((stats.users.filter(u => u.isActive).length / stats.users.length) * 100 || 0).toFixed(1)}% of total`}
+                subtitle={`${((stats.users.filter(u => u.isActive).length / stats.users.length) * 100 || 0).toFixed(1)}% ${t('adminOverview.ofTotal')}`}
                 color="from-green-500 to-green-600"
               />
               <StatCard
-                title="Inactive Users"
+                title={t('adminOverview.inactiveUsers')}
                 value={stats.users.filter(u => !u.isActive).length}
-                subtitle={`${((stats.users.filter(u => !u.isActive).length / stats.users.length) * 100 || 0).toFixed(1)}% of total`}
+                subtitle={`${((stats.users.filter(u => !u.isActive).length / stats.users.length) * 100 || 0).toFixed(1)}% ${t('adminOverview.ofTotal')}`}
                 color="from-red-500 to-red-600"
               />
             </div>
@@ -89,25 +91,25 @@ export default function SystemOverviewPage() {
           {/* Owner Statistics */}
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Owner Statistics
+              {t('adminOverview.ownerStats')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <StatCard
-                title="Total Owners"
+                title={t('adminOverview.totalOwners')}
                 value={stats.owners.length}
-                subtitle={`${stats.owners.filter(o => o.isActive).length} active`}
+                subtitle={`${stats.owners.filter(o => o.isActive).length} ${t('adminOverview.active')}`}
                 color="from-emerald-500 to-emerald-600"
               />
               <StatCard
-                title="Active Owners"
+                title={t('adminOverview.activeOwners')}
                 value={stats.owners.filter(o => o.isActive).length}
-                subtitle={`${((stats.owners.filter(o => o.isActive).length / stats.owners.length) * 100 || 0).toFixed(1)}% of total`}
+                subtitle={`${((stats.owners.filter(o => o.isActive).length / stats.owners.length) * 100 || 0).toFixed(1)}% ${t('adminOverview.ofTotal')}`}
                 color="from-teal-500 to-teal-600"
               />
               <StatCard
-                title="Inactive Owners"
+                title={t('adminOverview.inactiveOwners')}
                 value={stats.owners.filter(o => !o.isActive).length}
-                subtitle={`${((stats.owners.filter(o => !o.isActive).length / stats.owners.length) * 100 || 0).toFixed(1)}% of total`}
+                subtitle={`${((stats.owners.filter(o => !o.isActive).length / stats.owners.length) * 100 || 0).toFixed(1)}% ${t('adminOverview.ofTotal')}`}
                 color="from-orange-500 to-orange-600"
               />
             </div>
@@ -116,25 +118,25 @@ export default function SystemOverviewPage() {
           {/* Staff Statistics */}
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Staff Statistics
+              {t('adminOverview.staffStats')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <StatCard
-                title="Total Staff"
+                title={t('adminOverview.totalStaff')}
                 value={stats.staff.length}
-                subtitle={`${stats.staff.filter(s => s.isActive).length} active`}
+                subtitle={`${stats.staff.filter(s => s.isActive).length} ${t('adminOverview.active')}`}
                 color="from-purple-500 to-purple-600"
               />
               <StatCard
-                title="Active Staff"
+                title={t('adminOverview.activeStaff')}
                 value={stats.staff.filter(s => s.isActive).length}
-                subtitle={`${((stats.staff.filter(s => s.isActive).length / stats.staff.length) * 100 || 0).toFixed(1)}% of total`}
+                subtitle={`${((stats.staff.filter(s => s.isActive).length / stats.staff.length) * 100 || 0).toFixed(1)}% ${t('adminOverview.ofTotal')}`}
                 color="from-indigo-500 to-indigo-600"
               />
               <StatCard
-                title="Inactive Staff"
+                title={t('adminOverview.inactiveStaff')}
                 value={stats.staff.filter(s => !s.isActive).length}
-                subtitle={`${((stats.staff.filter(s => !s.isActive).length / stats.staff.length) * 100 || 0).toFixed(1)}% of total`}
+                subtitle={`${((stats.staff.filter(s => !s.isActive).length / stats.staff.length) * 100 || 0).toFixed(1)}% ${t('adminOverview.ofTotal')}`}
                 color="from-pink-500 to-pink-600"
               />
             </div>
@@ -143,29 +145,29 @@ export default function SystemOverviewPage() {
           {/* Summary */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Summary
+              {t('adminOverview.summary')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="border-l-4 border-blue-500 pl-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Accounts</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('adminOverview.totalAccounts')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.users.length + stats.owners.length + stats.staff.length}
                 </p>
               </div>
               <div className="border-l-4 border-green-500 pl-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Active</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('adminOverview.totalActive')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {[...stats.users, ...stats.owners, ...stats.staff].filter(a => a.isActive).length}
                 </p>
               </div>
               <div className="border-l-4 border-red-500 pl-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Inactive</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('adminOverview.totalInactive')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {[...stats.users, ...stats.owners, ...stats.staff].filter(a => !a.isActive).length}
                 </p>
               </div>
               <div className="border-l-4 border-purple-500 pl-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Activity Rate</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('adminOverview.activityRate')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {(([...stats.users, ...stats.owners, ...stats.staff].filter(a => a.isActive).length /
                     ([...stats.users, ...stats.owners, ...stats.staff].length)) * 100 || 0).toFixed(1)}%

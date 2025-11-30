@@ -221,7 +221,7 @@ const updateUtilityRate = async (id, rateData) => {
 
 const deleteUtilityRate = async (id) => {
   try {
-    console.log(`🗑️ Attempting to delete utility rate ${id}`);
+    console.log(` Attempting to delete utility rate ${id}`);
     
     // Backend DELETE endpoint is currently disabled/commented out
     // Throwing a user-friendly error instead of making the API call

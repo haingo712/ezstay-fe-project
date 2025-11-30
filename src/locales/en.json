@@ -17,6 +17,32 @@
         "en": "English",
         "vi": "Vietnamese"
     },
+    "theme": {
+        "darkMode": "Dark Mode",
+        "lightMode": "Light Mode"
+    },
+    "staffNav": {
+        "staffPanel": "Staff Panel",
+        "staffDashboard": "Staff Dashboard",
+        "overview": "Overview",
+        "userManagement": "User & Owner Management",
+        "postManagement": "Post Management",
+        "amenityManagement": "Amenity Management",
+        "reports": "Reports",
+        "notifications": "Notifications",
+        "contentModeration": "Content Moderation",
+        "customerSupport": "Customer Support"
+    },
+    "adminNav": {
+        "adminPanel": "Admin Panel",
+        "dashboard": "Dashboard",
+        "systemOverview": "System Overview",
+        "userManagement": "User Management",
+        "staffManagement": "Staff Management",
+        "paymentGateways": "Payment Gateways",
+        "financialReports": "Financial Reports",
+        "notifications": "Notifications"
+    },
     "common": {
         "welcome": "Welcome to EZStay",
         "search": "Search",
@@ -33,7 +59,22 @@
         "confirm": "Confirm",
         "back": "Back",
         "next": "Next",
-        "previous": "Previous"
+        "previous": "Previous",
+        "create": "Create",
+        "add": "Add",
+        "manage": "Manage",
+        "track": "Track",
+        "viewAll": "View All",
+        "viewAnalytics": "View analytics",
+        "manageProfile": "Manage profile",
+        "comingSoon": "Coming soon...",
+        "close": "Close",
+        "processing": "Processing...",
+        "area": "Area",
+        "month": "month",
+        "occupancy": "occupancy",
+        "hoursAgo": "{{count}} hours ago",
+        "daysAgo": "{{count}} day(s) ago"
     },
     "auth": {
         "login": "Login",
@@ -202,7 +243,9 @@
         "title": "Messages",
         "messages": "Messages",
         "searchPlaceholder": "Search conversations...",
+        "searchConversations": "Search conversations...",
         "noChats": "No conversations yet",
+        "noConversations": "No conversations yet",
         "noMessages": "No messages yet",
         "typeMessage": "Type a message...",
         "send": "Send",
@@ -213,7 +256,15 @@
         "online": "Online",
         "offline": "Offline",
         "selectConversation": "Select a conversation",
-        "startConversation": "Choose a conversation from the list to start chatting"
+        "startConversation": "Choose a conversation from the list to start chatting",
+        "sendFailed": "Failed to send message. Please try again.",
+        "revokeConfirm": "Are you sure you want to revoke this message? This action cannot be undone.",
+        "revokeMessage": "Revoke Message",
+        "revokeSuccess": "Message revoked successfully",
+        "revokeFailed": "Failed to revoke message. Please try again.",
+        "read": "Read",
+        "sent": "Sent",
+        "messageRevoked": "This message has been revoked"
     },
     "bankAccount": {
         "title": "Bank Account",
@@ -260,6 +311,1564 @@
         "updateSuccess": "Bank account updated successfully",
         "errorLoading": "Unable to load accounts. Please try again.",
         "errorSaving": "Unable to save account. Please try again.",
-        "errorDeleting": "Unable to delete account. Please try again."
+        "errorDeleting": "Unable to delete account. Please try again.",
+        "errorToggle": "Unable to change account status. Please try again.",
+        "noBanksFound": "No active banks found. Please check the backend or activate a bank in admin panel.",
+        "foundBanks": "Found {{count}} banks",
+        "clickToDisable": "Click to disable",
+        "clickToEnable": "Click to enable"
+    },
+    "favorites": {
+        "title": "Favorite Posts",
+        "loading": "Loading favorite list...",
+        "subtitle": "You are saving {count} favorite posts",
+        "emptySubtitle": "Save posts you are interested in to quickly view them later.",
+        "emptyDescription": "You haven't saved any posts yet. Explore more and click the heart icon to save!",
+        "explore": "Explore Posts",
+        "removeFromFavorites": "Remove from favorites",
+        "notUpdated": "Not updated",
+        "unknownAuthor": "Unknown Author",
+        "noPhone": "No phone"
+    },
+    "bills": {
+        "title": "Utility Bills",
+        "subtitle": "Manage and pay your electricity and water bills",
+        "loading": "Loading bills...",
+        "backToHome": "Back to home",
+        "totalBills": "Total Bills",
+        "unpaid": "Unpaid",
+        "paid": "Paid",
+        "overdue": "Overdue",
+        "cancelled": "Cancelled",
+        "status": "Status",
+        "all": "All",
+        "search": "Search",
+        "searchPlaceholder": "Search by note, amount...",
+        "billId": "Bill ID",
+        "createdDate": "Created Date",
+        "amount": "Amount",
+        "paymentMethod": "Payment Method",
+        "actions": "Actions",
+        "view": "View",
+        "pay": "Pay",
+        "noBills": "No bills found",
+        "showing": "Showing",
+        "to": "to",
+        "of": "of",
+        "results": "results",
+        "previous": "Previous",
+        "next": "Next",
+        "billDetails": "Bill Details",
+        "paymentDate": "Payment Date",
+        "note": "Note",
+        "close": "Close",
+        "errorLoading": "Unable to load bill list. Please try again."
+    },
+    "rentalHistory": {
+        "title": "Rental History",
+        "subtitle": "View all your rental contracts and leave reviews",
+        "loading": "Loading your rental history...",
+        "noHistory": "No Rental History",
+        "noHistoryDesc": "You haven't rented any rooms yet",
+        "room": "Room",
+        "boardingHouse": "Boarding House",
+        "checkIn": "Check-in",
+        "checkOut": "Check-out",
+        "monthlyRent": "Monthly Rent",
+        "deposit": "Deposit",
+        "owner": "Owner",
+        "writeReview": "Write Review",
+        "active": "Active",
+        "pending": "Pending",
+        "expired": "Expired",
+        "cancelled": "Cancelled",
+        "reviewTitle": "Write Your Review",
+        "yourRating": "Your Rating",
+        "yourReview": "Your Review",
+        "uploadImage": "Upload Image (Optional)",
+        "submitReview": "Submit Review",
+        "submitting": "Submitting...",
+        "reviewSuccess": "Review submitted successfully!",
+        "reviewError": "Failed to submit review. Please try again.",
+        "writeReviewPlaceholder": "Share your experience about this room..."
+    },
+    "rentalPosts": {
+        "title": "All Rental Posts",
+        "subtitle": "Browse all available rental listings from verified owners",
+        "loading": "Loading rental posts...",
+        "searchPlaceholder": "Search by title, description, house, room...",
+        "allStatus": "All Status",
+        "available": "Available",
+        "pending": "Pending",
+        "inactive": "Inactive",
+        "rejected": "Rejected",
+        "showing": "Showing",
+        "of": "of",
+        "posts": "posts",
+        "noPosts": "No posts found",
+        "noPostsDesc": "No rental posts available yet",
+        "adjustSearch": "Try adjusting your search or filters",
+        "viewDetails": "View Details",
+        "loginToSave": "Please login to save favorite posts!",
+        "favoriteError": "Unable to update favorite. Please try again."
+    },
+    "rentalPostDetail": {
+        "backToPosts": "Back to Posts",
+        "loading": "Loading post details...",
+        "notFound": "Post Not Found",
+        "goBack": "Go Back",
+        "description": "Description",
+        "roomInfo": "Room Information",
+        "location": "Location",
+        "price": "Price",
+        "area": "Area",
+        "maxTenants": "Max Tenants",
+        "contactOwner": "Contact Owner",
+        "chatNow": "Chat Now",
+        "reviews": "Reviews",
+        "noReviews": "No reviews yet",
+        "averageRating": "Average Rating",
+        "groupByRoom": "Group by Room",
+        "showAll": "Show All",
+        "propertyDetails": "Property Details",
+        "house": "House",
+        "room": "Room",
+        "contact": "Contact",
+        "postedBy": "Posted by",
+        "address": "Address",
+        "chatWithOwner": "Chat with Owner",
+        "loginToChat": "Login to Chat",
+        "pleaseLogin": "Please login to contact the owner",
+        "roomReviews": "Room Reviews",
+        "beFirstToReview": "No reviews yet. Be the first to review!",
+        "loadingReviews": "Loading reviews...",
+        "review": "review",
+        "reviewsCount": "reviews",
+        "available": "Available",
+        "pending": "Pending",
+        "rejected": "Rejected",
+        "inactive": "Inactive",
+        "loadFailed": "Failed to load post details"
+    },
+    "searchRooms": {
+        "title": "Search Rooms",
+        "filters": "Filters",
+        "showFilters": "Show Filters",
+        "hideFilters": "Hide Filters",
+        "keyword": "Keyword",
+        "keywordPlaceholder": "Search by name, address...",
+        "location": "Location",
+        "allLocations": "All Locations",
+        "priceRange": "Price Range",
+        "minPrice": "Min Price",
+        "maxPrice": "Max Price",
+        "areaRange": "Area Range",
+        "minArea": "Min Area",
+        "maxArea": "Max Area",
+        "maxTenants": "Max Tenants",
+        "amenities": "Amenities",
+        "rating": "Minimum Rating",
+        "availability": "Availability",
+        "all": "All",
+        "availableOnly": "Available Only",
+        "rentedOnly": "Rented Only",
+        "clearFilters": "Clear Filters",
+        "sortBy": "Sort By",
+        "newest": "Newest",
+        "priceLow": "Price: Low to High",
+        "priceHigh": "Price: High to Low",
+        "areaLarge": "Area: Large to Small",
+        "areaSmall": "Area: Small to Large",
+        "topRated": "Top Rated",
+        "gridView": "Grid View",
+        "listView": "List View",
+        "noResults": "No rooms found",
+        "noResultsDesc": "Try adjusting your search criteria",
+        "resultsFound": "{count} rooms found"
+    },
+    "supportPage": {
+        "title": "Support Center",
+        "subtitle": "We are here to help you 24/7",
+        "contactSupport": "Contact Support",
+        "aiAssistant": "AI Assistant",
+        "faq": "FAQ",
+        "sendRequest": "Send Support Request",
+        "fullName": "Full Name",
+        "email": "Email",
+        "phone": "Phone Number",
+        "category": "Category",
+        "categoryGeneral": "General Question",
+        "categoryTechnical": "Technical Issue",
+        "categoryAccount": "Account",
+        "categoryPayment": "Payment",
+        "categoryReport": "Report Violation",
+        "categoryOther": "Other",
+        "subject": "Subject",
+        "subjectPlaceholder": "Brief description of your issue",
+        "message": "Message",
+        "messagePlaceholder": "Describe your issue in detail...",
+        "submit": "Send Support Request",
+        "submitSuccess": "Support request sent! We will respond within 24 hours.",
+        "virtualAssistant": "EZStay Virtual Assistant",
+        "askAnything": "Ask me anything about our services!",
+        "quickQuestions": "Quick questions",
+        "typePlaceholder": "Type your question...",
+        "send": "Send",
+        "faqTitle": "Frequently Asked Questions",
+        "faqSubtitle": "Find quick answers to common questions",
+        "cantFindAnswer": "Can't find the answer you need?",
+        "contactInfo": "Contact Information",
+        "contactInfoSubtitle": "Multiple ways to get in touch with us",
+        "hotline": "Hotline",
+        "address": "Address",
+        "faqHowToFind": "How to find suitable rooms?",
+        "faqHowToFindAnswer": "You can use the search bar on the homepage or search page to filter by area, price, size and desired amenities. The system will display rooms that match your criteria.",
+        "faqContactOwner": "Can I contact landlords directly?",
+        "faqContactOwnerAnswer": "Yes, after viewing room details, you can click 'Contact Landlord' to send a message or call directly. Contact information will be displayed after you register an account.",
+        "faqRegister": "How to register an account?",
+        "faqRegisterAnswer": "Click the 'Sign Up' button in the top right corner, fill in your personal information and confirm your email. You can choose to register as a tenant or landlord.",
+        "faqPostRoom": "Can I post rooms for rent?",
+        "faqPostRoomAnswer": "Yes, after registering a landlord account and verifying your information, you can post rental listings with full images, descriptions and contact information.",
+        "faqFees": "What are EZStay service fees?",
+        "faqFeesAnswer": "EZStay is free for room seekers. For landlords, we have flexible service packages with reasonable fees for posting and managing rental properties.",
+        "faqReport": "How to report inappropriate listings?",
+        "faqReportAnswer": "You can click the 'Report' button on the room detail page or contact us through the support form. We will review and handle it as soon as possible.",
+        "quickFindRooms": "How to find rooms?",
+        "quickContactOwner": "How to contact landlords?",
+        "quickFees": "What are the service fees?",
+        "quickPostListing": "How to post listings?",
+        "frequentlyAskedQuestions": "Frequently Asked Questions",
+        "findQuickAnswers": "Find quick answers to common questions",
+        "contactInformation": "Contact Information",
+        "multipleWays": "Multiple ways to get in touch with us",
+        "emailLabel": "Email",
+        "hotlineLabel": "Hotline",
+        "addressLabel": "Address"
+    },
+    "searchRooms": {
+        "loading": "Loading...",
+        "searchPlaceholder": "Search by name, address, description...",
+        "filters": "Filters",
+        "clearAll": "Clear All",
+        "location": "Location",
+        "allAreas": "All Areas",
+        "rentPrice": "Rent Price (VND/month)",
+        "from": "From",
+        "to": "To",
+        "area": "Area (sqm)",
+        "maxOccupancy": "Maximum Occupancy",
+        "noRequirement": "No requirement",
+        "onePerson": "1 person",
+        "twoPeople": "2 people",
+        "threePeople": "3 people",
+        "fourPlusPeople": "4+ people",
+        "status": "Status",
+        "all": "All",
+        "available": "Available",
+        "rented": "Rented",
+        "minRating": "Minimum Rating",
+        "starUp": "star & up",
+        "starsUp": "stars & up",
+        "fiveStars": "5 stars",
+        "amenities": "Amenities",
+        "searchResults": "Search Results",
+        "foundRooms": "Found {count} rooms",
+        "newest": "Newest",
+        "priceLowHigh": "Price: Low to High",
+        "priceHighLow": "Price: High to Low",
+        "areaLargeSmall": "Area: Large to Small",
+        "areaSmallLarge": "Area: Small to Large",
+        "highestRated": "Highest Rated",
+        "perMonth": "/month",
+        "sqm": "sqm",
+        "people": "people",
+        "viewDetails": "View Details",
+        "noResults": "No results found",
+        "noRoomsMatch": "No rooms match your search criteria",
+        "clearFilters": "Clear Filters"
+    },
+    "reviewDetail": {
+        "serverError": "Server Error",
+        "reviewNotFound": "Review Not Found",
+        "doesNotExist": "The review you are looking for does not exist.",
+        "goBack": "Go Back",
+        "tryAgain": "Try Again",
+        "back": "Back",
+        "anonymousUser": "Anonymous User",
+        "editReview": "Edit Review",
+        "deleteReview": "Delete Review",
+        "reviewImage": "Review Image",
+        "reviewContent": "Review Content",
+        "contractId": "Contract ID",
+        "postId": "Post ID",
+        "reviewDeadline": "Review Deadline",
+        "lastUpdated": "Last Updated",
+        "attachedImage": "Attached Image",
+        "imageId": "Image ID",
+        "confirmDelete": "Are you sure you want to delete this review?",
+        "deleteSuccess": "Review deleted successfully!",
+        "deleteFailed": "Failed to delete review"
+    },
+    "ownerDashboard": {
+        "title": "Owner Dashboard",
+        "subtitle": "Manage your boarding houses and rooms",
+        "loading": "Loading Dashboard",
+        "loadingHouses": "Loading your boarding houses...",
+        "error": "Something went wrong",
+        "tryAgain": "Try Again",
+        "stats": {
+            "boardingHouses": "Boarding Houses",
+            "totalRooms": "Total Rooms",
+            "occupied": "Occupied",
+            "monthlyRevenue": "Monthly Revenue"
+        },
+        "boardingHouse": {
+            "active": "Active",
+            "inactive": "Inactive",
+            "units": "Units",
+            "rented": "Rented",
+            "vacant": "Vacant",
+            "income": "Income",
+            "created": "Created",
+            "noDescription": "No description available",
+            "viewDetails": "View Details",
+            "viewRooms": "View Rooms"
+        },
+        "quickActions": {
+            "title": "Quick Actions",
+            "addBoardingHouse": "Add Boarding House",
+            "createRoom": "Create Room",
+            "bankAccount": "Bank Account",
+            "paymentManagement": "Payment Management",
+            "manageNotifications": "Manage Notifications",
+            "reports": "Reports",
+            "accountSettings": "Account Settings"
+        },
+        "recentActivity": {
+            "title": "Recent Activity",
+            "noActivity": "No recent activity"
+        },
+        "activity": {
+            "newInquiry": "New tenant inquiry received",
+            "rentReceived": "Monthly rent payment received",
+            "maintenanceRequest": "Room maintenance request submitted"
+        },
+        "emptyState": {
+            "title": "Start Your Boarding House Business",
+            "description": "Create your first boarding house to start managing properties",
+            "createFirst": "Create First Boarding House",
+            "noUnits": "No Units Yet",
+            "startCreating": "Start creating units for this boarding house",
+            "createFirstUnit": "Create First Unit"
+        },
+        "modal": {
+            "selectBoardingHouse": "Select Boarding House",
+            "noBoardingHouses": "No boarding houses available",
+            "createBoardingHouseFirst": "Please create a boarding house first",
+            "cancel": "Cancel"
+        },
+        "tabs": {
+            "overview": "Overview",
+            "management": "Management"
+        },
+        "management": {
+            "title": "Boarding House Management",
+            "yourBoardingHouses": "Your Boarding Houses",
+            "searchPlaceholder": "Search boarding houses...",
+            "addNew": "Add New"
+        }
+    },
+    "ownerRooms": {
+        "title": "Rooms",
+        "subtitle": "Manage rooms in this boarding house",
+        "addRoom": "Add Room",
+        "stats": {
+            "totalRooms": "Total Rooms",
+            "available": "Available",
+            "occupied": "Occupied",
+            "maintenance": "Maintenance"
+        },
+        "status": {
+            "available": "Available",
+            "occupied": "Occupied",
+            "maintenance": "Maintenance"
+        },
+        "emptyState": {
+            "title": "No Rooms Found",
+            "description": "Add your first room to get started!"
+        },
+        "room": {
+            "area": "Area",
+            "price": "Price",
+            "photos": "photos"
+        },
+        "modal": {
+            "addTitle": "Add New Room",
+            "editTitle": "Edit Room",
+            "roomName": "Room Name",
+            "roomNamePlaceholder": "e.g. Room 101, Room A1...",
+            "areaLabel": "Area (m²)",
+            "areaPlaceholder": "e.g. 25.5",
+            "priceLabel": "Price (VND)",
+            "pricePlaceholder": "e.g. 2000000",
+            "images": "Room Images",
+            "imagesHint": "You can select multiple images at once",
+            "amenities": "Amenities",
+            "loadingAmenities": "Loading amenities...",
+            "noAmenities": "No amenities available",
+            "statusLabel": "Room Status",
+            "cancel": "Cancel",
+            "create": "Create Room",
+            "update": "Update Room",
+            "creating": "Creating...",
+            "updating": "Updating..."
+        },
+        "messages": {
+            "createSuccess": "Room created successfully!",
+            "updateSuccess": "Room updated successfully!",
+            "deleteSuccess": "Room deleted successfully!",
+            "deleteConfirm": "Are you sure you want to delete this room?",
+            "selectImage": "Please select at least one image"
+        }
+    },
+    "ownerNotifications": {
+        "title": "Your Notifications",
+        "addNotification": "Add Notification",
+        "addByRole": "Add Notification by Role",
+        "addScheduled": "Add Scheduled Notification",
+        "loading": "Loading notifications...",
+        "noNotifications": "No notifications found.",
+        "read": "Read",
+        "unread": "Unread",
+        "edit": "Edit",
+        "delete": "Delete",
+        "deleting": "Deleting...",
+        "deleteError": "Delete error!",
+        "previous": "Previous",
+        "next": "Next",
+        "modal": {
+            "addTitle": "Add New Notification",
+            "addByRoleTitle": "Add Notification by Role",
+            "scheduledTitle": "Add Scheduled Notification",
+            "updateTitle": "Update Notification",
+            "title": "Title",
+            "content": "Content",
+            "notificationType": "Notification Type",
+            "selectType": "Select type",
+            "targetRole": "Target Role",
+            "selectRole": "Select role",
+            "scheduledTime": "Scheduled Time",
+            "adding": "Adding...",
+            "add": "Add Notification",
+            "addByRoleBtn": "Add Notification by Role",
+            "scheduling": "Scheduling...",
+            "scheduleBtn": "Schedule Notification",
+            "updating": "Updating...",
+            "update": "Update"
+        },
+        "errors": {
+            "loadFailed": "Failed to load notifications. Please try again.",
+            "addFailed": "Failed to add notification. Please try again.",
+            "addByRoleFailed": "Failed to create notification by role. Please try again.",
+            "scheduleFailed": "Failed to schedule notification. Please try again.",
+            "updateFailed": "Failed to update. Please try again."
+        }
+    },
+    "ownerPosts": {
+        "title": "Posts Management",
+        "subtitle": "Create and manage rental listings",
+        "loading": "Loading posts...",
+        "createPost": "Create Post",
+        "editPost": "Edit Post",
+        "stats": {
+            "total": "Total",
+            "active": "Active",
+            "pending": "Pending",
+            "inactive": "Inactive"
+        },
+        "status": {
+            "active": "Active",
+            "pending": "Pending",
+            "rejected": "Rejected",
+            "inactive": "Inactive"
+        },
+        "tabs": {
+            "all": "All",
+            "active": "Active",
+            "pending": "Pending",
+            "inactive": "Inactive"
+        },
+        "emptyState": {
+            "title": "No posts found",
+            "description": "Create your first rental post"
+        },
+        "card": {
+            "moreImages": "+{{count}} more",
+            "noHouse": "No house specified",
+            "allRooms": "All rooms",
+            "images": "{{count}} image",
+            "imagesPlural": "{{count}} images",
+            "created": "Created"
+        },
+        "form": {
+            "boardingHouse": "Boarding House",
+            "selectBoardingHouse": "Select a boarding house",
+            "noBoardingHouses": "No boarding houses found. Please create a boarding house first.",
+            "rooms": "Select Rooms (Optional - Leave empty for whole house)",
+            "loadingRooms": "Loading rooms...",
+            "noRooms": "No available rooms in this boarding house.",
+            "selectedRooms": "Selected {{count}} room(s)",
+            "noRoomsSelected": "No rooms selected - post will apply to entire boarding house",
+            "title": "Title",
+            "titlePlaceholder": "Enter post title",
+            "description": "Description",
+            "descriptionPlaceholder": "Describe the room and rental details...",
+            "contactPhone": "Contact Phone",
+            "contactPhonePlaceholder": "Enter contact phone number",
+            "images": "Images",
+            "imagesHint": "(Optional - Select or drag multiple)",
+            "dragDrop": "Drag & drop images here",
+            "dropHere": "Drop images here",
+            "or": "or",
+            "browseFiles": "Browse Files",
+            "dragDropHint": "Drag & drop or click to select multiple images",
+            "maxImages": "Max: 10 images, 5MB each. Recommended: 1200x800px",
+            "imagesCount": "{{count}}/10 images",
+            "totalSize": "{{size}} total",
+            "selectedImages": "Selected Images ({{count}})",
+            "addMore": "+ Add More",
+            "clearAll": "Clear All"
+        },
+        "validation": {
+            "selectBoardingHouse": "Please select a boarding house",
+            "titleRequired": "Title is required",
+            "descriptionRequired": "Description is required",
+            "contactPhoneRequired": "Contact phone is required"
+        },
+        "messages": {
+            "createSuccess": "Post created successfully!",
+            "updateSuccess": "Post updated successfully!",
+            "deleteSuccess": "Post deleted successfully!",
+            "duplicateSuccess": "Post duplicated successfully!",
+            "deleteConfirm": "Are you sure you want to delete this post?",
+            "createFailed": "Failed to create post",
+            "updateFailed": "Failed to update post",
+            "deleteFailed": "Failed to delete post",
+            "duplicateFailed": "Failed to duplicate post",
+            "fileTooLarge": "{{name}} is too large. Maximum file size is 5MB.",
+            "noValidImages": "No valid images selected",
+            "someFilesSkipped": "Some files were skipped because they are not valid images or too large",
+            "maxImagesReached": "Maximum {{max}} images allowed",
+            "onlyImagesAllowed": "Please drop image files only"
+        },
+        "buttons": {
+            "cancel": "Cancel",
+            "create": "Create",
+            "update": "Update"
+        }
+    },
+    "paymentManagement": {
+        "title": "Payment Management",
+        "subtitle": "Track and manage payment transactions",
+        "loading": "Loading payment data...",
+        "bankAccount": "Bank Account",
+        "stats": {
+            "totalTransactions": "Total Transactions",
+            "completed": "Completed",
+            "pending": "Pending",
+            "failed": "Failed",
+            "totalIncome": "Total Income"
+        },
+        "status": {
+            "completed": "Completed",
+            "pending": "Pending",
+            "failed": "Failed"
+        },
+        "filter": {
+            "search": "Search",
+            "searchPlaceholder": "Tenant name, room, transaction ID...",
+            "fromDate": "From Date",
+            "toDate": "To Date",
+            "status": "Status",
+            "all": "All",
+            "completed": "Completed",
+            "pending": "Pending",
+            "failed": "Failed",
+            "showing": "Showing",
+            "of": "/",
+            "transactions": "transactions"
+        },
+        "table": {
+            "transactionId": "Transaction ID",
+            "tenant": "Tenant",
+            "room": "Room",
+            "amount": "Amount",
+            "bank": "Bank",
+            "status": "Status",
+            "createdDate": "Created Date",
+            "actions": "Actions",
+            "viewDetails": "Details"
+        },
+        "pagination": {
+            "showing": "Showing",
+            "to": "to",
+            "of": "of",
+            "transactions": "transactions",
+            "previous": "Previous",
+            "next": "Next"
+        },
+        "emptyState": {
+            "title": "No transactions",
+            "description": "No payment transactions yet",
+            "noMatchingResults": "No transactions match the filter",
+            "clearFilter": "Clear Filter"
+        },
+        "modal": {
+            "title": "Transaction Details",
+            "transactionId": "Transaction ID",
+            "status": "Status",
+            "tenant": "Tenant",
+            "room": "Room",
+            "bank": "Bank",
+            "accountNumber": "Account Number",
+            "amount": "Amount",
+            "description": "Description",
+            "createdDate": "Created Date",
+            "completedDate": "Completed Date",
+            "close": "Close"
+        },
+        "errors": {
+            "loadFailed": "Unable to load payment list. Please try again."
+        }
+    },
+    "ownerBoardingHouses": {
+        "title": "Boarding House Management",
+        "subtitle": "Manage all your boarding houses",
+        "listTitle": "Boarding House List",
+        "addNew": "+ Add New Boarding House",
+        "loading": "Loading boarding houses...",
+        "checkingAuth": "Checking authentication...",
+        "authRequired": "Authentication Required",
+        "authRequiredDesc": "You need to login to access this page.",
+        "goToLogin": "Go to Login",
+        "accessDenied": "Access Denied",
+        "accessDeniedDesc": "You need Owner role to access this page.",
+        "currentRole": "Current role",
+        "emptyState": {
+            "title": "No boarding houses yet",
+            "description": "Start by creating your first boarding house",
+            "createFirst": "Create First Boarding House"
+        },
+        "card": {
+            "totalRooms": "Total Rooms",
+            "occupied": "Occupied",
+            "vacant": "Vacant",
+            "manageRooms": "Manage Rooms",
+            "manageContracts": "Manage Contracts",
+            "edit": "Edit",
+            "delete": "Delete",
+            "photos": "photos",
+            "morePhotos": "more photos"
+        },
+        "modal": {
+            "createTitle": "Create New Boarding House",
+            "editTitle": "Edit Boarding House",
+            "houseName": "Boarding House Name",
+            "houseNamePlaceholder": "Enter boarding house name (max 100 characters)",
+            "houseNameRequired": "Boarding house name is required",
+            "houseNameMaxLength": "Boarding house name cannot exceed 100 characters",
+            "characters": "characters",
+            "description": "Boarding House Description",
+            "descriptionPlaceholder": "Detailed description of the boarding house (optional)... E.g.: Clean boarding house, good security, near schools...",
+            "images": "Boarding House Images",
+            "imagesDesc": "Upload multiple images of your boarding house (optional)",
+            "clickToSelect": "Click to select images",
+            "fileTypes": "PNG, JPG, GIF, WEBP up to 10MB each",
+            "imagesSelected": "image(s) selected",
+            "clearAll": "Clear all",
+            "address": "Address Information",
+            "cancel": "Cancel",
+            "create": "Create Boarding House",
+            "save": "Save Changes",
+            "creating": "Creating...",
+            "saving": "Saving..."
+        },
+        "messages": {
+            "createSuccess": "Boarding house created successfully",
+            "createSuccessWithImages": "with {{count}} image(s)",
+            "updateSuccess": "Boarding house updated successfully",
+            "updateSuccessWithImages": "with {{count}} new image(s)",
+            "deleteSuccess": "Boarding house deleted successfully!",
+            "deleteConfirm": "Are you sure you want to delete this boarding house? All rooms will be deleted if allowed.",
+            "deleteRoomsFirst": "You need to delete all rooms in this boarding house first. Go to Room Management page?",
+            "selectProvince": "Please select a province",
+            "selectWard": "Please select a ward",
+            "enterAddress": "Please enter detailed address",
+            "invalidFileTypes": "Invalid file types. Please upload only image files."
+        },
+        "errors": {
+            "loadFailed": "Unable to load boarding houses",
+            "createFailed": "Create failed",
+            "updateFailed": "Update failed",
+            "deleteFailed": "Delete boarding house failed",
+            "notAuthenticated": "User not authenticated"
+        }
+    },
+    "ownerServices": {
+        "title": "Service Management",
+        "subtitle": "Create and manage extra services (cleaning, laundry, parking, etc.)",
+        "addService": "Add Service",
+        "stats": {
+            "totalServices": "Total Services"
+        },
+        "emptyState": {
+            "title": "No services yet",
+            "description": "Create your first service to offer extras to tenants",
+            "createFirst": "Create First Service"
+        },
+        "list": {
+            "serviceId": "Service ID",
+            "edit": "Edit",
+            "delete": "Delete"
+        },
+        "modal": {
+            "createTitle": "Create Service",
+            "editTitle": "Edit Service",
+            "serviceName": "Service Name",
+            "serviceNamePlaceholder": "e.g. Cleaning Service, Laundry, Parking",
+            "serviceNameRequired": "Service name is required",
+            "price": "Price (VND)",
+            "pricePlaceholder": "50000",
+            "priceRequired": "Price must be 0 or greater",
+            "cancel": "Cancel",
+            "create": "Create Service",
+            "update": "Update Service",
+            "saving": "Saving..."
+        },
+        "messages": {
+            "createSuccess": "Service created successfully!",
+            "updateSuccess": "Service updated successfully!",
+            "deleteSuccess": "Service deleted successfully!",
+            "deleteConfirm": "Are you sure you want to delete this service?"
+        },
+        "errors": {
+            "loadFailed": "Failed to load services",
+            "createFailed": "Failed to create service",
+            "updateFailed": "Failed to update service",
+            "deleteFailed": "Failed to delete service"
+        }
+    },
+    "ownerBoardingHouseDetail": {
+        "notFound": {
+            "title": "House not found",
+            "description": "The boarding house you're looking for doesn't exist or you don't have permission to view it."
+        },
+        "info": {
+            "address": "Address",
+            "phone": "Phone",
+            "email": "Email",
+            "type": "Type"
+        },
+        "actions": {
+            "manageContracts": "Manage Contracts",
+            "editHouse": "Edit House",
+            "refresh": "Refresh"
+        },
+        "stats": {
+            "totalRooms": "Total Rooms",
+            "available": "Available",
+            "occupied": "Occupied",
+            "contracts": "Contracts",
+            "occupancyRate": "Occupancy Rate"
+        },
+        "rooms": {
+            "title": "Rooms",
+            "addRoom": "Add Room",
+            "empty": {
+                "title": "No rooms found",
+                "description": "Start by adding some rooms to this boarding house."
+            },
+            "price": "Price",
+            "area": "Area",
+            "capacity": "Capacity",
+            "people": "people",
+            "rating": "Rating",
+            "createContract": "Create Contract"
+        },
+        "quickActions": {
+            "title": "Quick Actions",
+            "manageContracts": "Manage Contracts",
+            "manageContractsDesc": "View and manage all contracts",
+            "roomManagement": "Room Management",
+            "roomManagementDesc": "Add or edit rooms",
+            "tenantManagement": "Tenant Management",
+            "tenantManagementDesc": "View tenant information",
+            "reports": "Reports",
+            "reportsDesc": "View financial reports"
+        }
+    },
+    "ownerContracts": {
+        "title": "Contract Management",
+        "subtitle": "Manage all rental contracts across your properties",
+        "addContract": "Add Contract",
+        "backToProperties": "Back to Properties",
+        "searchPlaceholder": "Search contracts by tenant, room, or contract ID...",
+        "contract": "Contract",
+        "room": "Room",
+        "tenant": "Tenant",
+        "period": "Period",
+        "filters": {
+            "allStatus": "All Status",
+            "active": "Active",
+            "expired": "Expired",
+            "terminated": "Terminated"
+        },
+        "emptyState": {
+            "title": "No contracts found",
+            "noContracts": "No contracts have been created for this house yet.",
+            "noMatchingFilters": "No contracts match your current filters."
+        },
+        "actions": {
+            "view": "View",
+            "edit": "Edit",
+            "sign": "Sign",
+            "cancel": "Cancel",
+            "extend": "Extend",
+            "download": "Download PDF",
+            "previewPdf": "Preview PDF",
+            "printPdf": "Print PDF",
+            "cancelContract": "Cancel Contract",
+            "extendContract": "Extend Contract",
+            "signature": "Signature",
+            "uploadImages": "Upload Images",
+            "delete": "Delete"
+        },
+        "modal": {
+            "contractDetails": "Contract Details",
+            "deleteContract": "Delete Contract",
+            "cancelContract": "Cancel Contract",
+            "extendContract": "Extend Contract",
+            "uploadImages": "Upload Contract Images",
+            "cancelReason": "Reason for cancellation",
+            "newEndDate": "New end date",
+            "confirmDelete": "Are you sure you want to delete this contract?",
+            "confirmCancel": "Are you sure you want to cancel this contract?",
+            "selectImages": "Select images to upload",
+            "noImagesSelected": "No images selected",
+            "confirm": "Confirm",
+            "close": "Close",
+            "upload": "Upload"
+        },
+        "toast": {
+            "invalidCitizenId": "Please enter a valid citizen ID (9-12 digits)",
+            "noUserFound": "No user found with this Citizen ID",
+            "verifyId": "Please verify the ID is correct.",
+            "invalidResponse": "Invalid response from server. Please try again.",
+            "idNotInDb": "The ID may not exist in database.",
+            "unauthorized": "Unauthorized. Please login again.",
+            "searchFailed": "Failed to search user. Please try again.",
+            "profileAutoFilled": "Profile auto-filled for {{name}}!",
+            "selectImage": "Please select at least one image",
+            "imagesUploaded": "Contract images uploaded successfully!",
+            "uploadError": "Error uploading contract images",
+            "loadServicesFailed": "Failed to load services",
+            "contractIdNotFound": "Contract ID not found",
+            "loadContractFailed": "Unable to load contract information",
+            "createSignatureFirst": "Please create a signature first",
+            "enterFullName": "Please enter your full name",
+            "emailNotFound": "User email not found",
+            "contractInfoNotFound": "Contract information not found",
+            "otpCreateError": "Error creating OTP. Please try again.",
+            "otpSent": "OTP code has been sent to email {{email}}",
+            "otpSendError": "Error sending OTP. Please try again.",
+            "invalidInfo": "Invalid information",
+            "newOtpSent": "New OTP code has been sent",
+            "resendOtpError": "Error resending OTP. Please try again.",
+            "enterOtp": "Please enter OTP code",
+            "otpMustBe6": "OTP must be 6 digits",
+            "otpInfoNotFound": "OTP information not found",
+            "invalidOtp": "Invalid OTP code",
+            "signatureNotFound": "Signature not found",
+            "contractSigned": "Contract signed successfully!",
+            "confirmSignatureError": "Error confirming signature. Please try again.",
+            "uploadImageFile": "Please upload an image file"
+        }
+    },
+    "contractDetail": {
+        "title": "Contract Detail",
+        "status": "Status",
+        "notFound": "Contract not found",
+        "contractInfo": "Contract Information",
+        "room": "Room",
+        "monthlyRent": "Monthly Rent",
+        "deposit": "Deposit",
+        "checkinDate": "Check-in Date",
+        "checkoutDate": "Check-out Date",
+        "numberOfOccupants": "Number of Occupants",
+        "tenantInfo": "Tenant Information",
+        "fullName": "Full Name",
+        "phoneNumber": "Phone Number",
+        "citizenId": "Citizen ID/CCCD",
+        "signatures": "Signatures",
+        "ownerSignature": "Owner Signature",
+        "tenantSignature": "Tenant Signature",
+        "contractPDF": "Contract PDF",
+        "contractPDFDescription": "View or download the contract as PDF with signatures",
+        "errors": {
+            "loadFailed": "Unable to load contract information"
+        }
+    },
+    "signaturePage": {
+        "title": "Signature Setting",
+        "signatureMethod": "Signature Method",
+        "signMethodSmsOtp": "Sign with SMS OTP eContract verification",
+        "fullName": "Full Name",
+        "phoneNumber": "Phone Number",
+        "verificationInfo": "Verification code sent to phone number",
+        "enterOtpHint": "Please enter the OTP to complete the contract signing",
+        "otp": "OTP",
+        "otpValidFor": "OTP is valid for",
+        "resendOtp": "Resend OTP",
+        "sending": "Sending...",
+        "confirm": "Confirm",
+        "verifying": "Verifying...",
+        "cancel": "Cancel",
+        "loading": "Loading...",
+        "messages": {
+            "otpSent": "New OTP has been sent",
+            "otpVerified": "OTP verified! Uploading signature...",
+            "signatureUploaded": "Signature uploaded! Signing contract...",
+            "generatingPdf": "Generating contract PDF...",
+            "pdfGenerated": "Contract PDF has been generated successfully!",
+            "pdfWarning": "Contract signed but PDF could not be generated. Please contact support.",
+            "signSuccess": "Contract has been signed successfully! 🎉"
+        },
+        "errors": {
+            "loadFailed": "Unable to load contract information",
+            "resendFailed": "Failed to resend OTP",
+            "invalidOtp": "Please enter a 6-digit OTP code",
+            "otpSessionNotFound": "OTP session not found. Please try again.",
+            "signatureDataNotFound": "Signature data not found. Please try again.",
+            "uploadFailed": "Failed to upload signature. Please try again.",
+            "otpInvalidExpired": "OTP is invalid or expired",
+            "generalError": "An error occurred. Please try again."
+        }
+    },
+    "ownerReviews": {
+        "title": "📝 Review Management",
+        "subtitle": "View and respond to customer reviews",
+        "loading": "Loading reviews...",
+        "stats": {
+            "totalReviews": "Total Reviews",
+            "pending": "Pending Reply",
+            "responded": "Responded",
+            "avgRating": "Avg Rating"
+        },
+        "tabs": {
+            "all": "All",
+            "pending": "Pending Reply",
+            "responded": "Responded",
+            "positive": "Positive (4-5⭐)",
+            "negative": "Negative (1-2⭐)"
+        },
+        "emptyState": {
+            "title": "No reviews yet",
+            "description": "Customer reviews will appear here"
+        },
+        "status": {
+            "responded": "✓ Responded",
+            "pending": "⏳ Pending reply",
+            "reportProcessing": "⚠️ Report processing",
+            "reportApproved": "✓ Report approved",
+            "reportRejected": "✗ Report rejected",
+            "hidden": "🔒 Hidden"
+        },
+        "review": {
+            "userId": "User ID",
+            "roomId": "Room ID",
+            "contractId": "Contract ID"
+        },
+        "actions": {
+            "report": "Report",
+            "viewReport": "View Report",
+            "reply": "Reply",
+            "editReply": "Edit Reply"
+        },
+        "replySection": {
+            "ownerReply": "Owner's Reply",
+            "edited": "edited"
+        },
+        "modal": {
+            "replyToReview": "Reply to Review",
+            "editReply": "Edit Reply",
+            "replyContent": "Reply content",
+            "replyPlaceholder": "Enter your reply...",
+            "imageOptional": "Image (Optional)",
+            "cancel": "Cancel",
+            "update": "Update",
+            "sendReply": "Send Reply",
+            "sending": "Sending...",
+            "viewReport": "View Report",
+            "reportReview": "Report Review",
+            "statusLabel": "Status",
+            "statusPending": "⏳ Pending",
+            "statusApproved": "✓ Approved",
+            "statusRejected": "✗ Rejected",
+            "rejectReason": "Rejection reason",
+            "reportReason": "Report reason",
+            "reportPlaceholder": "Enter the reason for reporting this review (e.g. inappropriate content, spam, false information...)",
+            "maxChars": "Maximum 1000 characters",
+            "evidenceImages": "Evidence images (Optional)",
+            "multipleImages": "You can select multiple images",
+            "close": "Close",
+            "updateReport": "Update Report",
+            "sendReport": "Send Report"
+        },
+        "messages": {
+            "replySuccess": "Reply sent successfully!",
+            "replyUpdateSuccess": "Reply updated successfully!",
+            "replyDeleteSuccess": "Reply deleted successfully!",
+            "replyDeleteConfirm": "Are you sure you want to delete this reply?",
+            "reportSuccess": "Report sent successfully!",
+            "reportUpdateSuccess": "Report updated successfully!",
+            "enterReply": "Please enter reply content",
+            "enterReason": "Please enter report reason",
+            "selectReason": "Please select report reason"
+        },
+        "errors": {
+            "loadFailed": "Unable to load reviews. Please try again.",
+            "replyFailed": "Unable to send reply. Please try again.",
+            "deleteReplyFailed": "Unable to delete reply. Please try again.",
+            "reportFailed": "Unable to send report. Please try again."
+        }
+    },
+    "staffDashboard": {
+        "title": "Staff Dashboard",
+        "welcome": "Welcome back, Staff Manager! 👋",
+        "subtitle": "Here's what's happening with content moderation and user support today.",
+        "reviewReports": "Review Reports",
+        "stats": {
+            "pendingPosts": "Pending Posts",
+            "activeUsers": "Active Users",
+            "supportTickets": "Support Tickets",
+            "flaggedContent": "Flagged Content",
+            "approvedToday": "Approved Today",
+            "rejectedToday": "Rejected Today",
+            "totalPosts": "Total Posts",
+            "avgResponseTime": "Avg Response Time"
+        },
+        "notifications": {
+            "title": "Notifications",
+            "new": "new",
+            "viewAll": "View All →",
+            "loading": "Loading...",
+            "empty": "No notifications",
+            "markAsRead": "Mark as read",
+            "justNow": "Just now",
+            "minutesAgo": "{{count}} minutes ago",
+            "hoursAgo": "{{count}} hours ago",
+            "daysAgo": "{{count}} days ago"
+        },
+        "recentActivity": {
+            "title": "Recent Activity",
+            "viewAll": "View All",
+            "user": "User"
+        },
+        "pendingTasks": {
+            "title": "Pending Tasks",
+            "tasks": "tasks",
+            "due": "Due",
+            "assignee": "Assignee"
+        },
+        "systemHealth": {
+            "title": "System Health",
+            "server": "Server",
+            "database": "Database",
+            "healthy": "Healthy",
+            "apiResponse": "API Response",
+            "uptime": "Uptime",
+            "activeConnections": "Active Connections",
+            "errorRate": "Error Rate"
+        },
+        "topIssues": {
+            "title": "Top Issues"
+        },
+        "quickActions": {
+            "title": "Quick Actions",
+            "reviewPosts": "Review Posts",
+            "pending": "pending",
+            "supportTickets": "Support Tickets",
+            "open": "open",
+            "manageUsers": "Manage Users",
+            "active": "active",
+            "viewReports": "View Reports",
+            "analyticsInsights": "Analytics & insights"
+        }
+    },
+    "staffUsers": {
+        "title": "User Management",
+        "tabs": {
+            "all": "All Users",
+            "users": "Users",
+            "owners": "Owners",
+            "active": "Active",
+            "inactive": "Inactive",
+            "ownerRequests": "Owner Requests"
+        },
+        "createAccount": "Create Account",
+        "table": {
+            "name": "Name",
+            "email": "Email",
+            "phone": "Phone",
+            "role": "Role",
+            "status": "Status",
+            "actions": "Actions"
+        },
+        "roles": {
+            "user": "User",
+            "owner": "Owner",
+            "staff": "Staff",
+            "admin": "Admin"
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        "actions": {
+            "view": "View",
+            "edit": "Edit",
+            "toggleStatus": "Toggle Status",
+            "approve": "Approve",
+            "reject": "Reject"
+        },
+        "modal": {
+            "createTitle": "Create New Account",
+            "editTitle": "Edit Account",
+            "viewTitle": "User Details",
+            "rejectTitle": "Reject Request",
+            "fullName": "Full Name",
+            "email": "Email",
+            "phone": "Phone",
+            "password": "Password",
+            "role": "Role",
+            "rejectReason": "Rejection Reason",
+            "rejectPlaceholder": "Enter reason for rejection..."
+        },
+        "toast": {
+            "createSuccess": "Account created successfully!",
+            "updateSuccess": "Account updated successfully!",
+            "statusUpdated": "Account status updated successfully!",
+            "approveSuccess": "Request approved successfully",
+            "rejectSuccess": "Request rejected successfully",
+            "createFailed": "Failed to create account",
+            "updateFailed": "Failed to update account",
+            "statusFailed": "Failed to update account status",
+            "approveFailed": "Failed to approve request",
+            "rejectFailed": "Failed to reject request"
+        }
+    },
+    "staffReports": {
+        "title": "Review Reports Management",
+        "filters": {
+            "all": "All",
+            "pending": "Pending",
+            "approved": "Approved",
+            "rejected": "Rejected"
+        },
+        "table": {
+            "reviewer": "Reviewer",
+            "content": "Content",
+            "reason": "Reason",
+            "status": "Status",
+            "createdAt": "Created At",
+            "actions": "Actions"
+        },
+        "status": {
+            "pending": "Pending",
+            "approved": "Approved",
+            "rejected": "Rejected"
+        },
+        "actions": {
+            "approve": "Approve",
+            "reject": "Reject"
+        },
+        "modal": {
+            "rejectTitle": "Reject Report",
+            "rejectReason": "Rejection Reason",
+            "rejectPlaceholder": "Enter reason for rejection..."
+        },
+        "toast": {
+            "approveConfirm": "Are you sure you want to approve this report?",
+            "approveSuccess": "Report approved successfully!",
+            "rejectSuccess": "Report rejected successfully!",
+            "processFailed": "Processing failed, please try again",
+            "enterReason": "Please enter rejection reason"
+        },
+        "loading": "Loading reports...",
+        "empty": "No reports found",
+        "error": "Unable to load reports"
+    },
+    "staffPosts": {
+        "title": "Posts Review",
+        "tabs": {
+            "pending": "Pending",
+            "approved": "Approved",
+            "rejected": "Rejected"
+        },
+        "table": {
+            "title": "Title",
+            "owner": "Owner",
+            "price": "Price",
+            "location": "Location",
+            "status": "Status",
+            "createdAt": "Created At",
+            "actions": "Actions"
+        },
+        "actions": {
+            "approve": "Approve",
+            "reject": "Reject",
+            "view": "View Details"
+        },
+        "toast": {
+            "approveSuccess": "Post approved successfully!",
+            "rejectSuccess": "Post rejected successfully!",
+            "approveFailed": "Failed to approve post. Please try again.",
+            "rejectFailed": "Failed to reject post. Please try again."
+        },
+        "loading": "Loading posts...",
+        "empty": "No posts to review",
+        "error": "Error Loading Posts",
+        "retry": "Try Again"
+    },
+    "staffNotifications": {
+        "title": "Notification Management",
+        "tabs": {
+            "all": "All",
+            "unread": "Unread",
+            "read": "Read"
+        },
+        "createNotification": "Create Notification",
+        "form": {
+            "title": "Title",
+            "message": "Message",
+            "targetRole": "Target Role",
+            "schedule": "Schedule (Optional)",
+            "allRoles": "All Roles",
+            "users": "Users",
+            "owners": "Owners",
+            "staff": "Staff"
+        },
+        "actions": {
+            "send": "Send Notification",
+            "markRead": "Mark as Read",
+            "delete": "Delete"
+        },
+        "toast": {
+            "sendSuccess": "Notification sent successfully!",
+            "deleteSuccess": "Notification deleted successfully!",
+            "sendFailed": "Failed to send notification",
+            "deleteFailed": "Failed to delete notification"
+        }
+    },
+    "staffAmenities": {
+        "title": "Amenity Management",
+        "addAmenity": "Add Amenity",
+        "table": {
+            "image": "Image",
+            "name": "Name",
+            "actions": "Actions"
+        },
+        "modal": {
+            "createTitle": "Create New Amenity",
+            "editTitle": "Edit Amenity",
+            "name": "Amenity Name",
+            "namePlaceholder": "Enter amenity name",
+            "image": "Image",
+            "selectImage": "Select Image",
+            "currentImage": "Current Image"
+        },
+        "toast": {
+            "createSuccess": "Amenity created successfully!",
+            "updateSuccess": "Amenity updated successfully!",
+            "deleteSuccess": "Amenity deleted successfully!",
+            "createFailed": "Failed to create amenity!",
+            "updateFailed": "Failed to update amenity!",
+            "deleteFailed": "Failed to delete amenity!",
+            "deleteConfirm": "Are you sure you want to delete this amenity?",
+            "nameRequired": "Please enter amenity name and select an image!"
+        }
+    },
+    "adminDashboard": {
+        "title": "Admin Dashboard",
+        "subtitle": "Overview of system statistics and quick actions",
+        "stats": {
+            "totalUsers": "Total Users",
+            "totalOwners": "Total Owners",
+            "totalStaff": "Total Staff",
+            "totalPosts": "Total Posts"
+        },
+        "accountStatus": {
+            "title": "Account Status",
+            "active": "Active Accounts",
+            "inactive": "Inactive Accounts"
+        },
+        "systemHealth": {
+            "title": "System Health",
+            "apiStatus": "API Status",
+            "database": "Database",
+            "online": "Online",
+            "connected": "Connected"
+        },
+        "quickActions": {
+            "title": "Quick Actions",
+            "manageUsers": "Manage Users",
+            "manageUsersDesc": "View and manage user accounts",
+            "manageStaff": "Manage Staff",
+            "manageStaffDesc": "View and manage staff accounts",
+            "systemOverview": "System Overview",
+            "systemOverviewDesc": "View detailed system statistics",
+            "financialReports": "Financial Reports",
+            "financialReportsDesc": "View revenue and financial data"
+        }
+    },
+    "adminUsers": {
+        "title": "User Management",
+        "tabs": {
+            "all": "All",
+            "users": "Users",
+            "owners": "Owners",
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        "createAccount": "Create Account",
+        "table": {
+            "name": "Name",
+            "email": "Email",
+            "phone": "Phone",
+            "role": "Role",
+            "status": "Status",
+            "actions": "Actions"
+        }
+    },
+    "adminStaffManagement": {
+        "title": "Staff Management",
+        "addStaff": "Add Staff",
+        "table": {
+            "name": "Name",
+            "email": "Email",
+            "phone": "Phone",
+            "status": "Status",
+            "createdAt": "Created At",
+            "actions": "Actions"
+        },
+        "modal": {
+            "createTitle": "Create Staff Account",
+            "editTitle": "Edit Staff Account",
+            "fullName": "Full Name",
+            "email": "Email",
+            "phone": "Phone",
+            "password": "Password"
+        },
+        "toast": {
+            "createSuccess": "Staff account created successfully!",
+            "updateSuccess": "Staff account updated successfully!",
+            "deleteSuccess": "Staff account deleted successfully!",
+            "statusUpdated": "Staff status updated successfully!"
+        }
+    },
+    "adminOverview": {
+        "title": "System Overview",
+        "stats": {
+            "totalAccounts": "Total Accounts",
+            "activeToday": "Active Today",
+            "newThisMonth": "New This Month",
+            "growthRate": "Growth Rate"
+        },
+        "charts": {
+            "userGrowth": "User Growth",
+            "accountTypes": "Account Types",
+            "activityOverview": "Activity Overview"
+        }
+    },
+    "adminFinancial": {
+        "title": "Financial Reports",
+        "stats": {
+            "totalRevenue": "Total Revenue",
+            "monthlyRevenue": "Monthly Revenue",
+            "transactions": "Transactions",
+            "avgTransaction": "Avg Transaction"
+        },
+        "charts": {
+            "revenueOverTime": "Revenue Over Time",
+            "revenueByCategory": "Revenue by Category"
+        },
+        "filters": {
+            "thisMonth": "This Month",
+            "lastMonth": "Last Month",
+            "thisYear": "This Year",
+            "custom": "Custom Range"
+        }
+    },
+    "adminPaymentGateways": {
+        "title": "Payment Gateways",
+        "subtitle": "Configure and manage payment methods",
+        "gateways": {
+            "vnpay": "VNPay",
+            "momo": "MoMo",
+            "zalopay": "ZaloPay",
+            "bankTransfer": "Bank Transfer"
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        "actions": {
+            "configure": "Configure",
+            "enable": "Enable",
+            "disable": "Disable"
+        }
+    },
+    "adminNotifications": {
+        "title": "Notification Center",
+        "tabs": {
+            "all": "All",
+            "system": "System",
+            "users": "Users"
+        },
+        "createNotification": "Create Notification",
+        "broadcastTitle": "Broadcast Notification",
+        "form": {
+            "title": "Title",
+            "message": "Message",
+            "targetAudience": "Target Audience",
+            "allUsers": "All Users",
+            "owners": "Owners Only",
+            "staff": "Staff Only"
+        }
+    },
+    "staffPosts": {
+        "title": "Posts Review",
+        "subtitle": "Review and moderate rental property listings",
+        "error": "Error Loading Posts",
+        "retry": "Try Again",
+        "empty": "No posts found",
+        "loading": "Loading posts...",
+        "tabs": {
+            "pending": "Pending",
+            "approved": "Approved",
+            "rejected": "Rejected"
+        },
+        "actions": {
+            "approve": "Approve",
+            "reject": "Reject",
+            "viewDetails": "View Details"
+        },
+        "modal": {
+            "rejectTitle": "Reject Post",
+            "rejectMessage": "Please enter the reason for rejection:",
+            "confirmReject": "Confirm Reject"
+        }
+    },
+    "staffReports": {
+        "title": "Review Reports",
+        "subtitle": "Manage review reports from owners",
+        "searchPlaceholder": "Search by reviewId or reason...",
+        "empty": "No reports found",
+        "loading": "Loading reports...",
+        "error": "Error loading reports",
+        "filters": {
+            "all": "All",
+            "pending": "Pending",
+            "approved": "Approved",
+            "rejected": "Rejected"
+        },
+        "actions": {
+            "approve": "Approve",
+            "reject": "Reject"
+        },
+        "modal": {
+            "rejectTitle": "Reject Report",
+            "rejectMessage": "You are rejecting this report. Please enter the reason:",
+            "confirmReject": "Confirm Reject"
+        }
+    },
+    "staffManagement": {
+        "title": "Staff Management",
+        "subtitle": "Manage staff accounts (Admin only)",
+        "searchPlaceholder": "🔍 Search by name, email, phone, or ID...",
+        "loading": "Loading staff accounts...",
+        "exportCSV": "Export CSV",
+        "createStaff": "Create Staff Account",
+        "noStaffMatching": "No staff found matching",
+        "clearSearch": "Clear search",
+        "stats": {
+            "totalStaff": "Total Staff",
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        "table": {
+            "staffInfo": "Staff Info",
+            "contact": "Contact",
+            "status": "Status",
+            "createdDate": "Created Date",
+            "actions": "Actions"
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        "actions": {
+            "ban": "Ban",
+            "unban": "Unban",
+            "createStaff": "Create Staff",
+            "updateStaff": "Update Staff",
+            "editAccount": "Edit Account",
+            "banAccount": "Ban Account",
+            "unbanAccount": "Unban Account",
+            "deleteAccount": "Delete Account",
+            "confirmDelete": "Yes, Delete"
+        },
+        "form": {
+            "fullName": "Full Name",
+            "email": "Email",
+            "phone": "Phone",
+            "password": "Password",
+            "newPassword": "New Password",
+            "passwordPlaceholder": "Leave empty to keep current password",
+            "passwordHint": "Leave empty to keep current password",
+            "accountId": "Account ID"
+        },
+        "modal": {
+            "createTitle": "Create Staff Account",
+            "editTitle": "Edit Staff Account",
+            "viewTitle": "Staff Account Details",
+            "deleteTitle": "Delete Staff Account",
+            "deleteMessage": "Are you sure you want to permanently delete",
+            "deleteWarning": "This action cannot be undone!"
+        }
+    },
+    "adminOverview": {
+        "title": "System Overview",
+        "subtitle": "Detailed statistics and analytics",
+        "loading": "Loading data...",
+        "userStats": "User Statistics",
+        "ownerStats": "Owner Statistics",
+        "staffStats": "Staff Statistics",
+        "summary": "Summary",
+        "totalUsers": "Total Users",
+        "activeUsers": "Active Users",
+        "inactiveUsers": "Inactive Users",
+        "totalOwners": "Total Owners",
+        "activeOwners": "Active Owners",
+        "inactiveOwners": "Inactive Owners",
+        "totalStaff": "Total Staff",
+        "activeStaff": "Active Staff",
+        "inactiveStaff": "Inactive Staff",
+        "totalAccounts": "Total Accounts",
+        "totalActive": "Total Active",
+        "totalInactive": "Total Inactive",
+        "activityRate": "Activity Rate",
+        "active": "active",
+        "ofTotal": "of total"
     }
 }

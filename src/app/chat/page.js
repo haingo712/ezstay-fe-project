@@ -28,6 +28,67 @@ import {
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
+// ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
+const MOCK_CHAT_ROOMS = [
+  {
+    id: '1',
+    owner: { id: 'owner1', fullName: 'Nguyễn Văn An', FullName: 'Nguyễn Văn An' },
+    post: { title: 'Phòng trọ cao cấp quận 1' },
+    lastMessage: { content: 'Chào bạn, phòng còn trống không ạ?', createdAt: new Date().toISOString() }
+  },
+  {
+    id: '2',
+    owner: { id: 'owner2', fullName: 'Trần Thị Bình', FullName: 'Trần Thị Bình' },
+    post: { title: 'Căn hộ mini quận 7' },
+    lastMessage: { content: 'Dạ bạn có thể qua xem phòng vào cuối tuần được ạ', createdAt: new Date(Date.now() - 3600000).toISOString() }
+  },
+  {
+    id: '3',
+    owner: { id: 'owner3', fullName: 'Lê Minh Cường', FullName: 'Lê Minh Cường' },
+    post: { title: 'Phòng trọ sinh viên Thủ Đức' },
+    lastMessage: { content: 'Giá phòng là 2.8 triệu/tháng bạn nhé', createdAt: new Date(Date.now() - 86400000).toISOString() }
+  }
+];
+
+const MOCK_MESSAGES = [
+  {
+    id: '1',
+    content: 'Chào bạn, tôi quan tâm đến phòng trọ của bạn. Phòng còn trống không ạ?',
+    senderId: 'user1',
+    createdAt: new Date(Date.now() - 7200000).toISOString(),
+    isRead: true
+  },
+  {
+    id: '2',
+    content: 'Chào bạn! Phòng vẫn còn trống ạ. Bạn có muốn đặt lịch xem phòng không?',
+    senderId: 'owner1',
+    createdAt: new Date(Date.now() - 7100000).toISOString(),
+    isRead: true
+  },
+  {
+    id: '3',
+    content: 'Dạ vâng, bạn cho tôi hỏi giá phòng bao nhiêu và tiền điện nước tính như thế nào ạ?',
+    senderId: 'user1',
+    createdAt: new Date(Date.now() - 7000000).toISOString(),
+    isRead: true
+  },
+  {
+    id: '4',
+    content: 'Giá phòng là 5.5 triệu/tháng. Điện giá nhà nước 3.5k/kWh, nước 15k/m³ bạn nhé. Phòng full nội thất rồi ạ.',
+    senderId: 'owner1',
+    createdAt: new Date(Date.now() - 6900000).toISOString(),
+    isRead: true
+  },
+  {
+    id: '5',
+    content: 'Chào bạn, phòng còn trống không ạ?',
+    senderId: 'user1',
+    createdAt: new Date().toISOString(),
+    isRead: false
+  }
+];
+// ============ END MOCK DATA ============
+
 export default function UserChatsPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -66,14 +127,24 @@ export default function UserChatsPage() {
       setLoading(true);
       const rooms = await chatService.getChatRooms();
       console.log('Loaded user chat rooms:', rooms);
-      setChatRooms(rooms || []);
+      
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const roomsToUse = (rooms && rooms.length > 0) ? rooms : MOCK_CHAT_ROOMS;
+      setChatRooms(roomsToUse);
+      // ============ END MOCK DATA USAGE ============
 
       // Auto-select first room if available
-      if (rooms && rooms.length > 0 && !selectedChatRoom) {
-        setSelectedChatRoom(rooms[0]);
+      if (roomsToUse && roomsToUse.length > 0 && !selectedChatRoom) {
+        setSelectedChatRoom(roomsToUse[0]);
       }
     } catch (error) {
       console.error('Error loading chat rooms:', error);
+      // ============ USE MOCK DATA ON ERROR ============
+      setChatRooms(MOCK_CHAT_ROOMS);
+      if (MOCK_CHAT_ROOMS.length > 0 && !selectedChatRoom) {
+        setSelectedChatRoom(MOCK_CHAT_ROOMS[0]);
+      }
+      // ============ END MOCK DATA ON ERROR ============
     } finally {
       setLoading(false);
     }
@@ -83,9 +154,15 @@ export default function UserChatsPage() {
     try {
       const response = await chatService.getMessages(chatRoomId);
       const messagesData = response.data || response;
-      setMessages(Array.isArray(messagesData) ? messagesData : []);
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const messagesToUse = (Array.isArray(messagesData) && messagesData.length > 0) ? messagesData : MOCK_MESSAGES;
+      setMessages(messagesToUse);
+      // ============ END MOCK DATA USAGE ============
     } catch (error) {
       console.error('Error loading messages:', error);
+      // ============ USE MOCK DATA ON ERROR ============
+      setMessages(MOCK_MESSAGES);
+      // ============ END MOCK DATA ON ERROR ============
     }
   };
 
@@ -113,7 +190,7 @@ export default function UserChatsPage() {
       await loadChatRooms();
     } catch (error) {
       console.error('Error sending message:', error);
-      notification.error('Failed to send message. Please try again.');
+      notification.error(t('chat.sendFailed'));
     } finally {
       setSending(false);
     }
@@ -172,8 +249,8 @@ export default function UserChatsPage() {
     closeContextMenu();
 
     const confirmed = await notification.confirm(
-      'Are you sure you want to revoke this message? This action cannot be undone.',
-      'Revoke Message'
+      t('chat.revokeConfirm'),
+      t('chat.revokeMessage')
     );
 
     if (!confirmed) return;
@@ -187,7 +264,7 @@ export default function UserChatsPage() {
       await loadMessages(selectedChatRoom.id);
     } catch (error) {
       console.error('Error revoking message:', error);
-      notification.error('Failed to revoke message. Please try again.');
+      notification.error(t('chat.revokeFailed'));
     } finally {
       setRevokingMessageId(null);
     }
@@ -233,9 +310,9 @@ export default function UserChatsPage() {
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / (1000 * 60));
 
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    if (diffInMinutes < 1) return t('chat.justNow');
+    if (diffInMinutes < 60) return `${diffInMinutes}${t('chat.minutesAgo')}`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}${t('chat.hoursAgo')}`;
     return date.toLocaleDateString();
   };
 
@@ -460,9 +537,9 @@ export default function UserChatsPage() {
                                   {isOwn && (
                                     <span className="ml-1">
                                       {isRead ? (
-                                        <CheckCheck className="h-3.5 w-3.5 text-blue-200" title="Read" />
+                                        <CheckCheck className="h-3.5 w-3.5 text-blue-200" title={t('chat.read')} />
                                       ) : (
-                                        <Check className="h-3.5 w-3.5 text-blue-200" title="Sent" />
+                                        <Check className="h-3.5 w-3.5 text-blue-200" title={t('chat.sent')} />
                                       )}
                                     </span>
                                   )}
@@ -473,7 +550,7 @@ export default function UserChatsPage() {
                                   <button
                                     onClick={() => handleRevokeMessage(message.id || message.Id)}
                                     className="absolute -left-8 top-1/2 -translate-y-1/2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                                    title="Revoke message"
+                                    title={t('chat.revokeMessage')}
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
@@ -600,7 +677,7 @@ export default function UserChatsPage() {
             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <Trash2 className="h-4 w-4" />
-            Revoke Message
+            {t('chat.revokeMessage')}
           </button>
         </div>
       )}

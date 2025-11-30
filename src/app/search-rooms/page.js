@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   sampleRooms,
   sampleAmenities,
@@ -13,6 +14,7 @@ import {
 export default function SearchPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [rooms, setRooms] = useState([]);
   const [filteredRooms, setFilteredRooms] = useState([]);
@@ -230,7 +232,7 @@ export default function SearchPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('searchRooms.loading')}</p>
         </div>
       </div>
     );
@@ -249,7 +251,7 @@ export default function SearchPage() {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search by name, address, description..."
+                  placeholder={t('searchRooms.searchPlaceholder')}
                   className="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   value={filters.keyword}
                   onChange={(e) =>
@@ -293,7 +295,7 @@ export default function SearchPage() {
                     d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z"
                   />
                 </svg>
-                <span>Filters</span>
+                <span>{t('searchRooms.filters')}</span>
               </button>
 
               <div className="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
@@ -356,20 +358,20 @@ export default function SearchPage() {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 space-y-6 sticky top-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Filters
+                  {t('searchRooms.filters')}
                 </h3>
                 <button
                   onClick={clearFilters}
                   className="text-sm text-blue-600 hover:text-blue-700"
                 >
-                  Clear All
+                  {t('searchRooms.clearAll')}
                 </button>
               </div>
 
               {/* Location Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Location
+                  {t('searchRooms.location')}
                 </label>
                 <select
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -378,7 +380,7 @@ export default function SearchPage() {
                     handleFilterChange("location", e.target.value)
                   }
                 >
-                  <option value="">All Areas</option>
+                  <option value="">{t('searchRooms.allAreas')}</option>
                   {sampleLocations.map((location) => (
                     <option key={location} value={location}>
                       {location}
@@ -390,12 +392,12 @@ export default function SearchPage() {
               {/* Price Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Rent Price (USD/month)
+                  {t('searchRooms.rentPrice')}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="number"
-                    placeholder="From"
+                    placeholder={t('searchRooms.from')}
                     className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={filters.minPrice}
                     onChange={(e) =>
@@ -404,7 +406,7 @@ export default function SearchPage() {
                   />
                   <input
                     type="number"
-                    placeholder="To"
+                    placeholder={t('searchRooms.to')}
                     className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={filters.maxPrice}
                     onChange={(e) =>
@@ -417,12 +419,12 @@ export default function SearchPage() {
               {/* Area Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Area (sqm)
+                  {t('searchRooms.area')}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="number"
-                    placeholder="From"
+                    placeholder={t('searchRooms.from')}
                     className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={filters.minArea}
                     onChange={(e) =>
@@ -431,7 +433,7 @@ export default function SearchPage() {
                   />
                   <input
                     type="number"
-                    placeholder="To"
+                    placeholder={t('searchRooms.to')}
                     className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={filters.maxArea}
                     onChange={(e) =>
@@ -444,7 +446,7 @@ export default function SearchPage() {
               {/* Max Tenants Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Maximum Occupancy
+                  {t('searchRooms.maxOccupancy')}
                 </label>
                 <select
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -453,18 +455,18 @@ export default function SearchPage() {
                     handleFilterChange("maxTenants", e.target.value)
                   }
                 >
-                  <option value="">No requirement</option>
-                  <option value="1">1 person</option>
-                  <option value="2">2 people</option>
-                  <option value="3">3 people</option>
-                  <option value="4">4+ people</option>
+                  <option value="">{t('searchRooms.noRequirement')}</option>
+                  <option value="1">{t('searchRooms.onePerson')}</option>
+                  <option value="2">{t('searchRooms.twoPeople')}</option>
+                  <option value="3">{t('searchRooms.threePeople')}</option>
+                  <option value="4">{t('searchRooms.fourPlusPeople')}</option>
                 </select>
               </div>
 
               {/* Availability Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Status
+                  {t('searchRooms.status')}
                 </label>
                 <select
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -473,16 +475,16 @@ export default function SearchPage() {
                     handleFilterChange("availability", e.target.value)
                   }
                 >
-                  <option value="all">All</option>
-                  <option value="available">Available</option>
-                  <option value="rented">Rented</option>
+                  <option value="all">{t('searchRooms.all')}</option>
+                  <option value="available">{t('searchRooms.available')}</option>
+                  <option value="rented">{t('searchRooms.rented')}</option>
                 </select>
               </div>
 
               {/* Rating Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Minimum Rating
+                  {t('searchRooms.minRating')}
                 </label>
                 <select
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -491,19 +493,19 @@ export default function SearchPage() {
                     handleFilterChange("minRating", parseInt(e.target.value))
                   }
                 >
-                  <option value={0}>All</option>
-                  <option value={1}>1 star & up</option>
-                  <option value={2}>2 stars & up</option>
-                  <option value={3}>3 stars & up</option>
-                  <option value={4}>4 stars & up</option>
-                  <option value={5}>5 sao</option>
+                  <option value={0}>{t('searchRooms.all')}</option>
+                  <option value={1}>1 {t('searchRooms.starUp')}</option>
+                  <option value={2}>2 {t('searchRooms.starsUp')}</option>
+                  <option value={3}>3 {t('searchRooms.starsUp')}</option>
+                  <option value={4}>4 {t('searchRooms.starsUp')}</option>
+                  <option value={5}>{t('searchRooms.fiveStars')}</option>
                 </select>
               </div>
 
               {/* Amenities Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Amenities
+                  {t('searchRooms.amenities')}
                 </label>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {sampleAmenities.map((amenity) => (
@@ -533,10 +535,10 @@ export default function SearchPage() {
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Search Results
+                  {t('searchRooms.searchResults')}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Found {filteredRooms.length} rooms
+                  {t('searchRooms.foundRooms').replace('{count}', filteredRooms.length)}
                 </p>
               </div>
 
@@ -545,9 +547,14 @@ export default function SearchPage() {
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
               >
-                <option value="newest">Newest</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
+                <option value="newest">{t('searchRooms.newest')}</option>
+                <option value="price-low">{t('searchRooms.priceLowHigh')}</option>
+                <option value="price-high">{t('searchRooms.priceHighLow')}</option>
+                <option value="area-large">{t('searchRooms.areaLargeSmall')}</option>
+                <option value="area-small">{t('searchRooms.areaSmallLarge')}</option>
+                <option value="rating">{t('searchRooms.highestRated')}</option>
+              </select>
+            </div>
                 <option value="area-large">Area: Large to Small</option>
                 <option value="area-small">Area: Small to Large</option>
                 <option value="rating">Highest Rated</option>
@@ -592,7 +599,7 @@ export default function SearchPage() {
                               : "bg-red-100 text-red-800"
                           }`}
                         >
-                          {room.is_available ? "Available" : "Rented"}
+                          {room.is_available ? t('searchRooms.available') : t('searchRooms.rented')}
                         </span>
                       </div>
                     </div>
@@ -616,10 +623,10 @@ export default function SearchPage() {
 
                       <div className="mb-3">
                         <div className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-1">
-                          {formatPrice(room.price)}/month
+                          {formatPrice(room.price)}{t('searchRooms.perMonth')}
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                          {room.area}sqm • {room.max_tenants} people
+                          {room.area}{t('searchRooms.sqm')} • {room.max_tenants} {t('searchRooms.people')}
                         </div>
                       </div>
 
@@ -643,7 +650,7 @@ export default function SearchPage() {
                         href={`/rooms/${room.room_id}`}
                         className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
                       >
-                        View Details
+                        {t('searchRooms.viewDetails')}
                       </Link>
                     </div>
                   </div>
@@ -653,16 +660,16 @@ export default function SearchPage() {
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">🔍</div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  No results found
+                  {t('searchRooms.noResults')}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 mb-4">
-                  No rooms match your search criteria
+                  {t('searchRooms.noRoomsMatch')}
                 </p>
                 <button
                   onClick={clearFilters}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
                 >
-                  Clear Filters
+                  {t('searchRooms.clearFilters')}
                 </button>
               </div>
             )}

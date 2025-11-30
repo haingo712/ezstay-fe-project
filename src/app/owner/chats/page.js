@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 import chatService from '@/services/chatService';
 import notification from '@/utils/notification';
 import {
@@ -24,6 +25,7 @@ import {
 
 export default function OwnerChatsPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [chatRooms, setChatRooms] = useState([]);
   const [selectedChatRoom, setSelectedChatRoom] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -257,7 +259,7 @@ export default function OwnerChatsPage() {
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-            Messages
+            {t('chat.messages')}
           </h2>
 
           {/* Search */}
@@ -265,7 +267,7 @@ export default function OwnerChatsPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search conversations..."
+              placeholder={t('chat.searchConversations')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-full text-sm focus:ring-2 focus:ring-blue-500 dark:text-white"
@@ -283,7 +285,7 @@ export default function OwnerChatsPage() {
             <div className="text-center py-12 px-4">
               <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-500 dark:text-gray-400">
-                No conversations yet
+                {t('chat.noConversations')}
               </p>
             </div>
           ) : (
@@ -379,7 +381,7 @@ export default function OwnerChatsPage() {
                   <div className="text-center">
                     <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                     <p className="text-gray-500 dark:text-gray-400">
-                      No messages yet. Start the conversation!
+                      {t('chat.noMessages')}
                     </p>
                   </div>
                 </div>
@@ -537,7 +539,7 @@ export default function OwnerChatsPage() {
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type a message..."
+                  placeholder={t('chat.typeMessage')}
                   className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border-0 rounded-full focus:ring-2 focus:ring-blue-500 dark:text-white"
                   disabled={sending}
                 />
@@ -562,10 +564,10 @@ export default function OwnerChatsPage() {
             <div className="text-center">
               <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                Select a conversation
+                {t('chat.selectConversation')}
               </h3>
               <p className="text-gray-500 dark:text-gray-400">
-                Choose a conversation from the list to view messages
+                {t('chat.startConversation')}
               </p>
             </div>
           </div>
@@ -583,7 +585,7 @@ export default function OwnerChatsPage() {
             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <Trash2 className="h-4 w-4" />
-            Revoke Message
+            {t('chat.revokeMessage')}
           </button>
         </div>
       )}

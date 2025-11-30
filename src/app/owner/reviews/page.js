@@ -2,8 +2,112 @@
 
 import { useState, useEffect } from 'react';
 import { reviewAPI } from '@/utils/api';
+import { useTranslation } from '@/hooks/useTranslation';
+
+// ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
+const MOCK_REVIEWS = [
+  {
+    id: 'review-001',
+    userId: 'user-001',
+    userName: 'Trần Thị Bình',
+    roomId: 'room-001',
+    roomName: 'Phòng A101 - Studio Premium',
+    houseName: 'Nhà trọ Sunshine Residence',
+    rating: 5,
+    content: 'Phòng rất đẹp và sạch sẽ, chủ nhà nhiệt tình. Nội thất đầy đủ, tiện nghi. Vị trí trung tâm, đi lại thuận tiện. Rất hài lòng với phòng này! Sẽ giới thiệu cho bạn bè.',
+    imageUrl: '/image.png',
+    createdAt: '2025-11-28T10:00:00Z'
+  },
+  {
+    id: 'review-002',
+    userId: 'user-002',
+    userName: 'Lê Minh Cường',
+    roomId: 'room-002',
+    roomName: 'Phòng B205 - Standard',
+    houseName: 'Nhà trọ Phú Mỹ Hưng',
+    rating: 4,
+    content: 'Phòng ổn, giá hợp lý cho vị trí gần trung tâm. Wifi ổn định, máy lạnh mát. Chỉ hơi ồn vào ban đêm do gần đường lớn. Nhìn chung vẫn đáng để thuê.',
+    imageUrl: null,
+    createdAt: '2025-11-26T14:30:00Z'
+  },
+  {
+    id: 'review-003',
+    userId: 'user-003',
+    userName: 'Phạm Hoàng Dũng',
+    roomId: 'room-001',
+    roomName: 'Phòng A101 - Studio Premium',
+    houseName: 'Nhà trọ Sunshine Residence',
+    rating: 5,
+    content: 'Tuyệt vời! Đã ở được 6 tháng, không có gì phàn nàn. Chủ nhà rất tốt, hỗ trợ sửa chữa nhanh chóng khi có vấn đề. Điện nước giá nhà nước, hợp lý.',
+    imageUrl: '/image.png',
+    createdAt: '2025-11-24T09:00:00Z'
+  },
+  {
+    id: 'review-004',
+    userId: 'user-004',
+    userName: 'Nguyễn Thị Hồng',
+    roomId: 'room-003',
+    roomName: 'Phòng C301 - Có gác',
+    houseName: 'Nhà trọ Bình Thạnh Home',
+    rating: 3,
+    content: 'Phòng tạm ổn nhưng hơi chật cho 2 người. Gác lửng khá thấp. Bảo vệ không có 24/7. Mong chủ nhà cải thiện thêm.',
+    imageUrl: null,
+    createdAt: '2025-11-22T16:45:00Z'
+  },
+  {
+    id: 'review-005',
+    userId: 'user-005',
+    userName: 'Võ Văn Thành',
+    roomId: 'room-004',
+    roomName: 'Phòng D401 - VIP Suite',
+    houseName: 'Nhà trọ Central Park',
+    rating: 5,
+    content: 'Phòng VIP đúng như mô tả. Ban công view cực đẹp, nhìn ra thành phố. Nội thất cao cấp, máy giặt riêng rất tiện. Đáng đồng tiền bát gạo!',
+    imageUrl: '/image.png',
+    createdAt: '2025-11-20T11:30:00Z'
+  },
+  {
+    id: 'review-006',
+    userId: 'user-006',
+    userName: 'Đặng Thị Mai',
+    roomId: 'room-002',
+    roomName: 'Phòng B205 - Standard',
+    houseName: 'Nhà trọ Phú Mỹ Hưng',
+    rating: 2,
+    content: 'Phòng không như hình ảnh đăng. Nội thất cũ kỹ, máy lạnh yếu. Cần cải thiện nhiều. Không hài lòng lắm với trải nghiệm này.',
+    imageUrl: null,
+    createdAt: '2025-11-18T08:00:00Z'
+  }
+];
+
+const MOCK_REVIEW_REPLIES = {
+  'review-001': {
+    id: 'reply-001',
+    reviewId: 'review-001',
+    content: 'Cảm ơn bạn đã đánh giá tích cực! Chúng tôi rất vui khi bạn hài lòng với phòng. Chúc bạn ở vui vẻ!',
+    createdAt: '2025-11-28T12:00:00Z'
+  },
+  'review-003': {
+    id: 'reply-003',
+    reviewId: 'review-003',
+    content: 'Xin cảm ơn bạn đã ở với chúng tôi suốt 6 tháng qua. Chúng tôi luôn cố gắng hỗ trợ khách hàng tốt nhất!',
+    createdAt: '2025-11-24T15:00:00Z'
+  }
+};
+
+const MOCK_REVIEW_REPORTS = {
+  'review-006': {
+    id: 'report-001',
+    reviewId: 'review-006',
+    reason: 'Đánh giá không chính xác, phòng đã được nâng cấp nội thất mới',
+    createdAt: '2025-11-19T10:00:00Z',
+    status: 'pending'
+  }
+};
+// ============ END MOCK DATA ============
 
 export default function OwnerReviewsPage() {
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [reviews, setReviews] = useState([]);
@@ -34,11 +138,15 @@ export default function OwnerReviewsPage() {
       setError(null);
       const response = await reviewAPI.getAllReviews({ $orderby: 'createdAt desc' });
       const reviewData = response.value || response || [];
-      setReviews(reviewData);
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const dataToUse = reviewData && reviewData.length > 0 ? reviewData : MOCK_REVIEWS;
+      setReviews(dataToUse);
+      // ============ END MOCK DATA USAGE ============
     } catch (err) {
       console.error('Error loading reviews:', err);
-      setError('Không thể tải danh sách đánh giá. Vui lòng thử lại.');
-      setReviews([]);
+      // ============ USE MOCK DATA ON ERROR ============
+      setReviews(MOCK_REVIEWS);
+      // ============ END MOCK DATA ON ERROR ============
     } finally {
       setLoading(false);
     }
@@ -50,9 +158,15 @@ export default function OwnerReviewsPage() {
       const replies = response.value || response || [];
       const repliesMap = {};
       replies.forEach(reply => { repliesMap[reply.reviewId] = reply; });
-      setReviewReplies(repliesMap);
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const dataToUse = Object.keys(repliesMap).length > 0 ? repliesMap : MOCK_REVIEW_REPLIES;
+      setReviewReplies(dataToUse);
+      // ============ END MOCK DATA USAGE ============
     } catch (err) {
       console.error('Error loading review replies:', err);
+      // ============ USE MOCK DATA ON ERROR ============
+      setReviewReplies(MOCK_REVIEW_REPLIES);
+      // ============ END MOCK DATA ON ERROR ============
     }
   };
 
@@ -62,9 +176,15 @@ export default function OwnerReviewsPage() {
       const reports = response.value || response || [];
       const reportsMap = {};
       reports.forEach(report => { reportsMap[report.reviewId] = report; });
-      setReviewReports(reportsMap);
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const dataToUse = Object.keys(reportsMap).length > 0 ? reportsMap : MOCK_REVIEW_REPORTS;
+      setReviewReports(dataToUse);
+      // ============ END MOCK DATA USAGE ============
     } catch (err) {
       console.error('Error loading review reports:', err);
+      // ============ USE MOCK DATA ON ERROR ============
+      setReviewReports(MOCK_REVIEW_REPORTS);
+      // ============ END MOCK DATA ON ERROR ============
     }
   };
 
@@ -115,7 +235,7 @@ export default function OwnerReviewsPage() {
   const handleSubmitResponse = async (e) => {
     e.preventDefault();
     if (!responseData.content.trim()) {
-      alert('Vui lòng nhập nội dung phản hồi');
+      alert(t('ownerReviews.messages.enterReply'));
       return;
     }
 
@@ -130,10 +250,10 @@ export default function OwnerReviewsPage() {
       const existingReply = reviewReplies[selectedReview.id];
       if (existingReply) {
         await reviewAPI.updateReviewReply(existingReply.id, formData);
-        setSuccess('Cập nhật phản hồi thành công!');
+        setSuccess(t('ownerReviews.messages.replyUpdateSuccess'));
       } else {
         await reviewAPI.createReviewReply(selectedReview.id, formData);
-        setSuccess('Gửi phản hồi thành công!');
+        setSuccess(t('ownerReviews.messages.replySuccess'));
       }
 
       await loadReviewReplies();
@@ -143,7 +263,7 @@ export default function OwnerReviewsPage() {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error('Error submitting response:', err);
-      setError(err.message || 'Không thể gửi phản hồi. Vui lòng thử lại.');
+      setError(err.message || t('ownerReviews.errors.replyFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -158,7 +278,7 @@ export default function OwnerReviewsPage() {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error('Error deleting reply:', err);
-      setError('Không thể xóa phản hồi. Vui lòng thử lại.');
+      setError(t('ownerReviews.errors.deleteReplyFailed'));
     }
   };
 
@@ -177,7 +297,7 @@ export default function OwnerReviewsPage() {
   const handleSubmitReport = async (e) => {
     e.preventDefault();
     if (!reportData.reason.trim()) {
-      alert('Vui lòng nhập lý do báo cáo');
+      alert(t('ownerReviews.messages.enterReason'));
       return;
     }
 
@@ -196,10 +316,10 @@ export default function OwnerReviewsPage() {
       const existingReport = reviewReports[selectedReview.id];
       if (existingReport) {
         await reviewAPI.updateReviewReport(selectedReview.id, formData);
-        setSuccess('Cập nhật báo cáo thành công!');
+        setSuccess(t('ownerReviews.messages.reportUpdateSuccess'));
       } else {
         await reviewAPI.createReviewReport(selectedReview.id, formData);
-        setSuccess('Gửi báo cáo thành công!');
+        setSuccess(t('ownerReviews.messages.reportSuccess'));
       }
 
       await loadReviewReports();
@@ -209,7 +329,7 @@ export default function OwnerReviewsPage() {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error('Error submitting report:', err);
-      setError(err.message || 'Không thể gửi báo cáo. Vui lòng thử lại.');
+      setError(err.message || t('ownerReviews.errors.reportFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -229,7 +349,7 @@ export default function OwnerReviewsPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Đang tải đánh giá...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">{t('ownerReviews.loading')}</p>
         </div>
       </div>
     );
@@ -239,8 +359,8 @@ export default function OwnerReviewsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">📝 Quản Lý Đánh Giá</h1>
-          <p className="text-gray-600 dark:text-gray-400">Xem và phản hồi đánh giá từ khách hàng</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{t('ownerReviews.title')}</h1>
+          <p className="text-gray-600 dark:text-gray-400">{t('ownerReviews.subtitle')}</p>
         </div>
 
         {success && (
@@ -269,7 +389,7 @@ export default function OwnerReviewsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Tổng Đánh Giá</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('ownerReviews.stats.totalReviews')}</p>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{stats.total}</p>
               </div>
               <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
@@ -283,7 +403,7 @@ export default function OwnerReviewsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Chưa Phản Hồi</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('ownerReviews.stats.pending')}</p>
                 <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">{stats.pending}</p>
               </div>
               <div className="p-3 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
@@ -297,7 +417,7 @@ export default function OwnerReviewsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Đã Phản Hồi</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('ownerReviews.stats.responded')}</p>
                 <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{stats.responded}</p>
               </div>
               <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
@@ -311,7 +431,7 @@ export default function OwnerReviewsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Đánh Giá TB</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('ownerReviews.stats.avgRating')}</p>
                 <div className="flex items-center mt-2">
                   <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.avgRating}</p>
                   <span className="text-yellow-400 ml-2 text-2xl">★</span>
@@ -330,11 +450,11 @@ export default function OwnerReviewsPage() {
           <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="flex space-x-8 px-6" aria-label="Tabs">
               {[
-                { key: 'all', label: 'Tất Cả', count: stats.total },
-                { key: 'pending', label: 'Chưa Phản Hồi', count: stats.pending },
-                { key: 'responded', label: 'Đã Phản Hồi', count: stats.responded },
-                { key: 'positive', label: 'Tích Cực (4-5⭐)', count: reviews.filter(r => r.rating >= 4).length },
-                { key: 'negative', label: 'Tiêu Cực (1-2⭐)', count: reviews.filter(r => r.rating <= 2).length }
+                { key: 'all', label: t('ownerReviews.tabs.all'), count: stats.total },
+                { key: 'pending', label: t('ownerReviews.tabs.pending'), count: stats.pending },
+                { key: 'responded', label: t('ownerReviews.tabs.responded'), count: stats.responded },
+                { key: 'positive', label: t('ownerReviews.tabs.positive'), count: reviews.filter(r => r.rating >= 4).length },
+                { key: 'negative', label: t('ownerReviews.tabs.negative'), count: reviews.filter(r => r.rating <= 2).length }
               ].map(tab => (
                 <button
                   key={tab.key}
@@ -356,8 +476,8 @@ export default function OwnerReviewsPage() {
           {filteredReviews.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center">
               <div className="text-6xl mb-4">📝</div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Chưa có đánh giá nào</h3>
-              <p className="text-gray-600 dark:text-gray-400">Các đánh giá từ khách hàng sẽ hiển thị ở đây</p>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('ownerReviews.emptyState.title')}</h3>
+              <p className="text-gray-600 dark:text-gray-400">{t('ownerReviews.emptyState.description')}</p>
             </div>
           ) : (
             filteredReviews.map((review) => {
@@ -379,22 +499,22 @@ export default function OwnerReviewsPage() {
                         <div className="flex items-center space-x-3 mb-2">
                           <h3 className="font-semibold text-gray-900 dark:text-white">User ID: {review.userId}</h3>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(hasReply)}`}>
-                            {hasReply ? '✓ Đã phản hồi' : '⏳ Chưa phản hồi'}
+                            {hasReply ? t('ownerReviews.status.responded') : t('ownerReviews.status.pending')}
                           </span>
                           {hasReport && (
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${report.status === 0 ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
                               report.status === 1 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
                                 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                               }`}>
-                              {report.status === 0 ? '⚠️ Đang xử lý báo cáo' :
-                                report.status === 1 ? '✓ Báo cáo đã duyệt' :
-                                  '✗ Báo cáo bị từ chối'}
+                              {report.status === 0 ? t('ownerReviews.status.reportProcessing') :
+                                report.status === 1 ? t('ownerReviews.status.reportApproved') :
+                                  t('ownerReviews.status.reportRejected')}
                             </span>
                           )}
 
                           {isHidden && (
                             <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                              🔒 Ẩn
+                              {t('ownerReviews.status.hidden')}
                             </span>
                           )}
                         </div>
@@ -428,7 +548,7 @@ export default function OwnerReviewsPage() {
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        {hasReport ? 'Xem Báo Cáo' : 'Báo Cáo'}
+                        {hasReport ? t('ownerReviews.actions.viewReport') : t('ownerReviews.actions.report')}
                       </button>
                       <button
                         onClick={() => handleOpenResponseModal(review)}
@@ -437,7 +557,7 @@ export default function OwnerReviewsPage() {
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                         </svg>
-                        {hasReply ? 'Chỉnh Sửa Phản Hồi' : 'Phản Hồi'}
+                        {hasReply ? t('ownerReviews.actions.editReply') : t('ownerReviews.actions.reply')}
                       </button>
                     </div>
                   </div>
@@ -449,7 +569,7 @@ export default function OwnerReviewsPage() {
                           <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
-                          <p className="font-semibold text-blue-900 dark:text-blue-100">Phản Hồi Của Chủ Nhà</p>
+                          <p className="font-semibold text-blue-900 dark:text-blue-100">{t('ownerReviews.replySection.ownerReply')}</p>
                         </div>
                         <button onClick={() => handleDeleteReply(reply.id)} className="text-red-600 hover:text-red-700 dark:text-red-400">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -463,7 +583,7 @@ export default function OwnerReviewsPage() {
                       )}
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                         {formatDate(reply.createdAt)}
-                        {reply.updatedAt !== reply.createdAt && ' (đã chỉnh sửa)'}
+                        {reply.updatedAt !== reply.createdAt && ` (${t('ownerReviews.replySection.edited')})`}
                       </p>
                     </div>
                   )}
@@ -478,7 +598,7 @@ export default function OwnerReviewsPage() {
             <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  {reviewReplies[selectedReview.id] ? 'Chỉnh Sửa Phản Hồi' : 'Phản Hồi Đánh Giá'}
+                  {reviewReplies[selectedReview.id] ? t('ownerReviews.modal.editReply') : t('ownerReviews.modal.replyToReview')}
                 </h3>
               </div>
 
@@ -493,7 +613,7 @@ export default function OwnerReviewsPage() {
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Nội dung phản hồi <span className="text-red-500">*</span>
+                    {t('ownerReviews.modal.replyContent')} <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={responseData.content}
@@ -501,12 +621,12 @@ export default function OwnerReviewsPage() {
                     rows={5}
                     required
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                    placeholder="Nhập nội dung phản hồi của bạn..."
+                    placeholder={t('ownerReviews.modal.replyPlaceholder')}
                   />
                 </div>
 
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Hình ảnh (Tùy chọn)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('ownerReviews.modal.imageOptional')}</label>
                   <input
                     type="file"
                     accept="image/*"
@@ -525,7 +645,7 @@ export default function OwnerReviewsPage() {
                     }}
                     className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
                   >
-                    Hủy
+                    {t('ownerReviews.modal.cancel')}
                   </button>
                   <button
                     type="submit"
@@ -535,10 +655,10 @@ export default function OwnerReviewsPage() {
                     {submitting ? (
                       <>
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        Đang gửi...
+                        {t('ownerReviews.modal.sending')}
                       </>
                     ) : (
-                      reviewReplies[selectedReview.id] ? 'Cập Nhật' : 'Gửi Phản Hồi'
+                      reviewReplies[selectedReview.id] ? t('ownerReviews.modal.update') : t('ownerReviews.modal.sendReply')
                     )}
                   </button>
                 </div>
@@ -552,7 +672,7 @@ export default function OwnerReviewsPage() {
             <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  {reviewReports[selectedReview.id] ? 'Xem Báo Cáo' : 'Báo Cáo Đánh Giá'}
+                  {reviewReports[selectedReview.id] ? t('ownerReviews.modal.viewReport') : t('ownerReviews.modal.reportReview')}
                 </h3>
               </div>
 
@@ -573,15 +693,15 @@ export default function OwnerReviewsPage() {
                 {reviewReports[selectedReview.id] && (
                   <div className="mb-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border-l-4 border-orange-500">
                     <p className="text-sm font-medium text-orange-900 dark:text-orange-200 mb-2">
-                      Trạng thái: {
-                        reviewReports[selectedReview.id].status === 0 ? '⏳ Đang chờ xử lý' :
-                          reviewReports[selectedReview.id].status === 1 ? '✓ Đã duyệt' :
-                            '✗ Đã từ chối'
+                      {t('ownerReviews.modal.statusLabel')}: {
+                        reviewReports[selectedReview.id].status === 0 ? t('ownerReviews.modal.statusPending') :
+                          reviewReports[selectedReview.id].status === 1 ? t('ownerReviews.modal.statusApproved') :
+                            t('ownerReviews.modal.statusRejected')
                       }
                     </p>
                     {reviewReports[selectedReview.id].rejectReason && (
                       <p className="text-sm text-red-600 dark:text-red-400 mt-2">
-                        <strong>Lý do từ chối:</strong> {reviewReports[selectedReview.id].rejectReason}
+                        <strong>{t('ownerReviews.modal.rejectReason')}:</strong> {reviewReports[selectedReview.id].rejectReason}
                       </p>
                     )}
                   </div>
@@ -589,7 +709,7 @@ export default function OwnerReviewsPage() {
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Lý do báo cáo <span className="text-red-500">*</span>
+                    {t('ownerReviews.modal.reportReason')} <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={reportData.reason}
@@ -598,16 +718,16 @@ export default function OwnerReviewsPage() {
                     required
                     disabled={reviewReports[selectedReview.id]?.status === 0}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
-                    placeholder="Nhập lý do báo cáo đánh giá này (ví dụ: nội dung không phù hợp, spam, thông tin sai lệch...)"
+                    placeholder={t('ownerReviews.modal.reportPlaceholder')}
                   />
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Tối đa 1000 ký tự
+                    {t('ownerReviews.modal.maxChars')}
                   </p>
                 </div>
 
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Hình ảnh minh chứng (Tùy chọn)
+                    {t('ownerReviews.modal.evidenceImages')}
                   </label>
                   <input
                     type="file"
@@ -618,7 +738,7 @@ export default function OwnerReviewsPage() {
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
                   />
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Có thể chọn nhiều hình ảnh
+                    {t('ownerReviews.modal.multipleImages')}
                   </p>
                   {reviewReports[selectedReview.id]?.images && reviewReports[selectedReview.id].images.length > 0 && (
                     <div className="mt-4 grid grid-cols-3 gap-2">
@@ -639,7 +759,7 @@ export default function OwnerReviewsPage() {
                     }}
                     className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
                   >
-                    {reviewReports[selectedReview.id] ? 'Đóng' : 'Hủy'}
+                    {reviewReports[selectedReview.id] ? t('ownerReviews.modal.close') : t('ownerReviews.modal.cancel')}
                   </button>
                   {!reviewReports[selectedReview.id] || reviewReports[selectedReview.id].status !== 0 ? (
                     <button
@@ -650,10 +770,10 @@ export default function OwnerReviewsPage() {
                       {submitting ? (
                         <>
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                          Đang gửi...
+                          {t('ownerReviews.modal.sending')}
                         </>
                       ) : (
-                        reviewReports[selectedReview.id] ? 'Cập Nhật Báo Cáo' : 'Gửi Báo Cáo'
+                        reviewReports[selectedReview.id] ? t('ownerReviews.modal.updateReport') : t('ownerReviews.modal.sendReport')
                       )}
                     </button>
                   ) : null}

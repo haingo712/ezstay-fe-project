@@ -5,6 +5,47 @@ import { useRouter } from "next/navigation";
 import boardingHouseService from "@/services/boardingHouseService";
 import { FaStar, FaSmile, FaMeh, FaFrown, FaMapMarkerAlt, FaTrophy } from "react-icons/fa";
 
+// ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
+const MOCK_RANKED_HOUSES = [
+  {
+    boardingHouseId: '1',
+    houseName: 'Nhà trọ Sunshine Residence',
+    fullAddress: '123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+    score: 4.8
+  },
+  {
+    boardingHouseId: '2',
+    houseName: 'Green House Apartment',
+    fullAddress: '456 Nguyễn Văn Linh, Phường Tân Phong, Quận 7, TP. Hồ Chí Minh',
+    score: 4.7
+  },
+  {
+    boardingHouseId: '3',
+    houseName: 'The Vista Residence',
+    fullAddress: '101 Điện Biên Phủ, Phường 15, Quận Bình Thạnh, TP. Hồ Chí Minh',
+    score: 4.6
+  },
+  {
+    boardingHouseId: '4',
+    houseName: 'Central Park Serviced Apartment',
+    fullAddress: '789 Lê Văn Sỹ, Phường 14, Quận 3, TP. Hồ Chí Minh',
+    score: 4.5
+  },
+  {
+    boardingHouseId: '5',
+    houseName: 'Airport View House',
+    fullAddress: '234 Cộng Hòa, Phường 13, Quận Tân Bình, TP. Hồ Chí Minh',
+    score: 4.4
+  },
+  {
+    boardingHouseId: '6',
+    houseName: 'Ký túc xá Thanh Xuân',
+    fullAddress: '567 Võ Văn Ngân, Phường Linh Chiểu, TP. Thủ Đức, TP. Hồ Chí Minh',
+    score: 4.3
+  }
+];
+// ============ END MOCK DATA ============
+
 export default function TopRankedHouses() {
   const router = useRouter();
   const [rankedHouses, setRankedHouses] = useState([]);
@@ -19,9 +60,15 @@ export default function TopRankedHouses() {
     try {
       setLoading(true);
       const data = await boardingHouseService.getRankedHouses(rankType, "desc", 6);
-      setRankedHouses(data);
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const housesToUse = data && data.length > 0 ? data : MOCK_RANKED_HOUSES;
+      setRankedHouses(housesToUse);
+      // ============ END MOCK DATA USAGE ============
     } catch (error) {
       console.error("Error fetching ranked houses:", error);
+      // ============ USE MOCK DATA ON ERROR ============
+      setRankedHouses(MOCK_RANKED_HOUSES);
+      // ============ END MOCK DATA ON ERROR ============
     } finally {
       setLoading(false);
     }

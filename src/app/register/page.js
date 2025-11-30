@@ -250,7 +250,7 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          {/* Social Register Buttons */}
+          {/* Social Register Buttons
           <div className="space-y-3 mb-6">
             <button
               type="button"
@@ -292,10 +292,10 @@ export default function RegisterPage() {
               </svg>
               <span className="font-medium">Continue with Facebook</span>
             </button>
-          </div>
+          </div> */}
 
           {/* Divider */}
-          <div className="relative mb-6">
+          {/* <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
             </div>
@@ -304,7 +304,7 @@ export default function RegisterPage() {
                 Or register with email
               </span>
             </div>
-          </div>
+          </div> */}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">

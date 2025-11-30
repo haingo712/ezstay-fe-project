@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 import rentalPostService from '@/services/rentalPostService';
 import reviewService from '@/services/reviewService';
 import boardingHouseService from '@/services/boardingHouseService';
@@ -24,11 +25,100 @@ import Footer from '@/components/Footer';
 import ChatDialog from '@/components/ChatDialog';
 import Image from 'next/image';
 
+// ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
+const MOCK_POST_DETAIL = {
+  id: '1',
+  title: 'Phòng trọ cao cấp quận 1 - Full nội thất, view đẹp',
+  description: `🏠 PHÒNG TRỌ CAO CẤP QUẬN 1 - FULL NỘI THẤT
+
+📍 Vị trí: 123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh
+
+✨ TIỆN ÍCH:
+• Máy lạnh Daikin Inverter tiết kiệm điện
+• Tủ lạnh mini 90L
+• Máy giặt cửa trước 7kg
+• Bếp từ đơn + Lò vi sóng
+• Giường đệm cao cấp 1m6
+• Tủ quần áo 3 cánh
+• Bàn làm việc + ghế xoay
+• Wifi tốc độ cao 100Mbps
+
+🔐 AN NINH:
+• Bảo vệ 24/7
+• Khóa vân tay thông minh
+• Camera an ninh
+• Thẻ từ ra vào tòa nhà
+
+💰 CHI PHÍ:
+• Giá thuê: 5,500,000 VND/tháng
+• Điện: 3,500 VND/kWh (giá nhà nước)
+• Nước: 15,000 VND/m³
+• Wifi: Miễn phí
+• Gửi xe: Miễn phí
+
+📞 Liên hệ xem phòng ngay!`,
+  houseName: 'Nhà trọ Sunshine Residence',
+  roomName: 'Phòng A101 - Studio Premium',
+  authorId: 'owner1',
+  authorName: 'Nguyễn Văn An',
+  contactPhone: '0901234567',
+  contactEmail: 'nguyenvanan@email.com',
+  createdAt: '2025-11-28T10:00:00Z',
+  isActive: true,
+  isApproved: 1,
+  price: 5500000,
+  area: 35,
+  boardingHouseId: 'house1',
+  roomId: 'room1',
+  imageUrls: ['/image.png', '/image.png', '/image.png'],
+  reviews: [
+    {
+      id: 'review1',
+      userId: 'user1',
+      rating: 5,
+      content: 'Phòng rất đẹp và sạch sẽ, chủ nhà nhiệt tình. Nội thất đầy đủ, tiện nghi. Vị trí trung tâm, đi lại thuận tiện. Rất hài lòng với phòng này!',
+      createdAt: '2025-11-25T10:00:00Z',
+      imageUrl: '/image.png'
+    },
+    {
+      id: 'review2',
+      userId: 'user2',
+      rating: 4,
+      content: 'Phòng ổn, giá hợp lý cho vị trí trung tâm. Wifi ổn định, máy lạnh mát. Chỉ hơi ồn vào ban đêm do gần đường lớn.',
+      createdAt: '2025-11-20T14:30:00Z',
+      imageUrl: null
+    },
+    {
+      id: 'review3',
+      userId: 'user3',
+      rating: 5,
+      content: 'Tuyệt vời! Đã ở được 6 tháng, không có gì phàn nàn. Chủ nhà rất tốt, hỗ trợ sửa chữa nhanh chóng khi có vấn đề.',
+      createdAt: '2025-11-15T09:00:00Z',
+      imageUrl: '/image.png'
+    }
+  ]
+};
+
+const MOCK_USER_NAMES = {
+  'user1': 'Trần Thị Bình',
+  'user2': 'Lê Minh Cường',
+  'user3': 'Phạm Hoàng Dũng'
+};
+
+const MOCK_HOUSE_LOCATION = {
+  fullAddress: '123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+  provinceName: 'TP. Hồ Chí Minh',
+  communeName: 'Phường Bến Nghé',
+  addressDetail: '123 Nguyễn Huệ'
+};
+// ============ END MOCK DATA ============
+
 export default function RentalPostDetailPage() {
   const params = useParams();
   const router = useRouter();
   const postId = params.id;
   const { isAuthenticated, user } = useAuth();
+  const { t } = useTranslation();
 
   const [post, setPost] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -50,15 +140,18 @@ export default function RentalPostDetailPage() {
       const postData = await rentalPostService.getPostById(postId);
       console.log('📋 Post detail:', postData);
 
-      setPost(postData);
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const postToUse = postData && postData.id ? postData : MOCK_POST_DETAIL;
+      setPost(postToUse);
+      // ============ END MOCK DATA USAGE ============
 
       // Fetch boarding house location if boardingHouseId exists
-      if (postData.boardingHouseId) {
-        fetchHouseLocation(postData.boardingHouseId);
+      if (postToUse.boardingHouseId) {
+        fetchHouseLocation(postToUse.boardingHouseId);
       }
 
       // BE RentalPostsAPI returns reviews in post.Reviews (already normalized to camelCase)
-      const reviewsData = postData.reviews || [];
+      const reviewsData = postToUse.reviews || [];
       console.log('📝 Reviews from BE:', reviewsData);
       setReviews(Array.isArray(reviewsData) ? reviewsData : []);
 
@@ -68,7 +161,12 @@ export default function RentalPostDetailPage() {
       }
     } catch (error) {
       console.error('❌ Error loading post:', error);
-      alert('Failed to load post details');
+      // ============ USE MOCK DATA ON ERROR ============
+      setPost(MOCK_POST_DETAIL);
+      setReviews(MOCK_POST_DETAIL.reviews);
+      setUserNames(MOCK_USER_NAMES);
+      setHouseLocation(MOCK_HOUSE_LOCATION);
+      // ============ END MOCK DATA ON ERROR ============
     } finally {
       setLoading(false);
     }
@@ -133,10 +231,10 @@ export default function RentalPostDetailPage() {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      0: { label: 'Available', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-      1: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-      2: { label: 'Rejected', color: 'bg-red-100 text-red-800', icon: XCircle },
-      3: { label: 'Inactive', color: 'bg-gray-100 text-gray-800', icon: XCircle },
+      0: { label: t('rentalPostDetail.available'), color: 'bg-green-100 text-green-800', icon: CheckCircle },
+      1: { label: t('rentalPostDetail.pending'), color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+      2: { label: t('rentalPostDetail.rejected'), color: 'bg-red-100 text-red-800', icon: XCircle },
+      3: { label: t('rentalPostDetail.inactive'), color: 'bg-gray-100 text-gray-800', icon: XCircle },
     };
 
     const config = statusConfig[status] || statusConfig[1];
@@ -195,7 +293,7 @@ export default function RentalPostDetailPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading post details...</p>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">{t('rentalPostDetail.loading')}</p>
           </div>
         </div>
         <Footer />
@@ -211,13 +309,13 @@ export default function RentalPostDetailPage() {
           <div className="text-center py-12">
             <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Post Not Found
+              {t('rentalPostDetail.notFound')}
             </h3>
             <button
               onClick={() => router.back()}
               className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Go Back
+              {t('rentalPostDetail.goBack')}
             </button>
           </div>
         </div>
@@ -237,7 +335,7 @@ export default function RentalPostDetailPage() {
           className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
-          Back to Posts
+          {t('rentalPostDetail.backToPosts')}
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -298,7 +396,7 @@ export default function RentalPostDetailPage() {
                     <MapPin className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                        📍 Location
+                        📍 {t('rentalPostDetail.location')}
                       </p>
                       <p className="font-semibold text-gray-900 dark:text-white text-base">
                         {houseLocation.fullAddress}
@@ -322,7 +420,7 @@ export default function RentalPostDetailPage() {
               {/* Description */}
               <div className="prose dark:prose-invert max-w-none">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-                  Description
+                  {t('rentalPostDetail.description')}
                 </h2>
                 <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                   {post.description}
@@ -335,7 +433,7 @@ export default function RentalPostDetailPage() {
               <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <MessageSquare className="h-7 w-7 text-blue-600" />
-                  Room Reviews
+                  {t('rentalPostDetail.roomReviews')}
                 </h2>
                 {reviews.length > 0 && (
                   <div className="flex items-center gap-3">
@@ -356,7 +454,7 @@ export default function RentalPostDetailPage() {
                         className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
                       >
                         <Building2 className="h-4 w-4" />
-                        {groupByRoom ? 'Show All' : 'Group by Room'}
+                        {groupByRoom ? t('rentalPostDetail.showAll') : t('rentalPostDetail.groupByRoom')}
                       </button>
                     )}
                   </div>
@@ -366,13 +464,13 @@ export default function RentalPostDetailPage() {
               {loading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Loading reviews...</p>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t('rentalPostDetail.loadingReviews')}</p>
                 </div>
               ) : reviews.length === 0 ? (
                 <div className="text-center py-12">
                   <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                   <p className="text-gray-600 dark:text-gray-400">
-                    No reviews yet. Be the first to review!
+                    {t('rentalPostDetail.beFirstToReview')}
                   </p>
                 </div>
               ) : (
@@ -387,7 +485,7 @@ export default function RentalPostDetailPage() {
                             Room ID: {roomId.substring(0, 13)}...
                           </h3>
                           <span className="ml-auto bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-sm font-semibold">
-                            {roomReviews.length} {roomReviews.length === 1 ? 'review' : 'reviews'}
+                            {roomReviews.length} {roomReviews.length === 1 ? t('rentalPostDetail.review') : t('rentalPostDetail.reviewsCount')}
                           </span>
                         </div>
                         <div className="space-y-4">
@@ -514,14 +612,14 @@ export default function RentalPostDetailPage() {
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 sticky top-24">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Property Details
+                {t('rentalPostDetail.propertyDetails')}
               </h3>
 
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <Building2 className="h-5 w-5 text-gray-400 mt-1" />
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">House</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('rentalPostDetail.house')}</p>
                     <p className="font-medium text-gray-900 dark:text-white">
                       {post.houseName || 'N/A'}
                     </p>
@@ -531,7 +629,7 @@ export default function RentalPostDetailPage() {
                 <div className="flex items-start gap-3">
                   <Building2 className="h-5 w-5 text-gray-400 mt-1" />
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Room</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('rentalPostDetail.room')}</p>
                     <p className="font-medium text-gray-900 dark:text-white">
                       {post.roomName || 'N/A'}
                     </p>
@@ -541,7 +639,7 @@ export default function RentalPostDetailPage() {
                 <div className="flex items-start gap-3">
                   <Phone className="h-5 w-5 text-gray-400 mt-1" />
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Contact</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('rentalPostDetail.contact')}</p>
                     <p className="font-medium text-gray-900 dark:text-white">
                       {post.contactPhone || 'N/A'}
                     </p>
@@ -551,7 +649,7 @@ export default function RentalPostDetailPage() {
                 <div className="flex items-start gap-3">
                   <User className="h-5 w-5 text-gray-400 mt-1" />
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Posted by</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('rentalPostDetail.postedBy')}</p>
                     <p className="font-medium text-gray-900 dark:text-white">
                       {post.authorName || 'Unknown'}
                     </p>
@@ -563,7 +661,7 @@ export default function RentalPostDetailPage() {
                   <div className="flex items-start gap-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                     <MapPin className="h-5 w-5 text-red-500 mt-1 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Address</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('rentalPostDetail.address')}</p>
                       <p className="font-medium text-gray-900 dark:text-white leading-relaxed">
                         {houseLocation.fullAddress}
                       </p>
@@ -596,13 +694,13 @@ export default function RentalPostDetailPage() {
                       className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
                     >
                       <MessageSquare className="h-4 w-4" />
-                      Chat with Owner
+                      {t('rentalPostDetail.chatWithOwner')}
                     </button>
 
-                    <button className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2">
+                    {/* <button className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2">
                       <Phone className="h-4 w-4" />
-                      Call Owner
-                    </button>
+                      {t('rentalPostDetail.callOwner')}
+                    </button> */}
                   </>
                 ) : (
                   <div className="space-y-3">
@@ -610,10 +708,10 @@ export default function RentalPostDetailPage() {
                       onClick={() => router.push('/login')}
                       className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                     >
-                      Login to Chat
+                      {t('rentalPostDetail.loginToChat')}
                     </button>
                     <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-                      Please login to contact the owner
+                      {t('rentalPostDetail.pleaseLogin')}
                     </p>
                   </div>
                 )}

@@ -3,12 +3,102 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import RoleBasedRedirect from '../../components/RoleBasedRedirect';
 import { rentalPostService } from '@/services/rentalPostService';
 import favoritePostService from '@/services/favoritePostService';
 import { Building, Home, Calendar, Search, Filter, Heart } from 'lucide-react';
+
+// ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
+const MOCK_RENTAL_POSTS = [
+  {
+    id: '1',
+    title: 'Phòng trọ cao cấp quận 1 - Full nội thất, view đẹp',
+    description: 'Phòng trọ cao cấp với đầy đủ tiện nghi: máy lạnh, tủ lạnh, máy giặt, bếp từ. View ban công thoáng mát, an ninh 24/7, có bãi đậu xe.',
+    houseName: 'Nhà trọ Sunshine Residence',
+    roomName: 'Phòng A101 - Studio Premium',
+    authorName: 'Nguyễn Văn An',
+    contactPhone: '0901234567',
+    createdAt: '2025-11-28T10:00:00Z',
+    isActive: true,
+    isApproved: 1,
+    price: 5500000,
+    area: 35
+  },
+  {
+    id: '2',
+    title: 'Căn hộ mini quận 7 - Gần Lotte Mart, tiện di chuyển',
+    description: 'Căn hộ mini mới xây, sạch sẽ, thoáng mát. Gần trung tâm thương mại, siêu thị, trường học. Có chỗ để xe máy miễn phí.',
+    houseName: 'Green House Apartment',
+    roomName: 'Phòng B205 - Deluxe Room',
+    authorName: 'Trần Thị Bình',
+    contactPhone: '0912345678',
+    createdAt: '2025-11-27T14:30:00Z',
+    isActive: true,
+    isApproved: 1,
+    price: 4200000,
+    area: 28
+  },
+  {
+    id: '3',
+    title: 'Phòng trọ sinh viên Thủ Đức - Giá rẻ, gần ĐH Bách Khoa',
+    description: 'Phòng trọ dành cho sinh viên, giá cả phải chăng. Gần các trường đại học lớn, có wifi miễn phí, điện nước giá dân.',
+    houseName: 'Ký túc xá Thanh Xuân',
+    roomName: 'Phòng C301 - Standard',
+    authorName: 'Lê Minh Cường',
+    contactPhone: '0923456789',
+    createdAt: '2025-11-26T09:15:00Z',
+    isActive: true,
+    isApproved: 1,
+    price: 2800000,
+    area: 20
+  },
+  {
+    id: '4',
+    title: 'Studio cao cấp quận Bình Thạnh - Mới 100%',
+    description: 'Studio hoàn toàn mới, thiết kế hiện đại theo phong cách Scandinavian. Full nội thất cao cấp, có ban công rộng rãi.',
+    houseName: 'The Vista Residence',
+    roomName: 'Studio S401 - Luxury',
+    authorName: 'Phạm Hoàng Dũng',
+    contactPhone: '0934567890',
+    createdAt: '2025-11-25T16:45:00Z',
+    isActive: true,
+    isApproved: 1,
+    price: 7000000,
+    area: 40
+  },
+  {
+    id: '5',
+    title: 'Phòng trọ Tân Bình - Gần sân bay, yên tĩnh',
+    description: 'Phòng trọ khu vực yên tĩnh, an ninh tốt. Thuận tiện di chuyển đến sân bay Tân Sơn Nhất. Có bảo vệ 24/7.',
+    houseName: 'Airport View House',
+    roomName: 'Phòng D102 - Comfort',
+    authorName: 'Hoàng Thị Hạnh',
+    contactPhone: '0945678901',
+    createdAt: '2025-11-24T11:20:00Z',
+    isActive: true,
+    isApproved: 1,
+    price: 3500000,
+    area: 25
+  },
+  {
+    id: '6',
+    title: 'Căn hộ dịch vụ quận 3 - Trung tâm thành phố',
+    description: 'Căn hộ dịch vụ ngay trung tâm quận 3, gần Diamond Plaza, chợ Bến Thành. Dọn phòng hàng tuần, đổi khăn trải giường.',
+    houseName: 'Central Park Serviced Apartment',
+    roomName: 'Suite E501 - Executive',
+    authorName: 'Võ Thanh Tùng',
+    contactPhone: '0956789012',
+    createdAt: '2025-11-23T08:00:00Z',
+    isActive: true,
+    isApproved: 1,
+    price: 9500000,
+    area: 50
+  }
+];
+// ============ END MOCK DATA ============
 
 export default function RentalPostsPage() {
   const [posts, setPosts] = useState([]);
@@ -20,6 +110,7 @@ export default function RentalPostsPage() {
   const [favoriteLoading, setFavoriteLoading] = useState({});
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
 
   useEffect(() => {
     loadPosts();
@@ -65,16 +156,22 @@ export default function RentalPostsPage() {
         });
       }
       
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const postsToUse = allPosts.length > 0 ? allPosts : MOCK_RENTAL_POSTS;
+      // ============ END MOCK DATA USAGE ============
+      
       // Sort by newest first
-      const sortedPosts = allPosts.sort((a, b) => 
+      const sortedPosts = postsToUse.sort((a, b) => 
         new Date(b.createdAt) - new Date(a.createdAt)
       );
       setPosts(sortedPosts);
       setFilteredPosts(sortedPosts);
     } catch (error) {
       console.error('Error loading posts:', error);
-      setPosts([]);
-      setFilteredPosts([]);
+      // ============ USE MOCK DATA ON ERROR ============
+      setPosts(MOCK_RENTAL_POSTS);
+      setFilteredPosts(MOCK_RENTAL_POSTS);
+      // ============ END MOCK DATA ON ERROR ============
     } finally {
       setLoading(false);
     }
@@ -125,7 +222,7 @@ export default function RentalPostsPage() {
     event.stopPropagation();
 
     if (!isAuthenticated) {
-      alert('Vui lòng đăng nhập để lưu bài viết yêu thích!');
+      alert(t('rentalPosts.loginToSave'));
       router.push('/login');
       return;
     }
@@ -146,7 +243,7 @@ export default function RentalPostsPage() {
       setFavorites((prev) => [...prev, favoriteRecord]);
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
-      alert('Không thể cập nhật yêu thích. Vui lòng thử lại.');
+      alert(t('rentalPosts.favoriteError'));
     } finally {
       setFavoriteLoading((prev) => ({ ...prev, [postId]: false }));
     }
@@ -166,7 +263,7 @@ export default function RentalPostsPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center py-20">
               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">Loading rental posts...</p>
+              <p className="text-gray-600 dark:text-gray-400">{t('rentalPosts.loading')}</p>
             </div>
           </div>
         </div>
@@ -185,10 +282,10 @@ export default function RentalPostsPage() {
             {/* Header */}
             <div className="text-center mb-8">
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-                All Rental Posts
+                {t('rentalPosts.title')}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 text-lg">
-                Browse all available rental listings from verified owners
+                {t('rentalPosts.subtitle')}
               </p>
             </div>
 
@@ -200,7 +297,7 @@ export default function RentalPostsPage() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search by title, description, house, room..."
+                    placeholder={t('rentalPosts.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -215,17 +312,17 @@ export default function RentalPostsPage() {
                     onChange={(e) => setStatusFilter(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="all">All Status</option>
-                    <option value="available">Available</option>
-                    <option value="pending">Pending</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="all">{t('rentalPosts.allStatus')}</option>
+                    <option value="available">{t('rentalPosts.available')}</option>
+                    <option value="pending">{t('rentalPosts.pending')}</option>
+                    <option value="inactive">{t('rentalPosts.inactive')}</option>
                   </select>
                 </div>
               </div>
 
               {/* Results count */}
               <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                Showing {filteredPosts.length} of {posts.length} posts
+                {t('rentalPosts.showing')} {filteredPosts.length} {t('rentalPosts.of')} {posts.length} {t('rentalPosts.posts')}
               </div>
             </div>
 
@@ -234,12 +331,12 @@ export default function RentalPostsPage() {
               <div className="text-center py-20">
                 <Building className="w-20 h-20 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  No posts found
+                  {t('rentalPosts.noPosts')}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
                   {searchTerm || statusFilter !== 'all'
-                    ? 'Try adjusting your search or filters'
-                    : 'No rental posts available yet'}
+                    ? t('rentalPosts.adjustSearch')
+                    : t('rentalPosts.noPostsDesc')}
                 </p>
               </div>
             ) : (

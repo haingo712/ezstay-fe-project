@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { rentalPostService } from '@/services/rentalPostService';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function PostsReviewPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -93,14 +95,14 @@ export default function PostsReviewPage() {
       <div className="text-center py-12">
         <div className="text-red-600 mb-4">❌</div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-          Error Loading Posts
+          {t('staffPosts.error')}
         </h3>
         <p className="text-gray-500 dark:text-gray-400 mb-4">{error}</p>
         <button
           onClick={loadPendingPosts}
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
         >
-          Try Again
+          {t('staffPosts.retry')}
         </button>
       </div>
     );
@@ -117,14 +119,14 @@ export default function PostsReviewPage() {
         <div className="p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Posts Review</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('staffPosts.title')}</h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Review and moderate rental property listings
+                {t('staffPosts.subtitle') || 'Review and moderate rental property listings'}
               </p>
             </div>
             <div className="mt-4 sm:mt-0 flex items-center space-x-3">
               <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                {pendingCount} pending reviews
+                {pendingCount} {t('staffPosts.pendingReviews') || 'pending reviews'}
               </span>
             </div>
           </div>
@@ -230,7 +232,7 @@ export default function PostsReviewPage() {
                           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
-                          Approve
+                          {t('staffPosts.actions.approve')}
                         </button>
 
                         <button
@@ -240,7 +242,7 @@ export default function PostsReviewPage() {
                           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
-                          Reject
+                          {t('staffPosts.actions.reject')}
                         </button>
                       </div>
                     )}
@@ -254,7 +256,7 @@ export default function PostsReviewPage() {
         <div className="text-center py-12">
           <div className="text-gray-400 mb-4">📋</div>
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            No posts found
+            {t('staffPosts.empty') || 'No posts found'}
           </h3>
           <p className="text-gray-500 dark:text-gray-400">
             {activeTab === 'pending' 
