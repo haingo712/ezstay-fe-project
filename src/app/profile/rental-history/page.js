@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import contractService from '@/services/contractService';
 import reviewService from '@/services/reviewService';
+import otpService from '@/services/otpService';
 import {
   Building2,
   Calendar,
@@ -20,7 +21,8 @@ import {
   Banknote,
   FileText,
   Eye,
-  PenLine
+  PenLine,
+  Pen
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -44,11 +46,39 @@ export default function RentalHistoryPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
 
+  // Signature states
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [signatureStep, setSignatureStep] = useState(1); // 1: Draw, 2: OTP
+  const [signatureTab, setSignatureTab] = useState('draw'); // draw, manual, file
+  const [signatureName, setSignatureName] = useState('');
+  const [signaturePreview, setSignaturePreview] = useState(null);
+  const [signatureEmail, setSignatureEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [currentOtpId, setCurrentOtpId] = useState(null);
+  const [otpTimer, setOtpTimer] = useState(300);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
   useEffect(() => {
     if (user) {
       loadContracts();
     }
   }, [user]);
+
+  // Initialize canvas when signature modal opens with draw tab
+  useEffect(() => {
+    if (showSignatureModal && signatureTab === 'draw' && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+    }
+  }, [showSignatureModal, signatureTab]);
 
   const loadContracts = async () => {
     try {
@@ -153,14 +183,16 @@ export default function RentalHistoryPage() {
   };
 
   const getStatusBadge = (status) => {
+    // Backend enum: Pending=0, Active=1, Cancelled=2, Expired=3, Evicted=4
     const statusConfig = {
-      0: { label: 'Đang hoạt động', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-      1: { label: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-      2: { label: 'Đã hết hạn', color: 'bg-red-100 text-red-800', icon: XCircle },
-      3: { label: 'Đã hủy', color: 'bg-gray-100 text-gray-800', icon: XCircle },
+      0: { label: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+      1: { label: 'Đang hoạt động', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+      2: { label: 'Đã hủy', color: 'bg-gray-100 text-gray-800', icon: XCircle },
+      3: { label: 'Đã hết hạn', color: 'bg-red-100 text-red-800', icon: XCircle },
+      4: { label: 'Bị chấm dứt', color: 'bg-red-100 text-red-800', icon: XCircle },
     };
 
-    const config = statusConfig[status] || statusConfig[1];
+    const config = statusConfig[status] || statusConfig[0];
     const Icon = config.icon;
 
     return (
@@ -194,6 +226,235 @@ export default function RentalHistoryPage() {
     const daysSinceCheckout = (now - checkoutDate) / (1000 * 60 * 60 * 24);
 
     return contract.contractStatus === 2 && daysSinceCheckout <= 30;
+  };
+
+  const handleOpenCancelModal = (contract) => {
+    setSelectedContract(contract);
+    setShowCancelModal(true);
+    setCancelReason('');
+  };
+
+  const handleCloseCancelModal = () => {
+    setShowCancelModal(false);
+    setSelectedContract(null);
+    setCancelReason('');
+  };
+
+  const handleCancelContract = async () => {
+    if (!selectedContract) return;
+
+    if (!cancelReason.trim()) {
+      alert('Vui lòng nhập lý do hủy hợp đồng!');
+      return;
+    }
+
+    try {
+      setCancelling(true);
+      await contractService.terminate(selectedContract.id, cancelReason);
+      alert('Hủy hợp đồng thành công!');
+      handleCloseCancelModal();
+      loadContracts();
+    } catch (error) {
+      console.error('Error cancelling contract:', error);
+      alert(error.response?.data?.message || 'Không thể hủy hợp đồng. Vui lòng thử lại.');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  // Signature functions
+  const handleOpenSignatureModal = (contract) => {
+    setSelectedContract(contract);
+    setShowSignatureModal(true);
+    setSignatureStep(1);
+    setSignatureTab('draw');
+    setSignatureName('');
+    setSignaturePreview(null);
+    setSignatureEmail(user?.email || '');
+    setOtpCode('');
+    setCurrentOtpId(null);
+    setOtpTimer(300);
+  };
+
+  const handleCloseSignatureModal = () => {
+    setShowSignatureModal(false);
+    setSelectedContract(null);
+    setSignatureStep(1);
+    setSignatureName('');
+    setSignaturePreview(null);
+    setOtpCode('');
+    setCurrentOtpId(null);
+  };
+
+  // Canvas drawing functions
+  const initCanvas = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+    }
+  };
+
+  const startDrawing = (e) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+    const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setIsDrawing(true);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+    const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+    updateSignaturePreview();
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      setSignaturePreview(null);
+    }
+  };
+
+  const updateSignaturePreview = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const dataUrl = canvas.toDataURL('image/png');
+      setSignaturePreview(dataUrl);
+    }
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSignaturePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const generateManualSignature = () => {
+    if (!signatureName.trim()) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = 400;
+    canvas.height = 150;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.font = 'italic 40px "Brush Script MT", cursive';
+    ctx.fillStyle = '#000';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(signatureName, canvas.width / 2, canvas.height / 2);
+    setSignaturePreview(canvas.toDataURL('image/png'));
+  };
+
+  const handleSendOtp = async () => {
+    if (!signaturePreview) {
+      alert('Vui lòng tạo chữ ký trước!');
+      return;
+    }
+    if (!signatureEmail) {
+      alert('Vui lòng nhập email!');
+      return;
+    }
+
+    try {
+      setSendingOtp(true);
+      const contractId = selectedContract?.id;
+      console.log('📧 Sending OTP to:', signatureEmail);
+
+      const result = await otpService.sendContractOtp(contractId, signatureEmail);
+      console.log('✅ OTP sent:', result);
+
+      const otpId = result?.otpId || result?.id || result?.data?.id;
+      setCurrentOtpId(otpId);
+      setSignatureStep(2);
+      setOtpTimer(300);
+      alert('Mã OTP đã được gửi đến email của bạn!');
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      alert(error.response?.data?.message || 'Không thể gửi OTP. Vui lòng thử lại.');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleConfirmSignature = async () => {
+    if (!otpCode || otpCode.length !== 6) {
+      alert('Vui lòng nhập mã OTP 6 chữ số!');
+      return;
+    }
+    if (!currentOtpId) {
+      alert('Không tìm thấy phiên OTP. Vui lòng thử lại.');
+      return;
+    }
+
+    try {
+      setVerifyingOtp(true);
+      const contractId = selectedContract?.id;
+
+      // Step 1: Verify OTP
+      console.log('🔐 Verifying OTP...');
+      const verifyResult = await otpService.verifyContractOtp(currentOtpId, otpCode);
+      console.log('✅ OTP verified:', verifyResult);
+
+      // Step 2: Sign contract
+      console.log('✍️ Signing contract...');
+      await contractService.signContract(contractId, signaturePreview);
+      console.log('✅ Contract signed!');
+
+      alert('Ký hợp đồng thành công! 🎉');
+      handleCloseSignatureModal();
+      loadContracts();
+    } catch (error) {
+      console.error('Error signing contract:', error);
+      if (error.response?.status === 400) {
+        alert('Mã OTP không đúng hoặc đã hết hạn!');
+      } else {
+        alert(error.response?.data?.message || 'Không thể ký hợp đồng. Vui lòng thử lại.');
+      }
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  // OTP Timer
+  useEffect(() => {
+    let interval;
+    if (showSignatureModal && signatureStep === 2 && otpTimer > 0) {
+      interval = setInterval(() => {
+        setOtpTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [showSignatureModal, signatureStep, otpTimer]);
+
+  // Check if user needs to sign (Pending status and no tenant signature)
+  const needsToSign = (contract) => {
+    return contract.contractStatus === 0 && !contract.tenantSignature;
   };
 
   return (
@@ -344,17 +605,39 @@ export default function RentalHistoryPage() {
                         Xem chi tiết
                       </button>
 
-                      {contract.contractStatus === 0 && (
+                      {/* Pending = 0 và chưa ký: hiện nút ký hợp đồng */}
+                      {contract.contractStatus === 0 && !contract.tenantSignature && (
                         <button
-                          onClick={() => handleOpenReviewModal(contract)}
-                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                          onClick={() => handleOpenSignatureModal(contract)}
+                          className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
                         >
-                          <PenLine className="h-4 w-4" />
-                          Viết đánh giá
+                          <Pen className="h-4 w-4" />
+                          Ký hợp đồng
                         </button>
                       )}
 
-                      {contract.contractStatus === 2 && (
+                      {/* Active = 1: có thể viết đánh giá và hủy hợp đồng */}
+                      {contract.contractStatus === 1 && (
+                        <>
+                          <button
+                            onClick={() => handleOpenReviewModal(contract)}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                          >
+                            <PenLine className="h-4 w-4" />
+                            Viết đánh giá
+                          </button>
+                          <button
+                            onClick={() => handleOpenCancelModal(contract)}
+                            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                          >
+                            <XCircle className="h-4 w-4" />
+                            Hủy hợp đồng
+                          </button>
+                        </>
+                      )}
+
+                      {/* Expired = 3: có thể đánh giá */}
+                      {contract.contractStatus === 3 && (
                         <button
                           onClick={() => handleOpenReviewModal(contract)}
                           className="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
@@ -402,8 +685,8 @@ export default function RentalHistoryPage() {
                       >
                         <Star
                           className={`h-8 w-8 ${star <= reviewForm.rating
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-gray-300 dark:text-gray-600'
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-gray-300 dark:text-gray-600'
                             }`}
                         />
                       </button>
@@ -486,6 +769,323 @@ export default function RentalHistoryPage() {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cancel Contract Modal */}
+        {showCancelModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full">
+              {/* Modal Header */}
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <XCircle className="h-6 w-6 text-red-500" />
+                  Hủy hợp đồng
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  {selectedContract?.roomName} - {selectedContract?.houseName}
+                </p>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6">
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                  <p className="text-sm text-red-700 dark:text-red-300">
+                    ⚠️ Lưu ý: Việc hủy hợp đồng có thể ảnh hưởng đến tiền cọc và các điều khoản khác.
+                  </p>
+                </div>
+
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Lý do hủy hợp đồng <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Nhập lý do bạn muốn hủy hợp đồng..."
+                  rows={4}
+                  maxLength={500}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-none"
+                />
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {cancelReason.length}/500 ký tự
+                </p>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3 justify-end">
+                <button
+                  onClick={handleCloseCancelModal}
+                  disabled={cancelling}
+                  className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                >
+                  Đóng
+                </button>
+                <button
+                  onClick={handleCancelContract}
+                  disabled={cancelling || !cancelReason.trim()}
+                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {cancelling ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="h-4 w-4" />
+                      Xác nhận hủy
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Signature Modal */}
+        {showSignatureModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <Pen className="h-5 w-5 text-green-600" />
+                      Ký hợp đồng
+                    </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      {selectedContract?.roomName} - {selectedContract?.houseName}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleCloseSignatureModal}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <XCircle className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Progress Steps */}
+                <div className="flex items-center justify-center mt-4 gap-4">
+                  <div className={`flex items-center gap-2 ${signatureStep >= 1 ? 'text-green-600' : 'text-gray-400'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${signatureStep >= 1 ? 'bg-green-600' : 'bg-gray-300'}`}>1</div>
+                    <span className="text-sm font-medium">Tạo chữ ký</span>
+                  </div>
+                  <div className="w-12 h-0.5 bg-gray-300"></div>
+                  <div className={`flex items-center gap-2 ${signatureStep >= 2 ? 'text-green-600' : 'text-gray-400'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${signatureStep >= 2 ? 'bg-green-600' : 'bg-gray-300'}`}>2</div>
+                    <span className="text-sm font-medium">Xác thực OTP</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 1: Create Signature */}
+              {signatureStep === 1 && (
+                <div className="p-6">
+                  {/* Signature Tabs */}
+                  <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+                    <button
+                      onClick={() => setSignatureTab('draw')}
+                      className={`px-4 py-2 text-sm font-medium ${signatureTab === 'draw' ? 'border-b-2 border-green-600 text-green-600' : 'text-gray-500'}`}
+                    >
+                      Vẽ chữ ký
+                    </button>
+                    <button
+                      onClick={() => setSignatureTab('manual')}
+                      className={`px-4 py-2 text-sm font-medium ${signatureTab === 'manual' ? 'border-b-2 border-green-600 text-green-600' : 'text-gray-500'}`}
+                    >
+                      Nhập tên
+                    </button>
+                    <button
+                      onClick={() => setSignatureTab('file')}
+                      className={`px-4 py-2 text-sm font-medium ${signatureTab === 'file' ? 'border-b-2 border-green-600 text-green-600' : 'text-gray-500'}`}
+                    >
+                      Tải ảnh lên
+                    </button>
+                  </div>
+
+                  {/* Draw Tab */}
+                  {signatureTab === 'draw' && (
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Vẽ chữ ký của bạn vào khung bên dưới:</p>
+                      <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-2">
+                        <canvas
+                          ref={canvasRef}
+                          width={500}
+                          height={200}
+                          className="w-full bg-white rounded cursor-crosshair touch-none"
+                          onMouseDown={startDrawing}
+                          onMouseMove={draw}
+                          onMouseUp={stopDrawing}
+                          onMouseLeave={stopDrawing}
+                          onTouchStart={startDrawing}
+                          onTouchMove={draw}
+                          onTouchEnd={stopDrawing}
+                        />
+                      </div>
+                      <button
+                        onClick={clearCanvas}
+                        className="mt-2 text-sm text-red-600 hover:text-red-700"
+                      >
+                        Xóa và vẽ lại
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Manual Tab */}
+                  {signatureTab === 'manual' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Nhập họ tên để tạo chữ ký
+                      </label>
+                      <input
+                        type="text"
+                        value={signatureName}
+                        onChange={(e) => setSignatureName(e.target.value)}
+                        placeholder="Nguyễn Văn A"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                      />
+                      <button
+                        onClick={generateManualSignature}
+                        className="mt-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                      >
+                        Tạo chữ ký
+                      </button>
+                    </div>
+                  )}
+
+                  {/* File Tab */}
+                  {signatureTab === 'file' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Tải lên ảnh chữ ký
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
+                      />
+                    </div>
+                  )}
+
+                  {/* Signature Preview */}
+                  {signaturePreview && (
+                    <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Xem trước chữ ký:</p>
+                      <div className="bg-white rounded-lg p-4 border">
+                        <img src={signaturePreview} alt="Signature Preview" className="max-h-24 mx-auto" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Email Input */}
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Email xác thực <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={signatureEmail}
+                      onChange={(e) => setSignatureEmail(e.target.value)}
+                      placeholder="email@example.com"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex justify-end gap-3 mt-6">
+                    <button
+                      onClick={handleCloseSignatureModal}
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      onClick={handleSendOtp}
+                      disabled={!signaturePreview || !signatureEmail || sendingOtp}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {sendingOtp ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Đang gửi...
+                        </>
+                      ) : (
+                        'Tiếp tục'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: OTP Verification */}
+              {signatureStep === 2 && (
+                <div className="p-6">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                      Mã OTP đã được gửi đến email <strong>{signatureEmail}</strong>
+                    </p>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                      Vui lòng nhập mã OTP để hoàn tất ký hợp đồng
+                    </p>
+                  </div>
+
+                  {/* OTP Input */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Mã OTP
+                    </label>
+                    <input
+                      type="text"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      maxLength={6}
+                      placeholder="123456"
+                      className="w-full px-4 py-3 text-center text-2xl tracking-widest border-2 border-green-300 dark:border-green-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white"
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Timer */}
+                  <div className="text-center text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    OTP có hiệu lực trong{' '}
+                    <span className="font-bold text-red-600">
+                      {Math.floor(otpTimer / 60)}:{(otpTimer % 60).toString().padStart(2, '0')}
+                    </span>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex justify-between">
+                    <button
+                      onClick={() => setSignatureStep(1)}
+                      className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800"
+                    >
+                      ← Quay lại
+                    </button>
+                    <button
+                      onClick={handleConfirmSignature}
+                      disabled={verifyingOtp || otpCode.length !== 6}
+                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {verifyingOtp ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Đang xác thực...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="h-4 w-4" />
+                          Xác nhận ký
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
