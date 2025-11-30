@@ -805,7 +805,7 @@ function RoomsPageContent() {
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                ✏️ {t('ownerRooms.modal.editTitle')} - {selectedRoom.roomName}
+                 {t('ownerRooms.modal.editTitle')} - {selectedRoom.roomName}
               </h2>
 
               <form onSubmit={handleUpdateRoom} className="space-y-4">
@@ -1160,7 +1160,7 @@ function RoomsPageContent() {
                       }}
                       className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
                     >
-                      ✏️ Edit Room
+                      Edit Room
                     </button>
                     <button
                       onClick={closeModals}

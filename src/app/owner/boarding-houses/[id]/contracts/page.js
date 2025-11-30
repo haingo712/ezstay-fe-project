@@ -6,6 +6,7 @@ import roomService from "@/services/roomService";
 import otpService from "@/services/otpService";
 import imageService from "@/services/imageService";
 import serviceService from "@/services/serviceService";
+import userService from "@/services/tenantService";
 import utilityReadingService, { UtilityType } from "@/services/utilityReadingService";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -642,7 +643,7 @@ export default function ContractsManagementPage() {
   };
   // Edit Contract - Opens the full 3-step modal with all contract details
   const handleEditContract = async (contract) => {
-    console.log("✏️ Opening edit contract modal for:", contract.id);
+    console.log(" Opening edit contract modal for:", contract.id);
     console.log("📋 Contract data received:", contract);
     console.log("🏛️ Current provinces state:", provinces.length, "provinces loaded");
 
@@ -1808,7 +1809,7 @@ export default function ContractsManagementPage() {
         user?.email ||
         user?.Email;
 
-      if (!userEmail) {
+      if (!ownerEmail) {
         toast.error(t('ownerContracts.toast.emailNotFound'));
         setSendingOtp(false);
         return;
@@ -2154,43 +2155,80 @@ export default function ContractsManagementPage() {
   const previewContractPDF = async (contract) => {
     try {
       console.log('👁️ Preparing contract preview with complete data...');
+      console.log('📋 Contract ID:', contract.id);
+
+      // Fetch FULL contract data from API GET /api/Contract/{id}
+      let fullContract = null;
+      try {
+        fullContract = await contractService.getById(contract.id);
+        console.log('✅ Full contract data fetched:', fullContract);
+        console.log('📋 Full contract keys:', Object.keys(fullContract || {}));
+        console.log('👤 Identity profiles from API:', fullContract?.identityProfiles || fullContract?.IdentityProfiles);
+      } catch (error) {
+        console.error('❌ Error fetching full contract:', error);
+        fullContract = contract; // Fallback to passed contract
+      }
+
+      // Use full contract data or fallback
+      let enrichedContract = fullContract ? { ...fullContract } : { ...contract };
+
+      // Add current user (owner) info if not present in contract
+      if (user && (!enrichedContract.owner && !enrichedContract.Owner)) {
+        enrichedContract.owner = {
+          fullName: user.fullName || user.name || user.FullName || user.Name,
+          email: user.email || user.Email,
+          phone: user.phone || user.phoneNumber || user.Phone || user.PhoneNumber,
+          address: user.address || user.Address || 'Ho Chi Minh City, Vietnam'
+        };
+        console.log('👤 Added current user as owner:', enrichedContract.owner);
+      }
 
       // Fetch signatures
       let signatures = null;
       try {
         signatures = await contractService.getSignatures(contract.id);
+        console.log('✅ Signatures fetched:', signatures);
       } catch (error) {
         console.log('No signatures found, will preview PDF without signatures');
       }
 
+      // Also check if signatures are in the contract itself
+      if (!signatures || (!signatures.ownerSignature && !signatures.tenantSignature)) {
+        signatures = {
+          ownerSignature: enrichedContract.ownerSignature || enrichedContract.OwnerSignature || null,
+          tenantSignature: enrichedContract.tenantSignature || enrichedContract.TenantSignature || null
+        };
+      }
+
       // Enrich contract with room details if not already present
-      let enrichedContract = { ...contract };
-      if (contract.roomId && !contract.roomDetails) {
+      if (enrichedContract.roomId && !enrichedContract.roomDetails) {
         try {
-          const roomDetails = await roomService.getById(contract.roomId);
+          const roomDetails = await roomService.getById(enrichedContract.roomId);
           enrichedContract.roomDetails = roomDetails;
-          enrichedContract.roomName = roomDetails?.name || roomDetails?.roomName || contract.roomName;
+          enrichedContract.roomName = roomDetails?.name || roomDetails?.roomName || enrichedContract.roomName;
           console.log('✅ Room details fetched for preview:', roomDetails);
         } catch (error) {
           console.error('❌ Error fetching room details for preview:', error);
         }
       }
 
-      // Fetch identity profiles if not already present
-      if (!enrichedContract.identityProfiles || enrichedContract.identityProfiles.length === 0) {
-        console.log('🔍 Identity profiles not found in contract, fetching...');
+      // Try to fetch owner info if ownerId exists but no owner details
+      if (enrichedContract.ownerId && !enrichedContract.owner?.fullName) {
         try {
-          const profiles = await contractService.getIdentityProfiles(contract.id);
-          if (profiles && profiles.length > 0) {
-            enrichedContract.identityProfiles = profiles;
-            console.log('✅ Identity profiles fetched for preview:', profiles);
-          } else {
-            console.warn('⚠️ No identity profiles found for this contract');
+          const ownerData = await userService.getById(enrichedContract.ownerId);
+          if (ownerData) {
+            enrichedContract.owner = ownerData;
+            console.log('✅ Owner data fetched:', ownerData);
           }
         } catch (error) {
-          console.error('❌ Error fetching identity profiles for preview:', error);
+          console.log('Could not fetch owner data, using current user info');
         }
       }
+
+      console.log('📄 Final enriched contract for PDF:', enrichedContract);
+      console.log('👤 Final identity profiles:', enrichedContract.identityProfiles || enrichedContract.IdentityProfiles);
+      console.log('👤 Owner info:', enrichedContract.owner);
+
       previewPDF(enrichedContract, signatures?.ownerSignature || null, signatures?.tenantSignature || null);
     } catch (error) {
       console.error('Error previewing PDF:', error);
@@ -2997,7 +3035,7 @@ export default function ContractsManagementPage() {
                       </div>
                     )}
 
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    {/* <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                       <div className="flex">
                         <div className="flex-shrink-0">
                           <svg className="h-5 w-5 text-blue-500 dark:text-blue-400 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
@@ -3016,7 +3054,7 @@ export default function ContractsManagementPage() {
                           </ul>
                         </div>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               )}
@@ -3117,7 +3155,7 @@ export default function ContractsManagementPage() {
               {/* Modal Header */}
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  {modalType === 'edit' ? '✏️ Edit Contract' : '📝 Create New Contract'}
+                  {modalType === 'edit' ? ' Edit Contract' : '📝 Create New Contract'}
                 </h3>
                 <button
                   onClick={() => {
@@ -3422,9 +3460,9 @@ export default function ContractsManagementPage() {
                             )}
                           </button>
                         </div>
-                        <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                        {/* <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
                           💡 Tip: Press Enter or click Search to find and auto-fill profile information
-                        </p>
+                        </p> */}
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3845,7 +3883,7 @@ export default function ContractsManagementPage() {
                       </div>
                     </div>
 
-                    {/* Information Box */}
+                    {/* Information Box
                     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                       <div className="flex items-start">
                         <div className="flex-shrink-0">
@@ -3867,7 +3905,7 @@ export default function ContractsManagementPage() {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
 
                   {/* Step 3 Actions */}
@@ -3975,7 +4013,7 @@ export default function ContractsManagementPage() {
                       </div>
                     )}
 
-                    {/* Information Box */}
+                    {/* Information Box
                     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-4">
                       <div className="flex items-start">
                         <div className="flex-shrink-0">
@@ -3997,7 +4035,7 @@ export default function ContractsManagementPage() {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
 
                   {/* Step 4 Actions */}
@@ -4129,7 +4167,7 @@ export default function ContractsManagementPage() {
                     </div>
                   </div>
 
-                  {/* Agreement Checkbox */}
+                  {/* Agreement Checkbox
                   <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <label className="flex items-start space-x-3">
                       <div className="flex items-center h-5 mt-0.5">
@@ -4141,7 +4179,7 @@ export default function ContractsManagementPage() {
                         I agree that my signature will be the electronic representation of my signature for all purposes when I use it on documents, including legally binding contracts.
                       </span>
                     </label>
-                  </div>
+                  </div> */}
 
                   {/* Action Buttons - Step 1 */}
                   <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -4176,14 +4214,14 @@ export default function ContractsManagementPage() {
               {signatureStep === 2 && (
                 <>
                   <div className="mb-6">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                    {/* <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
                       <p className="text-sm text-blue-800 dark:text-blue-200">
                         OTP code has been sent to email: <strong>{signatureEmail}</strong>
                       </p>
                       <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
                         Please check your inbox or spam folder
                       </p>
-                    </div>
+                    </div> */}
 
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Enter OTP Code (6 digits) <span className="text-red-500">*</span>

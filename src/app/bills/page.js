@@ -7,6 +7,114 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
 import utilityBillService from '@/services/utilityBillService';
 
+// ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
+const MOCK_BILLS = [
+    {
+        id: 'bill-001',
+        roomId: 'room-001',
+        roomName: 'Phòng A101 - Studio Premium',
+        houseName: 'Nhà trọ Sunshine Residence',
+        amount: 1250000,
+        status: 'Unpaid',
+        note: 'Hóa đơn điện nước tháng 11/2025',
+        createdAt: '2025-11-25T10:00:00Z',
+        dueDate: '2025-12-05T23:59:59Z',
+        electricityUsage: 120,
+        electricityRate: 3500,
+        electricityAmount: 420000,
+        waterUsage: 15,
+        waterRate: 15000,
+        waterAmount: 225000,
+        internetAmount: 100000,
+        otherAmount: 0,
+        period: 'Tháng 11/2025'
+    },
+    {
+        id: 'bill-002',
+        roomId: 'room-001',
+        roomName: 'Phòng A101 - Studio Premium',
+        houseName: 'Nhà trọ Sunshine Residence',
+        amount: 980000,
+        status: 'Paid',
+        note: 'Hóa đơn điện nước tháng 10/2025',
+        createdAt: '2025-10-25T10:00:00Z',
+        dueDate: '2025-11-05T23:59:59Z',
+        paidAt: '2025-10-28T14:30:00Z',
+        electricityUsage: 95,
+        electricityRate: 3500,
+        electricityAmount: 332500,
+        waterUsage: 12,
+        waterRate: 15000,
+        waterAmount: 180000,
+        internetAmount: 100000,
+        otherAmount: 0,
+        period: 'Tháng 10/2025'
+    },
+    {
+        id: 'bill-003',
+        roomId: 'room-001',
+        roomName: 'Phòng A101 - Studio Premium',
+        houseName: 'Nhà trọ Sunshine Residence',
+        amount: 1100000,
+        status: 'Paid',
+        note: 'Hóa đơn điện nước tháng 9/2025',
+        createdAt: '2025-09-25T10:00:00Z',
+        dueDate: '2025-10-05T23:59:59Z',
+        paidAt: '2025-09-30T09:15:00Z',
+        electricityUsage: 110,
+        electricityRate: 3500,
+        electricityAmount: 385000,
+        waterUsage: 14,
+        waterRate: 15000,
+        waterAmount: 210000,
+        internetAmount: 100000,
+        otherAmount: 0,
+        period: 'Tháng 9/2025'
+    },
+    {
+        id: 'bill-004',
+        roomId: 'room-001',
+        roomName: 'Phòng A101 - Studio Premium',
+        houseName: 'Nhà trọ Sunshine Residence',
+        amount: 1500000,
+        status: 'Overdue',
+        note: 'Hóa đơn điện nước tháng 8/2025 - QUÁ HẠN',
+        createdAt: '2025-08-25T10:00:00Z',
+        dueDate: '2025-09-05T23:59:59Z',
+        electricityUsage: 150,
+        electricityRate: 3500,
+        electricityAmount: 525000,
+        waterUsage: 18,
+        waterRate: 15000,
+        waterAmount: 270000,
+        internetAmount: 100000,
+        otherAmount: 100000,
+        period: 'Tháng 8/2025'
+    },
+    {
+        id: 'bill-005',
+        roomId: 'room-001',
+        roomName: 'Phòng A101 - Studio Premium',
+        houseName: 'Nhà trọ Sunshine Residence',
+        amount: 850000,
+        status: 'Paid',
+        note: 'Hóa đơn điện nước tháng 7/2025',
+        createdAt: '2025-07-25T10:00:00Z',
+        dueDate: '2025-08-05T23:59:59Z',
+        paidAt: '2025-07-30T16:45:00Z',
+        electricityUsage: 80,
+        electricityRate: 3500,
+        electricityAmount: 280000,
+        waterUsage: 10,
+        waterRate: 15000,
+        waterAmount: 150000,
+        internetAmount: 100000,
+        otherAmount: 0,
+        period: 'Tháng 7/2025'
+    }
+];
+// ============ END MOCK DATA ============
+
 export default function TenantBillsPage() {
     const { user } = useAuth();
     const router = useRouter();
@@ -48,13 +156,18 @@ export default function TenantBillsPage() {
 
             // Handle OData response - could be { value: [...] } or [...]
             const billsData = response.value || response || [];
-            setBills(billsData);
-            setFilteredBills(billsData);
+            
+            // ============ USE MOCK DATA IF NO REAL DATA ============
+            const dataToUse = billsData && billsData.length > 0 ? billsData : MOCK_BILLS;
+            setBills(dataToUse);
+            setFilteredBills(dataToUse);
+            // ============ END MOCK DATA USAGE ============
         } catch (err) {
             console.error('Error loading bills:', err);
-            setError('Không thể tải danh sách hóa đơn. Vui lòng thử lại.');
-            setBills([]);
-            setFilteredBills([]);
+            // ============ USE MOCK DATA ON ERROR ============
+            setBills(MOCK_BILLS);
+            setFilteredBills(MOCK_BILLS);
+            // ============ END MOCK DATA ON ERROR ============
         } finally {
             setLoading(false);
         }

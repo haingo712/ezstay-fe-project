@@ -25,6 +25,94 @@ import Footer from '@/components/Footer';
 import ChatDialog from '@/components/ChatDialog';
 import Image from 'next/image';
 
+// ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
+const MOCK_POST_DETAIL = {
+  id: '1',
+  title: 'Phòng trọ cao cấp quận 1 - Full nội thất, view đẹp',
+  description: `🏠 PHÒNG TRỌ CAO CẤP QUẬN 1 - FULL NỘI THẤT
+
+📍 Vị trí: 123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh
+
+✨ TIỆN ÍCH:
+• Máy lạnh Daikin Inverter tiết kiệm điện
+• Tủ lạnh mini 90L
+• Máy giặt cửa trước 7kg
+• Bếp từ đơn + Lò vi sóng
+• Giường đệm cao cấp 1m6
+• Tủ quần áo 3 cánh
+• Bàn làm việc + ghế xoay
+• Wifi tốc độ cao 100Mbps
+
+🔐 AN NINH:
+• Bảo vệ 24/7
+• Khóa vân tay thông minh
+• Camera an ninh
+• Thẻ từ ra vào tòa nhà
+
+💰 CHI PHÍ:
+• Giá thuê: 5,500,000 VND/tháng
+• Điện: 3,500 VND/kWh (giá nhà nước)
+• Nước: 15,000 VND/m³
+• Wifi: Miễn phí
+• Gửi xe: Miễn phí
+
+📞 Liên hệ xem phòng ngay!`,
+  houseName: 'Nhà trọ Sunshine Residence',
+  roomName: 'Phòng A101 - Studio Premium',
+  authorId: 'owner1',
+  authorName: 'Nguyễn Văn An',
+  contactPhone: '0901234567',
+  contactEmail: 'nguyenvanan@email.com',
+  createdAt: '2025-11-28T10:00:00Z',
+  isActive: true,
+  isApproved: 1,
+  price: 5500000,
+  area: 35,
+  boardingHouseId: 'house1',
+  roomId: 'room1',
+  imageUrls: ['/image.png', '/image.png', '/image.png'],
+  reviews: [
+    {
+      id: 'review1',
+      userId: 'user1',
+      rating: 5,
+      content: 'Phòng rất đẹp và sạch sẽ, chủ nhà nhiệt tình. Nội thất đầy đủ, tiện nghi. Vị trí trung tâm, đi lại thuận tiện. Rất hài lòng với phòng này!',
+      createdAt: '2025-11-25T10:00:00Z',
+      imageUrl: '/image.png'
+    },
+    {
+      id: 'review2',
+      userId: 'user2',
+      rating: 4,
+      content: 'Phòng ổn, giá hợp lý cho vị trí trung tâm. Wifi ổn định, máy lạnh mát. Chỉ hơi ồn vào ban đêm do gần đường lớn.',
+      createdAt: '2025-11-20T14:30:00Z',
+      imageUrl: null
+    },
+    {
+      id: 'review3',
+      userId: 'user3',
+      rating: 5,
+      content: 'Tuyệt vời! Đã ở được 6 tháng, không có gì phàn nàn. Chủ nhà rất tốt, hỗ trợ sửa chữa nhanh chóng khi có vấn đề.',
+      createdAt: '2025-11-15T09:00:00Z',
+      imageUrl: '/image.png'
+    }
+  ]
+};
+
+const MOCK_USER_NAMES = {
+  'user1': 'Trần Thị Bình',
+  'user2': 'Lê Minh Cường',
+  'user3': 'Phạm Hoàng Dũng'
+};
+
+const MOCK_HOUSE_LOCATION = {
+  fullAddress: '123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+  provinceName: 'TP. Hồ Chí Minh',
+  communeName: 'Phường Bến Nghé',
+  addressDetail: '123 Nguyễn Huệ'
+};
+// ============ END MOCK DATA ============
+
 export default function RentalPostDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -52,15 +140,18 @@ export default function RentalPostDetailPage() {
       const postData = await rentalPostService.getPostById(postId);
       console.log('📋 Post detail:', postData);
 
-      setPost(postData);
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const postToUse = postData && postData.id ? postData : MOCK_POST_DETAIL;
+      setPost(postToUse);
+      // ============ END MOCK DATA USAGE ============
 
       // Fetch boarding house location if boardingHouseId exists
-      if (postData.boardingHouseId) {
-        fetchHouseLocation(postData.boardingHouseId);
+      if (postToUse.boardingHouseId) {
+        fetchHouseLocation(postToUse.boardingHouseId);
       }
 
       // BE RentalPostsAPI returns reviews in post.Reviews (already normalized to camelCase)
-      const reviewsData = postData.reviews || [];
+      const reviewsData = postToUse.reviews || [];
       console.log('📝 Reviews from BE:', reviewsData);
       setReviews(Array.isArray(reviewsData) ? reviewsData : []);
 
@@ -70,7 +161,12 @@ export default function RentalPostDetailPage() {
       }
     } catch (error) {
       console.error('❌ Error loading post:', error);
-      alert(t('rentalPostDetail.loadFailed'));
+      // ============ USE MOCK DATA ON ERROR ============
+      setPost(MOCK_POST_DETAIL);
+      setReviews(MOCK_POST_DETAIL.reviews);
+      setUserNames(MOCK_USER_NAMES);
+      setHouseLocation(MOCK_HOUSE_LOCATION);
+      // ============ END MOCK DATA ON ERROR ============
     } finally {
       setLoading(false);
     }
@@ -601,10 +697,10 @@ export default function RentalPostDetailPage() {
                       {t('rentalPostDetail.chatWithOwner')}
                     </button>
 
-                    <button className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2">
+                    {/* <button className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2">
                       <Phone className="h-4 w-4" />
                       {t('rentalPostDetail.callOwner')}
-                    </button>
+                    </button> */}
                   </>
                 ) : (
                   <div className="space-y-3">

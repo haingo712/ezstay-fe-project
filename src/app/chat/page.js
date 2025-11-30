@@ -28,6 +28,67 @@ import {
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
+// ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
+const MOCK_CHAT_ROOMS = [
+  {
+    id: '1',
+    owner: { id: 'owner1', fullName: 'Nguyễn Văn An', FullName: 'Nguyễn Văn An' },
+    post: { title: 'Phòng trọ cao cấp quận 1' },
+    lastMessage: { content: 'Chào bạn, phòng còn trống không ạ?', createdAt: new Date().toISOString() }
+  },
+  {
+    id: '2',
+    owner: { id: 'owner2', fullName: 'Trần Thị Bình', FullName: 'Trần Thị Bình' },
+    post: { title: 'Căn hộ mini quận 7' },
+    lastMessage: { content: 'Dạ bạn có thể qua xem phòng vào cuối tuần được ạ', createdAt: new Date(Date.now() - 3600000).toISOString() }
+  },
+  {
+    id: '3',
+    owner: { id: 'owner3', fullName: 'Lê Minh Cường', FullName: 'Lê Minh Cường' },
+    post: { title: 'Phòng trọ sinh viên Thủ Đức' },
+    lastMessage: { content: 'Giá phòng là 2.8 triệu/tháng bạn nhé', createdAt: new Date(Date.now() - 86400000).toISOString() }
+  }
+];
+
+const MOCK_MESSAGES = [
+  {
+    id: '1',
+    content: 'Chào bạn, tôi quan tâm đến phòng trọ của bạn. Phòng còn trống không ạ?',
+    senderId: 'user1',
+    createdAt: new Date(Date.now() - 7200000).toISOString(),
+    isRead: true
+  },
+  {
+    id: '2',
+    content: 'Chào bạn! Phòng vẫn còn trống ạ. Bạn có muốn đặt lịch xem phòng không?',
+    senderId: 'owner1',
+    createdAt: new Date(Date.now() - 7100000).toISOString(),
+    isRead: true
+  },
+  {
+    id: '3',
+    content: 'Dạ vâng, bạn cho tôi hỏi giá phòng bao nhiêu và tiền điện nước tính như thế nào ạ?',
+    senderId: 'user1',
+    createdAt: new Date(Date.now() - 7000000).toISOString(),
+    isRead: true
+  },
+  {
+    id: '4',
+    content: 'Giá phòng là 5.5 triệu/tháng. Điện giá nhà nước 3.5k/kWh, nước 15k/m³ bạn nhé. Phòng full nội thất rồi ạ.',
+    senderId: 'owner1',
+    createdAt: new Date(Date.now() - 6900000).toISOString(),
+    isRead: true
+  },
+  {
+    id: '5',
+    content: 'Chào bạn, phòng còn trống không ạ?',
+    senderId: 'user1',
+    createdAt: new Date().toISOString(),
+    isRead: false
+  }
+];
+// ============ END MOCK DATA ============
+
 export default function UserChatsPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -66,14 +127,24 @@ export default function UserChatsPage() {
       setLoading(true);
       const rooms = await chatService.getChatRooms();
       console.log('Loaded user chat rooms:', rooms);
-      setChatRooms(rooms || []);
+      
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const roomsToUse = (rooms && rooms.length > 0) ? rooms : MOCK_CHAT_ROOMS;
+      setChatRooms(roomsToUse);
+      // ============ END MOCK DATA USAGE ============
 
       // Auto-select first room if available
-      if (rooms && rooms.length > 0 && !selectedChatRoom) {
-        setSelectedChatRoom(rooms[0]);
+      if (roomsToUse && roomsToUse.length > 0 && !selectedChatRoom) {
+        setSelectedChatRoom(roomsToUse[0]);
       }
     } catch (error) {
       console.error('Error loading chat rooms:', error);
+      // ============ USE MOCK DATA ON ERROR ============
+      setChatRooms(MOCK_CHAT_ROOMS);
+      if (MOCK_CHAT_ROOMS.length > 0 && !selectedChatRoom) {
+        setSelectedChatRoom(MOCK_CHAT_ROOMS[0]);
+      }
+      // ============ END MOCK DATA ON ERROR ============
     } finally {
       setLoading(false);
     }
@@ -83,9 +154,15 @@ export default function UserChatsPage() {
     try {
       const response = await chatService.getMessages(chatRoomId);
       const messagesData = response.data || response;
-      setMessages(Array.isArray(messagesData) ? messagesData : []);
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const messagesToUse = (Array.isArray(messagesData) && messagesData.length > 0) ? messagesData : MOCK_MESSAGES;
+      setMessages(messagesToUse);
+      // ============ END MOCK DATA USAGE ============
     } catch (error) {
       console.error('Error loading messages:', error);
+      // ============ USE MOCK DATA ON ERROR ============
+      setMessages(MOCK_MESSAGES);
+      // ============ END MOCK DATA ON ERROR ============
     }
   };
 

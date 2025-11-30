@@ -5,6 +5,131 @@ import userManagementService from '@/services/userManagementService';
 import AuthService from '@/services/authService';
 import { useTranslation } from '@/hooks/useTranslation';
 
+// ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
+const MOCK_USERS = [
+  {
+    id: 'user-001',
+    fullName: 'Nguyễn Văn An',
+    email: 'nguyenvanan@email.com',
+    phone: '0901234567',
+    role: 2,
+    roleId: 2,
+    isActive: true,
+    isBanned: false,
+    createAt: '2025-10-15T10:00:00Z',
+    createdAt: '2025-10-15T10:00:00Z',
+    avatar: '/image.png'
+  },
+  {
+    id: 'user-002',
+    fullName: 'Trần Thị Bình',
+    email: 'tranthib@email.com',
+    phone: '0912345678',
+    role: 1,
+    roleId: 1,
+    isActive: true,
+    isBanned: false,
+    createAt: '2025-10-20T14:30:00Z',
+    createdAt: '2025-10-20T14:30:00Z',
+    avatar: '/image.png'
+  },
+  {
+    id: 'user-003',
+    fullName: 'Lê Minh Cường',
+    email: 'leminhc@email.com',
+    phone: '0923456789',
+    role: 1,
+    roleId: 1,
+    isActive: true,
+    isBanned: false,
+    createAt: '2025-11-01T09:00:00Z',
+    createdAt: '2025-11-01T09:00:00Z',
+    avatar: '/image.png'
+  },
+  {
+    id: 'user-004',
+    fullName: 'Phạm Hoàng Dũng',
+    email: 'phamhoangd@email.com',
+    phone: '0934567890',
+    role: 2,
+    roleId: 2,
+    isActive: true,
+    isBanned: false,
+    createAt: '2025-11-05T16:00:00Z',
+    createdAt: '2025-11-05T16:00:00Z',
+    avatar: '/image.png'
+  },
+  {
+    id: 'user-005',
+    fullName: 'Võ Thị Hồng',
+    email: 'vothihong@email.com',
+    phone: '0945678901',
+    role: 1,
+    roleId: 1,
+    isActive: false,
+    isBanned: true,
+    createAt: '2025-09-10T11:00:00Z',
+    createdAt: '2025-09-10T11:00:00Z',
+    avatar: '/image.png'
+  },
+  {
+    id: 'user-006',
+    fullName: 'Đặng Văn Khoa',
+    email: 'dangvankhoa@email.com',
+    phone: '0956789012',
+    role: 1,
+    roleId: 1,
+    isActive: true,
+    isBanned: false,
+    createAt: '2025-11-20T08:30:00Z',
+    createdAt: '2025-11-20T08:30:00Z',
+    avatar: '/image.png'
+  }
+];
+
+const MOCK_OWNER_REQUESTS = [
+  {
+    id: 'req-001',
+    userId: 'user-007',
+    fullName: 'Nguyễn Thị Mai',
+    email: 'nguyenthimai@email.com',
+    phone: '0967890123',
+    identityCardFront: '/image.png',
+    identityCardBack: '/image.png',
+    businessLicense: '/image.png',
+    requestReason: 'Tôi có 3 căn nhà trọ muốn đăng cho thuê trên EZStay',
+    status: 'pending',
+    createdAt: '2025-11-28T10:00:00Z'
+  },
+  {
+    id: 'req-002',
+    userId: 'user-008',
+    fullName: 'Trần Văn Long',
+    email: 'tranvanlong@email.com',
+    phone: '0978901234',
+    identityCardFront: '/image.png',
+    identityCardBack: '/image.png',
+    businessLicense: '/image.png',
+    requestReason: 'Muốn trở thành chủ nhà để quản lý phòng trọ của gia đình',
+    status: 'pending',
+    createdAt: '2025-11-27T14:30:00Z'
+  },
+  {
+    id: 'req-003',
+    userId: 'user-009',
+    fullName: 'Lê Thị Hạnh',
+    email: 'lethihanh@email.com',
+    phone: '0989012345',
+    identityCardFront: '/image.png',
+    identityCardBack: '/image.png',
+    businessLicense: null,
+    requestReason: 'Đăng ký làm chủ nhà để cho thuê căn hộ mini',
+    status: 'pending',
+    createdAt: '2025-11-26T09:00:00Z'
+  }
+];
+// ============ END MOCK DATA ============
+
 export default function UserManagementPage() {
   const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
@@ -42,10 +167,15 @@ export default function UserManagementPage() {
   const loadOwnerRequests = async () => {
     try {
       const data = await userManagementService.getOwnerRequests();
-      setOwnerRequests(data);
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const dataToUse = data && data.length > 0 ? data : MOCK_OWNER_REQUESTS;
+      setOwnerRequests(dataToUse);
+      // ============ END MOCK DATA USAGE ============
     } catch (error) {
       console.error('Error loading owner requests:', error);
-      setOwnerRequests([]);
+      // ============ USE MOCK DATA ON ERROR ============
+      setOwnerRequests(MOCK_OWNER_REQUESTS);
+      // ============ END MOCK DATA ON ERROR ============
     }
   };
 
@@ -63,10 +193,15 @@ export default function UserManagementPage() {
         createdAt: user.createAt, // Map createAt to createdAt
       })) : [];
 
-      setUsers(transformedData);
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const dataToUse = transformedData && transformedData.length > 0 ? transformedData : MOCK_USERS;
+      setUsers(dataToUse);
+      // ============ END MOCK DATA USAGE ============
     } catch (error) {
       console.error('Error loading users:', error);
-      setUsers([]);
+      // ============ USE MOCK DATA ON ERROR ============
+      setUsers(MOCK_USERS);
+      // ============ END MOCK DATA ON ERROR ============
     } finally {
       setLoading(false);
     }

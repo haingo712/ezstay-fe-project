@@ -100,7 +100,7 @@ export default function FavoritesPage() {
   }, [isAuthenticated, authLoading, router]);
 
   const handleRemoveFavorite = async (favoriteId, postId) => {
-    console.log('🗑️ Removing favorite:', { favoriteId, postId, type: typeof favoriteId });
+    console.log(' Removing favorite:', { favoriteId, postId, type: typeof favoriteId });
     
     // Nếu favoriteId undefined, thử tìm trong map
     let actualFavoriteId = favoriteId;
@@ -128,7 +128,7 @@ export default function FavoritesPage() {
     }
     
     try {
-      console.log('🗑️ Calling removeFavorite with favoriteId:', actualFavoriteId);
+      console.log(' Calling removeFavorite with favoriteId:', actualFavoriteId);
       await favoritePostService.removeFavorite(actualFavoriteId);
       
       // Xóa khỏi state

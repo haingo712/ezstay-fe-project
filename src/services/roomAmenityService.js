@@ -94,7 +94,7 @@ const updateRoomAmenity = async (roomAmenityId, updateData) => {
 
 const removeAmenityFromRoom = async (roomAmenityId) => {
   try {
-    console.log(`🗑️ Removing room amenity ${roomAmenityId}`);
+    console.log(` Removing room amenity ${roomAmenityId}`);
     
     const response = await api.delete(`/api/RoomAmenity/${roomAmenityId}`);
     console.log("✅ Success removing amenity from room");
@@ -158,7 +158,7 @@ const addMultipleAmenitiesToRoom = async (roomId, amenityIds) => {
 
 const removeMultipleAmenitiesFromRoom = async (roomAmenityIds) => {
   try {
-    console.log(`🗑️ Removing multiple amenities from room:`, roomAmenityIds);
+    console.log(` Removing multiple amenities from room:`, roomAmenityIds);
     
     const promises = roomAmenityIds.map(id => removeAmenityFromRoom(id));
     

@@ -22,6 +22,67 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import RoleBasedRedirect from '@/components/RoleBasedRedirect';
 
+// ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
+const MOCK_RENTAL_HISTORY = [
+  {
+    id: '1',
+    roomName: 'Phòng A101 - Studio Premium',
+    houseName: 'Nhà trọ Sunshine Residence',
+    ownerName: 'Nguyễn Văn An',
+    ownerPhone: '0901234567',
+    address: '123 Nguyễn Huệ, Quận 1, TP.HCM',
+    checkinDate: '2025-06-01T00:00:00Z',
+    checkoutDate: '2025-11-30T00:00:00Z',
+    roomPrice: 5500000,
+    depositAmount: 11000000,
+    contractStatus: 2, // Expired - có thể review
+    numberOfOccupants: 1
+  },
+  {
+    id: '2',
+    roomName: 'Phòng B205 - Deluxe Room',
+    houseName: 'Green House Apartment',
+    ownerName: 'Trần Thị Bình',
+    ownerPhone: '0912345678',
+    address: '456 Nguyễn Văn Linh, Quận 7, TP.HCM',
+    checkinDate: '2025-01-15T00:00:00Z',
+    checkoutDate: '2025-06-15T00:00:00Z',
+    roomPrice: 4200000,
+    depositAmount: 8400000,
+    contractStatus: 2, // Expired
+    numberOfOccupants: 2
+  },
+  {
+    id: '3',
+    roomName: 'Phòng C301 - Standard',
+    houseName: 'Ký túc xá Thanh Xuân',
+    ownerName: 'Lê Minh Cường',
+    ownerPhone: '0923456789',
+    address: '789 Võ Văn Ngân, Thủ Đức, TP.HCM',
+    checkinDate: '2025-11-01T00:00:00Z',
+    checkoutDate: '2026-04-30T00:00:00Z',
+    roomPrice: 2800000,
+    depositAmount: 5600000,
+    contractStatus: 0, // Active
+    numberOfOccupants: 1
+  },
+  {
+    id: '4',
+    roomName: 'Studio S401 - Luxury',
+    houseName: 'The Vista Residence',
+    ownerName: 'Phạm Hoàng Dũng',
+    ownerPhone: '0934567890',
+    address: '101 Điện Biên Phủ, Bình Thạnh, TP.HCM',
+    checkinDate: '2024-12-01T00:00:00Z',
+    checkoutDate: '2025-05-31T00:00:00Z',
+    roomPrice: 7000000,
+    depositAmount: 14000000,
+    contractStatus: 2, // Expired
+    numberOfOccupants: 1
+  }
+];
+// ============ END MOCK DATA ============
+
 export default function RentalHistoryPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -53,10 +114,16 @@ export default function RentalHistoryPage() {
       
       // Kiểm tra response là array hay object với value
       const contractsData = Array.isArray(response) ? response : (response.value || []);
-      setContracts(contractsData);
+      
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const contractsToUse = contractsData.length > 0 ? contractsData : MOCK_RENTAL_HISTORY;
+      setContracts(contractsToUse);
+      // ============ END MOCK DATA USAGE ============
     } catch (error) {
       console.error('Error loading contracts:', error);
-      setContracts([]);
+      // ============ USE MOCK DATA ON ERROR ============
+      setContracts(MOCK_RENTAL_HISTORY);
+      // ============ END MOCK DATA ON ERROR ============
     } finally {
       setLoading(false);
     }

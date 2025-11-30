@@ -302,7 +302,7 @@ export default function StaffManagementPage() {
     if (!selectedStaff) return;
     
     try {
-      console.log('🗑️ Deleting staff ID:', selectedStaff.id);
+      console.log(' Deleting staff ID:', selectedStaff.id);
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts/${selectedStaff.id}`, {
         method: 'DELETE',
