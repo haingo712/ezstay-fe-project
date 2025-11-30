@@ -291,7 +291,7 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
               </button>
               {hasFaceRegistered && (
                 <button onClick={handleDelete} disabled={loading} className="px-6 py-4 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white rounded-xl transition-all duration-300 font-semibold disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg transform hover:scale-[1.02]">
-                  🗑️ Delete Face
+                   Delete Face
                 </button>
               )}
               <button onClick={onClose} className="px-6 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 font-semibold">

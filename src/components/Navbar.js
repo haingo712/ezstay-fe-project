@@ -208,6 +208,43 @@ export default function Navbar() {
             <div className="flex items-center space-x-4">
               {/* Chuông thông báo */}
               <GlobalNotificationBell />
+
+              {/* Language Switcher */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
+                  className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 flex items-center space-x-1"
+                  title="Change Language"
+                >
+                  <span className="text-sm font-medium">{language === 'vi' ? '🇻🇳' : '🇺🇸'}</span>
+                  <span className="text-xs">{language === 'vi' ? 'VI' : 'EN'}</span>
+                </button>
+                {isLanguageMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-50 py-1">
+                    <button
+                      onClick={() => {
+                        changeLanguage('vi');
+                        setIsLanguageMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 ${language === 'vi' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-200'}`}
+                    >
+                      <span>🇻🇳</span>
+                      <span>Tiếng Việt</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        changeLanguage('en');
+                        setIsLanguageMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 ${language === 'en' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-200'}`}
+                    >
+                      <span>🇺🇸</span>
+                      <span>English</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Theme Toggle Button */}
               <button
                 onClick={toggleTheme}

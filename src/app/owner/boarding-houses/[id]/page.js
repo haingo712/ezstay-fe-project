@@ -143,7 +143,7 @@ export default function OwnerBoardingHouseDetail() {
               onClick={() => {/* Add edit functionality */}}
               className="inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-colors"
             >
-              ✏️ {t('ownerBoardingHouseDetail.actions.editHouse')}
+               {t('ownerBoardingHouseDetail.actions.editHouse')}
             </button>
             <button
               onClick={fetchData}

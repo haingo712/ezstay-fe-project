@@ -181,7 +181,7 @@ const updateAmenity = async (id, amenityData) => {
 
 const deleteAmenity = async (id) => {
   try {
-    console.log(`🗑️ Deleting amenity ${id}`);
+    console.log(` Deleting amenity ${id}`);
 
     // Use the correct endpoint: DELETE /api/Amenity/{id}
     const response = await api.delete(`/api/Amenity/${id}`);

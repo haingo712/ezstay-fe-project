@@ -4,6 +4,108 @@ import { useState, useEffect } from 'react';
 import { reviewAPI } from '@/utils/api';
 import { useTranslation } from '@/hooks/useTranslation';
 
+// ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
+const MOCK_REVIEWS = [
+  {
+    id: 'review-001',
+    userId: 'user-001',
+    userName: 'Trần Thị Bình',
+    roomId: 'room-001',
+    roomName: 'Phòng A101 - Studio Premium',
+    houseName: 'Nhà trọ Sunshine Residence',
+    rating: 5,
+    content: 'Phòng rất đẹp và sạch sẽ, chủ nhà nhiệt tình. Nội thất đầy đủ, tiện nghi. Vị trí trung tâm, đi lại thuận tiện. Rất hài lòng với phòng này! Sẽ giới thiệu cho bạn bè.',
+    imageUrl: '/image.png',
+    createdAt: '2025-11-28T10:00:00Z'
+  },
+  {
+    id: 'review-002',
+    userId: 'user-002',
+    userName: 'Lê Minh Cường',
+    roomId: 'room-002',
+    roomName: 'Phòng B205 - Standard',
+    houseName: 'Nhà trọ Phú Mỹ Hưng',
+    rating: 4,
+    content: 'Phòng ổn, giá hợp lý cho vị trí gần trung tâm. Wifi ổn định, máy lạnh mát. Chỉ hơi ồn vào ban đêm do gần đường lớn. Nhìn chung vẫn đáng để thuê.',
+    imageUrl: null,
+    createdAt: '2025-11-26T14:30:00Z'
+  },
+  {
+    id: 'review-003',
+    userId: 'user-003',
+    userName: 'Phạm Hoàng Dũng',
+    roomId: 'room-001',
+    roomName: 'Phòng A101 - Studio Premium',
+    houseName: 'Nhà trọ Sunshine Residence',
+    rating: 5,
+    content: 'Tuyệt vời! Đã ở được 6 tháng, không có gì phàn nàn. Chủ nhà rất tốt, hỗ trợ sửa chữa nhanh chóng khi có vấn đề. Điện nước giá nhà nước, hợp lý.',
+    imageUrl: '/image.png',
+    createdAt: '2025-11-24T09:00:00Z'
+  },
+  {
+    id: 'review-004',
+    userId: 'user-004',
+    userName: 'Nguyễn Thị Hồng',
+    roomId: 'room-003',
+    roomName: 'Phòng C301 - Có gác',
+    houseName: 'Nhà trọ Bình Thạnh Home',
+    rating: 3,
+    content: 'Phòng tạm ổn nhưng hơi chật cho 2 người. Gác lửng khá thấp. Bảo vệ không có 24/7. Mong chủ nhà cải thiện thêm.',
+    imageUrl: null,
+    createdAt: '2025-11-22T16:45:00Z'
+  },
+  {
+    id: 'review-005',
+    userId: 'user-005',
+    userName: 'Võ Văn Thành',
+    roomId: 'room-004',
+    roomName: 'Phòng D401 - VIP Suite',
+    houseName: 'Nhà trọ Central Park',
+    rating: 5,
+    content: 'Phòng VIP đúng như mô tả. Ban công view cực đẹp, nhìn ra thành phố. Nội thất cao cấp, máy giặt riêng rất tiện. Đáng đồng tiền bát gạo!',
+    imageUrl: '/image.png',
+    createdAt: '2025-11-20T11:30:00Z'
+  },
+  {
+    id: 'review-006',
+    userId: 'user-006',
+    userName: 'Đặng Thị Mai',
+    roomId: 'room-002',
+    roomName: 'Phòng B205 - Standard',
+    houseName: 'Nhà trọ Phú Mỹ Hưng',
+    rating: 2,
+    content: 'Phòng không như hình ảnh đăng. Nội thất cũ kỹ, máy lạnh yếu. Cần cải thiện nhiều. Không hài lòng lắm với trải nghiệm này.',
+    imageUrl: null,
+    createdAt: '2025-11-18T08:00:00Z'
+  }
+];
+
+const MOCK_REVIEW_REPLIES = {
+  'review-001': {
+    id: 'reply-001',
+    reviewId: 'review-001',
+    content: 'Cảm ơn bạn đã đánh giá tích cực! Chúng tôi rất vui khi bạn hài lòng với phòng. Chúc bạn ở vui vẻ!',
+    createdAt: '2025-11-28T12:00:00Z'
+  },
+  'review-003': {
+    id: 'reply-003',
+    reviewId: 'review-003',
+    content: 'Xin cảm ơn bạn đã ở với chúng tôi suốt 6 tháng qua. Chúng tôi luôn cố gắng hỗ trợ khách hàng tốt nhất!',
+    createdAt: '2025-11-24T15:00:00Z'
+  }
+};
+
+const MOCK_REVIEW_REPORTS = {
+  'review-006': {
+    id: 'report-001',
+    reviewId: 'review-006',
+    reason: 'Đánh giá không chính xác, phòng đã được nâng cấp nội thất mới',
+    createdAt: '2025-11-19T10:00:00Z',
+    status: 'pending'
+  }
+};
+// ============ END MOCK DATA ============
+
 export default function OwnerReviewsPage() {
   const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
@@ -36,11 +138,15 @@ export default function OwnerReviewsPage() {
       setError(null);
       const response = await reviewAPI.getAllReviews({ $orderby: 'createdAt desc' });
       const reviewData = response.value || response || [];
-      setReviews(reviewData);
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const dataToUse = reviewData && reviewData.length > 0 ? reviewData : MOCK_REVIEWS;
+      setReviews(dataToUse);
+      // ============ END MOCK DATA USAGE ============
     } catch (err) {
       console.error('Error loading reviews:', err);
-      setError(t('ownerReviews.errors.loadFailed'));
-      setReviews([]);
+      // ============ USE MOCK DATA ON ERROR ============
+      setReviews(MOCK_REVIEWS);
+      // ============ END MOCK DATA ON ERROR ============
     } finally {
       setLoading(false);
     }
@@ -52,9 +158,15 @@ export default function OwnerReviewsPage() {
       const replies = response.value || response || [];
       const repliesMap = {};
       replies.forEach(reply => { repliesMap[reply.reviewId] = reply; });
-      setReviewReplies(repliesMap);
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const dataToUse = Object.keys(repliesMap).length > 0 ? repliesMap : MOCK_REVIEW_REPLIES;
+      setReviewReplies(dataToUse);
+      // ============ END MOCK DATA USAGE ============
     } catch (err) {
       console.error('Error loading review replies:', err);
+      // ============ USE MOCK DATA ON ERROR ============
+      setReviewReplies(MOCK_REVIEW_REPLIES);
+      // ============ END MOCK DATA ON ERROR ============
     }
   };
 
@@ -64,9 +176,15 @@ export default function OwnerReviewsPage() {
       const reports = response.value || response || [];
       const reportsMap = {};
       reports.forEach(report => { reportsMap[report.reviewId] = report; });
-      setReviewReports(reportsMap);
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const dataToUse = Object.keys(reportsMap).length > 0 ? reportsMap : MOCK_REVIEW_REPORTS;
+      setReviewReports(dataToUse);
+      // ============ END MOCK DATA USAGE ============
     } catch (err) {
       console.error('Error loading review reports:', err);
+      // ============ USE MOCK DATA ON ERROR ============
+      setReviewReports(MOCK_REVIEW_REPORTS);
+      // ============ END MOCK DATA ON ERROR ============
     }
   };
 

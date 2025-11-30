@@ -8,6 +8,91 @@ import boardingHouseService from '@/services/boardingHouseService';
 import roomService from '@/services/roomService';
 import { FileText, Plus, Edit2, Trash2, Copy, X, Building, Home } from 'lucide-react';
 
+// ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
+const MOCK_POSTS = [
+  {
+    id: 'post-001',
+    title: 'Phòng trọ cao cấp quận 1 - Full nội thất, view đẹp',
+    description: 'Phòng trọ cao cấp đầy đủ tiện nghi: máy lạnh, tủ lạnh, máy giặt, bếp từ. An ninh 24/7, khóa vân tay thông minh.',
+    houseName: 'Nhà trọ Sunshine Residence',
+    roomName: 'Phòng A101 - Studio Premium',
+    authorName: 'Nguyễn Văn An',
+    contactPhone: '0901234567',
+    boardingHouseId: 'house-001',
+    roomId: 'room-001',
+    isActive: true,
+    isApproved: 1,
+    postStatus: 0,
+    createdAt: '2025-11-28T10:00:00Z',
+    imageUrls: ['/image.png']
+  },
+  {
+    id: 'post-002',
+    title: 'Phòng trọ giá rẻ quận 7 - Gần Lotte Mart',
+    description: 'Phòng trọ sạch sẽ, thoáng mát, gần siêu thị và trường học. Có chỗ để xe miễn phí.',
+    houseName: 'Nhà trọ Phú Mỹ Hưng',
+    roomName: 'Phòng B205 - Standard',
+    authorName: 'Nguyễn Văn An',
+    contactPhone: '0901234567',
+    boardingHouseId: 'house-002',
+    roomId: 'room-002',
+    isActive: true,
+    isApproved: null,
+    postStatus: 1,
+    createdAt: '2025-11-27T14:30:00Z',
+    imageUrls: ['/image.png']
+  },
+  {
+    id: 'post-003',
+    title: 'Phòng trọ mini quận Bình Thạnh - Có gác lửng',
+    description: 'Phòng trọ có gác lửng rộng rãi, phù hợp cho sinh viên hoặc người đi làm. Điện nước giá nhà nước.',
+    houseName: 'Nhà trọ Bình Thạnh Home',
+    roomName: 'Phòng C301 - Có gác',
+    authorName: 'Nguyễn Văn An',
+    contactPhone: '0901234567',
+    boardingHouseId: 'house-003',
+    roomId: 'room-003',
+    isActive: true,
+    isApproved: 1,
+    postStatus: 0,
+    createdAt: '2025-11-25T09:00:00Z',
+    imageUrls: ['/image.png']
+  },
+  {
+    id: 'post-004',
+    title: 'Phòng trọ VIP quận 3 - Ban công riêng',
+    description: 'Phòng trọ cao cấp có ban công riêng, view thành phố đẹp. Full nội thất cao cấp, máy giặt riêng.',
+    houseName: 'Nhà trọ Central Park',
+    roomName: 'Phòng D401 - VIP Suite',
+    authorName: 'Nguyễn Văn An',
+    contactPhone: '0901234567',
+    boardingHouseId: 'house-004',
+    roomId: 'room-004',
+    isActive: false,
+    isApproved: 1,
+    postStatus: 3,
+    createdAt: '2025-11-20T16:00:00Z',
+    imageUrls: ['/image.png']
+  },
+  {
+    id: 'post-005',
+    title: 'Phòng trọ bị từ chối - Thiếu hình ảnh',
+    description: 'Bài đăng này đã bị từ chối do thiếu hình ảnh minh họa.',
+    houseName: 'Nhà trọ Test',
+    roomName: 'Phòng E501',
+    authorName: 'Nguyễn Văn An',
+    contactPhone: '0901234567',
+    boardingHouseId: 'house-005',
+    roomId: 'room-005',
+    isActive: true,
+    isApproved: 0,
+    postStatus: 2,
+    createdAt: '2025-11-15T11:00:00Z',
+    imageUrls: []
+  }
+];
+// ============ END MOCK DATA ============
+
 export default function PostsPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -97,10 +182,15 @@ export default function PostsPage() {
         console.log('📋 roomId:', response[0].roomId);
       }
       
-      setPosts(response || []);
+      // ============ USE MOCK DATA IF NO REAL DATA ============
+      const dataToUse = response && response.length > 0 ? response : MOCK_POSTS;
+      setPosts(dataToUse);
+      // ============ END MOCK DATA USAGE ============
     } catch (error) {
       console.error('❌ Error loading posts:', error);
-      setPosts([]);
+      // ============ USE MOCK DATA ON ERROR ============
+      setPosts(MOCK_POSTS);
+      // ============ END MOCK DATA ON ERROR ============
     } finally {
       setLoading(false);
     }

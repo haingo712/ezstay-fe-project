@@ -210,13 +210,13 @@ export default function OwnerServicesPage() {
                       onClick={() => handleOpenEdit(service)}
                       className="px-4 py-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg text-sm font-medium transition-colors"
                     >
-                      ✏️ {t('ownerServices.list.edit')}
+                       {t('ownerServices.list.edit')}
                     </button>
                     <button
                       onClick={() => handleDelete(service.id)}
                       className="px-4 py-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg text-sm font-medium transition-colors"
                     >
-                      🗑️ {t('ownerServices.list.delete')}
+                       {t('ownerServices.list.delete')}
                     </button>
                   </div>
                 </div>
@@ -232,7 +232,7 @@ export default function OwnerServicesPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {modalMode === 'create' ? `➕ ${t('ownerServices.modal.createTitle')}` : `✏️ ${t('ownerServices.modal.editTitle')}`}
+                {modalMode === 'create' ? `➕ ${t('ownerServices.modal.createTitle')}` : ` ${t('ownerServices.modal.editTitle')}`}
               </h3>
               <button
                 onClick={() => setShowModal(false)}

@@ -199,7 +199,7 @@ class AuthService {
     
     keysToRemove.forEach(key => {
       if (localStorage.getItem(key)) {
-        console.log(`🗑️ Removing localStorage key: ${key}`);
+        console.log(` Removing localStorage key: ${key}`);
         localStorage.removeItem(key);
       }
     });
@@ -212,7 +212,7 @@ class AuthService {
       if (key.toLowerCase().includes('auth') || 
           key.toLowerCase().includes('token') || 
           key.toLowerCase().includes('user')) {
-        console.log(`🗑️ Removing additional auth key: ${key}`);
+        console.log(` Removing additional auth key: ${key}`);
         localStorage.removeItem(key);
       }
     });
@@ -305,8 +305,11 @@ class AuthService {
       // Convert role to number for consistent checking
       if (role) {
         if (typeof role === 'string') {
-          // Handle role names (Staff, Admin, Owner, etc.)
+          // Handle role names (Staff, Admin, Owner, User, etc.)
           switch (role.toLowerCase()) {
+            case 'user':
+              role = 1;
+              break;
             case 'owner':
               role = 2;
               break;
@@ -327,6 +330,9 @@ class AuthService {
         role = payload.Role || payload.userRole || payload['Role'];
         if (role && typeof role === 'string') {
           switch (role.toLowerCase()) {
+            case 'user':
+              role = 1;
+              break;
             case 'owner':
               role = 2;
               break;

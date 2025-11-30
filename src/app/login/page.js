@@ -770,7 +770,7 @@ export default function LoginPage() {
               )}
             </button>
 
-            {/* Social Login Buttons */}
+            {/* Social Login Buttons
             <div className="space-y-3">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -827,7 +827,7 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
-            </div>
+            </div> */}
 
             {/* Face Login Button */}
             <div className="relative">

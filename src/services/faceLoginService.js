@@ -104,7 +104,7 @@ const faceLoginService = {
   // Delete a registered face
   deleteFace: async (faceId) => {
     try {
-      console.log("🗑️ Deleting face...");
+      console.log(" Deleting face...");
       const response = await api.delete(`/api/FaceLogin/delete-face/${faceId}`);
       console.log("✅ Face deleted successfully:", response);
       return response;

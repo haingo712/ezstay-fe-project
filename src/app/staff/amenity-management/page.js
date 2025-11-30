@@ -474,7 +474,7 @@ export default function AmenityManagementPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                ✏️ {t('staffAmenities.modal.editTitle')}
+                 {t('staffAmenities.modal.editTitle')}
               </h2>
 
               <form onSubmit={handleUpdateAmenity} className="space-y-4">
