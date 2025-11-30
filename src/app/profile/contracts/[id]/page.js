@@ -56,14 +56,16 @@ export default function ContractDetailPage() {
     };
 
     const getStatusBadge = (status) => {
+        // Backend enum: Pending=0, Active=1, Cancelled=2, Expired=3, Evicted=4
         const statusConfig = {
-            0: { label: 'Đang hoạt động', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-            1: { label: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-            2: { label: 'Đã hết hạn', color: 'bg-red-100 text-red-800', icon: XCircle },
-            3: { label: 'Đã hủy', color: 'bg-gray-100 text-gray-800', icon: XCircle },
+            0: { label: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+            1: { label: 'Đang hoạt động', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+            2: { label: 'Đã hủy', color: 'bg-gray-100 text-gray-800', icon: XCircle },
+            3: { label: 'Đã hết hạn', color: 'bg-red-100 text-red-800', icon: XCircle },
+            4: { label: 'Bị chấm dứt', color: 'bg-red-100 text-red-800', icon: XCircle },
         };
 
-        const config = statusConfig[status] || statusConfig[1];
+        const config = statusConfig[status] || statusConfig[0];
         const Icon = config.icon;
 
         return (
@@ -313,8 +315,8 @@ export default function ContractDetailPage() {
                                                     {profile.fullName}
                                                 </p>
                                                 <span className={`text-xs px-2 py-1 rounded ${profile.isSigner
-                                                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                                        : 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300'
+                                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                                    : 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300'
                                                     }`}>
                                                     {profile.isSigner ? 'Người ký' : 'Thành viên'}
                                                 </span>
