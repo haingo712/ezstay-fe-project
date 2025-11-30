@@ -100,7 +100,7 @@ export default function UserChatsPage() {
       setSending(true);
       await chatService.sendMessage(selectedChatRoom.id, newMessage.trim(), selectedImages);
       setNewMessage('');
-      
+
       // Clear selected images
       imagePreviews.forEach(url => URL.revokeObjectURL(url));
       setSelectedImages([]);
@@ -137,7 +137,7 @@ export default function UserChatsPage() {
 
     // Add new files
     setSelectedImages(prev => [...prev, ...validFiles]);
-    
+
     // Create previews
     const newPreviews = validFiles.map(file => URL.createObjectURL(file));
     setImagePreviews(prev => [...prev, ...newPreviews]);
@@ -170,19 +170,19 @@ export default function UserChatsPage() {
   // Handle revoke message
   const handleRevokeMessage = async (messageId) => {
     closeContextMenu();
-    
+
     const confirmed = await notification.confirm(
       'Are you sure you want to revoke this message? This action cannot be undone.',
       'Revoke Message'
     );
-    
+
     if (!confirmed) return;
 
     try {
       setRevokingMessageId(messageId);
       await chatService.revokeMessage(messageId);
       notification.success('Message revoked successfully');
-      
+
       // Reload messages
       await loadMessages(selectedChatRoom.id);
     } catch (error) {
@@ -205,7 +205,7 @@ export default function UserChatsPage() {
   const handleSelectChatRoom = async (room) => {
     // Don't reload if same room is selected
     if (selectedChatRoom?.id === room.id) return;
-    
+
     setSelectedChatRoom(room);
     // Load messages for the selected room
     try {
@@ -371,21 +371,6 @@ export default function UserChatsPage() {
                         </p>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                        title={selectedChatRoom.owner?.phone || selectedChatRoom.owner?.Phone || 'No phone'}
-                      >
-                        <Phone className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                      </button>
-                      <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                        <Video className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                      </button>
-                      <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                        <MoreVertical className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                      </button>
-                    </div>
                   </div>
 
                   {/* Contact Info Bar */}
@@ -430,7 +415,7 @@ export default function UserChatsPage() {
                             key={message.id || message.Id || index}
                             className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                           >
-                            <div 
+                            <div
                               className={`flex items-end gap-2 max-w-md ${isOwn ? 'flex-row-reverse' : 'flex-row'} group`}
                               onContextMenu={(e) => handleMessageContextMenu(e, message.id || message.Id, isOwn)}
                             >
@@ -442,8 +427,8 @@ export default function UserChatsPage() {
 
                               <div
                                 className={`relative px-4 py-2 rounded-2xl ${isOwn
-                                    ? 'bg-blue-600 text-white rounded-br-none'
-                                    : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
+                                  ? 'bg-blue-600 text-white rounded-br-none'
+                                  : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
                                   } ${isRevoking ? 'opacity-50' : ''}`}
                               >
                                 {/* Message Images */}
@@ -460,12 +445,12 @@ export default function UserChatsPage() {
                                     ))}
                                   </div>
                                 )}
-                                
+
                                 {/* Message Content */}
                                 {(message.content || message.Content) && (
                                   <p className="text-sm">{message.content || message.Content}</p>
                                 )}
-                                
+
                                 {/* Time and Read Status */}
                                 <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
                                   <p className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
@@ -493,7 +478,7 @@ export default function UserChatsPage() {
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
                                 )}
-                                
+
                                 {isRevoking && (
                                   <div className="absolute inset-0 flex items-center justify-center">
                                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>

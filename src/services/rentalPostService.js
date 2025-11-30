@@ -5,14 +5,14 @@ import roomService from './roomService';
 // Helper function to normalize post data from PascalCase to camelCase
 const normalizePostData = (post) => {
   if (!post) return post;
-  
+
   console.log('🔄 Normalizing post, raw data keys:', Object.keys(post));
   console.log('🔄 Raw id field:', post.id, 'Raw Id field:', post.Id);
-  
+
   // Parse imageUrls if it's a JSON string inside an array
   let imageUrls = post.imageUrls || post.ImageUrls;
   console.log('📥 Raw imageUrls:', imageUrls);
-  
+
   if (Array.isArray(imageUrls) && imageUrls.length > 0 && typeof imageUrls[0] === 'string') {
     try {
       // Check if first item is a JSON string like: "{\"urls\":[...]}"
@@ -26,7 +26,7 @@ const normalizePostData = (post) => {
       console.log('ℹ️ imageUrls is already in correct format or not parseable');
     }
   }
-  
+
   const normalized = {
     ...post,
     id: post.id || post.Id,
@@ -48,14 +48,14 @@ const normalizePostData = (post) => {
     updatedAt: post.updatedAt || post.UpdatedAt,
     reviews: post.reviews || post.Reviews // Include reviews from backend
   };
-  
+
   console.log('✅ Normalized post id:', normalized.id, 'type:', typeof normalized.id);
   console.log('✅ Normalized reviews:', normalized.reviews);
-  
+
   if (!normalized.id) {
     console.error('❌ CRITICAL: Normalized post has no id!', post);
   }
-  
+
   return normalized;
 };
 
@@ -66,7 +66,7 @@ const enrichPostWithNames = async (post, verbose = false) => {
   try {
     // Backend already provides these fields, so we use them directly
     // Only fallback to fetching if fields are missing
-    
+
     // Check if authorName is already provided by backend
     if (!post.authorName && post.authorId) {
       if (verbose) console.log(`⚠️ AuthorName missing, fetching for ID: ${post.authorId}`);
@@ -79,14 +79,14 @@ const enrichPostWithNames = async (post, verbose = false) => {
               'Authorization': `Bearer ${token}`,
             },
           });
-          
+
           if (response.ok) {
             const authorData = await response.json();
-            post.authorName = authorData?.fullName || 
-                            authorData?.FullName || 
-                            authorData?.username || 
-                            authorData?.Username ||
-                            'Unknown Author';
+            post.authorName = authorData?.fullName ||
+              authorData?.FullName ||
+              authorData?.username ||
+              authorData?.Username ||
+              'Unknown Author';
             if (verbose) console.log(`✅ Fetched author name: "${post.authorName}"`);
           } else {
             post.authorName = 'Unknown Author';
@@ -101,7 +101,7 @@ const enrichPostWithNames = async (post, verbose = false) => {
     } else if (verbose && post.authorName) {
       console.log(`✅ AuthorName already provided by backend: "${post.authorName}"`);
     }
-    
+
     // Check if houseName is already provided by backend
     if (!post.houseName && post.boardingHouseId) {
       if (verbose) console.log(`⚠️ HouseName missing, fetching for ID: ${post.boardingHouseId}`);
@@ -116,7 +116,7 @@ const enrichPostWithNames = async (post, verbose = false) => {
     } else if (verbose && post.houseName) {
       console.log(`✅ HouseName already provided by backend: "${post.houseName}"`);
     }
-    
+
     // Check if roomName is already provided by backend
     if (!post.roomName) {
       post.roomName = 'All rooms';
@@ -124,7 +124,7 @@ const enrichPostWithNames = async (post, verbose = false) => {
     } else if (verbose) {
       console.log(`✅ RoomName already provided by backend: "${post.roomName}"`);
     }
-    
+
     return post;
   } catch (error) {
     console.error('❌ Error enriching post:', error);
@@ -136,23 +136,23 @@ export const rentalPostService = {
   // Get all posts for owner (using token authentication)
   getOwnerPosts: async () => {
     try {
-      const response = await axiosInstance.get('/api/RentalPosts/owner');
+      const response = await axiosInstance.get('/api/RentalPosts');
       let posts = response.data;
-      
+
       console.log('📋 Raw posts from backend:', posts);
-      
+
       // Normalize posts data
       if (Array.isArray(posts)) {
         posts = posts.map(normalizePostData);
-        
+
         // Enrich posts with boarding house and room names
         const enrichedPosts = await Promise.all(
           posts.map(post => enrichPostWithNames(post, true)) // verbose = true for owner posts
         );
-        
+
         return enrichedPosts;
       }
-      
+
       return posts;
     } catch (error) {
       console.error('Error fetching owner posts:', error);
@@ -168,22 +168,22 @@ export const rentalPostService = {
       formData.append('boardingHouseId', postData.boardingHouseId);
       formData.append('title', postData.title);
       formData.append('content', postData.description); // Backend uses 'content' not 'description'
-      formData.append('contactPhone', postData.contactPhone);
-      
+      formData.append('isAllRooms', postData.roomIds?.length === 0 ? 'true' : 'false');
+
       // Add multiple roomIds
       if (postData.roomIds && postData.roomIds.length > 0) {
         postData.roomIds.forEach(roomId => {
           formData.append('roomId', roomId);
         });
       }
-      
+
       // Add multiple images
       if (postData.images && postData.images.length > 0) {
         postData.images.forEach(image => {
           formData.append('images', image);
         });
       }
-      
+
       console.log('📤 Creating post with FormData');
       const response = await axiosInstance.post('/api/RentalPosts', formData, {
         headers: {
@@ -205,8 +205,7 @@ export const rentalPostService = {
     try {
       const payload = {
         title: postData.title,
-        content: postData.description, // Backend uses 'content'
-        contactPhone: postData.contactPhone
+        content: postData.description // Backend uses 'content'
       };
       const response = await axiosInstance.put(`/api/RentalPosts/${postId}`, payload);
       return normalizePostData(response.data);
@@ -231,19 +230,19 @@ export const rentalPostService = {
     try {
       const response = await axiosInstance.get('/api/RentalPosts');
       let posts = response.data;
-      
+
       // Normalize and enrich posts data
       if (Array.isArray(posts)) {
         posts = posts.map(normalizePostData);
-        
+
         // Enrich posts with boarding house and room names
         const enrichedPosts = await Promise.all(
           posts.map(post => enrichPostWithNames(post, false)) // verbose = false for public posts
         );
-        
+
         return enrichedPosts;
       }
-      
+
       return posts;
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -256,7 +255,7 @@ export const rentalPostService = {
     try {
       const response = await axiosInstance.get(`/api/RentalPosts/${postId}`);
       console.log('📥 Raw getById response:', response.data);
-      
+
       // Check if response is wrapped in ApiResponse structure
       let postData = response.data;
       if (postData && postData.data && postData.isSuccess !== undefined) {
@@ -264,12 +263,12 @@ export const rentalPostService = {
         postData = postData.data;
         console.log('📥 Unwrapped post data:', postData);
       }
-      
+
       let post = normalizePostData(postData);
-      
+
       // Enrich with boarding house and room names
       post = await enrichPostWithNames(post, false);
-      
+
       return post;
     } catch (error) {
       console.error('Error fetching post:', error);
