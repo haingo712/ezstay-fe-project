@@ -8,6 +8,36 @@ import utilityBillService from '@/services/utilityBillService';
 import paymentService from '@/services/paymentService';
 import { apiFetch } from '@/utils/api';
 
+// Helper function to get bill amount (handles different API field names)
+const getBillAmount = (bill) => {
+    return bill?.totalAmount || bill?.TotalAmount || bill?.amount || bill?.Amount || 0;
+};
+
+// Helper function to get bill status
+const getBillStatus = (bill) => {
+    return bill?.status || bill?.Status || 'Unknown';
+};
+
+// Format currency
+const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+    }).format(amount || 0);
+};
+
+// Format date
+const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};
+
 export default function BillPaymentPage() {
     const { user } = useAuth();
     const router = useRouter();
@@ -17,13 +47,13 @@ export default function BillPaymentPage() {
     const [loading, setLoading] = useState(true);
     const [bill, setBill] = useState(null);
     const [error, setError] = useState(null);
-    const [paymentMethod, setPaymentMethod] = useState('Online'); // Online or Offline
     const [showQR, setShowQR] = useState(false);
     const [qrData, setQrData] = useState(null);
     const [processing, setProcessing] = useState(false);
     const [bankAccounts, setBankAccounts] = useState([]);
     const [selectedBankAccount, setSelectedBankAccount] = useState(null);
     const [loadingBankAccounts, setLoadingBankAccounts] = useState(false);
+    const [paymentSuccess, setPaymentSuccess] = useState(false);
 
     useEffect(() => {
         if (billId) {
@@ -35,7 +65,6 @@ export default function BillPaymentPage() {
     useEffect(() => {
         if (bill) {
             console.log('📋 Bill loaded:', bill);
-            // Support both lowercase and uppercase field names
             const ownerId = bill.ownerId || bill.OwnerId;
             console.log('👤 Owner ID:', ownerId);
 
@@ -53,10 +82,11 @@ export default function BillPaymentPage() {
             setError(null);
 
             const response = await utilityBillService.getBillById(billId);
+            console.log('📄 Bill details:', response);
             setBill(response);
         } catch (err) {
             console.error('Error loading bill:', err);
-            setError('Không thể tải thông tin hóa đơn. Vui lòng thử lại.');
+            setError('Unable to load bill information. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -66,24 +96,38 @@ export default function BillPaymentPage() {
         try {
             setLoadingBankAccounts(true);
 
-            // Support both lowercase and uppercase field names
             const ownerId = bill.ownerId || bill.OwnerId;
+
             console.log('🏦 Loading bank accounts for owner:', ownerId);
-            console.log('🏦 Full bill data:', bill);
 
-            // Gọi endpoint mới với amount để backend generate QR có số tiền
-            const amount = bill.amount;
-            const description = `Thanh toán hóa đơn ${billId.substring(0, 8).toUpperCase()}`;
-            const endpoint = `/api/BankAccount/owner/${ownerId}/bankAccountActive?amount=${amount}&description=${encodeURIComponent(description)}`;
-            console.log('🏦 API endpoint:', endpoint);
+            // Use external payment API: GET /api/Bank/bank-account/owner/{ownerId}/active
+            const externalApiUrl = `https://payment-api-r4zy.onrender.com/api/Bank/bank-account/owner/${ownerId}/active`;
+            console.log('🏦 API endpoint:', externalApiUrl);
 
-            const data = await apiFetch(endpoint, {
-                method: 'GET'
+            // Get auth token
+            const token = localStorage.getItem('authToken') ||
+                localStorage.getItem('ezstay_token') ||
+                localStorage.getItem('token');
+
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(externalApiUrl, {
+                method: 'GET',
+                headers
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
             console.log('🏦 Bank accounts data:', data);
 
-            // Handle different response formats (OData returns data in 'value' property)
             const accounts = data.value || data.data || data || [];
             console.log('🏦 Parsed accounts:', accounts);
 
@@ -93,101 +137,146 @@ export default function BillPaymentPage() {
             if (accounts.length > 0) {
                 setSelectedBankAccount(accounts[0]);
                 console.log('🏦 Auto-selected account:', accounts[0]);
-            } else {
-                console.warn('⚠️ No bank accounts found for owner');
             }
         } catch (err) {
             console.error('❌ Error loading bank accounts:', err);
-            console.error('❌ Error details:', err.message);
         } finally {
             setLoadingBankAccounts(false);
         }
     };
 
-    const handleOnlinePayment = async () => {
+    const handlePayment = async () => {
         try {
             setProcessing(true);
             setError(null);
 
             if (!selectedBankAccount) {
-                setError('Vui lòng chọn tài khoản ngân hàng');
+                setError('Please select a bank account');
                 setProcessing(false);
                 return;
             }
 
-            // Tạo QR data từ bank account đã chọn
+            // Create QR data from selected bank account
             const qrInfo = {
                 billId: billId,
-                amount: bill.amount,
+                amount: getBillAmount(bill),
                 bankName: selectedBankAccount.bankName,
                 accountNumber: selectedBankAccount.accountNumber,
-                accountName: selectedBankAccount.accountHolderName || 'Chủ trọ',
-                transactionContent: `THANHTOAN BILL ${billId.substring(0, 8).toUpperCase()}`,
+                accountName: selectedBankAccount.accountHolderName || selectedBankAccount.accountName || 'Owner',
+                transactionContent: `BILL ${billId.substring(0, 8).toUpperCase()}`,
                 qrCodeUrl: selectedBankAccount.imageQR
             };
 
             setQrData(qrInfo);
             setShowQR(true);
+
+            // Start polling for payment status
+            startPaymentPolling();
         } catch (err) {
-            console.error('Error getting QR:', err);
-            setError('Có lỗi xảy ra. Vui lòng thử lại.');
+            console.error('Error processing payment:', err);
+            setError('An error occurred. Please try again.');
         } finally {
             setProcessing(false);
         }
     };
 
-    const handleOfflinePayment = async () => {
-        try {
-            setProcessing(true);
-            setError(null);
+    // Polling for payment status
+    const startPaymentPolling = () => {
+        const pollInterval = setInterval(async () => {
+            try {
+                // Use external payment API
+                const token = localStorage.getItem('authToken') ||
+                    localStorage.getItem('ezstay_token') ||
+                    localStorage.getItem('token');
 
-            // Gọi API để tạo payment offline
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Payment/create-offline/${billId}`, {
+                const headers = {
+                    'Content-Type': 'application/json',
+                };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(`https://payment-api-r4zy.onrender.com/api/Payment/check-payment/${billId}`, {
+                    method: 'GET',
+                    headers
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('💳 Payment status check:', data);
+
+                    if (data?.isPaid) {
+                        clearInterval(pollInterval);
+                        setPaymentSuccess(true);
+                    }
+                }
+            } catch (err) {
+                console.error('Error checking payment status:', err);
+            }
+        }, 5000); // Check every 5 seconds
+
+        // Stop polling after 10 minutes
+        setTimeout(() => {
+            clearInterval(pollInterval);
+        }, 600000);
+
+        return () => clearInterval(pollInterval);
+    };
+
+    // FLOW 2: Manual check payment - COMMENTED OUT
+    // Uncomment khi cần backup cho webhook
+    /*
+    const handleCheckPayment = async () => {
+        try {
+            const token = localStorage.getItem('authToken') ||
+                localStorage.getItem('ezstay_token') ||
+                localStorage.getItem('token');
+
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const response = await fetch(`https://payment-api-r4zy.onrender.com/api/Payment/check-payment-manual/${billId}`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    notes: 'Thanh toán tiền mặt'
-                })
+                headers
             });
 
-            if (!response.ok) {
-                throw new Error('Không thể tạo thanh toán offline');
-            }
-
-            const data = await response.json();
-
-            if (data.isSuccess) {
-                alert('Đã tạo yêu cầu thanh toán tiền mặt. Vui lòng liên hệ chủ trọ để xác nhận.');
-                router.push('/bills');
-            } else {
-                setError(data.message || 'Không thể tạo thanh toán offline');
+            if (response.ok) {
+                const data = await response.json();
+                if (data?.isSuccess || data?.isPaid || data?.data?.isPaid) {
+                    setPaymentSuccess(true);
+                } else {
+                    setError(data?.message || 'Payment not yet confirmed.');
+                }
             }
         } catch (err) {
-            console.error('Error creating offline payment:', err);
-            setError('Có lỗi xảy ra. Vui lòng thử lại.');
-        } finally {
-            setProcessing(false);
+            console.error('Error checking payment:', err);
         }
     };
+    */
 
-    const handlePayment = () => {
-        if (paymentMethod === 'Online') {
-            handleOnlinePayment();
-        } else {
-            handleOfflinePayment();
-        }
+    // Status badge component
+    const StatusBadge = ({ status }) => {
+        const statusConfig = {
+            'Unpaid': { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Unpaid' },
+            'Paid': { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Paid' },
+            'Overdue': { bg: 'bg-red-100', text: 'text-red-700', label: 'Overdue' },
+            'Cancelled': { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Cancelled' }
+        };
+        const config = statusConfig[status] || { bg: 'bg-gray-100', text: 'text-gray-700', label: status };
+        return (
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.text}`}>
+                {config.label}
+            </span>
+        );
     };
 
     if (loading) {
         return (
             <ProtectedRoute allowedRoles={['User']}>
-                <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
                     <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                        <p className="mt-4 text-gray-600">Đang tải thông tin...</p>
+                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto"></div>
+                        <p className="mt-4 text-gray-600 font-medium">Loading payment details...</p>
                     </div>
                 </div>
             </ProtectedRoute>
@@ -197,14 +286,20 @@ export default function BillPaymentPage() {
     if (!bill) {
         return (
             <ProtectedRoute allowedRoles={['User']}>
-                <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                    <div className="text-center">
-                        <p className="text-red-600">Không tìm thấy hóa đơn</p>
+                <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+                    <div className="text-center bg-white rounded-2xl shadow-xl p-8 max-w-md">
+                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </div>
+                        <h2 className="text-xl font-bold text-gray-900 mb-2">Bill Not Found</h2>
+                        <p className="text-gray-600 mb-6">The bill you're looking for doesn't exist or has been removed.</p>
                         <button
                             onClick={() => router.push('/bills')}
-                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
                         >
-                            Quay lại danh sách
+                            Back to Bills
                         </button>
                     </div>
                 </div>
@@ -214,304 +309,436 @@ export default function BillPaymentPage() {
 
     return (
         <ProtectedRoute allowedRoles={['User']}>
-            <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-3xl mx-auto">
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8 px-4">
+                <div className="max-w-4xl mx-auto">
                     {/* Header */}
                     <div className="mb-8">
                         <button
                             onClick={() => router.push('/bills')}
-                            className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
+                            className="flex items-center text-gray-600 hover:text-blue-600 mb-4 transition-colors group"
                         >
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
-                            Quay lại
+                            Back to Bills
                         </button>
-                        <h1 className="text-3xl font-bold text-gray-900">💳 Thanh toán hóa đơn</h1>
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-900">Bill Payment</h1>
+                                <p className="text-gray-500">Complete your payment securely</p>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Error Message */}
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-6">
-                            <div className="flex items-center">
-                                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                </svg>
-                                {error}
-                            </div>
+                        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 mb-6 flex items-center gap-3">
+                            <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                            <span>{error}</span>
                         </div>
                     )}
 
-                    {/* Bill Information */}
-                    <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">Thông tin hóa đơn</h2>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <p className="text-sm text-gray-600">Mã hóa đơn</p>
-                                <p className="font-medium">{bill.id.substring(0, 8).toUpperCase()}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-600">Trạng thái</p>
-                                <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${utilityBillService.getStatusLabel(bill.status).bgColor} ${utilityBillService.getStatusLabel(bill.status).textColor}`}>
-                                    {utilityBillService.getStatusLabel(bill.status).label}
-                                </span>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-600">Ngày tạo</p>
-                                <p className="font-medium">{utilityBillService.formatDate(bill.createdAt)}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-600">Số tiền</p>
-                                <p className="text-2xl font-bold text-blue-600">{utilityBillService.formatCurrency(bill.amount)}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Bank Accounts List */}
-                    {!showQR && paymentMethod === 'Online' && (
-                        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xl font-bold text-gray-900">
-                                    🏦 Chọn tài khoản ngân hàng
-                                </h2>
-                                {bankAccounts.length > 0 && (
-                                    <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">
-                                        {bankAccounts.length} tài khoản
-                                    </span>
-                                )}
-                            </div>
-
-                            {loadingBankAccounts ? (
-                                <div className="text-center py-8">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                                    <p className="mt-2 text-gray-600">Đang tải danh sách tài khoản...</p>
-                                </div>
-                            ) : bankAccounts.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <p className="mt-2 text-gray-600 font-medium">Chủ trọ chưa thiết lập tài khoản ngân hàng</p>
-                                    <p className="text-sm text-gray-500 mt-1">Vui lòng chọn phương thức thanh toán khác</p>
-                                </div>
-                            ) : (
-                                <div>
-                                    <p className="text-sm text-gray-600 mb-4">
-                                        💡 Chọn một tài khoản để xem mã QR thanh toán
-                                    </p>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {bankAccounts.map((account) => (
-                                            <div
-                                                key={account.id}
-                                                onClick={() => setSelectedBankAccount(account)}
-                                                className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${selectedBankAccount?.id === account.id
-                                                    ? 'border-blue-600 bg-blue-50'
-                                                    : 'border-gray-300 hover:border-blue-300'
-                                                    }`}
-                                            >
-                                                <div className="flex items-start">
-                                                    <input
-                                                        type="radio"
-                                                        checked={selectedBankAccount?.id === account.id}
-                                                        onChange={() => setSelectedBankAccount(account)}
-                                                        className="w-4 h-4 text-blue-600 mt-1"
-                                                    />
-                                                    <div className="ml-3 flex-1">
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <span className="font-semibold text-gray-900">
-                                                                {account.bankName || 'Ngân hàng'}
-                                                            </span>
-                                                            {account.isDefault && (
-                                                                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                                                                    Mặc định
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-sm text-gray-600">
-                                                            STK: {account.accountNumber}
-                                                        </p>
-                                                        {account.description && (
-                                                            <p className="text-xs text-gray-500 mt-1">
-                                                                {account.description}
-                                                            </p>
-                                                        )}
-                                                        {account.imageQR && (
-                                                            <div className="mt-3 p-2 bg-white border-2 border-gray-200 rounded-lg inline-block">
-                                                                <img
-                                                                    src={account.imageQR}
-                                                                    alt="QR Code Preview"
-                                                                    className="w-24 h-24 object-contain"
-                                                                />
-                                                                <p className="text-xs text-center text-gray-500 mt-1">
-                                                                    Click để chọn
-                                                                </p>
-                                                            </div>
-                                                        )}
-                                                    </div>
+                    {!showQR ? (
+                        <div className="grid lg:grid-cols-3 gap-6">
+                            {/* Left Column - Bill Details */}
+                            <div className="lg:col-span-2 space-y-6">
+                                {/* Bill Header Card */}
+                                <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                                    <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 p-6">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
+                                                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <p className="text-white/70 text-sm">Bill ID</p>
+                                                    <p className="text-white text-xl font-bold font-mono">
+                                                        #{(bill.id || bill.Id || '').toString().substring(0, 8).toUpperCase()}
+                                                    </p>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                                            <StatusBadge status={getBillStatus(bill)} />
+                                        </div>
 
-                    {/* Payment Method Selection */}
-                    {!showQR && (
-                        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4">Chọn phương thức thanh toán</h2>
-
-                            <div className="space-y-4">
-                                {/* Online Payment */}
-                                <div
-                                    onClick={() => setPaymentMethod('Online')}
-                                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${paymentMethod === 'Online'
-                                        ? 'border-blue-600 bg-blue-50'
-                                        : 'border-gray-300 hover:border-blue-300'
-                                        }`}
-                                >
-                                    <div className="flex items-center">
-                                        <input
-                                            type="radio"
-                                            checked={paymentMethod === 'Online'}
-                                            onChange={() => setPaymentMethod('Online')}
-                                            className="w-4 h-4 text-blue-600"
-                                        />
-                                        <div className="ml-3 flex-1">
-                                            <div className="flex items-center">
-                                                <svg className="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                                                </svg>
-                                                <span className="font-semibold text-gray-900">Chuyển khoản (QR Code)</span>
+                                        <div className="mt-6 grid grid-cols-3 gap-4">
+                                            <div className="bg-white/10 backdrop-blur rounded-xl p-3">
+                                                <p className="text-white/70 text-xs">Room</p>
+                                                <p className="text-white font-semibold">{bill.roomName || bill.RoomName || '-'}</p>
                                             </div>
-                                            <p className="text-sm text-gray-600 mt-1">Thanh toán nhanh bằng QR Code qua ứng dụng ngân hàng</p>
+                                            <div className="bg-white/10 backdrop-blur rounded-xl p-3">
+                                                <p className="text-white/70 text-xs">House</p>
+                                                <p className="text-white font-semibold truncate">{bill.houseName || bill.HouseName || '-'}</p>
+                                            </div>
+                                            <div className="bg-white/10 backdrop-blur rounded-xl p-3">
+                                                <p className="text-white/70 text-xs">Created</p>
+                                                <p className="text-white font-semibold text-sm">{formatDate(bill.createdAt || bill.CreatedAt)}</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Offline Payment */}
-                                <div
-                                    onClick={() => setPaymentMethod('Offline')}
-                                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${paymentMethod === 'Offline'
-                                        ? 'border-blue-600 bg-blue-50'
-                                        : 'border-gray-300 hover:border-blue-300'
-                                        }`}
-                                >
-                                    <div className="flex items-center">
-                                        <input
-                                            type="radio"
-                                            checked={paymentMethod === 'Offline'}
-                                            onChange={() => setPaymentMethod('Offline')}
-                                            className="w-4 h-4 text-blue-600"
-                                        />
-                                        <div className="ml-3 flex-1">
-                                            <div className="flex items-center">
-                                                <svg className="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                                </svg>
-                                                <span className="font-semibold text-gray-900">Tiền mặt</span>
-                                            </div>
-                                            <p className="text-sm text-gray-600 mt-1">Thanh toán trực tiếp cho chủ trọ</p>
+                                {/* Charge Details Card */}
+                                <div className="bg-white rounded-2xl shadow-lg p-6">
+                                    <h3 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
+                                        <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                            <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                            </svg>
                                         </div>
+                                        Charge Details
+                                    </h3>
+
+                                    <div className="space-y-4">
+                                        {/* Room Price */}
+                                        {(bill.roomPrice || bill.RoomPrice) > 0 && (
+                                            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl group hover:shadow-md transition-all">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                                                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-gray-900">Room Rent</p>
+                                                        <p className="text-sm text-gray-500">Monthly rental fee</p>
+                                                    </div>
+                                                </div>
+                                                <p className="text-xl font-bold text-indigo-600">{formatCurrency(bill.roomPrice || bill.RoomPrice)}</p>
+                                            </div>
+                                        )}
+
+                                        {/* Details from API */}
+                                        {(bill.details || bill.Details || []).map((detail, index) => {
+                                            const type = detail.type || detail.Type;
+
+                                            if (type === 'Electric') {
+                                                return (
+                                                    <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl group hover:shadow-md transition-all">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
+                                                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                                </svg>
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-semibold text-gray-900">Electricity</p>
+                                                                <p className="text-sm text-gray-500">
+                                                                    {detail.previousIndex || detail.PreviousIndex} → {detail.currentIndex || detail.CurrentIndex} kWh
+                                                                    <span className="text-amber-600 ml-1">
+                                                                        ({detail.consumption || detail.Consumption} × {formatCurrency(detail.unitPrice || detail.UnitPrice)})
+                                                                    </span>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-xl font-bold text-amber-600">{formatCurrency(detail.total || detail.Total)}</p>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (type === 'Water') {
+                                                return (
+                                                    <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl group hover:shadow-md transition-all">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-12 h-12 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                                                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                                                </svg>
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-semibold text-gray-900">Water</p>
+                                                                <p className="text-sm text-gray-500">
+                                                                    {detail.previousIndex || detail.PreviousIndex} → {detail.currentIndex || detail.CurrentIndex} m³
+                                                                    <span className="text-cyan-600 ml-1">
+                                                                        ({detail.consumption || detail.Consumption} × {formatCurrency(detail.unitPrice || detail.UnitPrice)})
+                                                                    </span>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-xl font-bold text-cyan-600">{formatCurrency(detail.total || detail.Total)}</p>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (type === 'Service') {
+                                                return (
+                                                    <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl group hover:shadow-md transition-all">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-12 h-12 bg-gradient-to-br from-violet-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+                                                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                                                </svg>
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-semibold text-gray-900">{detail.serviceName || detail.ServiceName || 'Service'}</p>
+                                                                <p className="text-sm text-gray-500">Additional service</p>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-xl font-bold text-violet-600">{formatCurrency(detail.servicePrice || detail.ServicePrice || detail.total || detail.Total)}</p>
+                                                    </div>
+                                                );
+                                            }
+
+                                            return null;
+                                        })}
+
+                                        {/* No details message */}
+                                        {(!bill.details && !bill.Details) || (bill.details || bill.Details || []).length === 0 ? (
+                                            <div className="text-center py-8 text-gray-400">
+                                                <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                <p>No detailed breakdown available</p>
+                                            </div>
+                                        ) : null}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Payment Button */}
-                            <button
-                                onClick={handlePayment}
-                                disabled={processing || (paymentMethod === 'Online' && !selectedBankAccount)}
-                                className={`w-full mt-6 px-6 py-3 rounded-lg font-semibold text-white transition-all ${processing || (paymentMethod === 'Online' && !selectedBankAccount)
-                                    ? 'bg-gray-400 cursor-not-allowed'
-                                    : 'bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl'
-                                    }`}
-                            >
-                                {processing ? (
-                                    <span className="flex items-center justify-center">
-                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Đang xử lý...
-                                    </span>
-                                ) : paymentMethod === 'Online' && !selectedBankAccount ? (
-                                    'Vui lòng chọn tài khoản ngân hàng'
-                                ) : (
-                                    `Thanh toán ${utilityBillService.formatCurrency(bill.amount)}`
-                                )}
-                            </button>
+                            {/* Right Column - Payment */}
+                            <div className="lg:col-span-1">
+                                <div className="bg-white rounded-2xl shadow-lg overflow-hidden sticky top-4">
+                                    {/* Total Amount Header */}
+                                    <div className="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-6 text-center">
+                                        <p className="text-emerald-100 text-sm font-medium mb-1">Total Amount</p>
+                                        <p className="text-4xl font-extrabold text-white mb-1">{formatCurrency(getBillAmount(bill))}</p>
+                                        <p className="text-emerald-100/80 text-xs">Due for payment</p>
+                                    </div>
+
+                                    {/* Bank Selection */}
+                                    <div className="p-5">
+                                        <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                            </svg>
+                                            Select Bank Account
+                                        </h3>
+
+                                        {loadingBankAccounts ? (
+                                            <div className="text-center py-8">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-4 border-emerald-500 border-t-transparent mx-auto"></div>
+                                                <p className="mt-3 text-sm text-gray-500">Loading...</p>
+                                            </div>
+                                        ) : bankAccounts.length === 0 ? (
+                                            <div className="text-center py-8">
+                                                <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                                    <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </div>
+                                                <p className="font-medium text-gray-900 text-sm">No Bank Available</p>
+                                                <p className="text-xs text-gray-500 mt-1">Contact owner directly</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {bankAccounts.map((account) => (
+                                                    <div
+                                                        key={account.id}
+                                                        onClick={() => setSelectedBankAccount(account)}
+                                                        className={`relative border-2 rounded-xl p-4 cursor-pointer transition-all ${selectedBankAccount?.id === account.id
+                                                            ? 'border-emerald-500 bg-emerald-50 shadow-lg shadow-emerald-500/20'
+                                                            : 'border-gray-100 hover:border-emerald-200 hover:bg-gray-50'
+                                                            }`}
+                                                    >
+                                                        {selectedBankAccount?.id === account.id && (
+                                                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                                                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                </svg>
+                                                            </div>
+                                                        )}
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${selectedBankAccount?.id === account.id
+                                                                ? 'bg-emerald-500'
+                                                                : 'bg-gradient-to-br from-gray-100 to-gray-200'
+                                                                }`}>
+                                                                <svg className={`w-5 h-5 ${selectedBankAccount?.id === account.id ? 'text-white' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                                </svg>
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-semibold text-gray-900 text-sm">{account.bankName || 'Bank'}</p>
+                                                                <p className="text-xs text-gray-500 font-mono">{account.accountNumber}</p>
+                                                            </div>
+                                                        </div>
+                                                        {account.accountHolderName || account.accountName ? (
+                                                            <p className="text-xs text-gray-600 mt-2 pl-13 truncate">{account.accountHolderName || account.accountName}</p>
+                                                        ) : null}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Payment Button */}
+                                        {bankAccounts.length > 0 && (
+                                            <button
+                                                onClick={handlePayment}
+                                                disabled={processing || !selectedBankAccount}
+                                                className={`w-full mt-5 px-6 py-4 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-3 ${processing || !selectedBankAccount
+                                                    ? 'bg-gray-300 cursor-not-allowed'
+                                                    : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5 active:translate-y-0'
+                                                    }`}
+                                            >
+                                                {processing ? (
+                                                    <>
+                                                        <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                        </svg>
+                                                        Processing...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                                                        </svg>
+                                                        Pay Now
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
+
+                                        {/* Secure Payment Notice */}
+                                        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                            </svg>
+                                            Secure payment via QR code
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    )}
-
-                    {/* QR Code Display */}
-                    {showQR && qrData && (
-                        <div className="bg-white rounded-lg shadow-lg p-6">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4 text-center">Quét mã QR để thanh toán</h2>
-
-                            <div className="flex flex-col items-center">
-                                {/* QR Code Image */}
-                                <div className="bg-white p-4 rounded-lg border-2 border-gray-200 mb-4">
-                                    <img
-                                        src={qrData.qrCodeUrl}
-                                        alt="QR Code"
-                                        className="w-64 h-64"
-                                    />
+                    ) : paymentSuccess ? (
+                        /* Payment Success */
+                        <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-md mx-auto text-center">
+                            <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-8">
+                                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                                    <svg className="w-10 h-10 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
                                 </div>
-
-                                {/* Bank Information */}
-                                <div className="w-full max-w-md space-y-3 mb-6">
-                                    <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                                        <span className="text-gray-600">Ngân hàng:</span>
-                                        <span className="font-semibold">{qrData.bankName}</span>
-                                    </div>
-                                    <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                                        <span className="text-gray-600">Số tài khoản:</span>
-                                        <span className="font-semibold">{qrData.accountNumber}</span>
-                                    </div>
-                                    <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                                        <span className="text-gray-600">Chủ tài khoản:</span>
-                                        <span className="font-semibold">{qrData.accountName}</span>
-                                    </div>
-                                    <div className="flex justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                        <span className="text-gray-600">Số tiền:</span>
-                                        <span className="font-bold text-blue-600 text-lg">{utilityBillService.formatCurrency(qrData.amount)}</span>
-                                    </div>
-                                    <div className="flex justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                                        <span className="text-gray-600">Nội dung:</span>
-                                        <span className="font-semibold text-yellow-800">{qrData.transactionContent}</span>
-                                    </div>
+                                <h2 className="text-2xl font-bold text-white mb-2">Payment Successful!</h2>
+                                <p className="text-emerald-100">Your payment has been confirmed</p>
+                            </div>
+                            <div className="p-6">
+                                <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                                    <p className="text-sm text-gray-500 mb-1">Amount Paid</p>
+                                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(getBillAmount(bill))}</p>
                                 </div>
+                                <button
+                                    onClick={() => router.push('/bills')}
+                                    className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-colors"
+                                >
+                                    Back to Bills
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        /* QR Code Display */
+                        <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-2xl mx-auto">
+                            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 text-center">
+                                <h2 className="text-xl font-bold text-white">Scan QR Code to Pay</h2>
+                                <p className="text-blue-100 text-sm mt-1">Use your banking app to scan this QR code</p>
+                            </div>
 
-                                {/* Instructions */}
-                                <div className="w-full max-w-md bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                                    <p className="text-sm text-blue-800 font-semibold mb-2">📱 Hướng dẫn thanh toán:</p>
-                                    <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
-                                        <li>Mở ứng dụng ngân hàng trên điện thoại</li>
-                                        <li>Chọn chức năng quét mã QR</li>
-                                        <li>Quét mã QR ở trên</li>
-                                        <li>Kiểm tra thông tin và xác nhận thanh toán</li>
-                                        <li>Hệ thống sẽ tự động xác nhận sau khi nhận được tiền</li>
-                                    </ol>
-                                </div>
+                            <div className="p-8">
+                                <div className="flex flex-col items-center">
+                                    {/* QR Code */}
+                                    <div className="bg-white p-4 rounded-2xl border-4 border-gray-100 shadow-inner mb-6">
+                                        {qrData?.qrCodeUrl ? (
+                                            <img
+                                                src={qrData.qrCodeUrl}
+                                                alt="Payment QR Code"
+                                                className="w-64 h-64 object-contain"
+                                            />
+                                        ) : (
+                                            <div className="w-64 h-64 bg-gray-100 flex items-center justify-center rounded-lg">
+                                                <p className="text-gray-500">QR Code not available</p>
+                                            </div>
+                                        )}
+                                    </div>
 
-                                {/* Action Buttons */}
-                                <div className="flex space-x-4">
-                                    <button
-                                        onClick={() => {
-                                            setShowQR(false);
-                                            setQrData(null);
-                                        }}
-                                        className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                                    >
-                                        Chọn phương thức khác
-                                    </button>
-                                    <button
-                                        onClick={() => router.push('/bills')}
-                                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                    >
-                                        Quay lại danh sách
-                                    </button>
+                                    {/* Amount Display */}
+                                    <div className="w-full max-w-sm bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl p-4 text-center mb-6">
+                                        <p className="text-emerald-100 text-sm">Amount to Pay</p>
+                                        <p className="text-3xl font-bold text-white">{formatCurrency(qrData?.amount)}</p>
+                                    </div>
+
+                                    {/* Bank Details */}
+                                    <div className="w-full max-w-sm space-y-3 mb-6">
+                                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                                            <span className="text-gray-500 text-sm">Bank</span>
+                                            <span className="font-semibold text-gray-900">{qrData?.bankName}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                                            <span className="text-gray-500 text-sm">Account Number</span>
+                                            <span className="font-mono font-medium text-gray-900">{qrData?.accountNumber}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                                            <span className="text-gray-500 text-sm">Account Name</span>
+                                            <span className="font-medium text-gray-900">{qrData?.accountName}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                            <span className="text-amber-700 text-sm">Reference</span>
+                                            <span className="font-mono font-bold text-amber-800">{qrData?.transactionContent}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Instructions */}
+                                    <div className="w-full max-w-sm bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                                        <p className="text-sm text-blue-800 font-semibold mb-2 flex items-center gap-2">
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                            </svg>
+                                            Payment Instructions
+                                        </p>
+                                        <ol className="text-sm text-blue-700 space-y-1.5 list-decimal list-inside">
+                                            <li>Open your mobile banking app</li>
+                                            <li>Select QR code scanning feature</li>
+                                            <li>Scan the QR code above</li>
+                                            <li>Verify the amount and confirm payment</li>
+                                            <li>Payment will be confirmed automatically</li>
+                                        </ol>
+                                    </div>
+
+                                    {/* Auto-checking Status */}
+                                    <div className="w-full max-w-sm bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-emerald-600 border-t-transparent"></div>
+                                            <div>
+                                                <p className="text-emerald-800 font-medium text-sm">Waiting for payment...</p>
+                                                <p className="text-emerald-600 text-xs">Auto-checking every 5 seconds</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="flex gap-4 w-full max-w-sm">
+                                        <button
+                                            onClick={() => {
+                                                setShowQR(false);
+                                                setQrData(null);
+                                            }}
+                                            className="flex-1 px-6 py-3 border-2 border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                                        >
+                                            Back
+                                        </button>
+                                        <button
+                                            onClick={() => router.push('/bills')}
+                                            className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-colors"
+                                        >
+                                            Done
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

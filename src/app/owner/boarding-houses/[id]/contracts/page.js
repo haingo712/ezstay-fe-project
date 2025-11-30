@@ -2441,7 +2441,15 @@ export default function ContractsManagementPage() {
                     {/* Utility Reading Management - Only for Active contracts */}
                     {contract.contractStatus === 'Active' && (
                       <button
-                        onClick={() => handleOpenUtilityModal(contract)}
+                        onClick={() => {
+                          const contractId = contract.id || contract.Id;
+                          console.log('🔗 Navigating to utilities page:', {
+                            boardingHouseId: houseId,
+                            contractId: contractId,
+                            url: `/owner/boarding-houses/${houseId}/contracts/${contractId}/utilities`
+                          });
+                          router.push(`/owner/boarding-houses/${houseId}/contracts/${contractId}/utilities`);
+                        }}
                         className="px-3 py-1 text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-200 text-sm font-medium"
                         title="Manage electricity and water readings"
                       >
@@ -3883,29 +3891,17 @@ export default function ContractsManagementPage() {
                       </div>
                     </div>
 
-                    {/* Information Box
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    {/* Information Box */}
+                    {/* <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                       <div className="flex items-start">
                         <div className="flex-shrink-0">
                           <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                           </svg>
                         </div>
-                        <div className="ml-3">
-                          <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                            Utility Reading Information
-                          </h3>
-                          <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
-                            <ul className="list-disc list-inside space-y-1">
-                              <li>Current Index is required for both electricity and water</li>
-                              <li>Price is optional - if not set, default rates will be used</li>
-                              <li>Notes are optional and limited to 100 characters</li>
-                              <li>These readings will be used as the starting point for billing calculations</li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    </div> */}
+                    
+                      </div> */}
+                    {/* </div> */}
                   </div>
 
                   {/* Step 3 Actions */}
@@ -4069,103 +4065,82 @@ export default function ContractsManagementPage() {
             </div>
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* Signature Setting Modal */}
-      {showSignatureModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              {/* Modal Header */}
-              <div className="flex items-center justify-between mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {signatureStep === 1 ? 'Sign Contract - Create Signature' : 'Sign Contract - OTP Verification'}
-                </h2>
-                <button
-                  onClick={handleCloseSignatureModal}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl"
-                >
-                  ✕
-                </button>
-              </div>
+      {
+        showSignatureModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                {/* Modal Header */}
+                <div className="flex items-center justify-between mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {signatureStep === 1 ? 'Sign Contract - Create Signature' : 'Sign Contract - OTP Verification'}
+                  </h2>
+                  <button
+                    onClick={handleCloseSignatureModal}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl"
+                  >
+                    ✕
+                  </button>
+                </div>
 
-              {/* Step Indicator */}
-              <div className="mb-6 flex items-center justify-center">
-                <div className="flex items-center">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full ${signatureStep === 1 ? 'bg-blue-600 text-white' : 'bg-green-500 text-white'}`}>
-                    {signatureStep === 1 ? '1' : '✓'}
-                  </div>
-                  <div className={`w-24 h-1 ${signatureStep === 2 ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full ${signatureStep === 2 ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-500'}`}>
-                    2
+                {/* Step Indicator */}
+                <div className="mb-6 flex items-center justify-center">
+                  <div className="flex items-center">
+                    <div className={`flex items-center justify-center w-10 h-10 rounded-full ${signatureStep === 1 ? 'bg-blue-600 text-white' : 'bg-green-500 text-white'}`}>
+                      {signatureStep === 1 ? '1' : '✓'}
+                    </div>
+                    <div className={`w-24 h-1 ${signatureStep === 2 ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
+                    <div className={`flex items-center justify-center w-10 h-10 rounded-full ${signatureStep === 2 ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-500'}`}>
+                      2
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* STEP 1: Create Signature */}
-              {signatureStep === 1 && (
-                <>
-                  {/* Full Name Input */}
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Full Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={signatureName}
-                      onChange={(e) => setSignatureName(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      placeholder="Enter your full name"
-                    />
-                  </div>
-
-                  {/* Draw Signature */}
-                  <div className="mb-6">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      Draw your signature below:
-                    </p>
-                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                      <canvas
-                        ref={canvasRef}
-                        width={800}
-                        height={200}
-                        onMouseDown={startDrawing}
-                        onMouseMove={draw}
-                        onMouseUp={stopDrawing}
-                        onMouseLeave={stopDrawing}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded bg-white cursor-crosshair"
+                {/* STEP 1: Create Signature */}
+                {signatureStep === 1 && (
+                  <>
+                    {/* Full Name Input */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Full Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={signatureName}
+                        onChange={(e) => setSignatureName(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        placeholder="Enter your full name"
                       />
-                      <button
-                        onClick={clearCanvas}
-                        className="mt-3 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Preview Section */}
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        Preview
-                      </h3>
                     </div>
 
-                    <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg p-6 bg-white dark:bg-gray-700 min-h-[150px] flex items-center justify-center">
-                      {signaturePreview ? (
-                        <img
-                          src={signaturePreview}
-                          alt="Signature preview"
-                          className="max-w-full max-h-[120px] object-contain"
+                    {/* Draw Signature */}
+                    <div className="mb-6">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        Draw your signature below:
+                      </p>
+                      <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                        <canvas
+                          ref={canvasRef}
+                          width={800}
+                          height={200}
+                          onMouseDown={startDrawing}
+                          onMouseMove={draw}
+                          onMouseUp={stopDrawing}
+                          onMouseLeave={stopDrawing}
+                          className="w-full border border-gray-300 dark:border-gray-600 rounded bg-white cursor-crosshair"
                         />
-                      ) : (
-                        <p className="text-gray-400 dark:text-gray-500 italic">
-                          No signature yet
-                        </p>
-                      )}
+                        <button
+                          onClick={clearCanvas}
+                          className="mt-3 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                        >
+                          Clear
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
                   {/* Agreement Checkbox
                   <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -4244,437 +4219,156 @@ export default function ContractsManagementPage() {
                         {otpTimer > 0 ? (
                           <span>Code expires in: <strong className="text-blue-600">{Math.floor(otpTimer / 60)}:{(otpTimer % 60).toString().padStart(2, '0')}</strong></span>
                         ) : (
-                          <span className="text-red-600">OTP code expired</span>
+                          <p className="text-gray-400 dark:text-gray-500 italic">
+                            No signature yet
+                          </p>
                         )}
                       </div>
-                      <button
-                        onClick={handleResendOtp}
-                        disabled={!canResendOtp || sendingOtp}
-                        className="text-sm text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed font-medium"
-                      >
-                        {sendingOtp ? 'Sending...' : 'Resend OTP'}
-                      </button>
                     </div>
-                  </div>
 
-                  {/* Signature Preview in Step 2 */}
-                  <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Your signature:</h4>
-                    <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800 flex items-center justify-center min-h-[100px]">
-                      {signaturePreview && (
-                        <img
-                          src={signaturePreview}
-                          alt="Signature"
-                          className="max-w-full max-h-[80px] object-contain"
-                        />
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                      Signer: <strong>{signatureName}</strong>
-                    </p>
-                  </div>
-
-                  {/* Action Buttons - Step 2 */}
-                  <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <button
-                      onClick={() => setSignatureStep(1)}
-                      className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
-                      disabled={verifyingOtp}
-                    >
-                      ← Back
-                    </button>
-                    <button
-                      onClick={handleConfirmSignature}
-                      className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={otpCode.length !== 6 || verifyingOtp}
-                    >
-                      {verifyingOtp ? (
-                        <span className="flex items-center">
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    {/* Agreement Checkbox */}
+                    <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <label className="flex items-start space-x-3">
+                        <div className="flex items-center h-5 mt-0.5">
+                          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          Verifying...
+                        </div>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          I agree that my signature will be the electronic representation of my signature for all purposes when I use it on documents, including legally binding contracts.
                         </span>
-                      ) : (
-                        '✓ Confirm & Sign'
-                      )}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Utility Reading Management Modal */}
-      {showUtilityModal && selectedContract && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              {/* Modal Header */}
-              <div className="flex items-center justify-between mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    ⚡💧 Utility Readings Management
-                  </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Contract #{selectedContract.id?.slice(0, 8)} - {selectedContract.roomName}
-                  </p>
-                </div>
-                <button
-                  onClick={handleCloseUtilityModal}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Add New Reading Button */}
-              {!showUtilityForm && (
-                <div className="flex gap-4 mb-6">
-                  <button
-                    onClick={() => handleAddUtilityReading()}
-                    className="flex-1 inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-yellow-500 to-blue-500 hover:from-yellow-600 hover:to-blue-600 text-white font-medium rounded-lg transition-all shadow-md"
-                  >
-                    <span className="text-xl mr-2">⚡💧</span>
-                    Add Utility Reading
-                  </button>
-                </div>
-              )}
-
-              {/* Add/Edit Form - Two Forms Side by Side */}
-              {showUtilityForm && (
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {editingUtilityReading ? '✏️ Edit Reading' : '➕ Add New Readings'}
-                    </h3>
-                    <button
-                      onClick={() => {
-                        setShowUtilityForm(false);
-                        setEditingUtilityReading(null);
-                        setEditingUtilityType(null);
-                      }}
-                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                    >
-                      ✕ Close
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Electric Form */}
-                    {(!editingUtilityReading || editingUtilityType === 'electric') && (
-                      <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 border-2 border-yellow-300 dark:border-yellow-700">
-                        <h4 className="text-md font-semibold text-yellow-800 dark:text-yellow-200 mb-4 flex items-center">
-                          <span className="text-xl mr-2">⚡</span> Electric Reading
-                        </h4>
-
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">
-                              Current Index (kWh) *
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={electricFormData.currentIndex}
-                              onChange={(e) => setElectricFormData({ ...electricFormData, currentIndex: e.target.value })}
-                              className="w-full p-2.5 border border-yellow-300 dark:border-yellow-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500"
-                              placeholder="Enter meter reading"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">
-                              Price per kWh (VND) *
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="100"
-                              value={electricFormData.price}
-                              onChange={(e) => setElectricFormData({ ...electricFormData, price: e.target.value })}
-                              className="w-full p-2.5 border border-yellow-300 dark:border-yellow-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500"
-                              placeholder="Enter price per kWh"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">
-                              Note (optional)
-                            </label>
-                            <input
-                              type="text"
-                              maxLength={100}
-                              value={electricFormData.note}
-                              onChange={(e) => setElectricFormData({ ...electricFormData, note: e.target.value })}
-                              className="w-full p-2.5 border border-yellow-300 dark:border-yellow-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500"
-                              placeholder="Enter notes..."
-                            />
-                          </div>
-
-                          <button
-                            onClick={handleSaveElectricReading}
-                            disabled={savingElectric}
-                            className="w-full mt-2 px-4 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center"
-                          >
-                            {savingElectric ? (
-                              <>
-                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Saving...
-                              </>
-                            ) : (
-                              <>⚡ {editingUtilityReading ? 'Update Electric' : 'Save Electric'}</>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Water Form */}
-                    {(!editingUtilityReading || editingUtilityType === 'water') && (
-                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border-2 border-blue-300 dark:border-blue-700">
-                        <h4 className="text-md font-semibold text-blue-800 dark:text-blue-200 mb-4 flex items-center">
-                          <span className="text-xl mr-2">💧</span> Water Reading
-                        </h4>
-
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">
-                              Current Index (m³) *
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={waterFormData.currentIndex}
-                              onChange={(e) => setWaterFormData({ ...waterFormData, currentIndex: e.target.value })}
-                              className="w-full p-2.5 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                              placeholder="Enter meter reading"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">
-                              Price per m³ (VND) *
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="100"
-                              value={waterFormData.price}
-                              onChange={(e) => setWaterFormData({ ...waterFormData, price: e.target.value })}
-                              className="w-full p-2.5 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                              placeholder="Enter price per m³"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">
-                              Note (optional)
-                            </label>
-                            <input
-                              type="text"
-                              maxLength={100}
-                              value={waterFormData.note}
-                              onChange={(e) => setWaterFormData({ ...waterFormData, note: e.target.value })}
-                              className="w-full p-2.5 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                              placeholder="Enter notes..."
-                            />
-                          </div>
-
-                          <button
-                            onClick={handleSaveWaterReading}
-                            disabled={savingWater}
-                            className="w-full mt-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center"
-                          >
-                            {savingWater ? (
-                              <>
-                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Saving...
-                              </>
-                            ) : (
-                              <>💧 {editingUtilityReading ? 'Update Water' : 'Save Water'}</>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Readings List */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  📋 Reading History
-                </h3>
-
-                {loadingUtilityReadings ? (
-                  <div className="flex items-center justify-center py-12">
-                    <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  </div>
-                ) : (
-                  <>
-                    {/* Tabs for Electric/Water */}
-                    <div className="flex border-b border-gray-200 dark:border-gray-600 mb-4">
-                      <button
-                        onClick={() => setActiveUtilityTab('electric')}
-                        className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeUtilityTab === 'electric'
-                          ? 'text-yellow-600 border-b-2 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
-                          : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                          }`}
-                      >
-                        <span className="mr-2">⚡</span>
-                        Electric ({electricReadings.length})
-                      </button>
-                      <button
-                        onClick={() => setActiveUtilityTab('water')}
-                        className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeUtilityTab === 'water'
-                          ? 'text-blue-600 border-b-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                          : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                          }`}
-                      >
-                        <span className="mr-2">💧</span>
-                        Water ({waterReadings.length})
-                      </button>
+                      </label>
                     </div>
 
-                    {/* Display readings based on active tab */}
-                    {(activeUtilityTab === 'electric' ? electricReadings : waterReadings).length === 0 ? (
-                      <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-                        <div className="text-4xl mb-2">{activeUtilityTab === 'electric' ? '⚡' : '💧'}</div>
-                        <p className="text-gray-500 dark:text-gray-400">
-                          No {activeUtilityTab === 'electric' ? 'electric' : 'water'} readings recorded yet
+                    {/* Action Buttons - Step 1 */}
+                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <button
+                        onClick={handleCloseSignatureModal}
+                        className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleContinueToOtp}
+                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!signaturePreview || sendingOtp}
+                      >
+                        {sendingOtp ? (
+                          <span className="flex items-center">
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Sending OTP...
+                          </span>
+                        ) : (
+                          'Continue →'
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* STEP 2: OTP Verification */}
+                {signatureStep === 2 && (
+                  <>
+                    <div className="mb-6">
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                        <p className="text-sm text-blue-800 dark:text-blue-200">
+                          OTP code has been sent to email: <strong>{signatureEmail}</strong>
                         </p>
-                        <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Click the button above to add readings</p>
+                        <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                          Please check your inbox or spam folder
+                        </p>
                       </div>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className={activeUtilityTab === 'electric' ? 'bg-yellow-50 dark:bg-yellow-900/20' : 'bg-blue-50 dark:bg-blue-900/20'}>
-                              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Reading Date</th>
-                              <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Previous</th>
-                              <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Current</th>
-                              <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Usage</th>
-                              <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Price/Unit</th>
-                              <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Total</th>
-                              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Note</th>
-                              <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-                            {(activeUtilityTab === 'electric' ? electricReadings : waterReadings).map((reading) => {
-                              const typeInfo = utilityReadingService.getTypeLabel(reading.type);
-                              const unit = activeUtilityTab === 'electric' ? 'kWh' : 'm³';
-                              return (
-                                <tr key={reading.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                                    {utilityReadingService.formatDate(reading.readingDate)}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 text-right">
-                                    {reading.previousIndex?.toLocaleString() || '0'}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white text-right">
-                                    {reading.currentIndex?.toLocaleString() || '0'}
-                                  </td>
-                                  <td className={`px-4 py-3 text-sm font-semibold text-right ${activeUtilityTab === 'electric' ? 'text-yellow-600 dark:text-yellow-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                                    {reading.consumption?.toLocaleString() || '0'} {unit}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 text-right">
-                                    {utilityReadingService.formatCurrency(reading.price || 0)}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm font-bold text-green-600 dark:text-green-400 text-right">
-                                    {utilityReadingService.formatCurrency(reading.total || 0)}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 max-w-[150px] truncate" title={reading.note}>
-                                    {reading.note || '-'}
-                                  </td>
-                                  <td className="px-4 py-3 text-center">
-                                    <div className="flex items-center justify-center gap-2">
-                                      <button
-                                        onClick={() => handleEditUtilityReading(reading)}
-                                        className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-                                        title="Edit"
-                                      >
-                                        ✏️
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteUtilityReading(reading.id)}
-                                        className="p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
-                                        title="Delete"
-                                      >
-                                        🗑️
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Enter OTP Code (6 digits) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={otpCode}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                          setOtpCode(value);
+                        }}
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center text-2xl tracking-widest font-mono"
+                        placeholder="000000"
+                        maxLength={6}
+                      />
+
+                      {/* Timer and Resend */}
+                      <div className="mt-4 flex items-center justify-between">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          {otpTimer > 0 ? (
+                            <span>Code expires in: <strong className="text-blue-600">{Math.floor(otpTimer / 60)}:{(otpTimer % 60).toString().padStart(2, '0')}</strong></span>
+                          ) : (
+                            <span className="text-red-600">OTP code expired</span>
+                          )}
+                        </div>
+                        <button
+                          onClick={handleResendOtp}
+                          disabled={!canResendOtp || sendingOtp}
+                          className="text-sm text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed font-medium"
+                        >
+                          {sendingOtp ? 'Sending...' : 'Resend OTP'}
+                        </button>
                       </div>
-                    )}
+                    </div>
+
+                    {/* Signature Preview in Step 2 */}
+                    <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Your signature:</h4>
+                      <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800 flex items-center justify-center min-h-[100px]">
+                        {signaturePreview && (
+                          <img
+                            src={signaturePreview}
+                            alt="Signature"
+                            className="max-w-full max-h-[80px] object-contain"
+                          />
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        Signer: <strong>{signatureName}</strong>
+                      </p>
+                    </div>
+
+                    {/* Action Buttons - Step 2 */}
+                    <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <button
+                        onClick={() => setSignatureStep(1)}
+                        className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                        disabled={verifyingOtp}
+                      >
+                        ← Back
+                      </button>
+                      <button
+                        onClick={handleConfirmSignature}
+                        className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={otpCode.length !== 6 || verifyingOtp}
+                      >
+                        {verifyingOtp ? (
+                          <span className="flex items-center">
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Verifying...
+                          </span>
+                        ) : (
+                          '✓ Confirm & Sign'
+                        )}
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
-
-              {/* Summary Section */}
-              {(electricReadings.length > 0 || waterReadings.length > 0) && (
-                <div className="mt-6 grid grid-cols-2 gap-4">
-                  <div className={`border rounded-lg p-4 ${activeUtilityTab === 'electric' ? 'bg-yellow-100 dark:bg-yellow-900/40 border-yellow-300 dark:border-yellow-700' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'}`}>
-                    <div className="flex items-center">
-                      <span className="text-2xl mr-3">⚡</span>
-                      <div>
-                        <p className="text-sm text-yellow-700 dark:text-yellow-300">Total Electric</p>
-                        <p className="text-xl font-bold text-yellow-800 dark:text-yellow-200">
-                          {utilityReadingService.formatCurrency(
-                            electricReadings.reduce((sum, r) => sum + (r.total || 0), 0)
-                          )}
-                        </p>
-                        <p className="text-xs text-yellow-600 dark:text-yellow-400">
-                          {electricReadings.reduce((sum, r) => sum + (r.consumption || 0), 0).toLocaleString()} kWh
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className={`border rounded-lg p-4 ${activeUtilityTab === 'water' ? 'bg-blue-100 dark:bg-blue-900/40 border-blue-300 dark:border-blue-700' : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'}`}>
-                    <div className="flex items-center">
-                      <span className="text-2xl mr-3">💧</span>
-                      <div>
-                        <p className="text-sm text-blue-700 dark:text-blue-300">Total Water</p>
-                        <p className="text-xl font-bold text-blue-800 dark:text-blue-200">
-                          {utilityReadingService.formatCurrency(
-                            waterReadings.reduce((sum, r) => sum + (r.total || 0), 0)
-                          )}
-                        </p>
-                        <p className="text-xs text-blue-600 dark:text-blue-400">
-                          {waterReadings.reduce((sum, r) => sum + (r.consumption || 0), 0).toLocaleString()} m³
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Create Contract Modal - 3 Steps */}
-    </div>
+    </div >
   );
 }

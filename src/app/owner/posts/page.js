@@ -143,9 +143,9 @@ export default function PostsPage() {
       console.log('🚪 Loading rooms for house:', houseId);
       const rooms = await roomService.getByBoardingHouseId(houseId);
       // Filter only available rooms (roomStatus = 0 or "Available")
-      const availableRooms = rooms.filter(room => 
-        room.roomStatus === 0 || 
-        room.roomStatus === "Available" || 
+      const availableRooms = rooms.filter(room =>
+        room.roomStatus === 0 ||
+        room.roomStatus === "Available" ||
         room.roomStatus?.toLowerCase() === "available"
       );
       console.log('✅ Loaded available rooms:', availableRooms.length, 'rooms');
@@ -169,7 +169,7 @@ export default function PostsPage() {
       console.log('📋 Loading posts for owner...');
       const response = await rentalPostService.getOwnerPosts();
       console.log('📋 Posts response:', response);
-      
+
       // Debug: Log first post to check data structure
       if (response && response.length > 0) {
         console.log('📋 First post FULL data:', response[0]);
@@ -181,11 +181,8 @@ export default function PostsPage() {
         console.log('📋 boardingHouseId:', response[0].boardingHouseId);
         console.log('📋 roomId:', response[0].roomId);
       }
-      
-      // ============ USE MOCK DATA IF NO REAL DATA ============
-      const dataToUse = response && response.length > 0 ? response : MOCK_POSTS;
-      setPosts(dataToUse);
-      // ============ END MOCK DATA USAGE ============
+
+      setPosts(response || []);
     } catch (error) {
       console.error('❌ Error loading posts:', error);
       // ============ USE MOCK DATA ON ERROR ============
@@ -288,10 +285,9 @@ export default function PostsPage() {
 
   const validateForm = () => {
     const errors = {};
-    if (!postData.boardingHouseId) errors.boardingHouseId = t('ownerPosts.validation.selectBoardingHouse');
-    if (!postData.title.trim()) errors.title = t('ownerPosts.validation.titleRequired');
-    if (!postData.description.trim()) errors.description = t('ownerPosts.validation.descriptionRequired');
-    if (!postData.contactPhone.trim()) errors.contactPhone = t('ownerPosts.validation.contactPhoneRequired');
+    if (!postData.boardingHouseId) errors.boardingHouseId = 'Please select a boarding house';
+    if (!postData.title.trim()) errors.title = 'Title is required';
+    if (!postData.description.trim()) errors.description = 'Description is required';
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -315,11 +311,11 @@ export default function PostsPage() {
       }
       await loadPosts();
       setShowPostModal(false);
-      setPostData({ 
-        boardingHouseId: '', 
-        roomIds: [], 
-        title: '', 
-        description: '', 
+      setPostData({
+        boardingHouseId: '',
+        roomIds: [],
+        title: '',
+        description: '',
         contactPhone: user?.phone || '',
         images: []
       });
@@ -364,9 +360,9 @@ export default function PostsPage() {
 
   const handleImageChange = (e) => {
     const newFiles = Array.from(e.target.files);
-    
+
     if (newFiles.length === 0) return;
-    
+
     // Validate file types and size
     const maxFileSize = 5 * 1024 * 1024; // 5MB
     const validFiles = newFiles.filter(file => {
@@ -377,40 +373,40 @@ export default function PostsPage() {
       }
       return true;
     });
-    
+
     if (validFiles.length === 0) {
       alert(t('ownerPosts.messages.noValidImages'));
       return;
     }
-    
+
     if (validFiles.length !== newFiles.length) {
       alert(t('ownerPosts.messages.someFilesSkipped'));
     }
-    
+
     // Limit total images (e.g., max 10)
     const existingCount = postData.images.length;
     const maxImages = 10;
-    
+
     if (existingCount >= maxImages) {
       alert(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
       return;
     }
-    
+
     const availableSlots = maxImages - existingCount;
     const filesToAdd = validFiles.slice(0, availableSlots);
-    
+
     if (filesToAdd.length < validFiles.length) {
       alert(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
     }
-    
+
     // Add to existing images
     const updatedImages = [...postData.images, ...filesToAdd];
     setPostData({ ...postData, images: updatedImages });
-    
+
     // Create previews for new files
     const newPreviews = filesToAdd.map(file => URL.createObjectURL(file));
     setImagePreviews([...imagePreviews, ...newPreviews]);
-    
+
     // Reset input to allow selecting same file again if needed
     e.target.value = '';
   };
@@ -419,7 +415,7 @@ export default function PostsPage() {
     const newImages = [...postData.images];
     newImages.splice(index, 1);
     setPostData({ ...postData, images: newImages });
-    
+
     const newPreviews = [...imagePreviews];
     URL.revokeObjectURL(newPreviews[index]);
     newPreviews.splice(index, 1);
@@ -427,8 +423,8 @@ export default function PostsPage() {
   };
 
   const handleBoardingHouseChange = (houseId) => {
-    setPostData({ 
-      ...postData, 
+    setPostData({
+      ...postData,
       boardingHouseId: houseId,
       roomIds: [] // Reset selected rooms
     });
@@ -474,7 +470,7 @@ export default function PostsPage() {
 
     const files = Array.from(e.dataTransfer.files);
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    
+
     if (imageFiles.length === 0) {
       alert(t('ownerPosts.messages.onlyImagesAllowed'));
       return;
@@ -483,22 +479,22 @@ export default function PostsPage() {
     // Process dropped images same as file input
     const existingCount = postData.images.length;
     const maxImages = 10;
-    
+
     if (existingCount >= maxImages) {
       alert(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
       return;
     }
-    
+
     const availableSlots = maxImages - existingCount;
     const filesToAdd = imageFiles.slice(0, availableSlots);
-    
+
     if (filesToAdd.length < imageFiles.length) {
       alert(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
     }
-    
+
     const updatedImages = [...postData.images, ...filesToAdd];
     setPostData({ ...postData, images: updatedImages });
-    
+
     const newPreviews = filesToAdd.map(file => URL.createObjectURL(file));
     setImagePreviews([...imagePreviews, ...newPreviews]);
   };
@@ -593,11 +589,10 @@ export default function PostsPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-200 ${
-                activeTab === tab.id
+              className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-200 ${activeTab === tab.id
                   ? 'bg-blue-600 text-white shadow-md'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
+                }`}
             >
               {tab.label} ({tab.count})
             </button>
@@ -642,7 +637,7 @@ export default function PostsPage() {
                     )}
                   </div>
                 )}
-                
+
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(post)}`}>
@@ -683,19 +678,19 @@ export default function PostsPage() {
                         <span className="font-medium">{post.authorName}</span>
                       </div>
                     )}
-                    
+
                     {/* Boarding House */}
                     <div className="flex items-center text-gray-600 dark:text-gray-400">
                       <Building className="w-4 h-4 mr-2 flex-shrink-0" />
                       <span className="font-medium truncate">{post.houseName || t('ownerPosts.card.noHouse')}</span>
                     </div>
-                    
+
                     {/* Rooms */}
                     <div className="flex items-center text-gray-600 dark:text-gray-400">
                       <Home className="w-4 h-4 mr-2 flex-shrink-0" />
                       <span className="truncate">{post.roomName || t('ownerPosts.card.allRooms')}</span>
                     </div>
-                    
+
                     {/* Contact Phone */}
                     {post.contactPhone && (
                       <div className="flex items-center text-gray-600 dark:text-gray-400">
@@ -703,7 +698,7 @@ export default function PostsPage() {
                         <span>{post.contactPhone}</span>
                       </div>
                     )}
-                    
+
                     {/* Images count */}
                     {post.imageUrls && post.imageUrls.length > 0 && (
                       <div className="flex items-center text-gray-600 dark:text-gray-400">
@@ -711,7 +706,7 @@ export default function PostsPage() {
                         <span>{post.imageUrls.length} image{post.imageUrls.length > 1 ? 's' : ''}</span>
                       </div>
                     )}
-                    
+
                     {/* Created date */}
                     <div className="text-xs text-gray-500 dark:text-gray-500 mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                       {t('ownerPosts.card.created')}: {formatDate(post.createdAt)}
@@ -741,11 +736,11 @@ export default function PostsPage() {
                 onClick={() => {
                   setShowPostModal(false);
                   setEditingPost(null);
-                  setPostData({ 
-                    boardingHouseId: '', 
-                    roomIds: [], 
-                    title: '', 
-                    description: '', 
+                  setPostData({
+                    boardingHouseId: '',
+                    roomIds: [],
+                    title: '',
+                    description: '',
                     contactPhone: user?.phone || '',
                     images: []
                   });
@@ -771,9 +766,8 @@ export default function PostsPage() {
                 <select
                   value={postData.boardingHouseId}
                   onChange={(e) => handleBoardingHouseChange(e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-white ${
-                    formErrors.boardingHouseId ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300 dark:border-gray-600'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-white ${formErrors.boardingHouseId ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300 dark:border-gray-600'
+                    }`}
                   disabled={editingPost}
                 >
                   <option value="">{t('ownerPosts.form.selectBoardingHouse')}</option>
@@ -834,9 +828,9 @@ export default function PostsPage() {
                     </div>
                   )}
                   <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {postData.roomIds.length > 0 
-                      ? t('ownerPosts.form.selectedRooms').replace('{{count}}', postData.roomIds.length)
-                      : t('ownerPosts.form.noRoomsSelected')}
+                    {postData.roomIds.length > 0
+                      ? `Selected ${postData.roomIds.length} room(s)`
+                      : 'No rooms selected - post will apply to entire boarding house'}
                   </p>
                 </div>
               )}
@@ -845,7 +839,7 @@ export default function PostsPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                   <span className="flex items-center">
-                     {t('ownerPosts.form.title')} <span className="text-red-500 ml-1">*</span>
+                    Title <span className="text-red-500 ml-1">*</span>
                   </span>
                 </label>
                 <input
@@ -855,10 +849,9 @@ export default function PostsPage() {
                     setPostData({ ...postData, title: e.target.value });
                     if (formErrors.title) setFormErrors({ ...formErrors, title: '' });
                   }}
-                  className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-white ${
-                    formErrors.title ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                  placeholder={t('ownerPosts.form.titlePlaceholder')}
+                  className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-white ${formErrors.title ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                  placeholder="Enter post title"
                 />
                 {formErrors.title && (
                   <p className="mt-2 text-sm text-red-600 dark:text-red-400">{formErrors.title}</p>
@@ -869,7 +862,7 @@ export default function PostsPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                   <span className="flex items-center">
-                     {t('ownerPosts.form.description')} <span className="text-red-500 ml-1">*</span>
+                    Description <span className="text-red-500 ml-1">*</span>
                   </span>
                 </label>
                 <textarea
@@ -879,37 +872,12 @@ export default function PostsPage() {
                     setPostData({ ...postData, description: e.target.value });
                     if (formErrors.description) setFormErrors({ ...formErrors, description: '' });
                   }}
-                  className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-white resize-none ${
-                    formErrors.description ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                  placeholder={t('ownerPosts.form.descriptionPlaceholder')}
+                  className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-white resize-none ${formErrors.description ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                  placeholder="Describe the room and rental details..."
                 />
                 {formErrors.description && (
                   <p className="mt-2 text-sm text-red-600 dark:text-red-400">{formErrors.description}</p>
-                )}
-              </div>
-
-              {/* Contact Phone */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                  <span className="flex items-center">
-                     {t('ownerPosts.form.contactPhone')} <span className="text-red-500 ml-1">*</span>
-                  </span>
-                </label>
-                <input
-                  type="tel"
-                  value={postData.contactPhone}
-                  onChange={(e) => {
-                    setPostData({ ...postData, contactPhone: e.target.value });
-                    if (formErrors.contactPhone) setFormErrors({ ...formErrors, contactPhone: '' });
-                  }}
-                  className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-white ${
-                    formErrors.contactPhone ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                  placeholder={t('ownerPosts.form.contactPhonePlaceholder')}
-                />
-                {formErrors.contactPhone && (
-                  <p className="mt-2 text-sm text-red-600 dark:text-red-400">{formErrors.contactPhone}</p>
                 )}
               </div>
 
@@ -920,18 +888,17 @@ export default function PostsPage() {
                     📷 {t('ownerPosts.form.images')} <span className="text-gray-500 text-xs ml-2">{t('ownerPosts.form.imagesHint')}</span>
                   </span>
                 </label>
-                
+
                 {/* Drag & Drop Zone */}
                 <div
                   onDragEnter={handleDragEnter}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  className={`relative border-2 border-dashed rounded-xl p-6 transition-all duration-200 ${
-                    isDragging 
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                  className={`relative border-2 border-dashed rounded-xl p-6 transition-all duration-200 ${isDragging
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                       : 'border-gray-300 dark:border-gray-600 bg-white/70 dark:bg-gray-700/70'
-                  }`}
+                    }`}
                 >
                   <input
                     id="image-upload-input"
@@ -941,7 +908,7 @@ export default function PostsPage() {
                     onChange={handleImageChange}
                     className="hidden"
                   />
-                  
+
                   <div className="text-center">
                     <div className="text-4xl mb-2">
                       {isDragging ? '📥' : '🖼️'}
@@ -963,8 +930,8 @@ export default function PostsPage() {
                 </div>
                 <div className="mt-2 flex items-start justify-between gap-2">
                   <p className="text-xs text-gray-500 dark:text-gray-400 flex-1">
-                    💡 {t('ownerPosts.form.dragDropHint')}<br/>
-                    {t('ownerPosts.form.maxImages')}
+                    💡 Drag & drop or click to select multiple images<br />
+                    Max: 10 images, 5MB each. Recommended: 1200x800px
                   </p>
                   {postData.images.length > 0 && (
                     <div className="flex flex-col items-end gap-1">
@@ -977,7 +944,7 @@ export default function PostsPage() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Image Previews */}
                 {imagePreviews.length > 0 && (
                   <div className="mt-4">
@@ -1051,11 +1018,11 @@ export default function PostsPage() {
                   onClick={() => {
                     setShowPostModal(false);
                     setEditingPost(null);
-                    setPostData({ 
-                      boardingHouseId: '', 
-                      roomIds: [], 
-                      title: '', 
-                      description: '', 
+                    setPostData({
+                      boardingHouseId: '',
+                      roomIds: [],
+                      title: '',
+                      description: '',
                       contactPhone: user?.phone || '',
                       images: []
                     });

@@ -6,17 +6,22 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
 import contractService from '@/services/contractService';
 import reviewService from '@/services/reviewService';
-import { 
-  Building2, 
-  Calendar, 
-  Star, 
-  MapPin, 
-  Phone, 
-  User, 
+import {
+  Building2,
+  Calendar,
+  Star,
+  MapPin,
+  Phone,
+  User,
   MessageSquare,
   CheckCircle,
   Clock,
-  XCircle
+  XCircle,
+  Users,
+  Banknote,
+  FileText,
+  Eye,
+  PenLine
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -98,6 +103,9 @@ export default function RentalHistoryPage() {
   });
   const [imagePreview, setImagePreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -111,7 +119,7 @@ export default function RentalHistoryPage() {
       // Sử dụng endpoint getByTenantId với user.id
       const response = await contractService.getByTenantId(user.id);
       console.log('Contracts response:', response);
-      
+
       // Kiểm tra response là array hay object với value
       const contractsData = Array.isArray(response) ? response : (response.value || []);
       
@@ -139,7 +147,7 @@ export default function RentalHistoryPage() {
     const file = e.target.files[0];
     if (file) {
       setReviewForm({ ...reviewForm, imageFile: file });
-      
+
       // Create temporary preview using base64 Data URL
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -158,7 +166,7 @@ export default function RentalHistoryPage() {
 
   const handleSubmitReview = async () => {
     if (!selectedContract) return;
-    
+
     if (!reviewForm.content.trim()) {
       alert(t('rentalHistory.writeReviewPlaceholder'));
       return;
@@ -169,34 +177,34 @@ export default function RentalHistoryPage() {
     //   alert('Please upload an image for your review!');
     //   return;
     // }
-    
+
     try {
       setSubmitting(true);
-      
+
       // Create FormData for file upload to backend
       // Backend will upload the file to Filebase IPFS and return IPFS URL
       const formData = new FormData();
       formData.append('Rating', reviewForm.rating);
       formData.append('Content', reviewForm.content);
-      
+
       // Only append image if user uploaded one (optional)
       if (reviewForm.imageFile) {
         formData.append('ImageUrl', reviewForm.imageFile);
       }
-      
+
       console.log('📤 Submitting review with image:', {
         rating: reviewForm.rating,
         contentLength: reviewForm.content.length,
         imageFileName: reviewForm.imageFile.name
       });
-      
+
       // Backend returns created review with id
       const createdReview = await reviewService.createReview(selectedContract.id, formData);
       console.log('✅ Created review:', createdReview);
-      
-      alert(t('rentalHistory.reviewSuccess'));
+
+      alert('Review submitted successfully! ✅');
       handleCloseReviewModal();
-      
+
       // Navigate to the created review detail page
       if (createdReview && createdReview.id) {
         console.log('🔀 Navigating to review:', createdReview.id);
@@ -215,10 +223,10 @@ export default function RentalHistoryPage() {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      0: { label: t('rentalHistory.active'), color: 'bg-green-100 text-green-800', icon: CheckCircle },
-      1: { label: t('rentalHistory.pending'), color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-      2: { label: t('rentalHistory.expired'), color: 'bg-red-100 text-red-800', icon: XCircle },
-      3: { label: t('rentalHistory.cancelled'), color: 'bg-gray-100 text-gray-800', icon: XCircle },
+      0: { label: 'Đang hoạt động', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+      1: { label: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+      2: { label: 'Đã hết hạn', color: 'bg-red-100 text-red-800', icon: XCircle },
+      3: { label: 'Đã hủy', color: 'bg-gray-100 text-gray-800', icon: XCircle },
     };
 
     const config = statusConfig[status] || statusConfig[1];
@@ -232,12 +240,28 @@ export default function RentalHistoryPage() {
     );
   };
 
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(amount || 0);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
   const canReview = (contract) => {
     // User có thể review nếu hợp đồng đã kết thúc và trong vòng 30 ngày
     const checkoutDate = new Date(contract.checkoutDate);
     const now = new Date();
     const daysSinceCheckout = (now - checkoutDate) / (1000 * 60 * 60 * 24);
-    
+
     return contract.contractStatus === 2 && daysSinceCheckout <= 30;
   };
 
@@ -245,15 +269,15 @@ export default function RentalHistoryPage() {
     <RoleBasedRedirect allowedRoles={['User']}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar />
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              {t('rentalHistory.title')}
+              Lịch sử thuê trọ
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              {t('rentalHistory.subtitle')}
+              Xem tất cả hợp đồng thuê trọ của bạn
             </p>
           </div>
 
@@ -261,7 +285,7 @@ export default function RentalHistoryPage() {
           {loading && (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">{t('rentalHistory.loading')}</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">Đang tải lịch sử thuê trọ...</p>
             </div>
           )}
 
@@ -270,10 +294,10 @@ export default function RentalHistoryPage() {
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
               <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                {t('rentalHistory.noHistory')}
+                Chưa có lịch sử thuê trọ
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                {t('rentalHistory.noHistoryDesc')}
+                Bạn chưa thuê phòng trọ nào
               </p>
             </div>
           )}
@@ -284,81 +308,131 @@ export default function RentalHistoryPage() {
               {contracts.map((contract) => (
                 <div
                   key={contract.id}
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow p-6"
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden"
                 >
                   {/* Contract Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                        <Building2 className="h-6 w-6 text-white" />
+                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center">
+                          <Building2 className="h-6 w-6 text-white" />
+                        </div>
+                        <div className="text-white">
+                          <h3 className="text-lg font-semibold">
+                            {contract.roomName || 'Phòng trọ'}
+                          </h3>
+                          <p className="text-sm text-white/80">
+                            {contract.houseName || 'Nhà trọ'}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {contract.roomName || 'Room'}
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {contract.houseName || 'Boarding House'}
+                      {getStatusBadge(contract.contractStatus)}
+                    </div>
+                  </div>
+
+                  {/* Contract Body */}
+                  <div className="p-6">
+                    {/* Price & Deposit Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                      <div className="text-center">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Giá thuê</p>
+                        <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                          {formatCurrency(contract.roomPrice)}
+                        </p>
+                        <p className="text-xs text-gray-400">/tháng</p>
+                      </div>
+                      <div className="text-center border-x border-gray-200 dark:border-gray-600">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Tiền cọc</p>
+                        <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                          {formatCurrency(contract.depositAmount)}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Số người ở</p>
+                        <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
+                          {contract.numberOfOccupants || 1} người
                         </p>
                       </div>
                     </div>
-                    {getStatusBadge(contract.contractStatus)}
-                  </div>
 
-                  {/* Contract Details Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-600 dark:text-gray-400">{t('rentalHistory.checkIn')}:</span>
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {new Date(contract.checkinDate).toLocaleDateString()}
-                      </span>
+                    {/* Contract Details Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <Calendar className="h-5 w-5 text-green-600" />
+                        <div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Ngày nhận phòng</span>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {formatDate(contract.checkinDate)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                        <Calendar className="h-5 w-5 text-red-600" />
+                        <div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Ngày trả phòng</span>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {formatDate(contract.checkoutDate)}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-600 dark:text-gray-400">{t('rentalHistory.checkOut')}:</span>
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {new Date(contract.checkoutDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <User className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-600 dark:text-gray-400">{t('rentalHistory.owner')}:</span>
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {contract.ownerName || 'N/A'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Phone className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-600 dark:text-gray-400">{t('profile.phone')}:</span>
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {contract.ownerPhone || 'N/A'}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <button
-                      className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      {t('common.view')}
-                    </button>
-                    
-                    <button
-                      onClick={() => handleOpenReviewModal(contract)}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                    >
-                      <Star className="h-4 w-4" />
-                      {t('rentalHistory.writeReview')}
-                    </button>
+                    {/* Services */}
+                    {contract.serviceInfors && contract.serviceInfors.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dịch vụ:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {contract.serviceInfors.map((service, idx) => (
+                            <span
+                              key={idx}
+                              className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm"
+                            >
+                              {service.serviceName}: {formatCurrency(service.price)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                    <button
-                      onClick={() => router.push(`/reviews/8e4212b9-a0b5-4a91-9b53-cefb1bd81673`)}
-                      className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                    >
-                      <Star className="h-4 w-4 fill-current" />
-                      {t('rentalPostDetail.reviews')}
-                    </button>
+                    {/* Notes */}
+                    {contract.notes && (
+                      <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          <span className="font-medium">Ghi chú:</span> {contract.notes}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <button
+                        onClick={() => router.push(`/profile/contracts/${contract.id}`)}
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Xem chi tiết
+                      </button>
+
+                      {contract.contractStatus === 0 && (
+                        <button
+                          onClick={() => handleOpenReviewModal(contract)}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                        >
+                          <PenLine className="h-4 w-4" />
+                          Viết đánh giá
+                        </button>
+                      )}
+
+                      {contract.contractStatus === 2 && (
+                        <button
+                          onClick={() => handleOpenReviewModal(contract)}
+                          className="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
+                        >
+                          <Star className="h-4 w-4" />
+                          Đánh giá
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -373,7 +447,7 @@ export default function RentalHistoryPage() {
               {/* Modal Header */}
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {t('rentalHistory.reviewTitle')}
+                  Viết đánh giá
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {selectedContract?.roomName} - {selectedContract?.houseName}
@@ -385,7 +459,7 @@ export default function RentalHistoryPage() {
                 {/* Rating */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('rentalHistory.yourRating')}
+                    Đánh giá
                   </label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -396,11 +470,10 @@ export default function RentalHistoryPage() {
                         className="transition-transform hover:scale-110"
                       >
                         <Star
-                          className={`h-8 w-8 ${
-                            star <= reviewForm.rating
+                          className={`h-8 w-8 ${star <= reviewForm.rating
                               ? 'fill-yellow-400 text-yellow-400'
                               : 'text-gray-300 dark:text-gray-600'
-                          }`}
+                            }`}
                         />
                       </button>
                     ))}
@@ -410,31 +483,30 @@ export default function RentalHistoryPage() {
                 {/* Content */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('rentalHistory.yourReview')} <span className="text-red-500">*</span>
+                    Nội dung đánh giá <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={reviewForm.content}
                     onChange={(e) => setReviewForm({ ...reviewForm, content: e.target.value })}
-                    placeholder={t('rentalHistory.writeReviewPlaceholder')}
+                    placeholder="Chia sẻ trải nghiệm thuê trọ của bạn..."
                     rows={6}
                     maxLength={1000}
                     required
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-none"
                   />
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    {reviewForm.content.length}/1000
+                    {reviewForm.content.length}/1000 ký tự
                   </p>
                 </div>
 
                 {/* Image Upload */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('rentalHistory.uploadImage')}
+                    Tải ảnh lên (tùy chọn)
                   </label>
                   <input
                     type="file"
                     accept="image/*"
-                    required
                     onChange={handleImageChange}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
@@ -448,6 +520,9 @@ export default function RentalHistoryPage() {
                         alt="Review Preview"
                         className="w-full h-full object-contain"
                       />
+                      <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                        Xem trước
+                      </div>
                     </div>
                   )}
                 </div>
@@ -460,7 +535,7 @@ export default function RentalHistoryPage() {
                   disabled={submitting}
                   className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                 >
-                  {t('common.cancel')}
+                  Hủy
                 </button>
                 <button
                   onClick={handleSubmitReview}
@@ -470,12 +545,12 @@ export default function RentalHistoryPage() {
                   {submitting ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      {t('rentalHistory.submitting')}
+                      Đang gửi...
                     </>
                   ) : (
                     <>
                       <MessageSquare className="h-4 w-4" />
-                      {t('rentalHistory.submitReview')}
+                      Gửi đánh giá
                     </>
                   )}
                 </button>

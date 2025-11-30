@@ -5,9 +5,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
 import chatService from '@/services/chatService';
 import notification from '@/utils/notification';
-import { 
-  Search, 
-  Send, 
+import {
+  Search,
+  Send,
   User,
   MessageSquare,
   Clock,
@@ -102,7 +102,7 @@ export default function OwnerChatsPage() {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    
+
     if ((!newMessage.trim() && selectedImages.length === 0) || !selectedChatRoom || sending) {
       return;
     }
@@ -111,12 +111,12 @@ export default function OwnerChatsPage() {
       setSending(true);
       await chatService.sendMessage(selectedChatRoom.id, newMessage.trim(), selectedImages);
       setNewMessage('');
-      
+
       // Clear selected images
       imagePreviews.forEach(url => URL.revokeObjectURL(url));
       setSelectedImages([]);
       setImagePreviews([]);
-      
+
       // Reload messages
       await loadMessages(selectedChatRoom.id);
 
@@ -148,7 +148,7 @@ export default function OwnerChatsPage() {
 
     // Add new files
     setSelectedImages(prev => [...prev, ...validFiles]);
-    
+
     // Create previews
     const newPreviews = validFiles.map(file => URL.createObjectURL(file));
     setImagePreviews(prev => [...prev, ...newPreviews]);
@@ -181,19 +181,19 @@ export default function OwnerChatsPage() {
   // Handle revoke message
   const handleRevokeMessage = async (messageId) => {
     closeContextMenu();
-    
+
     const confirmed = await notification.confirm(
       'Are you sure you want to revoke this message? This action cannot be undone.',
       'Revoke Message'
     );
-    
+
     if (!confirmed) return;
 
     try {
       setRevokingMessageId(messageId);
       await chatService.revokeMessage(messageId);
       notification.success('Message revoked successfully');
-      
+
       // Reload messages
       await loadMessages(selectedChatRoom.id);
     } catch (error) {
@@ -207,7 +207,7 @@ export default function OwnerChatsPage() {
   const handleSelectChatRoom = async (room) => {
     // Don't reload if same room is selected
     if (selectedChatRoom?.id === room.id) return;
-    
+
     setSelectedChatRoom(room);
     // Load messages for the selected room
     try {
@@ -357,21 +357,6 @@ export default function OwnerChatsPage() {
                     </p>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                    title={selectedChatRoom.user?.phone || selectedChatRoom.user?.Phone || 'No phone'}
-                  >
-                    <Phone className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                  </button>
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                    <Video className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                  </button>
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                    <MoreVertical className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                  </button>
-                </div>
               </div>
 
               {/* Contact Info Bar */}
@@ -405,18 +390,18 @@ export default function OwnerChatsPage() {
                   {messages.map((message, index) => {
                     const currentUserId = user?.id || user?.userId || user?.Id;
                     const messageSenderId = message.senderId || message.SenderId;
-                    const isOwn = currentUserId && messageSenderId && 
-                                  currentUserId.toString() === messageSenderId.toString();
+                    const isOwn = currentUserId && messageSenderId &&
+                      currentUserId.toString() === messageSenderId.toString();
                     const isRead = message.isRead || message.IsRead;
                     const messageImages = message.image || message.Image || [];
                     const isRevoking = revokingMessageId === (message.id || message.Id);
-                    
+
                     return (
                       <div
                         key={message.id || message.Id || index}
                         className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div 
+                        <div
                           className={`flex items-end gap-2 max-w-md ${isOwn ? 'flex-row-reverse' : 'flex-row'} group`}
                           onContextMenu={(e) => handleMessageContextMenu(e, message.id || message.Id, isOwn)}
                         >
@@ -427,11 +412,10 @@ export default function OwnerChatsPage() {
                           )}
 
                           <div
-                            className={`relative px-4 py-2 rounded-2xl ${
-                              isOwn
+                            className={`relative px-4 py-2 rounded-2xl ${isOwn
                                 ? 'bg-blue-600 text-white rounded-br-none'
                                 : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
-                            } ${isRevoking ? 'opacity-50' : ''}`}
+                              } ${isRevoking ? 'opacity-50' : ''}`}
                           >
                             {/* Message Images */}
                             {messageImages.length > 0 && (
@@ -447,12 +431,12 @@ export default function OwnerChatsPage() {
                                 ))}
                               </div>
                             )}
-                            
+
                             {/* Message Content */}
                             {(message.content || message.Content) && (
                               <p className="text-sm">{message.content || message.Content}</p>
                             )}
-                            
+
                             {/* Time and Read Status */}
                             <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
                               <p className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
@@ -480,7 +464,7 @@ export default function OwnerChatsPage() {
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             )}
-                            
+
                             {isRevoking && (
                               <div className="absolute inset-0 flex items-center justify-center">
                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
