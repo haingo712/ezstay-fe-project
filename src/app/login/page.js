@@ -761,17 +761,7 @@ export default function LoginPage() {
                 </div>
               )}
 
-            {/* Social Login Buttons
-            <div className="space-y-3">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Or continue with</span>
-                </div>
-              )}
-
+              {/* Sign In Button */}
               <button
                 type="submit"
                 className="w-full relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 hover:from-purple-700 hover:via-pink-700 hover:to-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-purple-500/25 transform hover:-translate-y-1 disabled:opacity-50 disabled:hover:transform-none group"
@@ -794,11 +784,21 @@ export default function LoginPage() {
                       </svg>
                     </>
                   )}
-                </button>
-              </div>
-            </div> */}
+                </span>
+              </button>
 
-                <div className="grid grid-cols-2 gap-4">
+              {/* Social Login Section */}
+            <div className="space-y-3">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Or continue with</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                   <button
                     type="button"
                     onClick={handleGoogleLogin}

@@ -1,7 +1,7 @@
 // src/services/favoritePostService.js
 import axios from 'axios';
 
-const API_BASE_URL = 'https://localhost:7296/api/FavoritePosts';
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/FavoritePosts`;
 
 class FavoritePostService {
   constructor() {

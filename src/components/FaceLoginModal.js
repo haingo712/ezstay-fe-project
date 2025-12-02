@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import faceLoginService from '@/services/faceLoginService';
+import authService from '@/services/authService';
 
 export default function FaceLoginModal({ isOpen, onClose }) {
   const router = useRouter();
@@ -111,9 +112,25 @@ export default function FaceLoginModal({ isOpen, onClose }) {
       
       if (result.success && result.token) {
         localStorage.setItem('authToken', result.token);
+        
+        // Get user role from token to redirect properly
+        const userInfo = authService.getUserInfo();
+        const role = userInfo?.role;
+        console.log("🔍 User role after face login:", role);
+        
         setTimeout(() => {
           if (onClose) onClose();
-          router.push('/dashboard');
+          
+          // Redirect based on role
+          // role: 1 = User, 2 = Owner, 3 = Staff, 4 = Admin
+          if (role === 4 || role === 3) {
+            router.push('/dashboard');
+          } else if (role === 2) {
+            router.push('/owner');
+          } else {
+            // User role (1) or default - go to home page
+            router.push('/');
+          }
           router.refresh();
         }, 1500);
       } else {

@@ -2,89 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { rentalPostService } from '@/services/rentalPostService';
+import { useGuestRedirect } from '@/hooks/useGuestRedirect';
 import { Building, Home, MapPin, Calendar } from 'lucide-react';
-
-// ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
-const MOCK_LATEST_POSTS = [
-  {
-    id: '1',
-    title: 'Phòng trọ cao cấp quận 1 - Full nội thất, view đẹp',
-    description: 'Phòng trọ cao cấp với đầy đủ tiện nghi: máy lạnh, tủ lạnh, máy giặt, bếp từ. View ban công thoáng mát, an ninh 24/7.',
-    houseName: 'Nhà trọ Sunshine Residence',
-    roomName: 'Phòng A101 - Studio Premium',
-    authorName: 'Nguyễn Văn An',
-    createdAt: '2025-11-28T10:00:00Z',
-    isActive: true,
-    isApproved: 1,
-    imageUrls: ['/image.png']
-  },
-  {
-    id: '2',
-    title: 'Căn hộ mini quận 7 - Gần Lotte Mart',
-    description: 'Căn hộ mini mới xây, sạch sẽ, thoáng mát. Gần trung tâm thương mại, siêu thị, trường học.',
-    houseName: 'Green House Apartment',
-    roomName: 'Phòng B205 - Deluxe Room',
-    authorName: 'Trần Thị Bình',
-    createdAt: '2025-11-27T14:30:00Z',
-    isActive: true,
-    isApproved: 1,
-    imageUrls: ['/image.png']
-  },
-  {
-    id: '3',
-    title: 'Phòng trọ sinh viên Thủ Đức - Giá rẻ',
-    description: 'Phòng trọ dành cho sinh viên, giá cả phải chăng. Gần các trường đại học lớn, có wifi miễn phí.',
-    houseName: 'Ký túc xá Thanh Xuân',
-    roomName: 'Phòng C301 - Standard',
-    authorName: 'Lê Minh Cường',
-    createdAt: '2025-11-26T09:15:00Z',
-    isActive: true,
-    isApproved: 1,
-    imageUrls: ['/image.png']
-  },
-  {
-    id: '4',
-    title: 'Studio cao cấp quận Bình Thạnh',
-    description: 'Studio hoàn toàn mới, thiết kế hiện đại theo phong cách Scandinavian. Full nội thất cao cấp.',
-    houseName: 'The Vista Residence',
-    roomName: 'Studio S401 - Luxury',
-    authorName: 'Phạm Hoàng Dũng',
-    createdAt: '2025-11-25T16:45:00Z',
-    isActive: true,
-    isApproved: 1,
-    imageUrls: ['/image.png']
-  },
-  {
-    id: '5',
-    title: 'Phòng trọ Tân Bình - Gần sân bay',
-    description: 'Phòng trọ khu vực yên tĩnh, an ninh tốt. Thuận tiện di chuyển đến sân bay Tân Sơn Nhất.',
-    houseName: 'Airport View House',
-    roomName: 'Phòng D102 - Comfort',
-    authorName: 'Hoàng Thị Hạnh',
-    createdAt: '2025-11-24T11:20:00Z',
-    isActive: true,
-    isApproved: 1,
-    imageUrls: ['/image.png']
-  },
-  {
-    id: '6',
-    title: 'Căn hộ dịch vụ quận 3 - Trung tâm',
-    description: 'Căn hộ dịch vụ ngay trung tâm quận 3, gần Diamond Plaza, chợ Bến Thành.',
-    houseName: 'Central Park Serviced Apartment',
-    roomName: 'Suite E501 - Executive',
-    authorName: 'Võ Thanh Tùng',
-    createdAt: '2025-11-23T08:00:00Z',
-    isActive: true,
-    isApproved: 1,
-    imageUrls: ['/image.png']
-  }
-];
-// ============ END MOCK DATA ============
 
 export default function LatestPosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { isGuest, getAuthHref } = useGuestRedirect();
+  const router = useRouter();
 
   useEffect(() => {
     loadLatestPosts();
@@ -95,24 +22,31 @@ export default function LatestPosts() {
       setLoading(true);
       const allPosts = await rentalPostService.getAllForUser();
       console.log('📦 All posts loaded:', allPosts);
-      console.log('🖼️ Sample post imageUrls:', allPosts[0]?.imageUrls);
-      
-      // ============ USE MOCK DATA IF NO REAL DATA ============
-      const postsToUse = allPosts.length > 0 ? allPosts : MOCK_LATEST_POSTS;
-      // ============ END MOCK DATA USAGE ============
       
       // Get 9 latest posts (sort by createdAt desc)
-      const sortedPosts = postsToUse
+      const sortedPosts = (allPosts || [])
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 9);
       setPosts(sortedPosts);
     } catch (error) {
       console.error('Error loading posts:', error);
-      // ============ USE MOCK DATA ON ERROR ============
-      setPosts(MOCK_LATEST_POSTS);
-      // ============ END MOCK DATA ON ERROR ============
+      setPosts([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePostClick = (e, postId) => {
+    if (isGuest) {
+      e.preventDefault();
+      router.push(`/login?returnUrl=${encodeURIComponent(`/rental-posts/${postId}`)}`);
+    }
+  };
+
+  const handleViewAllClick = (e) => {
+    if (isGuest) {
+      e.preventDefault();
+      router.push(`/login?returnUrl=${encodeURIComponent('/rental-posts')}`);
     }
   };
 
@@ -179,6 +113,7 @@ export default function LatestPosts() {
               <Link
                 key={post.id}
                 href={`/rental-posts/${post.id}`}
+                onClick={(e) => handlePostClick(e, post.id)}
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-105 block"
               >
                 {/* Image */}
@@ -258,6 +193,7 @@ export default function LatestPosts() {
         <div className="text-center">
           <Link
             href="/rental-posts"
+            onClick={handleViewAllClick}
             className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
           >
             <span>View All Posts</span>

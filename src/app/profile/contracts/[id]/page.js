@@ -160,6 +160,30 @@ export default function ContractDetailPage() {
                         Quay lại
                     </button>
 
+                    {/* Sign Contract Banner - Show when user hasn't signed yet */}
+                    {contract.contractStatus === 0 && !contract.tenantSignature && (
+                        <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl p-6 mb-6 text-white">
+                            <div className="flex items-center justify-between flex-wrap gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-14 w-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                                        <PenLine className="h-7 w-7 text-white" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold">Hợp đồng đang chờ chữ ký của bạn</h2>
+                                        <p className="text-white/80">Vui lòng ký để hoàn tất hợp đồng thuê phòng</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => router.push(`/profile/contracts/${params.id}/signature`)}
+                                    className="flex items-center gap-2 px-6 py-3 bg-white text-orange-600 font-semibold rounded-xl hover:bg-orange-50 transition-colors shadow-lg"
+                                >
+                                    <PenLine className="h-5 w-5" />
+                                    Ký ngay
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Header Card */}
                     <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 mb-6 text-white">
                         <div className="flex items-center justify-between flex-wrap gap-4">
@@ -355,50 +379,59 @@ export default function ContractDetailPage() {
                     )}
 
                     {/* Signatures */}
-                    {(contract.ownerSignature || contract.tenantSignature) && (
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                                <PenLine className="h-5 w-5 text-green-600" />
-                                Chữ ký
-                            </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Chủ trọ</p>
-                                    {contract.ownerSignature ? (
-                                        <div>
-                                            <img
-                                                src={contract.ownerSignature}
-                                                alt="Owner Signature"
-                                                className="h-20 object-contain"
-                                            />
-                                            <p className="text-xs text-gray-400 mt-1">
-                                                Ký lúc: {formatDateTime(contract.ownerSignedAt)}
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <p className="text-gray-400 italic">Chưa ký</p>
-                                    )}
-                                </div>
-                                <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Người thuê</p>
-                                    {contract.tenantSignature ? (
-                                        <div>
-                                            <img
-                                                src={contract.tenantSignature}
-                                                alt="Tenant Signature"
-                                                className="h-20 object-contain"
-                                            />
-                                            <p className="text-xs text-gray-400 mt-1">
-                                                Ký lúc: {formatDateTime(contract.tenantSignedAt)}
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <p className="text-gray-400 italic">Chưa ký</p>
-                                    )}
-                                </div>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <PenLine className="h-5 w-5 text-green-600" />
+                            Chữ ký
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Chủ trọ</p>
+                                {contract.ownerSignature ? (
+                                    <div>
+                                        <img
+                                            src={contract.ownerSignature}
+                                            alt="Owner Signature"
+                                            className="h-20 object-contain"
+                                        />
+                                        <p className="text-xs text-gray-400 mt-1">
+                                            Ký lúc: {formatDateTime(contract.ownerSignedAt)}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-400 italic">Chưa ký</p>
+                                )}
+                            </div>
+                            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Người thuê (Bạn)</p>
+                                {contract.tenantSignature ? (
+                                    <div>
+                                        <img
+                                            src={contract.tenantSignature}
+                                            alt="Tenant Signature"
+                                            className="h-20 object-contain"
+                                        />
+                                        <p className="text-xs text-gray-400 mt-1">
+                                            Ký lúc: {formatDateTime(contract.tenantSignedAt)}
+                                        </p>
+                                    </div>
+                                ) : contract.contractStatus === 0 ? (
+                                    <div>
+                                        <p className="text-orange-500 italic mb-2">⚠️ Bạn chưa ký hợp đồng này</p>
+                                        <button
+                                            onClick={() => router.push(`/profile/contracts/${params.id}/signature`)}
+                                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:from-orange-600 hover:to-amber-600 text-sm"
+                                        >
+                                            <PenLine className="h-4 w-4" />
+                                            Ký ngay
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-400 italic">Chưa ký</p>
+                                )}
                             </div>
                         </div>
-                    )}
+                    </div>
 
                     {/* Contract Images */}
                     {contract.contractImage && contract.contractImage.length > 0 && (

@@ -6,7 +6,7 @@ const faceLoginService = {
     try {
       console.log("🔍 Attempting face login...");
       const response = await api.post('/api/FaceLogin/login', {
-        imageBase64: imageBase64
+        faceImage: imageBase64
       });
       console.log("✅ Face login successful:", response);
       return response;
@@ -22,12 +22,12 @@ const faceLoginService = {
   },
 
   // Register face for current user
-  registerFace: async (imageBase64, userId = null) => {
+  registerFace: async (imageBase64, label = null) => {
     try {
       console.log("📸 Registering face for user...");
-      const payload = { imageBase64 };
-      if (userId) {
-        payload.userId = userId;
+      const payload = { faceImage: imageBase64 };
+      if (label) {
+        payload.label = label;
       }
       
       const response = await api.post('/api/FaceLogin/register-face', payload);
@@ -44,7 +44,7 @@ const faceLoginService = {
     try {
       console.log("🔍 Verifying face...");
       const response = await api.post('/api/FaceLogin/verify-face', {
-        imageBase64: imageBase64
+        faceImage: imageBase64
       });
       console.log("✅ Face verification result:", response);
       return response;
@@ -86,13 +86,17 @@ const faceLoginService = {
   },
 
   // Update a registered face
-  updateFace: async (faceId, imageBase64) => {
+  updateFace: async (faceId, imageBase64 = null, label = null) => {
     try {
       console.log("🔄 Updating face...");
-      const response = await api.put('/api/FaceLogin/update-face', {
-        faceId: faceId,
-        imageBase64: imageBase64
-      });
+      const payload = { faceId: faceId };
+      if (imageBase64) {
+        payload.faceImage = imageBase64;
+      }
+      if (label) {
+        payload.label = label;
+      }
+      const response = await api.put('/api/FaceLogin/update-face', payload);
       console.log("✅ Face updated successfully:", response);
       return response;
     } catch (error) {

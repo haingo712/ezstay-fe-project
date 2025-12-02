@@ -25,19 +25,8 @@ export default function SearchBar() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
 
-  // Ẩn SearchBar cho guest
-  if (!isAuthenticated) {
-    return null;
-  }
-
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    if (!isAuthenticated) {
-      // Redirect to login if not authenticated
-      router.push('/login?returnUrl=/boarding-houses');
-      return;
-    }
 
     // Build search URL with parameters
     const params = new URLSearchParams();
@@ -46,16 +35,24 @@ export default function SearchBar() {
     if (minPrice) params.set('minPrice', minPrice);
     if (maxPrice) params.set('maxPrice', maxPrice);
 
-    const searchURL = params.toString() ? `/boarding-houses?${params.toString()}` : '/boarding-houses';
+    const searchURL = params.toString() ? `/rental-posts?${params.toString()}` : '/rental-posts';
+    
+    if (!isAuthenticated) {
+      // Redirect to login if not authenticated
+      router.push(`/login?returnUrl=${encodeURIComponent(searchURL)}`);
+      return;
+    }
+
     router.push(searchURL);
   };
 
   const handleQuickSearch = (searchLocation) => {
+    const searchURL = `/rental-posts?location=${encodeURIComponent(searchLocation)}`;
     if (!isAuthenticated) {
-      router.push('/login?returnUrl=/boarding-houses');
+      router.push(`/login?returnUrl=${encodeURIComponent(searchURL)}`);
       return;
     }
-    router.push(`/boarding-houses?location=${encodeURIComponent(searchLocation)}`);
+    router.push(searchURL);
   };
 
   return (
