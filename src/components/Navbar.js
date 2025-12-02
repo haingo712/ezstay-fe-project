@@ -144,17 +144,24 @@ export default function Navbar() {
 
   const getNavigationItems = () => {
     const baseItems = [
-      { href: "/", label: t('nav.home') },
-      { href: "/rental-posts", label: t('nav.rentalPost') },
-      { href: "/support", label: t('nav.support') },
-      { href: "/about", label: t('nav.about') },
+      { href: "/", label: t('nav.home'), requireAuth: false },
+      { href: "/rental-posts", label: t('nav.rentalPost'), requireAuth: true },
+      { href: "/support", label: t('nav.support'), requireAuth: false },
+      { href: "/about", label: t('nav.about'), requireAuth: false },
     ];
 
     if (isAuthenticated) {
-      baseItems.splice(2, 0, { href: "/favorites", label: "Favorites" });
+      baseItems.splice(2, 0, { href: "/favorites", label: "Favorites", requireAuth: true });
     }
 
     return baseItems;
+  };
+
+  const handleNavClick = (e, item) => {
+    if (item.requireAuth && !isAuthenticated) {
+      e.preventDefault();
+      router.push(`/login?returnUrl=${encodeURIComponent(item.href)}`);
+    }
   };
 
   const getUserDashboardLink = () => {
@@ -197,6 +204,7 @@ export default function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={(e) => handleNavClick(e, item)}
                   className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 font-medium"
                 >
                   {item.label}
@@ -335,6 +343,17 @@ export default function Navbar() {
                         </Link>
                       )}
 
+                      {/* Hợp đồng của tôi - Chỉ cho User */}
+                      {(userRole === 1 || userRole === "user") && (
+                        <Link
+                          href="/profile/contracts"
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          📄 Hợp đồng của tôi
+                        </Link>
+                      )}
+
                       {/* Hóa đơn - Chỉ cho User và Owner */}
                       {(userRole === 1 || userRole === "user" || userRole === 2 || userRole === "owner") && (
                         <Link
@@ -434,7 +453,10 @@ export default function Navbar() {
                   key={item.href}
                   href={item.href}
                   className="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={(e) => {
+                    handleNavClick(e, item);
+                    setIsMenuOpen(false);
+                  }}
                 >
                   {item.label}
                 </Link>
