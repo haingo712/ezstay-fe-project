@@ -81,44 +81,62 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
     console.warn('⚠️ Available contract keys:', Object.keys(contract));
   }
   
-  // Determine tenant and owner from identityProfiles
-  // The tenant (lessee) is the one with IsSigner = true
-  // The owner (lessor) is the one with IsSigner = false or the second profile
-  let tenant = {};
-  let ownerFromProfiles = {};
+  // Determine tenant (lessee - người thuê) and owner (lessor - người cho thuê) from identityProfiles
+  // LESSOR (Party A) = Owner = người cho thuê (chủ nhà)
+  // LESSEE (Party B) = Tenant = người thuê (user ký hợp đồng) = IsSigner = true
+  let tenant = {};  // Người thuê (Lessee/Party B) - the one who signs
+  let ownerFromProfiles = {};  // Người cho thuê (Lessor/Party A) - the owner
   
   if (identityProfiles.length > 0) {
-    // Find tenant (the signer) and owner based on IsSigner flag
+    // Find profiles based on IsSigner flag
+    // IsSigner = true means this is the tenant (person renting/signing the contract)
+    // IsSigner = false means this is the owner (person leasing out the property)
     const signerProfile = identityProfiles.find(p => p.IsSigner === true || p.isSigner === true);
     const nonSignerProfile = identityProfiles.find(p => p.IsSigner === false || p.isSigner === false);
     
-    if (signerProfile) {
-      // Signer is the tenant (Party B - Lessee)
+    if (signerProfile && nonSignerProfile) {
+      // Both profiles found - signer is tenant, non-signer is owner
       tenant = signerProfile;
-      // Non-signer or second profile is the owner (Party A - Lessor)
-      ownerFromProfiles = nonSignerProfile || identityProfiles.find(p => p !== signerProfile) || {};
+      ownerFromProfiles = nonSignerProfile;
+    } else if (signerProfile) {
+      // Only signer found - check if there are multiple profiles
+      if (identityProfiles.length >= 2) {
+        // If both are signers, use the SECOND one as tenant (the actual renter)
+        // and the FIRST one as owner (the property owner)
+        ownerFromProfiles = identityProfiles[0];
+        tenant = identityProfiles[1];
+      } else {
+        // Only one profile - this is the tenant
+        tenant = signerProfile;
+        ownerFromProfiles = {};
+      }
+    } else if (nonSignerProfile) {
+      // Only non-signer found - this is the owner
+      ownerFromProfiles = nonSignerProfile;
+      tenant = {};
     } else {
-      // Fallback: assume first is tenant, second is owner
-      tenant = identityProfiles[0] || {};
-      ownerFromProfiles = identityProfiles[1] || {};
+      // No IsSigner flag found - assume first is owner, second is tenant
+      ownerFromProfiles = identityProfiles[0] || {};
+      tenant = identityProfiles[1] || {};
     }
   }
   
-  console.log('👤 Identified Tenant (Lessee/Party B):', tenant);
-  console.log('👤 Identified Owner (Lessor/Party A):', ownerFromProfiles);
+  console.log('👤 Identified Tenant (Lessee/Party B - người thuê):', tenant);
+  console.log('👤 Identified Owner (Lessor/Party A - người cho thuê):', ownerFromProfiles);
   
   // Try to get owner info from alternative sources if not in identityProfiles
   const ownerInfo = contract.owner || contract.Owner || contract.ownerInfo || contract.OwnerInfo || ownerFromProfiles;
   
   console.log('👤 Final Owner info:', ownerInfo);
+  console.log('👤 Owner info keys:', Object.keys(ownerInfo || {}));
+  console.log('👤 Tenant keys:', Object.keys(tenant || {}));
   
-  // Get owner information with fallbacks - using correct field names from IdentityProfileResponse
-  const ownerName = ownerInfo.FullName || ownerInfo.fullName || 
-                    ownerInfo.Name || ownerInfo.name ||
-                    contract.ownerName || contract.OwnerName ||
-                    'EZStay Property Management';
-  const ownerPhone = ownerInfo.Phone || ownerInfo.phone || 
-                     ownerInfo.PhoneNumber || ownerInfo.phoneNumber ||
+  // Get owner information with fallbacks - check camelCase first (JSON from .NET uses camelCase)
+  const ownerName = ownerInfo.fullName || ownerInfo.FullName || 
+                    ownerInfo.name || ownerInfo.Name ||
+                    contract.ownerName || contract.OwnerName || '';
+  const ownerPhone = ownerInfo.phone || ownerInfo.Phone || 
+                     ownerInfo.phoneNumber || ownerInfo.PhoneNumber ||
                      contract.ownerPhone || contract.OwnerPhone || '';
   const ownerEmail = ownerInfo.Email || ownerInfo.email ||
                      contract.ownerEmail || contract.OwnerEmail || '';
@@ -225,7 +243,7 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   
   // Party A - Owner Information (apply Vietnamese diacritics removal for PDF)
   doc.setFont(undefined, 'normal');
-  doc.text(`Party A (Lessor): ${removeVietnameseDiacritics(ownerName)}`, 20, yPos);
+  doc.text(`Party A (Lessee): ${removeVietnameseDiacritics(ownerName)}`, 20, yPos);
   yPos += 7;
   if (ownerAddress) {
     doc.text(`Address: ${removeVietnameseDiacritics(ownerAddress)}`, 20, yPos);
@@ -268,12 +286,12 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
     yPos += 7;
   }
   
-  // Use correct field names from IdentityProfileResponse
-  const tenantName = tenant.FullName || tenant.fullName || (hasTenantData ? '' : '[To be determined]');
-  const tenantAddress = tenant.Address || tenant.address || (hasTenantData ? '' : '[To be provided]');
-  const tenantPhone = tenant.Phone || tenant.phone || tenant.PhoneNumber || tenant.phoneNumber || (hasTenantData ? '' : '[To be provided]');
-  const tenantEmail = tenant.Email || tenant.email || (hasTenantData ? '' : '[To be provided]');
-  const tenantCitizenId = tenant.CitizenIdNumber || tenant.citizenIdNumber || (hasTenantData ? '' : '[To be provided]');
+  // Use correct field names - check camelCase first (JSON from .NET uses camelCase)
+  const tenantName = tenant.fullName || tenant.FullName || (hasTenantData ? '' : '[To be determined]');
+  const tenantAddress = tenant.address || tenant.Address || (hasTenantData ? '' : '[To be provided]');
+  const tenantPhone = tenant.phone || tenant.Phone || tenant.phoneNumber || tenant.PhoneNumber || (hasTenantData ? '' : '[To be provided]');
+  const tenantEmail = tenant.email || tenant.Email || (hasTenantData ? '' : '[To be provided]');
+  const tenantCitizenId = tenant.citizenIdNumber || tenant.CitizenIdNumber || (hasTenantData ? '' : '[To be provided]');
   
   doc.text(`Party B (Lessee): ${removeVietnameseDiacritics(tenantName)}`, 20, yPos);
   yPos += 7;
@@ -1093,80 +1111,39 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   doc.setFont(undefined, 'italic');
   doc.setFontSize(11);
   const signingDate = new Date().toLocaleDateString('en-GB');
-  doc.text(`Ho Chi Minh City, date ${signingDate}`, 105, yPos, { align: 'center' });
   yPos += 15;
   
   // Create two columns for signatures
+  // PARTY A (LESSOR) = Owner = Người cho thuê (bên trái)
+  // PARTY B (LESSEE) = Tenant = Người thuê (bên phải)
   doc.setFont(undefined, 'bold');
   doc.setFontSize(11);
   doc.text('PARTY A (LESSOR)', 55, yPos, { align: 'center' });
   doc.text('PARTY B (LESSEE)', 155, yPos, { align: 'center' });
-  yPos += 10;
+  yPos += 15;
   
-  doc.setFont(undefined, 'normal');
-  doc.setFontSize(10);
-  // Use owner name for Party A (Lessor) and tenant name for Party B (Lessee)
-  doc.text(removeVietnameseDiacritics(ownerName), 55, yPos, { align: 'center' });
-  const tenantDisplayName = tenant.FullName || tenant.fullName || tenantName || 'Tenant Name';
-  doc.text(removeVietnameseDiacritics(tenantDisplayName), 155, yPos, { align: 'center' });
-  yPos += 7;
-  
-  // Use owner address for Party A and tenant address for Party B
-  const ownerDisplayAddress = ownerAddress || ownerLocation || '';
-  const shortOwnerAddress = ownerDisplayAddress.length > 30 ? ownerDisplayAddress.substring(0, 27) + '...' : ownerDisplayAddress;
-  doc.text(removeVietnameseDiacritics(shortOwnerAddress), 55, yPos, { align: 'center' });
-  const signatureAddress = tenant.Address || tenant.address || tenantAddress || '';
-  const shortAddress = signatureAddress.length > 30 ? signatureAddress.substring(0, 27) + '...' : signatureAddress;
-  doc.text(removeVietnameseDiacritics(shortAddress), 155, yPos, { align: 'center' });
-  yPos += 20;
-  
-  // Digital Signature boxes
-  doc.setFont(undefined, 'italic');
-  doc.setFontSize(9);
-  doc.text('(Digital Signature)', 55, yPos, { align: 'center' });
-  doc.text('(Digital Signature)', 155, yPos, { align: 'center' });
-  yPos += 5;
-  
-  // Signature image boxes
+  // Signature image boxes (no name/address above, will show name below)
   const signatureBoxHeight = 40;
   const signatureBoxWidth = 60;
   
-  // Owner signature
+  // Owner signature (Party A - Lessor - bên trái)
   doc.rect(25, yPos, signatureBoxWidth, signatureBoxHeight);
   if (ownerSignature) {
     try {
       doc.addImage(ownerSignature, 'PNG', 27, yPos + 2, signatureBoxWidth - 4, signatureBoxHeight - 4);
     } catch (error) {
       console.error('Error adding owner signature to PDF:', error);
-      doc.setFontSize(8);
-      doc.setTextColor(200, 0, 0);
-      doc.text('Signature Error', 55, yPos + 20, { align: 'center' });
-      doc.setTextColor(0, 0, 0);
     }
-  } else {
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text('No signature', 55, yPos + 20, { align: 'center' });
-    doc.setTextColor(0, 0, 0);
   }
   
-  // Tenant signature
+  // Tenant signature (Party B - Lessee - bên phải)
   doc.rect(125, yPos, signatureBoxWidth, signatureBoxHeight);
   if (tenantSignature) {
     try {
       doc.addImage(tenantSignature, 'PNG', 127, yPos + 2, signatureBoxWidth - 4, signatureBoxHeight - 4);
     } catch (error) {
       console.error('Error adding tenant signature to PDF:', error);
-      doc.setFontSize(8);
-      doc.setTextColor(200, 0, 0);
-      doc.text('Signature Error', 155, yPos + 20, { align: 'center' });
-      doc.setTextColor(0, 0, 0);
     }
-  } else {
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text('No signature', 155, yPos + 20, { align: 'center' });
-    doc.setTextColor(0, 0, 0);
   }
   
   yPos += signatureBoxHeight + 10;
@@ -1179,9 +1156,11 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   doc.text('___________________________', 155, yPos, { align: 'center' });
   yPos += 7;
   
-  // Display actual owner name and tenant name under signatures
-  doc.text(removeVietnameseDiacritics(ownerName), 55, yPos, { align: 'center' });
-  const tenantFinalName = tenant.FullName || tenant.fullName || tenantName || 'Tenant Name';
+  // Display owner name (Party A - Lessor) and tenant name (Party B - Lessee) under signatures
+  const ownerFinalName = ownerName || '';
+  const tenantFinalName = tenant.fullName || tenant.FullName || tenantName || '';
+  console.log('📝 Signature names - Owner:', ownerFinalName, 'Tenant:', tenantFinalName);
+  doc.text(removeVietnameseDiacritics(ownerFinalName), 55, yPos, { align: 'center' });
   doc.text(removeVietnameseDiacritics(tenantFinalName), 155, yPos, { align: 'center' });
   yPos += 20;
   

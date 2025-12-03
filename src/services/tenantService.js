@@ -5,19 +5,19 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5
 const userService = {
   // Get all users (for selecting tenant when creating contract)
   getAll: async () => {
-    const response = await axios.get(`${API_BASE_URL}/TestAccount`);
+    const response = await axios.get(`${API_BASE_URL}/Accounts`);
     return response.data;
   },
   
   getById: async (id) => {
-    const response = await axios.get(`${API_BASE_URL}/TestAccount/${id}`);
+    const response = await axios.get(`${API_BASE_URL}/Accounts/${id}`);
     return response.data;
   },
   
   // Search users by email, name, phone
   search: async (searchTerm) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/TestAccount`);
+      const response = await axios.get(`${API_BASE_URL}/Accounts`);
       const users = response.data;
       
       // Filter users based on search term

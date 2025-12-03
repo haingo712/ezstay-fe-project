@@ -279,6 +279,62 @@ export const rentalPostService = {
   // Alias for getById
   getPostById: async (postId) => {
     return rentalPostService.getById(postId);
+  },
+
+  // ==================== STAFF POST MODERATION ====================
+
+  // Get all pending posts for staff review
+  getPendingPosts: async () => {
+    try {
+      console.log('📋 Fetching pending posts for staff review...');
+      const response = await axiosInstance.get('/api/RentalPosts/pending');
+      let posts = response.data;
+
+      console.log('📋 Raw pending posts from backend:', posts);
+
+      // Normalize posts data
+      if (Array.isArray(posts)) {
+        posts = posts.map(normalizePostData);
+
+        // Enrich posts with additional data
+        const enrichedPosts = await Promise.all(
+          posts.map(post => enrichPostWithNames(post, false))
+        );
+
+        return enrichedPosts;
+      }
+
+      return posts;
+    } catch (error) {
+      console.error('❌ Error fetching pending posts:', error);
+      throw error;
+    }
+  },
+
+  // Approve a post (Staff only)
+  approvePost: async (postId) => {
+    try {
+      console.log(`✅ Approving post ${postId}...`);
+      const response = await axiosInstance.put(`/api/RentalPosts/${postId}/approve`);
+      console.log('✅ Post approved successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error approving post:', error);
+      throw error;
+    }
+  },
+
+  // Reject a post (Staff only)
+  rejectPost: async (postId) => {
+    try {
+      console.log(`❌ Rejecting post ${postId}...`);
+      const response = await axiosInstance.put(`/api/RentalPosts/${postId}/reject`);
+      console.log('✅ Post rejected successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error rejecting post:', error);
+      throw error;
+    }
   }
 };
 

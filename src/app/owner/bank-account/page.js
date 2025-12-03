@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 import paymentService from '@/services/paymentService';
 import { paymentAPI } from '@/utils/api';
 
 export default function BankAccountPage() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const router = useRouter();
 

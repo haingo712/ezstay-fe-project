@@ -9,6 +9,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/hooks/useAuth';
 import SafeImage from '@/components/SafeImage';
+import { toast } from 'react-toastify';
 
 export default function ReviewDetailPage() {
   const params = useParams();
@@ -69,11 +70,11 @@ export default function ReviewDetailPage() {
 
     try {
       await reviewService.deleteReview(reviewId);
-      alert(t('reviewDetail.deleteSuccess'));
+      toast.success(t('reviewDetail.deleteSuccess'));
       router.push('/profile/rental-history');
     } catch (error) {
       console.error('Error deleting review:', error);
-      alert(t('reviewDetail.deleteFailed'));
+      toast.error(t('reviewDetail.deleteFailed'));
     }
   };
 

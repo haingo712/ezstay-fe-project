@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import RoleBasedRedirect from "@/components/RoleBasedRedirect";
 import { useTranslation } from "@/hooks/useTranslation";
 import aiAssistantService from "@/services/aiAssistantService";
+import { toast } from 'react-toastify';
 
 export default function SupportPage() {
   const { t } = useTranslation();
@@ -125,7 +126,7 @@ export default function SupportPage() {
   const handleContactSubmit = (e) => {
     e.preventDefault();
     // Handle contact form submission
-    alert(t('supportPage.submitSuccess'));
+    toast.success(t('supportPage.submitSuccess'));
     setContactForm({
       name: "",
       email: "",

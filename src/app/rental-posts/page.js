@@ -10,6 +10,7 @@ import RoleBasedRedirect from '../../components/RoleBasedRedirect';
 import { rentalPostService } from '@/services/rentalPostService';
 import favoritePostService from '@/services/favoritePostService';
 import { Building, Home, Calendar, Search, Filter, Heart } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 export default function RentalPostsPage() {
   const [posts, setPosts] = useState([]);
@@ -127,7 +128,7 @@ export default function RentalPostsPage() {
     event.stopPropagation();
 
     if (!isAuthenticated) {
-      alert(t('rentalPosts.loginToSave'));
+      toast.info(t('rentalPosts.loginToSave'));
       router.push('/login');
       return;
     }
@@ -148,7 +149,7 @@ export default function RentalPostsPage() {
       setFavorites((prev) => [...prev, favoriteRecord]);
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
-      alert(t('rentalPosts.favoriteError'));
+      toast.error(t('rentalPosts.favoriteError'));
     } finally {
       setFavoriteLoading((prev) => ({ ...prev, [postId]: false }));
     }
