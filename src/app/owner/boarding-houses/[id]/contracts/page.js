@@ -2453,7 +2453,7 @@ export default function ContractsManagementPage() {
                         className="px-3 py-1 text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-200 text-sm font-medium"
                         title="Manage electricity and water readings"
                       >
-                        ⚡💧 Utilities
+                        Utility Bill
                       </button>
                     )}
 
@@ -3779,7 +3779,7 @@ export default function ContractsManagementPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Note - Optional
+                            Note
                           </label>
                           <input
                             type="text"
@@ -3864,7 +3864,7 @@ export default function ContractsManagementPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Note - Optional
+                            Note
                           </label>
                           <input
                             type="text"

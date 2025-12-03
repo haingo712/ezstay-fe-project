@@ -389,7 +389,7 @@ export default function UtilityReadingsPage() {
 
                                         <div>
                                             <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-2">
-                                                Note (optional)
+                                                Note
                                             </label>
                                             <input
                                                 type="text"
@@ -462,7 +462,7 @@ export default function UtilityReadingsPage() {
 
                                         <div>
                                             <label className="block text-sm font-medium text-blue-700 dark:text-blue-300 mb-2">
-                                                Note (optional)
+                                                Note
                                             </label>
                                             <input
                                                 type="text"

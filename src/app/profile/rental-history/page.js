@@ -42,7 +42,7 @@ const MOCK_RENTAL_HISTORY = [
     checkoutDate: '2025-11-30T00:00:00Z',
     roomPrice: 5500000,
     depositAmount: 11000000,
-    contractStatus: 2, // Expired - có thể review
+    contractStatus: 3, // Expired - có thể review
     numberOfOccupants: 1
   },
   {
@@ -56,7 +56,7 @@ const MOCK_RENTAL_HISTORY = [
     checkoutDate: '2025-06-15T00:00:00Z',
     roomPrice: 4200000,
     depositAmount: 8400000,
-    contractStatus: 2, // Expired
+    contractStatus: 3, // Expired
     numberOfOccupants: 2
   },
   {
@@ -70,7 +70,7 @@ const MOCK_RENTAL_HISTORY = [
     checkoutDate: '2026-04-30T00:00:00Z',
     roomPrice: 2800000,
     depositAmount: 5600000,
-    contractStatus: 0, // Active
+    contractStatus: 1, // Active
     numberOfOccupants: 1
   },
   {
@@ -84,7 +84,7 @@ const MOCK_RENTAL_HISTORY = [
     checkoutDate: '2025-05-31T00:00:00Z',
     roomPrice: 7000000,
     depositAmount: 14000000,
-    contractStatus: 2, // Expired
+    contractStatus: 3, // Expired
     numberOfOccupants: 1
   }
 ];
@@ -289,12 +289,14 @@ export default function RentalHistoryPage() {
   };
 
   const canReview = (contract) => {
-    // User có thể review nếu hợp đồng đã kết thúc và trong vòng 30 ngày
+    // User có thể review nếu hợp đồng đã kết thúc (Expired=3) và trong vòng 30 ngày
+    // Hoặc hợp đồng Active (1) cũng có thể review
     const checkoutDate = new Date(contract.checkoutDate);
     const now = new Date();
     const daysSinceCheckout = (now - checkoutDate) / (1000 * 60 * 60 * 24);
 
-    return contract.contractStatus === 2 && daysSinceCheckout <= 30;
+    // Có thể review nếu: Active (1) hoặc Expired (3) trong vòng 30 ngày
+    return contract.contractStatus === 1 || (contract.contractStatus === 3 && daysSinceCheckout <= 30);
   };
 
   const handleOpenCancelModal = (contract) => {
@@ -685,24 +687,26 @@ export default function RentalHistoryPage() {
                         </button>
                       )}
 
-                      {/* Active = 1: có thể viết đánh giá và hủy hợp đồng */}
+                      {/* Pending = 0 đã ký hoặc Active = 1: có thể viết đánh giá */}
+                      {(contract.contractStatus === 0 || contract.contractStatus === 1) && (
+                        <button
+                          onClick={() => handleOpenReviewModal(contract)}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                        >
+                          <PenLine className="h-4 w-4" />
+                          Viết đánh giá
+                        </button>
+                      )}
+
+                      {/* Active = 1: có thể hủy hợp đồng */}
                       {contract.contractStatus === 1 && (
-                        <>
-                          <button
-                            onClick={() => handleOpenReviewModal(contract)}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                          >
-                            <PenLine className="h-4 w-4" />
-                            Viết đánh giá
-                          </button>
-                          <button
-                            onClick={() => handleOpenCancelModal(contract)}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                          >
-                            <XCircle className="h-4 w-4" />
-                            Hủy hợp đồng
-                          </button>
-                        </>
+                        <button
+                          onClick={() => handleOpenCancelModal(contract)}
+                          className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                        >
+                          <XCircle className="h-4 w-4" />
+                          Hủy hợp đồng
+                        </button>
                       )}
 
                       {/* Expired = 3: có thể đánh giá */}
