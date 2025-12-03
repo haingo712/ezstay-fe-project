@@ -9,6 +9,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import favoritePostService from '@/services/favoritePostService';
 import { rentalPostService } from '@/services/rentalPostService';
 import { Building, Calendar, Heart, Home, Trash2 } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const formatDate = (value) =>
   new Date(value).toLocaleDateString('vi-VN', {
@@ -122,7 +123,7 @@ export default function FavoritesPage() {
         actualFavoriteId = favorite.id;
         console.log('✅ Found favoriteId from favorites array:', actualFavoriteId);
       } else {
-        alert('Lỗi: Không tìm thấy ID yêu thích. Vui lòng thử tải lại trang.');
+        toast.error(t('favorites.toast.notFound') || 'Lỗi: Không tìm thấy ID yêu thích. Vui lòng thử tải lại trang.');
         return;
       }
     }
@@ -151,7 +152,7 @@ export default function FavoritesPage() {
     } catch (error) {
       console.error('❌ Failed to remove favorite:', error);
       console.error('Error details:', error.response?.data || error.message);
-      alert(`Không thể xóa yêu thích. ${error.response?.data?.message || error.message}`);
+      toast.error(`${t('favorites.toast.removeFailed') || 'Không thể xóa yêu thích.'} ${error.response?.data?.message || error.message}`);
     }
   };
 

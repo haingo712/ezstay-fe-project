@@ -7,6 +7,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import contractService from '@/services/contractService';
 import reviewService from '@/services/reviewService';
 import otpService from '@/services/otpService';
+import { toast } from 'react-toastify';
 import {
   Building2,
   Calendar,
@@ -198,7 +199,7 @@ export default function RentalHistoryPage() {
     if (!selectedContract) return;
 
     if (!reviewForm.content.trim()) {
-      alert(t('rentalHistory.writeReviewPlaceholder'));
+      toast.warning(t('rentalHistory.writeReviewPlaceholder'));
       return;
     }
 
@@ -232,7 +233,7 @@ export default function RentalHistoryPage() {
       const createdReview = await reviewService.createReview(selectedContract.id, formData);
       console.log('✅ Created review:', createdReview);
 
-      alert('Review submitted successfully! ✅');
+      toast.success('Review submitted successfully! ✅');
       handleCloseReviewModal();
 
       // Navigate to the created review detail page
@@ -245,7 +246,7 @@ export default function RentalHistoryPage() {
       }
     } catch (error) {
       console.error('Error submitting review:', error);
-      alert(error.response?.data?.message || 'Failed to submit review. Please try again.');
+      toast.error(error.response?.data?.message || 'Failed to submit review. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -315,19 +316,19 @@ export default function RentalHistoryPage() {
     if (!selectedContract) return;
 
     if (!cancelReason.trim()) {
-      alert('Vui lòng nhập lý do hủy hợp đồng!');
+      toast.warning('Vui lòng nhập lý do hủy hợp đồng!');
       return;
     }
 
     try {
       setCancelling(true);
       await contractService.terminate(selectedContract.id, cancelReason);
-      alert('Hủy hợp đồng thành công!');
+      toast.success('Hủy hợp đồng thành công!');
       handleCloseCancelModal();
       loadContracts();
     } catch (error) {
       console.error('Error cancelling contract:', error);
-      alert(error.response?.data?.message || 'Không thể hủy hợp đồng. Vui lòng thử lại.');
+      toast.error(error.response?.data?.message || 'Không thể hủy hợp đồng. Vui lòng thử lại.');
     } finally {
       setCancelling(false);
     }
@@ -444,11 +445,11 @@ export default function RentalHistoryPage() {
 
   const handleSendOtp = async () => {
     if (!signaturePreview) {
-      alert('Vui lòng tạo chữ ký trước!');
+      toast.warning('Vui lòng tạo chữ ký trước!');
       return;
     }
     if (!signatureEmail) {
-      alert('Vui lòng nhập email!');
+      toast.warning('Vui lòng nhập email!');
       return;
     }
 
@@ -464,10 +465,10 @@ export default function RentalHistoryPage() {
       setCurrentOtpId(otpId);
       setSignatureStep(2);
       setOtpTimer(300);
-      alert('Mã OTP đã được gửi đến email của bạn!');
+      toast.success('Mã OTP đã được gửi đến email của bạn!');
     } catch (error) {
       console.error('Error sending OTP:', error);
-      alert(error.response?.data?.message || 'Không thể gửi OTP. Vui lòng thử lại.');
+      toast.error(error.response?.data?.message || 'Không thể gửi OTP. Vui lòng thử lại.');
     } finally {
       setSendingOtp(false);
     }
@@ -475,11 +476,11 @@ export default function RentalHistoryPage() {
 
   const handleConfirmSignature = async () => {
     if (!otpCode || otpCode.length !== 6) {
-      alert('Vui lòng nhập mã OTP 6 chữ số!');
+      toast.warning('Vui lòng nhập mã OTP 6 chữ số!');
       return;
     }
     if (!currentOtpId) {
-      alert('Không tìm thấy phiên OTP. Vui lòng thử lại.');
+      toast.warning('Không tìm thấy phiên OTP. Vui lòng thử lại.');
       return;
     }
 
@@ -497,15 +498,15 @@ export default function RentalHistoryPage() {
       await contractService.signContract(contractId, signaturePreview);
       console.log('✅ Contract signed!');
 
-      alert('Ký hợp đồng thành công! 🎉');
+      toast.success('Ký hợp đồng thành công! 🎉');
       handleCloseSignatureModal();
       loadContracts();
     } catch (error) {
       console.error('Error signing contract:', error);
       if (error.response?.status === 400) {
-        alert('Mã OTP không đúng hoặc đã hết hạn!');
+        toast.error('Mã OTP không đúng hoặc đã hết hạn!');
       } else {
-        alert(error.response?.data?.message || 'Không thể ký hợp đồng. Vui lòng thử lại.');
+        toast.error(error.response?.data?.message || 'Không thể ký hợp đồng. Vui lòng thử lại.');
       }
     } finally {
       setVerifyingOtp(false);

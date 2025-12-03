@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/utils/api";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { toast } from 'react-toastify';
 
 export default function RegisterOwnerPage() {
     const router = useRouter();
@@ -23,7 +24,7 @@ export default function RegisterOwnerPage() {
         }
 
         try {
-            const response = await apiFetch("/api/TestAccount/request-owner", {
+            const response = await apiFetch("/api/OwnerRequest/request-owner", {
                 method: "POST",
                 body: JSON.stringify({ reason: reason }),
                 headers: {
@@ -32,7 +33,7 @@ export default function RegisterOwnerPage() {
             });
 
             setSuccess(true);
-            alert("Đơn đăng ký Owner đã được gửi thành công! Vui lòng chờ Staff phê duyệt.");
+            toast.success("Đơn đăng ký Owner đã được gửi thành công! Vui lòng chờ Staff phê duyệt.");
 
             // Chuyển về trang home sau 2 giây
             setTimeout(() => {

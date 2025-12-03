@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/utils/api";
 import { useTranslation } from "@/hooks/useTranslation";
+import { toast } from 'react-toastify';
 
 // Function to mark notification as read
 async function markAsReadNotification(id) {
@@ -164,7 +165,7 @@ export default function StaffNotificationsPage() {
             );
         } catch (err) {
             console.error("Error marking as read:", err);
-            alert("Unable to mark as read.");
+            toast.error(t('staffNotifications.toast.markReadFailed') || "Unable to mark as read.");
         }
     };
 
@@ -183,7 +184,7 @@ export default function StaffNotificationsPage() {
             });
             setShowCreateForm(false);
             await fetchNotifications();
-            alert("Notification created successfully!");
+            toast.success(t('staffNotifications.toast.createSuccess') || "Notification created successfully!");
         } catch (err) {
             console.error("Error creating notification:", err);
             setCreateError(err.message || "Unable to create notification.");
@@ -214,7 +215,7 @@ export default function StaffNotificationsPage() {
             });
             setShowCreateForm(false);
             await fetchNotifications();
-            alert("Notification by role created successfully!");
+            toast.success(t('staffNotifications.toast.createByRoleSuccess') || "Notification by role created successfully!");
         } catch (err) {
             console.error("Error creating notification by role:", err);
             setCreateError(err.message || "Unable to create notification.");
@@ -277,7 +278,7 @@ export default function StaffNotificationsPage() {
                 scheduledTime: ""
             });
             setShowScheduleForm(false);
-            alert("Scheduled notification created successfully!");
+            toast.success(t('staffNotifications.toast.scheduleSuccess') || "Scheduled notification created successfully!");
         } catch (err) {
             console.error("Error scheduling notification:", err);
             setScheduleError(err.message || "Unable to schedule notification.");
@@ -314,7 +315,7 @@ export default function StaffNotificationsPage() {
             setShowEditForm(false);
             setEditingNotification(null);
             await fetchNotifications();
-            alert("Notification updated successfully!");
+            toast.success(t('staffNotifications.toast.updateSuccess') || "Notification updated successfully!");
         } catch (err) {
             console.error("Error updating notification:", err);
             setEditError(err.message || "Unable to update notification.");
@@ -334,10 +335,10 @@ export default function StaffNotificationsPage() {
         try {
             await deleteNotification(id);
             await fetchNotifications();
-            alert("Notification deleted successfully!");
+            toast.success(t('staffNotifications.toast.deleteSuccess') || "Notification deleted successfully!");
         } catch (err) {
             console.error("Error deleting notification:", err);
-            alert(err.message || "Unable to delete notification.");
+            toast.error(err.message || t('staffNotifications.toast.deleteFailed') || "Unable to delete notification.");
         }
     };
 
