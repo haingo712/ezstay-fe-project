@@ -350,12 +350,12 @@ export default function Navbar() {
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
-                          📄 Hợp đồng của tôi
+                          My Contracts
                         </Link>
                       )}
 
-                      {/* Hóa đơn - Chỉ cho User và Owner */}
-                      {(userRole === 1 || userRole === "user" || userRole === 2 || userRole === "owner") && (
+                      {/* Hóa đơn - Chỉ cho User */}
+                      {(userRole === 1 || userRole === "user") && (
                         <Link
                           href="/bills"
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -383,7 +383,7 @@ export default function Navbar() {
                           className="block w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
-                          🏠 Register as Owner
+                          Register as Owner
                         </Link>
                       )}
 

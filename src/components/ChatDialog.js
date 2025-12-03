@@ -42,28 +42,15 @@ export default function ChatDialog({
 
       // Check if user is authenticated
       if (!user) {
-        notification.warning('Please login to start chatting');
+        console.warn('User not authenticated');
         onClose();
         return;
       }
       
-      // Get ownerId from post data
-      const rentalPostService = await import('@/services/rentalPostService');
-      const post = await rentalPostService.default.getPostById(postId);
-      
-      // Try multiple possible field names for owner ID
-      const ownerId = post?.ownerId || post?.OwnerId || post?.authorId || post?.AuthorId;
-      
-      console.log('🔍 Post data for chat:', { 
-        postId, 
-        ownerId, 
-        authorId: post?.authorId,
-        allKeys: Object.keys(post || {})
-      });
-      
+      // ownerId is passed directly as prop from parent component
       if (!ownerId) {
-        console.error('❌ Post object:', post);
-        throw new Error('Cannot get owner information from post. Check console for post data.');
+        console.error('❌ ownerId is missing from props');
+        throw new Error('Cannot get owner information. Owner ID is missing.');
       }
       
       console.log('🔍 Looking for chat room with ownerId:', ownerId);
@@ -99,10 +86,10 @@ export default function ChatDialog({
     } catch (error) {
       console.error('❌ Error initializing chat:', error);
       if (error.message?.includes('401')) {
-        notification.warning('Please login to start chatting');
+        console.warn('Please login to start chatting');
         onClose();
       } else {
-        notification.error(`Failed to initialize chat: ${error.message || 'Please try again.'}`);
+        console.error(`Failed to initialize chat: ${error.message || 'Please try again.'}`);
       }
     } finally {
       setLoading(false);

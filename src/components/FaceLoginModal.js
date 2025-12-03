@@ -35,7 +35,7 @@ export default function FaceLoginModal({ isOpen, onClose }) {
   const startCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: 640, height: 480, facingMode: 'user' } 
+        video: { width: 480, height: 640, facingMode: 'user' } 
       });
       setStream(mediaStream);
       if (videoRef.current) {
@@ -44,7 +44,7 @@ export default function FaceLoginModal({ isOpen, onClose }) {
       }
       setError('');
     } catch (err) {
-      setError('Unable to access camera. Please check permissions.');
+      setError('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.');
     }
   };
 
@@ -84,7 +84,7 @@ export default function FaceLoginModal({ isOpen, onClose }) {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) {
-      setError('Camera not ready');
+      setError('Camera chưa sẵn sàng');
       return;
     }
     canvas.width = video.videoWidth;
@@ -92,10 +92,9 @@ export default function FaceLoginModal({ isOpen, onClose }) {
     const ctx = canvas.getContext('2d');
     
     // Flip the image horizontally to match the mirrored video display
-    // This ensures consistency between what user sees and what's captured
     ctx.scale(-1, 1);
     ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     
     const imageData = canvas.toDataURL('image/jpeg', 0.8);
     setCapturedImage(imageData);
@@ -113,7 +112,6 @@ export default function FaceLoginModal({ isOpen, onClose }) {
       if (result.success && result.token) {
         localStorage.setItem('authToken', result.token);
         
-        // Get user role from token to redirect properly
         const userInfo = authService.getUserInfo();
         const role = userInfo?.role;
         console.log("🔍 User role after face login:", role);
@@ -121,25 +119,21 @@ export default function FaceLoginModal({ isOpen, onClose }) {
         setTimeout(() => {
           if (onClose) onClose();
           
-          // Redirect based on role
-          // role: 1 = User, 2 = Owner, 3 = Staff, 4 = Admin
           if (role === 4 || role === 3) {
             router.push('/dashboard');
           } else if (role === 2) {
             router.push('/owner');
           } else {
-            // User role (1) or default - go to home page
             router.push('/');
           }
           router.refresh();
         }, 1500);
       } else {
-        setError(result.message || 'Face not recognized. Please try again.');
+        setError(result.message || 'Không nhận diện được khuôn mặt. Vui lòng thử lại.');
       }
     } catch (err) {
       console.error("❌ Face login error:", err);
-      // Extract error message from different error formats
-      const errorMessage = err.data?.message || err.message || 'Face login failed. Please try again.';
+      const errorMessage = err.data?.message || err.message || 'Đăng nhập bằng khuôn mặt thất bại. Vui lòng thử lại.';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -155,223 +149,200 @@ export default function FaceLoginModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/80 via-purple-900/20 to-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-      <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 max-w-2xl w-full transform transition-all duration-300 scale-100 hover:scale-[1.01]">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-3 rounded-2xl shadow-lg">
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 p-2 rounded-xl">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="font-bold text-lg">Đăng nhập Face ID</h2>
+                <p className="text-xs text-white/80">
+                  {!capturedImage ? 'Đặt khuôn mặt vào khung' : loading ? 'Đang xác thực...' : 'Hoàn thành'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-white/80 hover:text-white p-1 hover:bg-white/10 rounded-full transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                AI Face Login
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {!capturedImage ? 'Position your face in the frame' : loading ? 'Verifying identity...' : 'Processing complete'}
-              </p>
-            </div>
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
 
-        {/* Alerts */}
-        {error && (
-          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 rounded-lg animate-slideDown">
-            <div className="flex items-center gap-3">
-              <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-              <p className="text-red-700 dark:text-red-300 font-medium">{error}</p>
+        <div className="p-4">
+          {/* Alerts */}
+          {error && (
+            <div className="mb-3 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-3 rounded-r-lg">
+              <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
             </div>
-          </div>
-        )}
-        
-        {!error && capturedImage && !loading && (
-          <div className="mb-6 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 p-4 rounded-lg animate-slideDown">
-            <div className="flex items-center gap-3">
-              <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <p className="text-green-700 dark:text-green-300 font-medium">✨ Login successful! Redirecting to dashboard...</p>
+          )}
+          
+          {!error && capturedImage && !loading && (
+            <div className="mb-3 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 p-3 rounded-r-lg">
+              <p className="text-green-700 dark:text-green-300 text-sm">
+                ✨ Đăng nhập thành công! Đang chuyển hướng...
+              </p>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Camera/Image Display */}
-        <div className="mb-6 relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl overflow-hidden shadow-2xl border-4 border-purple-500/20">
-          <div className="aspect-video relative">
-            {!capturedImage ? (
-              <>
-                <video 
-                  ref={videoRef} 
-                  autoPlay 
-                  playsInline 
-                  muted 
-                  className="w-full h-full object-cover"
-                  style={{ transform: 'scaleX(-1)' }}
-                />
-                
-                {/* Scanning Animation Overlay */}
-                {stream && !faceDetected && (
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute inset-0 border-2 border-dashed border-purple-400/30 animate-pulse rounded-2xl m-8" />
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent animate-scan" />
-                  </div>
-                )}
-
-                {/* Face Detection Badge */}
-                <div className="absolute top-4 right-4">
-                  {faceDetected ? (
-                    <div className="bg-green-500/90 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg flex items-center gap-2 animate-bounce">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          {/* Camera View */}
+          <div className="relative bg-gray-900 rounded-xl overflow-hidden mx-auto" style={{ maxWidth: '280px' }}>
+            <div className="aspect-[3/4] relative">
+              {!capturedImage ? (
+                <>
+                  <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    muted 
+                    className="w-full h-full object-cover"
+                    style={{ transform: 'scaleX(-1)' }}
+                  />
+                  
+                  {/* Face oval guide */}
+                  {stream && (
+                    <div className="absolute inset-0 pointer-events-none">
+                      <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice">
+                        <defs>
+                          <mask id="faceMaskLogin">
+                            <rect width="100%" height="100%" fill="white"/>
+                            <ellipse cx="50%" cy="45%" rx="35%" ry="42%" fill="black"/>
+                          </mask>
+                        </defs>
+                        <rect width="100%" height="100%" fill="rgba(0,0,0,0.5)" mask="url(#faceMaskLogin)"/>
+                        <ellipse 
+                          cx="50%" cy="45%" rx="35%" ry="42%" 
+                          fill="none" 
+                          stroke={faceDetected ? "#22c55e" : "#a855f7"} 
+                          strokeWidth="3"
+                          strokeDasharray={faceDetected ? "0" : "8 4"}
+                          className={faceDetected ? "" : "animate-pulse"}
+                        />
                       </svg>
-                      Face Detected
                     </div>
-                  ) : (
-                    <div className="bg-gray-700/90 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg flex items-center gap-2">
-                      <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
-                      Scanning...
+                  )}
+
+                  {/* Face detection badge */}
+                  <div className="absolute top-2 right-2">
+                    {faceDetected ? (
+                      <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Sẵn sàng
+                      </div>
+                    ) : (
+                      <div className="bg-gray-700 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse" />
+                        Đang quét
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Guide text */}
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 px-3 py-1.5 rounded-full">
+                    <p className="text-white text-xs text-center whitespace-nowrap">
+                      {faceDetected ? '✅ Giữ nguyên và nhấn chụp' : '👤 Đặt mặt vào khung oval'}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div className="relative w-full h-full">
+                  <img src={capturedImage} alt="Captured face" className="w-full h-full object-cover" />
+                  {loading && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="w-10 h-10 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                        <p className="text-white text-sm">Đang xác thực...</p>
+                      </div>
                     </div>
                   )}
                 </div>
-
-                {/* Corner Guides */}
-                {stream && (
-                  <>
-                    <div className="absolute top-8 left-8 w-12 h-12 border-l-4 border-t-4 border-purple-500 rounded-tl-2xl animate-pulse" />
-                    <div className="absolute top-8 right-8 w-12 h-12 border-r-4 border-t-4 border-purple-500 rounded-tr-2xl animate-pulse" />
-                    <div className="absolute bottom-8 left-8 w-12 h-12 border-l-4 border-b-4 border-purple-500 rounded-bl-2xl animate-pulse" />
-                    <div className="absolute bottom-8 right-8 w-12 h-12 border-r-4 border-b-4 border-purple-500 rounded-br-2xl animate-pulse" />
-                  </>
-                )}
-              </>
-            ) : (
-              <div className="relative">
-                <img src={capturedImage} alt="Captured face" className="w-full h-full object-cover" />
-                {loading && (
-                  <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                      <p className="text-white font-semibold">Analyzing face...</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          <canvas ref={canvasRef} className="hidden" />
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-3">
-          {!capturedImage ? (
-            <>
-              <button 
-                onClick={capturePhoto} 
-                disabled={!stream || loading}
-                className={`flex-1 py-4 px-6 rounded-xl font-semibold text-white transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 shadow-lg ${
-                  faceDetected 
-                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 animate-pulse' 
-                    : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                {faceDetected ? '📸 Capture & Login' : '📷 Capture Photo'}
-              </button>
-              <button 
-                onClick={onClose}
-                className="px-6 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 font-semibold"
-              >
-                Cancel
-              </button>
-            </>
-          ) : loading ? (
-            <div className="flex-1 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 text-blue-700 dark:text-blue-300 py-4 px-6 rounded-xl font-semibold text-center flex items-center justify-center gap-3">
-              <div className="w-5 h-5 border-2 border-blue-700 dark:border-blue-300 border-t-transparent rounded-full animate-spin" />
-              Verifying your identity...
+              )}
             </div>
-          ) : error ? (
-            <>
-              <button 
-                onClick={handleRetry}
-                className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Try Again
-              </button>
-              <button 
-                onClick={onClose}
-                className="px-6 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 font-semibold"
-              >
-                Cancel
-              </button>
-            </>
-          ) : null}
-        </div>
-
-        {/* Tips */}
-        {!capturedImage && !error && (
-          <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/10 dark:to-pink-900/10 rounded-xl border border-purple-200 dark:border-purple-800">
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-              <svg className="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              Tips for best results:
-            </p>
-            <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1 ml-6">
-              <li>• Ensure good lighting on your face</li>
-              <li>• Look directly at the camera</li>
-              <li>• Keep your face centered in the frame</li>
-              <li>• Remove glasses or hat if possible</li>
-            </ul>
+            <canvas ref={canvasRef} className="hidden" />
           </div>
-        )}
+
+          {/* Action Buttons */}
+          <div className="mt-4 flex gap-2">
+            {!capturedImage ? (
+              <>
+                <button 
+                  onClick={capturePhoto} 
+                  disabled={!stream || loading}
+                  className={`flex-1 py-2.5 rounded-xl font-medium text-white text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                    faceDetected 
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600' 
+                      : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {faceDetected ? 'Chụp & Đăng nhập' : 'Chụp ảnh'}
+                </button>
+                <button 
+                  onClick={onClose}
+                  className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Hủy
+                </button>
+              </>
+            ) : loading ? (
+              <div className="flex-1 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 py-2.5 px-4 rounded-xl text-sm font-medium text-center flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-purple-700 dark:border-purple-300 border-t-transparent rounded-full animate-spin" />
+                Đang xác thực danh tính...
+              </div>
+            ) : error ? (
+              <>
+                <button 
+                  onClick={handleRetry}
+                  className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white py-2.5 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Thử lại
+                </button>
+                <button 
+                  onClick={onClose}
+                  className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Hủy
+                </button>
+              </>
+            ) : null}
+          </div>
+
+          {/* Tips */}
+          {!capturedImage && !error && (
+            <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/10 rounded-xl border border-purple-200 dark:border-purple-800">
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
+                <span>💡</span> Mẹo để nhận diện tốt hơn:
+              </p>
+              <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-0.5 ml-4">
+                <li>• Đảm bảo đủ ánh sáng</li>
+                <li>• Nhìn thẳng vào camera</li>
+                <li>• Giữ khuôn mặt trong khung oval</li>
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
 
       <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideDown {
-          from { 
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to { 
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes scan {
-          0% { top: 0; }
-          100% { top: 100%; }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
-        }
-        .animate-slideDown {
-          animation: slideDown 0.3s ease-out;
-        }
-        .animate-scan {
-          animation: scan 2s linear infinite;
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
       `}</style>
     </div>
   );

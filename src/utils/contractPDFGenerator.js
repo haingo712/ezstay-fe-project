@@ -3,6 +3,46 @@ import "jspdf-autotable";
 import notification from '@/utils/notification';
 
 /**
+ * Remove Vietnamese diacritics and convert to ASCII
+ * This is needed because jsPDF default fonts don't support Vietnamese characters
+ * @param {string} str - String with Vietnamese characters
+ * @returns {string} ASCII string without diacritics
+ */
+function removeVietnameseDiacritics(str) {
+  if (!str) return str;
+  
+  const vietnameseMap = {
+    'à': 'a', 'á': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
+    'ă': 'a', 'ằ': 'a', 'ắ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a',
+    'â': 'a', 'ầ': 'a', 'ấ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a',
+    'À': 'A', 'Á': 'A', 'Ả': 'A', 'Ã': 'A', 'Ạ': 'A',
+    'Ă': 'A', 'Ằ': 'A', 'Ắ': 'A', 'Ẳ': 'A', 'Ẵ': 'A', 'Ặ': 'A',
+    'Â': 'A', 'Ầ': 'A', 'Ấ': 'A', 'Ẩ': 'A', 'Ẫ': 'A', 'Ậ': 'A',
+    'è': 'e', 'é': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ẹ': 'e',
+    'ê': 'e', 'ề': 'e', 'ế': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
+    'È': 'E', 'É': 'E', 'Ẻ': 'E', 'Ẽ': 'E', 'Ẹ': 'E',
+    'Ê': 'E', 'Ề': 'E', 'Ế': 'E', 'Ể': 'E', 'Ễ': 'E', 'Ệ': 'E',
+    'ì': 'i', 'í': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i',
+    'Ì': 'I', 'Í': 'I', 'Ỉ': 'I', 'Ĩ': 'I', 'Ị': 'I',
+    'ò': 'o', 'ó': 'o', 'ỏ': 'o', 'õ': 'o', 'ọ': 'o',
+    'ô': 'o', 'ồ': 'o', 'ố': 'o', 'ổ': 'o', 'ỗ': 'o', 'ộ': 'o',
+    'ơ': 'o', 'ờ': 'o', 'ớ': 'o', 'ở': 'o', 'ỡ': 'o', 'ợ': 'o',
+    'Ò': 'O', 'Ó': 'O', 'Ỏ': 'O', 'Õ': 'O', 'Ọ': 'O',
+    'Ô': 'O', 'Ồ': 'O', 'Ố': 'O', 'Ổ': 'O', 'Ỗ': 'O', 'Ộ': 'O',
+    'Ơ': 'O', 'Ờ': 'O', 'Ớ': 'O', 'Ở': 'O', 'Ỡ': 'O', 'Ợ': 'O',
+    'ù': 'u', 'ú': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u',
+    'ư': 'u', 'ừ': 'u', 'ứ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u',
+    'Ù': 'U', 'Ú': 'U', 'Ủ': 'U', 'Ũ': 'U', 'Ụ': 'U',
+    'Ư': 'U', 'Ừ': 'U', 'Ứ': 'U', 'Ử': 'U', 'Ữ': 'U', 'Ự': 'U',
+    'ỳ': 'y', 'ý': 'y', 'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y',
+    'Ỳ': 'Y', 'Ý': 'Y', 'Ỷ': 'Y', 'Ỹ': 'Y', 'Ỵ': 'Y',
+    'đ': 'd', 'Đ': 'D'
+  };
+  
+  return str.split('').map(char => vietnameseMap[char] || char).join('');
+}
+
+/**
  * Generate a complete contract PDF with all terms, conditions, and digital signatures
  * @param {Object} contract - Contract data
  * @param {string} ownerSignature - Owner's digital signature (base64)
@@ -41,31 +81,54 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
     console.warn('⚠️ Available contract keys:', Object.keys(contract));
   }
   
-  // Tenant is at position [0], Owner is at position [1] (if present)
-  const tenant = identityProfiles[0] || {};
-  const ownerFromProfiles = identityProfiles[1] || {};
+  // Determine tenant and owner from identityProfiles
+  // The tenant (lessee) is the one with IsSigner = true
+  // The owner (lessor) is the one with IsSigner = false or the second profile
+  let tenant = {};
+  let ownerFromProfiles = {};
+  
+  if (identityProfiles.length > 0) {
+    // Find tenant (the signer) and owner based on IsSigner flag
+    const signerProfile = identityProfiles.find(p => p.IsSigner === true || p.isSigner === true);
+    const nonSignerProfile = identityProfiles.find(p => p.IsSigner === false || p.isSigner === false);
+    
+    if (signerProfile) {
+      // Signer is the tenant (Party B - Lessee)
+      tenant = signerProfile;
+      // Non-signer or second profile is the owner (Party A - Lessor)
+      ownerFromProfiles = nonSignerProfile || identityProfiles.find(p => p !== signerProfile) || {};
+    } else {
+      // Fallback: assume first is tenant, second is owner
+      tenant = identityProfiles[0] || {};
+      ownerFromProfiles = identityProfiles[1] || {};
+    }
+  }
+  
+  console.log('👤 Identified Tenant (Lessee/Party B):', tenant);
+  console.log('👤 Identified Owner (Lessor/Party A):', ownerFromProfiles);
   
   // Try to get owner info from alternative sources if not in identityProfiles
   const ownerInfo = contract.owner || contract.Owner || contract.ownerInfo || contract.OwnerInfo || ownerFromProfiles;
   
-  console.log('👤 Primary Tenant:', tenant);
-  console.log('👤 Owner from profiles:', ownerFromProfiles);
-  console.log('👤 Owner info (alternative):', ownerInfo);
+  console.log('👤 Final Owner info:', ownerInfo);
   
-  // Get owner information with fallbacks
-  const ownerName = ownerInfo.fullName || ownerInfo.FullName || 
-                    ownerInfo.name || ownerInfo.Name ||
+  // Get owner information with fallbacks - using correct field names from IdentityProfileResponse
+  const ownerName = ownerInfo.FullName || ownerInfo.fullName || 
+                    ownerInfo.Name || ownerInfo.name ||
                     contract.ownerName || contract.OwnerName ||
                     'EZStay Property Management';
-  const ownerPhone = ownerInfo.phoneNumber || ownerInfo.PhoneNumber || 
-                     ownerInfo.phone || ownerInfo.Phone ||
-                     contract.ownerPhone || contract.OwnerPhone || 'N/A';
-  const ownerEmail = ownerInfo.email || ownerInfo.Email ||
-                     contract.ownerEmail || contract.OwnerEmail || 'N/A';
-  const ownerAddress = ownerInfo.address || ownerInfo.Address ||
-                       contract.ownerAddress || contract.OwnerAddress || 'Ho Chi Minh City, Vietnam';
-  const ownerCitizenId = ownerInfo.citizenIdNumber || ownerInfo.CitizenIdNumber ||
-                         ownerInfo.citizenId || ownerInfo.CitizenId || 'N/A';
+  const ownerPhone = ownerInfo.Phone || ownerInfo.phone || 
+                     ownerInfo.PhoneNumber || ownerInfo.phoneNumber ||
+                     contract.ownerPhone || contract.OwnerPhone || '';
+  const ownerEmail = ownerInfo.Email || ownerInfo.email ||
+                     contract.ownerEmail || contract.OwnerEmail || '';
+  const ownerAddress = ownerInfo.Address || ownerInfo.address ||
+                       contract.ownerAddress || contract.OwnerAddress || '';
+  const ownerCitizenId = ownerInfo.CitizenIdNumber || ownerInfo.citizenIdNumber ||
+                         ownerInfo.CitizenId || ownerInfo.citizenId || '';
+  const ownerProvinceName = ownerInfo.ProvinceName || ownerInfo.provinceName || '';
+  const ownerWardName = ownerInfo.WardName || ownerInfo.wardName || '';
+  const ownerLocation = [ownerWardName, ownerProvinceName].filter(Boolean).join(', ');
   
   console.log('📋 Final Owner Info - Name:', ownerName, 'Phone:', ownerPhone, 'Email:', ownerEmail);
   
@@ -94,10 +157,10 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   
   // Get room information
   const roomDetails = contract.roomDetails || contract.RoomDetails || {};
-  const roomName = contract.roomName || roomDetails.name || roomDetails.Name || 'N/A';
-  const roomAddress = roomDetails.address || roomDetails.Address || 'N/A';
-  const roomArea = roomDetails.area || roomDetails.Area || 'N/A';
-  const maxOccupants = roomDetails.maxOccupants || roomDetails.MaxOccupants || contract.numberOfOccupants || contract.NumberOfOccupants || 'N/A';
+  const roomName = contract.roomName || roomDetails.name || roomDetails.Name || '';
+  const roomAddress = roomDetails.address || roomDetails.Address || '';
+  const roomArea = roomDetails.area || roomDetails.Area || '';
+  const maxOccupants = roomDetails.maxOccupants || roomDetails.MaxOccupants || contract.numberOfOccupants || contract.NumberOfOccupants || '';
   
   // Get contract pricing (use RoomPrice from contract, NOT from roomDetails)
   const monthlyRent = contract.roomPrice || contract.RoomPrice || roomDetails.price || roomDetails.Price || 0;
@@ -128,17 +191,21 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   doc.setFont(undefined, 'normal');
   let yPos = 70;
   
-  doc.text(`Contract No: ${contract.id?.slice(0, 8) || 'N/A'}`, 20, yPos);
+  doc.text(`Contract No: ${contract.id?.slice(0, 8) || ''}`, 20, yPos);
   yPos += 10;
-  doc.text(`Created Date: ${createdAt ? createdAt.toLocaleDateString('en-GB') : 'N/A'}`, 20, yPos);
-  yPos += 7;
+  if (createdAt) {
+    doc.text(`Created Date: ${createdAt.toLocaleDateString('en-GB')}`, 20, yPos);
+    yPos += 7;
+  }
   if (updatedAt && updatedAt.getTime() !== createdAt?.getTime()) {
     doc.text(`Last Updated: ${updatedAt.toLocaleDateString('en-GB')}`, 20, yPos);
     yPos += 7;
   }
-  const contractStatus = contract.contractStatus || contract.ContractStatus || 'N/A';
-  doc.text(`Status: ${contractStatus}`, 20, yPos);
-  yPos += 7;
+  const contractStatus = contract.contractStatus || contract.ContractStatus || '';
+  if (contractStatus) {
+    doc.text(`Status: ${contractStatus}`, 20, yPos);
+    yPos += 7;
+  }
   if (contractStatus === 'Cancelled' && canceledAt) {
     doc.setTextColor(255, 0, 0);
     doc.text(`Canceled Date: ${canceledAt.toLocaleDateString('en-GB')}`, 20, yPos);
@@ -156,20 +223,36 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   doc.text('THE CONTRACTING PARTIES:', 20, yPos);
   yPos += 10;
   
-  // Party A - Owner Information
+  // Party A - Owner Information (apply Vietnamese diacritics removal for PDF)
   doc.setFont(undefined, 'normal');
-  doc.text(`Party A (Lessor): ${ownerName}`, 20, yPos);
+  doc.text(`Party A (Lessor): ${removeVietnameseDiacritics(ownerName)}`, 20, yPos);
   yPos += 7;
-  doc.text(`Address: ${ownerAddress}`, 20, yPos);
-  yPos += 7;
-  doc.text(`Phone: ${ownerPhone}`, 20, yPos);
-  yPos += 7;
-  doc.text(`Email: ${ownerEmail}`, 20, yPos);
-  yPos += 7;
-  doc.text(`Citizen ID: ${ownerCitizenId}`, 20, yPos);
-  yPos += 7;
-  doc.text(`Owner ID: ${contract.ownerId?.slice(0, 8) || contract.OwnerId?.slice(0, 8) || 'N/A'}`, 20, yPos);
-  yPos += 10;
+  if (ownerAddress) {
+    doc.text(`Address: ${removeVietnameseDiacritics(ownerAddress)}`, 20, yPos);
+    yPos += 7;
+  }
+  if (ownerLocation) {
+    doc.text(`Location: ${removeVietnameseDiacritics(ownerLocation)}`, 20, yPos);
+    yPos += 7;
+  }
+  if (ownerPhone) {
+    doc.text(`Phone: ${ownerPhone}`, 20, yPos);
+    yPos += 7;
+  }
+  if (ownerEmail) {
+    doc.text(`Email: ${ownerEmail}`, 20, yPos);
+    yPos += 7;
+  }
+  if (ownerCitizenId) {
+    doc.text(`Citizen ID: ${ownerCitizenId}`, 20, yPos);
+    yPos += 7;
+  }
+  const ownerId = contract.ownerId || contract.OwnerId;
+  if (ownerId) {
+    doc.text(`Owner ID: ${ownerId.slice(0, 8)}`, 20, yPos);
+    yPos += 7;
+  }
+  yPos += 3;
   
   // Party B - Check if tenant data exists
   const hasTenantData = Object.keys(tenant).length > 0;
@@ -185,36 +268,54 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
     yPos += 7;
   }
   
-  const tenantName = tenant.fullName || tenant.FullName || (hasTenantData ? 'N/A' : '[To be determined]');
-  const tenantAddress = tenant.address || tenant.Address || (hasTenantData ? 'N/A' : '[To be provided]');
-  const tenantPhone = tenant.phoneNumber || tenant.PhoneNumber || (hasTenantData ? 'N/A' : '[To be provided]');
-  const tenantEmail = tenant.email || tenant.Email || (hasTenantData ? 'N/A' : '[To be provided]');
-  const tenantCitizenId = tenant.citizenIdNumber || tenant.CitizenIdNumber || (hasTenantData ? 'N/A' : '[To be provided]');
+  // Use correct field names from IdentityProfileResponse
+  const tenantName = tenant.FullName || tenant.fullName || (hasTenantData ? '' : '[To be determined]');
+  const tenantAddress = tenant.Address || tenant.address || (hasTenantData ? '' : '[To be provided]');
+  const tenantPhone = tenant.Phone || tenant.phone || tenant.PhoneNumber || tenant.phoneNumber || (hasTenantData ? '' : '[To be provided]');
+  const tenantEmail = tenant.Email || tenant.email || (hasTenantData ? '' : '[To be provided]');
+  const tenantCitizenId = tenant.CitizenIdNumber || tenant.citizenIdNumber || (hasTenantData ? '' : '[To be provided]');
   
-  doc.text(`Party B (Lessee): ${tenantName}`, 20, yPos);
+  doc.text(`Party B (Lessee): ${removeVietnameseDiacritics(tenantName)}`, 20, yPos);
   yPos += 7;
-  doc.text(`Address: ${tenantAddress}`, 20, yPos);
-  yPos += 7;
+  if (tenantAddress) {
+    doc.text(`Address: ${removeVietnameseDiacritics(tenantAddress)}`, 20, yPos);
+    yPos += 7;
+  }
   // Show province and ward if available
-  const provinceName = tenant.provinceName || tenant.ProvinceName;
-  const wardName = tenant.wardName || tenant.WardName;
+  const provinceName = tenant.ProvinceName || tenant.provinceName;
+  const wardName = tenant.WardName || tenant.wardName;
   if (provinceName || wardName) {
-    doc.text(`Location: ${wardName ? wardName + ', ' : ''}${provinceName || ''}`, 20, yPos);
+    const locationText = [wardName, provinceName].filter(Boolean).join(', ');
+    doc.text(`Location: ${removeVietnameseDiacritics(locationText)}`, 20, yPos);
     yPos += 7;
   }
-  doc.text(`Phone: ${tenantPhone}`, 20, yPos);
-  yPos += 7;
-  doc.text(`Email: ${tenantEmail}`, 20, yPos);
-  yPos += 7;
-  doc.text(`Citizen ID: ${tenantCitizenId}`, 20, yPos);
-  yPos += 7;
-  const citizenIdIssuedDate = tenant.citizenIdIssuedDate || tenant.CitizenIdIssuedDate;
-  const citizenIdIssuedPlace = tenant.citizenIdIssuedPlace || tenant.CitizenIdIssuedPlace;
+  if (tenantPhone) {
+    doc.text(`Phone: ${tenantPhone}`, 20, yPos);
+    yPos += 7;
+  }
+  if (tenantEmail) {
+    doc.text(`Email: ${tenantEmail}`, 20, yPos);
+    yPos += 7;
+  }
+  if (tenantCitizenId) {
+    doc.text(`Citizen ID: ${tenantCitizenId}`, 20, yPos);
+    yPos += 7;
+  }
+  const citizenIdIssuedDate = tenant.CitizenIdIssuedDate || tenant.citizenIdIssuedDate;
+  const citizenIdIssuedPlace = tenant.CitizenIdIssuedPlace || tenant.citizenIdIssuedPlace;
   if (citizenIdIssuedDate || citizenIdIssuedPlace) {
-    doc.text(`ID Issued: ${citizenIdIssuedDate ? new Date(citizenIdIssuedDate).toLocaleDateString('en-GB') : 'N/A'} at ${citizenIdIssuedPlace || 'N/A'}`, 20, yPos);
+    const issuedDateStr = citizenIdIssuedDate ? new Date(citizenIdIssuedDate).toLocaleDateString('en-GB') : '';
+    const issuedPlaceStr = citizenIdIssuedPlace ? removeVietnameseDiacritics(citizenIdIssuedPlace) : '';
+    if (issuedDateStr && issuedPlaceStr) {
+      doc.text(`ID Issued: ${issuedDateStr} at ${issuedPlaceStr}`, 20, yPos);
+    } else if (issuedDateStr) {
+      doc.text(`ID Issued: ${issuedDateStr}`, 20, yPos);
+    } else if (issuedPlaceStr) {
+      doc.text(`ID Issued at: ${issuedPlaceStr}`, 20, yPos);
+    }
     yPos += 7;
   }
-  const dobDate = tenant.dateOfBirth || tenant.DateOfBirth;
+  const dobDate = tenant.DateOfBirth || tenant.dateOfBirth;
   if (dobDate) {
     doc.text(`Date of Birth: ${new Date(dobDate).toLocaleDateString('en-GB')}`, 20, yPos);
     yPos += 7;
@@ -241,7 +342,7 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   
   doc.setFont(undefined, 'normal');
   const roomDesc = roomDetails.description || roomDetails.Description || '';
-  const article1Text = `Party A agrees to lease to Party B the room "${roomName}" located at ${roomAddress}, managed by EZStay system. The room has an area of ${roomArea} m² and is designed to accommodate a maximum of ${maxOccupants} occupants. ${roomDesc ? 'Room description: ' + roomDesc + '. ' : ''}The room is fully furnished with essential equipment and facilities ready for residential use. All equipment and facilities are specifically listed and confirmed in the minutes of handover between the two parties. The leased premises shall be used solely for residential purposes and not for any illegal activities or commercial purposes without prior written consent from Party A.`;
+  const article1Text = `Party A agrees to lease to Party B the room "${removeVietnameseDiacritics(roomName)}" located at ${removeVietnameseDiacritics(roomAddress)}, managed by EZStay system. The room has an area of ${roomArea} m² and is designed to accommodate a maximum of ${maxOccupants} occupants. ${roomDesc ? 'Room description: ' + removeVietnameseDiacritics(roomDesc) + '. ' : ''}The room is fully furnished with essential equipment and facilities ready for residential use. All equipment and facilities are specifically listed and confirmed in the minutes of handover between the two parties. The leased premises shall be used solely for residential purposes and not for any illegal activities or commercial purposes without prior written consent from Party A.`;
   const article1Lines = doc.splitTextToSize(article1Text, 170);
   doc.text(article1Lines, 20, yPos);
   yPos += article1Lines.length * 7 + 10;
@@ -301,7 +402,9 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
       const elecNote = electricityReading.note || electricityReading.Note;
       utilityInfo += `- Electricity: ${elecIndex} kWh (Previous: ${elecPrevIndex} kWh, Consumption: ${elecConsumption} kWh)\n`;
       utilityInfo += `  Rate: ${elecPrice.toLocaleString()} VND/kWh, Total: ${elecTotal.toLocaleString()} VND\n`;
-      utilityInfo += `  Reading date: ${elecDate ? new Date(elecDate).toLocaleDateString('en-GB') : 'N/A'}\n`;
+      if (elecDate) {
+        utilityInfo += `  Reading date: ${new Date(elecDate).toLocaleDateString('en-GB')}\n`;
+      }
       if (elecNote && elecNote.trim()) {
         utilityInfo += `  Note: ${elecNote}\n`;
       }
@@ -316,7 +419,9 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
       const waterNote = waterReading.note || waterReading.Note;
       utilityInfo += `- Water: ${waterIndex} m³ (Previous: ${waterPrevIndex} m³, Consumption: ${waterConsumption} m³)\n`;
       utilityInfo += `  Rate: ${waterPrice.toLocaleString()} VND/m³, Total: ${waterTotal.toLocaleString()} VND\n`;
-      utilityInfo += `  Reading date: ${waterDate ? new Date(waterDate).toLocaleDateString('en-GB') : 'N/A'}\n`;
+      if (waterDate) {
+        utilityInfo += `  Reading date: ${new Date(waterDate).toLocaleDateString('en-GB')}\n`;
+      }
       if (waterNote && waterNote.trim()) {
         utilityInfo += `  Note: ${waterNote}\n`;
       }
@@ -756,9 +861,10 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
         yPos = 20;
       }
       
-      const isSigner = profile.isSigner || profile.IsSigner;
+      const isSigner = profile.IsSigner || profile.isSigner;
+      const profileName = profile.FullName || profile.fullName || '';
       doc.setFont(undefined, 'bold');
-      doc.text(`${index + 1}. ${profile.fullName || profile.FullName || 'N/A'}${isSigner ? ' (Primary Signer)' : ''}`, 20, yPos);
+      doc.text(`${index + 1}. ${removeVietnameseDiacritics(profileName)}${isSigner ? ' (Primary Signer)' : ''}`, 20, yPos);
       yPos += 7;
       
       doc.setFont(undefined, 'normal');
@@ -770,30 +876,62 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
         occupantDetails.push(`   - Tenant ID: ${tenantId.slice(0, 13)}`);
       }
       
-      occupantDetails.push(
-        `   - Citizen ID: ${profile.citizenIdNumber || profile.CitizenIdNumber || 'N/A'}`,
-        `   - ID Issued: ${profile.citizenIdIssuedDate || profile.CitizenIdIssuedDate ? new Date(profile.citizenIdIssuedDate || profile.CitizenIdIssuedDate).toLocaleDateString('en-GB') : 'N/A'} at ${profile.citizenIdIssuedPlace || profile.CitizenIdIssuedPlace || 'N/A'}`,
-        `   - Date of Birth: ${profile.dateOfBirth || profile.DateOfBirth ? new Date(profile.dateOfBirth || profile.DateOfBirth).toLocaleDateString('en-GB') : 'N/A'}`,
-        `   - Phone: ${profile.phoneNumber || profile.PhoneNumber || 'N/A'}`,
-        `   - Email: ${profile.email || profile.Email || 'N/A'}`,
-        `   - Address: ${profile.address || profile.Address || 'N/A'}`
-      );
+      // Use correct field names from IdentityProfileResponse
+      const citizenId = profile.CitizenIdNumber || profile.citizenIdNumber;
+      if (citizenId) {
+        occupantDetails.push(`   - Citizen ID: ${citizenId}`);
+      }
+      
+      const idIssuedDate = profile.CitizenIdIssuedDate || profile.citizenIdIssuedDate;
+      const idIssuedPlace = profile.CitizenIdIssuedPlace || profile.citizenIdIssuedPlace;
+      if (idIssuedDate || idIssuedPlace) {
+        const issuedDateStr = idIssuedDate ? new Date(idIssuedDate).toLocaleDateString('en-GB') : '';
+        const issuedPlaceStr = idIssuedPlace ? removeVietnameseDiacritics(idIssuedPlace) : '';
+        if (issuedDateStr && issuedPlaceStr) {
+          occupantDetails.push(`   - ID Issued: ${issuedDateStr} at ${issuedPlaceStr}`);
+        } else if (issuedDateStr) {
+          occupantDetails.push(`   - ID Issued: ${issuedDateStr}`);
+        } else if (issuedPlaceStr) {
+          occupantDetails.push(`   - ID Issued at: ${issuedPlaceStr}`);
+        }
+      }
+      
+      const dob = profile.DateOfBirth || profile.dateOfBirth;
+      if (dob) {
+        occupantDetails.push(`   - Date of Birth: ${new Date(dob).toLocaleDateString('en-GB')}`);
+      }
+      
+      const phone = profile.Phone || profile.phone || profile.PhoneNumber || profile.phoneNumber;
+      if (phone) {
+        occupantDetails.push(`   - Phone: ${phone}`);
+      }
+      
+      const email = profile.Email || profile.email;
+      if (email) {
+        occupantDetails.push(`   - Email: ${email}`);
+      }
+      
+      const address = profile.Address || profile.address;
+      if (address) {
+        occupantDetails.push(`   - Address: ${removeVietnameseDiacritics(address)}`);
+      }
       
       // Add location if available
-      const provinceName = profile.provinceName || profile.ProvinceName;
-      const wardName = profile.wardName || profile.WardName;
-      if (provinceName || wardName) {
-        occupantDetails.push(`   - Location: ${wardName ? wardName + ', ' : ''}${provinceName || ''}`);
+      const profileProvinceName = profile.ProvinceName || profile.provinceName;
+      const profileWardName = profile.WardName || profile.wardName;
+      if (profileProvinceName || profileWardName) {
+        const locationText = [profileWardName, profileProvinceName].filter(Boolean).join(', ');
+        occupantDetails.push(`   - Location: ${removeVietnameseDiacritics(locationText)}`);
       }
       
       // Add temporary residence if different from address
-      const tempRes = profile.temporaryResidence || profile.TemporaryResidence;
-      if (tempRes && tempRes !== (profile.address || profile.Address)) {
-        occupantDetails.push(`   - Temporary Residence: ${tempRes}`);
+      const tempRes = profile.TemporaryResidence || profile.temporaryResidence;
+      if (tempRes && tempRes !== address) {
+        occupantDetails.push(`   - Temporary Residence: ${removeVietnameseDiacritics(tempRes)}`);
       }
       
       // Add profile notes if any
-      const profileNotes = profile.notes || profile.Notes;
+      const profileNotes = profile.Notes || profile.notes;
       if (profileNotes && profileNotes.trim()) {
         occupantDetails.push(`   - Notes: ${profileNotes}`);
       }
@@ -879,21 +1017,38 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   doc.setFont(undefined, 'normal');
   doc.setFontSize(10);
   
-  const summaryData = [
-    ['Contract ID', contract.id?.slice(0, 13) || 'N/A'],
-    ['Owner (Party A)', ownerName],
-    ['Tenant (Party B)', tenant.fullName || tenant.FullName || tenantName || 'N/A'],
-    ['Room', roomName],
-    ['Room ID', contract.roomId?.slice(0, 13) || contract.RoomId?.slice(0, 13) || 'N/A'],
-    ['Monthly Rent', `${monthlyRent.toLocaleString()} VND`],
-    ['Deposit', `${depositAmount.toLocaleString()} VND`],
-    ['Duration', `${Math.round((checkoutDate - checkinDate) / (1000 * 60 * 60 * 24))} days`],
-    ['Check-in', checkinDate.toLocaleDateString('en-GB')],
-    ['Check-out', checkoutDate.toLocaleDateString('en-GB')],
-    ['Occupants', `${numberOfOccupants} person(s)`],
-    ['Status', contractStatus],
-    ['Created', createdAt ? createdAt.toLocaleDateString('en-GB') : 'N/A']
-  ];
+  // Build summary data only with available values
+  const summaryData = [];
+  
+  if (contract.id) {
+    summaryData.push(['Contract ID', contract.id.slice(0, 13)]);
+  }
+  if (ownerName) {
+    summaryData.push(['Owner (Party A)', removeVietnameseDiacritics(ownerName)]);
+  }
+  const tenantFullName = tenant.FullName || tenant.fullName || tenantName;
+  if (tenantFullName) {
+    summaryData.push(['Tenant (Party B)', removeVietnameseDiacritics(tenantFullName)]);
+  }
+  if (roomName) {
+    summaryData.push(['Room', removeVietnameseDiacritics(roomName)]);
+  } else {
+    // Fallback to Room ID if room name not available
+    const roomId = contract.roomId || contract.RoomId;
+    if (roomId) {
+      summaryData.push(['Room ID', roomId.slice(0, 13)]);
+    }
+  }
+  summaryData.push(['Monthly Rent', `${monthlyRent.toLocaleString()} VND`]);
+  summaryData.push(['Deposit', `${depositAmount.toLocaleString()} VND`]);
+  summaryData.push(['Duration', `${Math.round((checkoutDate - checkinDate) / (1000 * 60 * 60 * 24))} days`]);
+  summaryData.push(['Check-in', checkinDate.toLocaleDateString('en-GB')]);
+  summaryData.push(['Check-out', checkoutDate.toLocaleDateString('en-GB')]);
+  summaryData.push(['Occupants', `${numberOfOccupants} person(s)`]);
+  summaryData.push(['Status', contractStatus]);
+  if (createdAt) {
+    summaryData.push(['Created', createdAt.toLocaleDateString('en-GB')]);
+  }
   
   // Add utility totals if available
   if (electricityReading) {
@@ -950,17 +1105,19 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   
   doc.setFont(undefined, 'normal');
   doc.setFontSize(10);
-  // Use owner name from identityProfiles[1]
-  doc.text(ownerName, 55, yPos, { align: 'center' });
-  doc.text(tenant.fullName || tenant.FullName || tenantName || 'Tenant Name', 155, yPos, { align: 'center' });
+  // Use owner name for Party A (Lessor) and tenant name for Party B (Lessee)
+  doc.text(removeVietnameseDiacritics(ownerName), 55, yPos, { align: 'center' });
+  const tenantDisplayName = tenant.FullName || tenant.fullName || tenantName || 'Tenant Name';
+  doc.text(removeVietnameseDiacritics(tenantDisplayName), 155, yPos, { align: 'center' });
   yPos += 7;
   
-  // Use owner address
-  const shortOwnerAddress = ownerAddress.length > 30 ? ownerAddress.substring(0, 27) + '...' : ownerAddress;
-  doc.text(shortOwnerAddress, 55, yPos, { align: 'center' });
-  const signatureAddress = tenant.address || tenant.Address || tenantAddress || 'Address';
+  // Use owner address for Party A and tenant address for Party B
+  const ownerDisplayAddress = ownerAddress || ownerLocation || '';
+  const shortOwnerAddress = ownerDisplayAddress.length > 30 ? ownerDisplayAddress.substring(0, 27) + '...' : ownerDisplayAddress;
+  doc.text(removeVietnameseDiacritics(shortOwnerAddress), 55, yPos, { align: 'center' });
+  const signatureAddress = tenant.Address || tenant.address || tenantAddress || '';
   const shortAddress = signatureAddress.length > 30 ? signatureAddress.substring(0, 27) + '...' : signatureAddress;
-  doc.text(shortAddress, 155, yPos, { align: 'center' });
+  doc.text(removeVietnameseDiacritics(shortAddress), 155, yPos, { align: 'center' });
   yPos += 20;
   
   // Digital Signature boxes
@@ -1023,8 +1180,9 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   yPos += 7;
   
   // Display actual owner name and tenant name under signatures
-  doc.text(ownerName, 55, yPos, { align: 'center' });
-  doc.text(tenant.fullName || tenant.FullName || tenantName || 'Tenant Name', 155, yPos, { align: 'center' });
+  doc.text(removeVietnameseDiacritics(ownerName), 55, yPos, { align: 'center' });
+  const tenantFinalName = tenant.FullName || tenant.fullName || tenantName || 'Tenant Name';
+  doc.text(removeVietnameseDiacritics(tenantFinalName), 155, yPos, { align: 'center' });
   yPos += 20;
   
   // Verification note
@@ -1032,10 +1190,8 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
     doc.setFontSize(9);
     doc.setTextColor(0, 128, 0);
     doc.setFont(undefined, 'italic');
-    doc.text('✓ Digital signatures have been verified and attached to this document', 105, yPos, { align: 'center' });
     yPos += 7;
-    doc.text(`Signed electronically on ${signingDate}`, 105, yPos, { align: 'center' });
-  }
+      }
 
   // Footer on last page
   doc.setFontSize(9);

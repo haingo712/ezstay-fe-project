@@ -727,9 +727,9 @@ export default function RentalPostDetailPage() {
       <ChatDialog
         isOpen={showChatDialog}
         onClose={() => setShowChatDialog(false)}
-        ownerId={post?.authorId}
-        postTitle={post?.title}
-        ownerName={post?.authorName}
+        ownerId={post?.authorId || post?.AuthorId}
+        postTitle={post?.title || post?.Title}
+        ownerName={post?.authorName || post?.AuthorName}
       />
     </div>
   );
