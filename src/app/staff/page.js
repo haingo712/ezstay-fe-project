@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { apiFetch } from '@/utils/api';
+import { apiFetch, reviewAPI, supportAPI } from '@/utils/api';
 import { useTranslation } from '@/hooks/useTranslation';
 import userManagementService from '@/services/userManagementService';
 import rentalPostService from '@/services/rentalPostService';
@@ -189,6 +189,8 @@ export default function StaffDashboard() {
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [pendingPosts, setPendingPosts] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [supportTickets, setSupportTickets] = useState([]);
   const [stats, setStats] = useState({
     pendingPosts: 0,
     totalUsers: 0,
@@ -197,13 +199,8 @@ export default function StaffDashboard() {
     approvedToday: 0,
     rejectedToday: 0,
     pendingReports: 0,
+    pendingSupportTickets: 0,
   });
-
-  const [reports] = useState([
-    { type: 'Bài đăng vi phạm', description: 'Nội dung không phù hợp', count: 5, severity: 'high' },
-    { type: 'Người dùng bị báo cáo', description: 'Spam hoặc lừa đảo', count: 3, severity: 'medium' },
-    { type: 'Đánh giá sai sự thật', description: 'Nội dung không chính xác', count: 2, severity: 'low' },
-  ]);
 
   // Load dashboard data
   const loadDashboardData = useCallback(async () => {
@@ -249,6 +246,65 @@ export default function StaffDashboard() {
         setNotifications((notificationData || []).slice(0, 6));
       } catch (error) {
         console.error('Error loading notifications:', error);
+      }
+
+      // Load review reports
+      try {
+        const reportsData = await reviewAPI.getAllReviewReports({ $orderby: 'createdAt desc' });
+        const reportsArray = Array.isArray(reportsData) ? reportsData : (reportsData?.value || []);
+        
+        // Filter pending reports (status = 0)
+        const pendingReports = reportsArray.filter(r => (r.status || r.Status) === 0);
+        
+        // Group reports by reason/type for display
+        const reportGroups = {};
+        pendingReports.forEach(report => {
+          const reason = report.reason || report.Reason || 'Khác';
+          if (!reportGroups[reason]) {
+            reportGroups[reason] = { count: 0, reports: [] };
+          }
+          reportGroups[reason].count++;
+          reportGroups[reason].reports.push(report);
+        });
+        
+        // Convert to array format for display
+        const formattedReports = Object.entries(reportGroups).map(([type, data]) => ({
+          type: type,
+          description: `${data.count} báo cáo chờ xử lý`,
+          count: data.count,
+          severity: data.count > 5 ? 'high' : data.count > 2 ? 'medium' : 'low'
+        })).slice(0, 3);
+        
+        setReports(formattedReports);
+        setStats(prev => ({
+          ...prev,
+          pendingReports: pendingReports.length,
+        }));
+      } catch (error) {
+        console.error('Error loading review reports:', error);
+        // Fallback empty reports
+        setReports([]);
+      }
+
+      // Load support tickets
+      try {
+        const supportData = await supportAPI.getAll();
+        const supportArray = Array.isArray(supportData) ? supportData : (supportData?.value || []);
+        
+        // Filter pending support tickets (status = 0 or 'Pending')
+        const pendingTickets = supportArray.filter(t => 
+          (t.status || t.Status) === 0 || 
+          (t.status || t.Status) === 'Pending'
+        );
+        
+        setSupportTickets(pendingTickets.slice(0, 5));
+        setStats(prev => ({
+          ...prev,
+          pendingSupportTickets: pendingTickets.length,
+        }));
+      } catch (error) {
+        console.error('Error loading support tickets:', error);
+        setSupportTickets([]);
       }
 
     } catch (error) {
@@ -349,8 +405,8 @@ export default function StaffDashboard() {
           />
           <StatCard
             title="Báo cáo chờ xử lý"
-            value={reports.reduce((sum, r) => sum + r.count, 0)}
-            badge={reports.filter(r => r.severity === 'high').length > 0 ? 'Khẩn cấp' : null}
+            value={stats.pendingReports}
+            badge={stats.pendingReports > 5 ? 'Khẩn cấp' : null}
             gradient="bg-gradient-to-br from-red-500 to-pink-600"
             icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
           />
@@ -378,8 +434,9 @@ export default function StaffDashboard() {
                   href="/staff/reports"
                   icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
                   title="Xem báo cáo vi phạm"
-                  description="Xử lý báo cáo từ người dùng"
+                  description={`${stats.pendingReports} báo cáo chờ xử lý`}
                   color="red"
+                  badge={stats.pendingReports > 0 ? stats.pendingReports : null}
                 />
                 <QuickActionCard
                   href="/staff/users"
@@ -394,6 +451,14 @@ export default function StaffDashboard() {
                   title="Quản lý tiện ích"
                   description="Cập nhật danh sách tiện ích"
                   color="green"
+                />
+                <QuickActionCard
+                  href="/staff/support"
+                  icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
+                  title="Hỗ trợ khách hàng"
+                  description={`${stats.pendingSupportTickets} yêu cầu chờ xử lý`}
+                  color="orange"
+                  badge={stats.pendingSupportTickets > 0 ? stats.pendingSupportTickets : null}
                 />
               </div>
             </div>
@@ -455,9 +520,20 @@ export default function StaffDashboard() {
                 </div>
               </div>
               <div className="p-6 space-y-3">
-                {reports.map((report, index) => (
-                  <ReportCard key={index} report={report} />
-                ))}
+                {reports.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                      <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 dark:text-gray-400">Không có báo cáo vi phạm nào chờ xử lý</p>
+                  </div>
+                ) : (
+                  reports.map((report, index) => (
+                    <ReportCard key={index} report={report} />
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -480,34 +556,7 @@ export default function StaffDashboard() {
               />
             </div>
 
-            {/* System Health */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Trạng thái hệ thống</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">API Server</span>
-                  </div>
-                  <span className="text-sm font-medium text-green-600 dark:text-green-400">Online</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Database</span>
-                  </div>
-                  <span className="text-sm font-medium text-green-600 dark:text-green-400">Connected</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Response Time</span>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">145ms</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Uptime</span>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">99.9%</span>
-                </div>
-              </div>
-            </div>
+            
 
             {/* Notifications */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">

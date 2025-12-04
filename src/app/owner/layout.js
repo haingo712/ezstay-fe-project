@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Navbar from "@/components/Navbar";
+import OwnerNavbar from "@/components/OwnerNavbar";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -241,7 +241,7 @@ export default function OwnerLayout({ children }) {
   return (
     <ProtectedRoute requiredRole={2}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Navbar />
+        <OwnerNavbar />
 
         <div className="flex pt-4" style={{ height: "calc(100vh - 1rem)" }}>
           {/* Sidebar */}

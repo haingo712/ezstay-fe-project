@@ -10,17 +10,23 @@ import { Building, Home, MapPin, Calendar } from 'lucide-react';
 export default function LatestPosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { isGuest, getAuthHref } = useGuestRedirect();
+  const { isGuest, isAuthenticated, loading: authLoading } = useGuestRedirect();
   const router = useRouter();
 
   useEffect(() => {
-    loadLatestPosts();
-  }, []);
+    // Wait for auth to finish loading before fetching
+    if (!authLoading) {
+      loadLatestPosts();
+    }
+  }, [authLoading, isAuthenticated]); // Re-load when auth state changes
 
   const loadLatestPosts = async () => {
     try {
       setLoading(true);
-      const allPosts = await rentalPostService.getAllForUser();
+      // Use public API for guest access (no auth required)
+      const allPosts = !isAuthenticated 
+        ? await rentalPostService.getAllPublic()
+        : await rentalPostService.getAllForUser();
       console.log('📦 All posts loaded:', allPosts);
       
       // Get 9 latest posts (sort by createdAt desc)

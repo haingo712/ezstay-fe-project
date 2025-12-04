@@ -214,8 +214,8 @@ export default function Navbar() {
 
             {/* Right side actions */}
             <div className="flex items-center space-x-4">
-              {/* Chuông thông báo */}
-              <GlobalNotificationBell />
+              {/* Chuông thông báo - chỉ hiển thị khi đã đăng nhập */}
+              {isAuthenticated && <GlobalNotificationBell />}
 
               {/* Language Switcher */}
               <div className="relative">

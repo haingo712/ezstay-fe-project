@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { toast } from 'react-toastify';
 
 export default function WebhookDebugPage() {
     const [webhookUrl, setWebhookUrl] = useState('https://payment-api-r4zy.onrender.com/api/Payment/webhook/sepay');
@@ -73,7 +74,7 @@ export default function WebhookDebugPage() {
 
     const handleCheckPayment = async () => {
         if (!testData.Content) {
-            alert('Please enter Bill ID in Content field');
+            toast.warning('Please enter Bill ID in Content field');
             return;
         }
 
@@ -123,7 +124,7 @@ export default function WebhookDebugPage() {
 
     const handleCheckPaymentStatus = async () => {
         if (!testData.Content) {
-            alert('Please enter Bill ID in Content field');
+            toast.warning('Please enter Bill ID in Content field');
             return;
         }
 

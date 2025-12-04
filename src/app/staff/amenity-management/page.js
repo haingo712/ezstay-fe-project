@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import amenityService from '@/services/amenityService';
 import SafeImage from '@/components/SafeImage';
 import { useTranslation } from '@/hooks/useTranslation';
+import { toast } from 'react-toastify';
 
 export default function AmenityManagementPage() {
   const { t } = useTranslation();
@@ -112,7 +113,7 @@ export default function AmenityManagementPage() {
     e.preventDefault();
 
     if (!newAmenity.amenityName || !newAmenity.imageFile) {
-      alert('Please enter amenity name and select an image!');
+      toast.warning(t('staffAmenity.toast.enterNameAndImage') || 'Please enter amenity name and select an image!');
       return;
     }
 
@@ -140,7 +141,7 @@ export default function AmenityManagementPage() {
       await loadAmenities();
     } catch (error) {
       console.error('❌ Error creating amenity:', error);
-      alert(error.message || 'Failed to create amenity');
+      toast.error(error.message || t('staffAmenity.toast.createFailed') || 'Failed to create amenity');
     }
   };
 
@@ -152,7 +153,7 @@ export default function AmenityManagementPage() {
       await loadAmenities();
     } catch (error) {
       console.error('Error deleting amenity:', error);
-      alert(error.message || 'Failed to delete amenity!');
+      toast.error(error.message || t('staffAmenity.toast.deleteFailed') || 'Failed to delete amenity!');
     }
   };
 
@@ -174,7 +175,7 @@ export default function AmenityManagementPage() {
     e.preventDefault();
 
     if (!editAmenity.amenityName) {
-      alert('Please enter amenity name!');
+      toast.warning(t('staffAmenity.toast.enterName') || 'Please enter amenity name!');
       return;
     }
 
@@ -206,7 +207,7 @@ export default function AmenityManagementPage() {
       await loadAmenities();
     } catch (error) {
       console.error('❌ Error updating amenity:', error);
-      alert(error.message || 'Failed to update amenity');
+      toast.error(error.message || t('staffAmenity.toast.updateFailed') || 'Failed to update amenity');
     }
   };
 

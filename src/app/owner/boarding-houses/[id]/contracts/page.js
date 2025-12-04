@@ -1009,7 +1009,7 @@ export default function ContractsManagementPage() {
 
     } catch (error) {
       console.error("❌ Error fetching contract details:", error);
-      alert("Error loading contract details: " + (error.message || "Unknown error"));
+      toast.error("Error loading contract details: " + (error.message || "Unknown error"));
     }
   };
 
@@ -1295,7 +1295,7 @@ export default function ContractsManagementPage() {
 
     if (!validateAllSteps()) {
       console.log("❌ Validation failed - stopping operation");
-      alert(`Please fix all validation errors before ${isEditMode ? 'updating' : 'creating'} the contract.`);
+      toast.warning(`Please fix all validation errors before ${isEditMode ? 'updating' : 'creating'} the contract.`);
       return;
     }
 
@@ -1309,7 +1309,7 @@ export default function ContractsManagementPage() {
       };
 
       if (!isValidGuid(contractData.roomId)) {
-        alert("Invalid Room ID format. Please select a valid room.");
+        toast.error("Invalid Room ID format. Please select a valid room.");
         return;
       }
 
@@ -1414,7 +1414,7 @@ export default function ContractsManagementPage() {
         result = await contractService.create(requestData);
       }
 
-      alert(`Contract ${isEditMode ? 'updated' : 'created'} successfully with ${profiles.length} identity profile(s) and utility readings!`);
+      toast.success(`Contract ${isEditMode ? 'updated' : 'created'} successfully with ${profiles.length} identity profile(s) and utility readings!`);
 
       // Reset form and close modal
       setShowCreateContractModal(false);
@@ -1512,7 +1512,7 @@ export default function ContractsManagementPage() {
         errorMessage += error.message || error;
       }
 
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setCreatingContract(false);
     }
@@ -1525,16 +1525,16 @@ export default function ContractsManagementPage() {
       await contractService.delete(selectedContract.id);
       await fetchData(); // Refresh data
       setShowModal(false);
-      alert("Contract deleted successfully!");
+      toast.success("Contract deleted successfully!");
     } catch (error) {
       console.error("Error deleting contract:", error);
-      alert("Error deleting contract: " + (error.message || "Unknown error"));
+      toast.error("Error deleting contract: " + (error.message || "Unknown error"));
     }
   };
 
   const handleConfirmCancel = async () => {
     if (!cancelReason.trim()) {
-      alert("Please provide a reason for cancellation");
+      toast.warning("Please provide a reason for cancellation");
       return;
     }
 
@@ -1544,10 +1544,10 @@ export default function ContractsManagementPage() {
       await fetchData(); // Refresh data
       setShowModal(false);
       setCancelReason("");
-      alert("Contract cancelled successfully!");
+      toast.success("Contract cancelled successfully!");
     } catch (error) {
       console.error("Error cancelling contract:", error);
-      alert("Error cancelling contract: " + (error.message || "Unknown error"));
+      toast.error("Error cancelling contract: " + (error.message || "Unknown error"));
     } finally {
       setProcessingAction(false);
     }
@@ -1555,7 +1555,7 @@ export default function ContractsManagementPage() {
 
   const handleConfirmExtend = async () => {
     if (!extendDate) {
-      alert("Please select a new end date");
+      toast.warning("Please select a new end date");
       return;
     }
 
@@ -1563,7 +1563,7 @@ export default function ContractsManagementPage() {
     const newEndDate = new Date(extendDate);
 
     if (newEndDate <= currentEndDate) {
-      alert("New end date must be after the current end date");
+      toast.warning("New end date must be after the current end date");
       return;
     }
 
@@ -1573,10 +1573,10 @@ export default function ContractsManagementPage() {
       await fetchData(); // Refresh data
       setShowModal(false);
       setExtendDate("");
-      alert("Contract extended successfully!");
+      toast.success("Contract extended successfully!");
     } catch (error) {
       console.error("Error extending contract:", error);
-      alert("Error extending contract: " + (error.message || "Unknown error"));
+      toast.error("Error extending contract: " + (error.message || "Unknown error"));
     } finally {
       setProcessingAction(false);
     }
@@ -1826,6 +1826,20 @@ export default function ContractsManagementPage() {
       const fullContract = await contractService.getById(contractId);
       console.log('✅ Contract details loaded:', fullContract);
       console.log('📋 Identity profiles:', fullContract.identityProfiles);
+
+      // Kiểm tra xem người thuê đã ký chưa - Owner chỉ được ký sau khi Tenant đã ký
+      const tenantSignature = fullContract.tenantSignature || fullContract.TenantSignature;
+      if (!tenantSignature) {
+        toast.error(t('ownerContracts.toast.tenantNotSigned') || 'Người thuê chưa ký hợp đồng. Vui lòng đợi người thuê ký trước.');
+        return;
+      }
+
+      // Kiểm tra xem Owner đã ký chưa
+      const ownerSignature = fullContract.ownerSignature || fullContract.OwnerSignature;
+      if (ownerSignature) {
+        toast.warning(t('ownerContracts.toast.alreadySigned') || 'Bạn đã ký hợp đồng này rồi');
+        return;
+      }
 
       // Get owner info from contract position [1] (owner profile)
       const ownerProfile = fullContract.identityProfiles?.[1];
@@ -2176,7 +2190,7 @@ export default function ContractsManagementPage() {
     setShowCreateContractModal(false);
     // Refresh contracts list
     await fetchData();
-    alert("Contract created successfully!");
+    toast.success("Contract created successfully!");
   };
 
   // Wrapper functions for PDF generation with signatures and complete data
@@ -2255,7 +2269,7 @@ export default function ContractsManagementPage() {
           fullName: user.fullName || user.name || user.FullName || user.Name,
           email: user.email || user.Email,
           phone: user.phone || user.phoneNumber || user.Phone || user.PhoneNumber,
-          address: user.address || user.Address || 'Ho Chi Minh City, Vietnam'
+          address: user.address || user.Address
         };
         console.log('👤 Added current user as owner:', enrichedContract.owner);
       }

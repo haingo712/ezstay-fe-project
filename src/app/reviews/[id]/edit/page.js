@@ -8,6 +8,7 @@ import { Star, ArrowLeft, Save } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SafeImage from '@/components/SafeImage';
+import { toast } from 'react-toastify';
 
 export default function EditReviewPage() {
   const params = useParams();
@@ -40,7 +41,7 @@ export default function EditReviewPage() {
       
       // Check if user is owner
       if (user && response.userId !== user.id) {
-        alert('You do not have permission to edit this review');
+        toast.error('You do not have permission to edit this review');
         router.push('/profile/rental-history');
         return;
       }
@@ -54,7 +55,7 @@ export default function EditReviewPage() {
       setImagePreview(null); // Will show current image from response.imageUrl
     } catch (error) {
       console.error('Error loading review:', error);
-      alert('Failed to load review');
+      toast.error('Failed to load review');
       router.push('/profile/rental-history');
     } finally {
       setLoading(false);
@@ -118,14 +119,14 @@ export default function EditReviewPage() {
       
       const response = await reviewService.updateReview(reviewId, formData);
       console.log('Review updated:', response);
-      alert('Review updated successfully!');
+      toast.success('Review updated successfully!');
       router.push(`/reviews/${reviewId}`);
     } catch (error) {
       console.error('Error updating review:', error);
       const errorMessage = error.response?.data?.message || 
                           error.response?.data?.title ||
                           'Failed to update review. Please try again.';
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }

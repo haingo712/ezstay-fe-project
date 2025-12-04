@@ -344,8 +344,6 @@ export default function AdminPage() {
           subtitle="Người thuê trọ"
           gradient="bg-gradient-to-br from-blue-500 to-blue-600"
           icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
-          trend="up"
-          trendValue="+12% tháng này"
         />
         <StatCard
           title="Chủ trọ"
@@ -353,8 +351,6 @@ export default function AdminPage() {
           subtitle="Đã đăng ký"
           gradient="bg-gradient-to-br from-green-500 to-emerald-600"
           icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
-          trend="up"
-          trendValue="+5% tháng này"
         />
         <StatCard
           title="Nhân viên"
@@ -396,13 +392,7 @@ export default function AdminPage() {
                 description="Thêm, sửa nhân viên"
                 color="purple"
               />
-              <QuickActionCard
-                href="/admin/overview"
-                emoji="📊"
-                title="Tổng quan hệ thống"
-                description="Thống kê và báo cáo"
-                color="green"
-              />
+              
               <QuickActionCard
                 href="/admin/financial-reports"
                 emoji="💰"
@@ -525,16 +515,7 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* System Health */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Trạng thái hệ thống</h2>
-            <div className="space-y-3">
-              <SystemStatusItem label="API Gateway" status="online" detail="Online" />
-              <SystemStatusItem label="Database" status="online" detail="Connected" />
-              <SystemStatusItem label="Payment Service" status="online" detail="Active" />
-              <SystemStatusItem label="Notification Service" status="online" detail="Running" />
-            </div>
-          </div>
+          
 
           {/* Notifications */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
