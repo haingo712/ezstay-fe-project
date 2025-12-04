@@ -1,4 +1,5 @@
 import axiosInstance from '@/utils/axiosConfig';
+import { publicApiFetch } from '@/utils/api';
 import boardingHouseService from './boardingHouseService';
 import roomService from './roomService';
 
@@ -222,6 +223,25 @@ export const rentalPostService = {
     } catch (error) {
       console.error('Error deleting post:', error);
       throw error;
+    }
+  },
+
+  // Get all posts PUBLIC (no auth required) - for homepage guest access
+  getAllPublic: async () => {
+    try {
+      console.log('🌐 Fetching public rental posts (no auth)...');
+      const posts = await publicApiFetch('/api/RentalPosts', { method: 'GET' });
+
+      // Normalize posts data
+      if (Array.isArray(posts)) {
+        return posts.map(normalizePostData);
+      }
+
+      return posts || [];
+    } catch (error) {
+      console.error('Error fetching public posts:', error);
+      // Return empty array instead of throwing for guest access
+      return [];
     }
   },
 

@@ -245,8 +245,8 @@ export default function UserManagementPage() {
         </div>
       </div>
 
-      <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+      <div className="border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <nav className="-mb-px flex space-x-4 min-w-max" aria-label="Tabs">
           <button onClick={() => setActiveTab('all')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'all' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>{t('staffUsers.tabs.all')}</button>
           <button onClick={() => setActiveTab('users')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'users' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>{t('staffUsers.tabs.users')}</button>
           <button onClick={() => setActiveTab('owners')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'owners' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>{t('staffUsers.tabs.owners')}</button>
@@ -321,16 +321,16 @@ export default function UserManagementPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed min-w-[900px]">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('staffUsers.table.fullName') || 'Full Name'}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('staffUsers.table.email') || 'Email'}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('staffUsers.table.phone') || 'Phone'}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('staffUsers.table.role') || 'Role'}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('staffUsers.table.status') || 'Status'}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('staffUsers.table.createdAt') || 'Created At'}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('staffUsers.table.actions') || 'Actions'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-[15%]">{t('staffUsers.table.fullName') || 'Full Name'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-[20%]">{t('staffUsers.table.email') || 'Email'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-[12%]">{t('staffUsers.table.phone') || 'Phone'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-[10%]">{t('staffUsers.table.role') || 'Role'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-[10%]">{t('staffUsers.table.status') || 'Status'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-[12%]">{t('staffUsers.table.createdAt') || 'Created At'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-[21%]">{t('staffUsers.table.actions') || 'Actions'}</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -343,11 +343,11 @@ export default function UserManagementPage() {
                 ) : (
                   filteredUsers.map(user => (
                     <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{user.fullName}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{user.email}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{user.phone || 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      <td className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white truncate">{user.fullName}</td>
+                      <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400 truncate">{user.email}</td>
+                      <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">{user.phone || 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
                           user.roleId === 2 
                             ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' 
                             : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
@@ -355,8 +355,8 @@ export default function UserManagementPage() {
                           {user.roleId === 2 ? (t('staffUsers.roles.owner') || 'Owner') : (t('staffUsers.roles.user') || 'User')}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      <td className="px-4 py-4 text-sm">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
                           user.isActive 
                             ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
                             : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
@@ -364,35 +364,37 @@ export default function UserManagementPage() {
                           {user.isActive ? (t('staffUsers.status.active') || 'Active') : (t('staffUsers.status.inactive') || 'Inactive')}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                      <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(user.createdAt)}
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium space-x-2">
-                        <button
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setShowViewModal(true);
-                          }}
-                          className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                        >
-                          {t('staffUsers.actions.view') || 'View'}
-                        </button>
-                        <button
-                          onClick={() => handleEditAccount(user)}
-                          className="px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600"
-                        >
-                          {t('staffUsers.actions.edit') || 'Edit'}
-                        </button>
-                        <button
-                          onClick={() => handleStatusToggle(user.id, user.isActive)}
-                          className={`px-3 py-1 rounded-md text-white ${
-                            user.isActive 
-                              ? 'bg-red-600 hover:bg-red-700' 
-                              : 'bg-green-600 hover:bg-green-700'
-                          }`}
-                        >
-                          {user.isActive ? (t('staffUsers.actions.deactivate') || 'Deactivate') : (t('staffUsers.actions.activate') || 'Activate')}
-                        </button>
+                      <td className="px-4 py-4 text-sm font-medium">
+                        <div className="flex flex-wrap gap-1">
+                          <button
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowViewModal(true);
+                            }}
+                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700"
+                          >
+                            {t('staffUsers.actions.view') || 'View'}
+                          </button>
+                          <button
+                            onClick={() => handleEditAccount(user)}
+                            className="px-2 py-1 bg-yellow-500 text-white text-xs rounded-md hover:bg-yellow-600"
+                          >
+                            {t('staffUsers.actions.edit') || 'Edit'}
+                          </button>
+                          <button
+                            onClick={() => handleStatusToggle(user.id, user.isActive)}
+                            className={`px-2 py-1 rounded-md text-white text-xs whitespace-nowrap ${
+                              user.isActive 
+                                ? 'bg-red-600 hover:bg-red-700' 
+                                : 'bg-green-600 hover:bg-green-700'
+                            }`}
+                          >
+                            {user.isActive ? (t('staffUsers.actions.deactivate') || 'Deactivate') : (t('staffUsers.actions.activate') || 'Activate')}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

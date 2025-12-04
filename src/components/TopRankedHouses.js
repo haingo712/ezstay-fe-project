@@ -8,19 +8,25 @@ import { FaStar, FaSmile, FaMeh, FaFrown, FaMapMarkerAlt, FaTrophy } from "react
 
 export default function TopRankedHouses() {
   const router = useRouter();
-  const { isGuest } = useGuestRedirect();
+  const { isGuest, isAuthenticated, loading: authLoading } = useGuestRedirect();
   const [rankedHouses, setRankedHouses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rankType, setRankType] = useState("Rating"); // "Rating" or "Sentiment"
 
   useEffect(() => {
-    fetchRankedHouses();
-  }, [rankType]);
+    // Wait for auth to finish loading before fetching
+    if (!authLoading) {
+      fetchRankedHouses();
+    }
+  }, [rankType, authLoading, isAuthenticated]); // Re-fetch when auth state or rank type changes
 
   const fetchRankedHouses = async () => {
     try {
       setLoading(true);
-      const data = await boardingHouseService.getRankedHouses(rankType, "desc", 6);
+      // Use public API for guest access (no auth required)
+      const data = !isAuthenticated 
+        ? await boardingHouseService.getRankedHousesPublic(rankType, "desc", 6)
+        : await boardingHouseService.getRankedHouses(rankType, "desc", 6);
       setRankedHouses(data || []);
     } catch (error) {
       console.error("Error fetching ranked houses:", error);

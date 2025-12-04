@@ -124,6 +124,26 @@ class BoardingHouseService {
   }
 
   /**
+   * Get ranked boarding houses PUBLIC (no auth required) - for homepage guest access
+   * @param {string} type - "Rating" or "Sentiment"
+   * @param {string} order - "desc" or "asc" (default: "desc")
+   * @param {number} limit - Number of results (default: 10)
+   * @returns {Promise<Array>} List of ranked boarding houses
+   */
+  async getRankedHousesPublic(type = "Rating", order = "desc", limit = 10) {
+    try {
+      console.log(`🌐🏆 Fetching PUBLIC ranked boarding houses... Type: ${type}, Order: ${order}, Limit: ${limit}`);
+      const response = await boardingHouseAPI.getRankedPublic(type, order, limit);
+      console.log("✅ Public ranked boarding houses fetched successfully:", response);
+      return response;
+    } catch (error) {
+      console.error("❌ Error fetching public ranked boarding houses:", error);
+      // Return empty array instead of throwing for guest access
+      return [];
+    }
+  }
+
+  /**
    * Get rating summary for a specific boarding house
    * @param {string} id - Boarding house ID
    * @returns {Promise<Object>} Rating summary with star distribution and reviews

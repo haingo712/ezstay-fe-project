@@ -5,7 +5,64 @@ import authService from "@/services/authService";
 // Uses NEXT_PUBLIC_API_GATEWAY_URL from .env file
 export const API_GATEWAY_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL;
 
-// Helper function for API calls
+// Public API fetch - does NOT include auth token (for guest access)
+async function publicApiFetch(path, options = {}) {
+  const baseUrl = API_GATEWAY_URL;
+
+  if (!baseUrl) {
+    throw new Error("API Gateway URL is not configured");
+  }
+
+  const url = `${baseUrl}${path}`;
+  console.log("🌐 Public API Request (no auth):", path);
+
+  const config = {
+    ...options,
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+    mode: 'cors',
+  };
+
+  try {
+    const response = await fetch(url, config);
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { message: response.statusText };
+      }
+      const error = new Error(errorData.message || `Request failed with status ${response.status}`);
+      error.response = response;
+      error.data = errorData;
+      throw error;
+    }
+
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      return await response.json();
+    }
+
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      return text;
+    }
+  } catch (error) {
+    console.error("Public API Fetch Error:", error);
+    throw error;
+  }
+}
+
+// Export publicApiFetch for public endpoints
+export { publicApiFetch };
+
+// Helper function for API calls (with auth)
 async function apiFetch(path, options = {}) {
   const baseUrl = API_GATEWAY_URL;
 
@@ -173,8 +230,25 @@ const api = {
   },
 };
 
+// Public API object - no authentication required (for guest access)
+const publicApi = {
+  get: (path, options) => publicApiFetch(path, { method: 'GET', ...options }),
+  post: (path, data, options) => publicApiFetch(path, { method: 'POST', body: JSON.stringify(data), ...options }),
+};
+
+export { publicApi };
+
 // Boarding House API
 export const boardingHouseAPI = {
+  // Public endpoints (no auth required)
+  getAllPublic: () => publicApi.get('/api/BoardingHouses'),
+  getByIdPublic: (id) => publicApi.get(`/api/BoardingHouses/${id}`),
+  getRankedPublic: (type, order = 'desc', limit = 10) => {
+    const params = new URLSearchParams({ type, order, limit: limit.toString() });
+    return publicApi.get(`/api/BoardingHouses/rank?${params.toString()}`);
+  },
+  
+  // Authenticated endpoints
   getAll: () => api.get('/api/BoardingHouses'),
   getById: (id) => api.get(`/api/BoardingHouses/${id}`),
   // Backend endpoint /api/BoardingHouses/owner gets ownerId from JWT token
@@ -429,6 +503,18 @@ export const paymentAPI = {
 
   // Transactions
   getTransactions: () => api.get('/api/BankAccount/transactions')
+};
+
+// Support API
+export const supportAPI = {
+  // Get all support tickets (Staff only)
+  getAll: () => api.get('/api/Support'),
+  
+  // Create support ticket
+  create: (data) => api.post('/api/Support', data),
+  
+  // Update support ticket status (Staff only)
+  updateStatus: (id, data) => api.put(`/api/Support/${id}/status`, data)
 };
 
 // Review API

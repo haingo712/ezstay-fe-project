@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Navbar from "@/components/Navbar";
+import StaffNavbar from "@/components/StaffNavbar";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -156,7 +156,7 @@ export default function StaffLayout({ children }) {
   return (
     <ProtectedRoute requiredRole={[3, 4]}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Navbar />
+        <StaffNavbar />
 
         <div className="flex pt-4" style={{ height: "calc(100vh - 1rem)" }}>
           {/* Sidebar */}

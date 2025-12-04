@@ -546,48 +546,6 @@
         "hotlineLabel": "Đường dây nóng",
         "addressLabel": "Địa chỉ"
     },
-    "searchRooms": {
-        "loading": "Đang tải...",
-        "searchPlaceholder": "Tìm theo tên, địa chỉ, mô tả...",
-        "filters": "Bộ lọc",
-        "clearAll": "Xóa tất cả",
-        "location": "Vị trí",
-        "allAreas": "Tất cả khu vực",
-        "rentPrice": "Giá thuê (VND/tháng)",
-        "from": "Từ",
-        "to": "Đến",
-        "area": "Diện tích (m²)",
-        "maxOccupancy": "Số người tối đa",
-        "noRequirement": "Không yêu cầu",
-        "onePerson": "1 người",
-        "twoPeople": "2 người",
-        "threePeople": "3 người",
-        "fourPlusPeople": "4+ người",
-        "status": "Trạng thái",
-        "all": "Tất cả",
-        "available": "Còn trống",
-        "rented": "Đã cho thuê",
-        "minRating": "Đánh giá tối thiểu",
-        "starUp": "sao trở lên",
-        "starsUp": "sao trở lên",
-        "fiveStars": "5 sao",
-        "amenities": "Tiện ích",
-        "searchResults": "Kết quả tìm kiếm",
-        "foundRooms": "Tìm thấy {count} phòng",
-        "newest": "Mới nhất",
-        "priceLowHigh": "Giá: Thấp đến Cao",
-        "priceHighLow": "Giá: Cao đến Thấp",
-        "areaLargeSmall": "Diện tích: Lớn đến Nhỏ",
-        "areaSmallLarge": "Diện tích: Nhỏ đến Lớn",
-        "highestRated": "Đánh giá cao nhất",
-        "perMonth": "/tháng",
-        "sqm": "m²",
-        "people": "người",
-        "viewDetails": "Xem chi tiết",
-        "noResults": "Không tìm thấy kết quả",
-        "noRoomsMatch": "Không có phòng nào phù hợp với tiêu chí tìm kiếm của bạn",
-        "clearFilters": "Xóa bộ lọc"
-    },
     "reviewDetail": {
         "serverError": "Lỗi máy chủ",
         "reviewNotFound": "Không tìm thấy đánh giá",
@@ -1192,7 +1150,9 @@
             "signatureNotFound": "Không tìm thấy chữ ký",
             "contractSigned": "Ký hợp đồng thành công!",
             "confirmSignatureError": "Lỗi xác nhận chữ ký. Vui lòng thử lại.",
-            "uploadImageFile": "Vui lòng tải lên file ảnh"
+            "uploadImageFile": "Vui lòng tải lên file ảnh",
+            "tenantNotSigned": "Người thuê chưa ký hợp đồng. Vui lòng đợi người thuê ký trước.",
+            "alreadySigned": "Bạn đã ký hợp đồng này rồi"
         }
     },
     "contractDetail": {
@@ -1407,40 +1367,57 @@
         }
     },
     "staffUsers": {
-        "title": "Quản Lý Người Dùng",
+        "title": "Quản lý Người dùng & Chủ trọ",
+        "subtitle": "Quản lý tài khoản người dùng và chủ nhà",
         "tabs": {
             "all": "Tất Cả",
             "users": "Người Dùng",
-            "owners": "Chủ Trọ",
+            "owners": "Chủ Nhà",
             "active": "Hoạt Động",
             "inactive": "Không Hoạt Động",
-            "ownerRequests": "Yêu Cầu Làm Chủ Trọ"
+            "ownerRequests": "Yêu Cầu Chủ Nhà"
         },
         "createAccount": "Tạo Tài Khoản",
+        "stats": {
+            "totalUsers": "Tổng Người Dùng",
+            "totalOwners": "Tổng Chủ Nhà",
+            "active": "Hoạt Động",
+            "inactive": "Không Hoạt Động"
+        },
         "table": {
             "name": "Tên",
+            "fullName": "Họ Tên",
             "email": "Email",
             "phone": "Số Điện Thoại",
             "role": "Vai Trò",
             "status": "Trạng Thái",
-            "actions": "Thao Tác"
+            "actions": "Thao Tác",
+            "createdAt": "Ngày Tạo",
+            "accountId": "Mã Tài Khoản",
+            "reason": "Lý Do"
         },
         "roles": {
             "user": "Người dùng",
-            "owner": "Chủ trọ",
+            "owner": "Chủ Nhà",
             "staff": "Nhân viên",
             "admin": "Quản trị viên"
         },
         "status": {
-            "active": "Hoạt động",
-            "inactive": "Không hoạt động"
+            "active": "Hoạt Động",
+            "inactive": "Khóa"
         },
         "actions": {
             "view": "Xem",
             "edit": "Sửa",
-            "toggleStatus": "Thay Đổi Trạng Thái",
-            "approve": "Phê Duyệt",
-            "reject": "Từ Chối"
+            "toggleStatus": "Đổi Trạng Thái",
+            "approve": "Duyệt",
+            "reject": "Từ Chối",
+            "activate": "Kích Hoạt",
+            "deactivate": "Vô Hiệu Hóa"
+        },
+        "emptyState": {
+            "noUsers": "Không tìm thấy người dùng",
+            "noRequests": "Không có yêu cầu nào"
         },
         "modal": {
             "createTitle": "Tạo Tài Khoản Mới",
@@ -1765,29 +1742,6 @@
             "staff": "Chỉ Nhân Viên"
         }
     },
-    "staffReports": {
-        "title": "Báo Cáo Đánh Giá",
-        "subtitle": "Quản lý các báo cáo đánh giá từ chủ nhà",
-        "searchPlaceholder": "Tìm kiếm reviewId hoặc lý do...",
-        "empty": "Không tìm thấy báo cáo",
-        "loading": "Đang tải báo cáo...",
-        "error": "Lỗi tải báo cáo",
-        "filters": {
-            "all": "Tất Cả",
-            "pending": "Chờ Xử Lý",
-            "approved": "Đã Duyệt",
-            "rejected": "Đã Từ Chối"
-        },
-        "actions": {
-            "approve": "Duyệt",
-            "reject": "Từ Chối"
-        },
-        "modal": {
-            "rejectTitle": "Từ Chối Báo Cáo",
-            "rejectMessage": "Bạn đang từ chối báo cáo này. Vui lòng nhập lý do:",
-            "confirmReject": "Xác Nhận Từ Chối"
-        }
-    },
     "staffManagement": {
         "title": "Quản Lý Nhân Viên",
         "subtitle": "Quản lý tài khoản nhân viên (Chỉ Admin)",
@@ -1865,230 +1819,6 @@
             "unbanFailed": "Mở khóa tài khoản thất bại",
             "passwordRequired": "Mật khẩu là bắt buộc cho tài khoản mới",
             "fillAllFields": "Vui lòng điền đầy đủ thông tin bắt buộc"
-        }
-    },
-    "adminNotifications": {
-        "title": "Thông Báo Admin",
-        "subtitle": "Quản lý và gửi thông báo hệ thống",
-        "loading": "Đang tải thông báo...",
-        "error": "Không thể tải danh sách thông báo",
-        "noNotifications": "Không có thông báo",
-        "noNotificationsDesc": "Không tìm thấy thông báo nào",
-        "createTitle": "Tạo Thông Báo Mới",
-        "editTitle": "Sửa Thông Báo",
-        "scheduleTitle": "Lên Lịch Thông Báo",
-        "createButton": "Tạo Thông Báo",
-        "scheduleButton": "Lên Lịch",
-        "refreshButton": "Làm Mới",
-        "sendButton": "Gửi Thông Báo",
-        "updateButton": "Cập Nhật Thông Báo",
-        "personalNotification": "Thông Báo Cá Nhân",
-        "byRoleNotification": "Thông Báo Theo Vai Trò",
-        "selectRoleError": "Vui lòng chọn ít nhất một vai trò",
-        "selectTimeError": "Vui lòng chọn thời gian lên lịch",
-        "confirmDelete": "Bạn có chắc muốn xóa thông báo",
-        "new": "Mới",
-        "created": "Tạo lúc",
-        "scheduled": "Lên lịch lúc",
-        "markRead": "Đánh Dấu Đã Đọc",
-        "read": "Đã Đọc",
-        "totalNotifications": "Tổng số thông báo",
-        "filter": {
-            "all": "Tất Cả",
-            "unread": "Chưa Đọc",
-            "read": "Đã Đọc"
-        },
-        "form": {
-            "title": "Tiêu Đề",
-            "titlePlaceholder": "Nhập tiêu đề thông báo",
-            "content": "Nội Dung",
-            "contentPlaceholder": "Nhập nội dung thông báo",
-            "type": "Loại Thông Báo",
-            "selectRoles": "Chọn Vai Trò Đích",
-            "scheduledTime": "Thời Gian Lên Lịch",
-            "scheduledTimeHint": "Thông báo sẽ được gửi tự động vào thời gian đã chọn"
-        },
-        "types": {
-            "general": "Chung",
-            "system": "Hệ Thống",
-            "warning": "Cảnh Báo",
-            "promotion": "Khuyến Mãi"
-        },
-        "toast": {
-            "markReadFailed": "Không thể đánh dấu đã đọc",
-            "createSuccess": "Tạo thông báo thành công!",
-            "createByRoleSuccess": "Gửi thông báo đến các vai trò đã chọn thành công!",
-            "scheduleSuccess": "Lên lịch thông báo thành công!",
-            "updateSuccess": "Cập nhật thông báo thành công!",
-            "deleteSuccess": "Xóa thông báo thành công!",
-            "deleteFailed": "Không thể xóa thông báo"
-        }
-    },
-    "adminOverview": {
-        "title": "Tổng Quan Hệ Thống",
-        "subtitle": "Thống kê và phân tích chi tiết",
-        "loading": "Đang tải dữ liệu...",
-        "userStats": "Thống Kê Người Dùng",
-        "ownerStats": "Thống Kê Chủ Nhà",
-        "staffStats": "Thống Kê Nhân Viên",
-        "summary": "Tóm Tắt",
-        "totalUsers": "Tổng Người Dùng",
-        "activeUsers": "Người Dùng Hoạt Động",
-        "inactiveUsers": "Người Dùng Không Hoạt Động",
-        "totalOwners": "Tổng Chủ Nhà",
-        "activeOwners": "Chủ Nhà Hoạt Động",
-        "inactiveOwners": "Chủ Nhà Không Hoạt Động",
-        "totalStaff": "Tổng Nhân Viên",
-        "activeStaff": "Nhân Viên Hoạt Động",
-        "inactiveStaff": "Nhân Viên Không Hoạt Động",
-        "totalAccounts": "Tổng Tài Khoản",
-        "totalActive": "Tổng Hoạt Động",
-        "totalInactive": "Tổng Không Hoạt Động",
-        "activityRate": "Tỷ Lệ Hoạt Động",
-        "active": "hoạt động",
-        "ofTotal": "tổng số"
-    },
-    "paymentManagement": {
-        "title": "Quản Lý Thanh Toán",
-        "subtitle": "Theo dõi và quản lý tất cả giao dịch thanh toán",
-        "loading": "Đang tải thanh toán...",
-        "bankAccountBtn": "Cài Đặt Tài Khoản Ngân Hàng",
-        "stats": {
-            "total": "Tổng Giao Dịch",
-            "completed": "Hoàn Thành",
-            "pending": "Đang Chờ",
-            "failed": "Thất Bại",
-            "totalIncome": "Tổng Thu Nhập"
-        },
-        "status": {
-            "completed": "Hoàn thành",
-            "pending": "Đang chờ",
-            "failed": "Thất bại"
-        },
-        "filter": {
-            "search": "Tìm kiếm",
-            "searchPlaceholder": "Tìm theo người thuê, phòng, mã giao dịch...",
-            "fromDate": "Từ ngày",
-            "toDate": "Đến ngày",
-            "status": "Trạng thái",
-            "all": "Tất cả",
-            "completed": "Hoàn thành",
-            "pending": "Đang chờ",
-            "failed": "Thất bại",
-            "showing": "Hiển thị",
-            "transactions": "giao dịch"
-        },
-        "table": {
-            "transactionId": "Mã Giao Dịch",
-            "tenant": "Người Thuê",
-            "room": "Phòng",
-            "amount": "Số Tiền",
-            "bank": "Ngân Hàng",
-            "status": "Trạng Thái",
-            "createdAt": "Ngày Tạo",
-            "actions": "Thao Tác",
-            "viewDetails": "Xem Chi Tiết"
-        },
-        "pagination": {
-            "showing": "Hiển thị",
-            "to": "đến",
-            "of": "của",
-            "transactions": "giao dịch",
-            "prev": "Trước",
-            "next": "Sau"
-        },
-        "emptyState": {
-            "title": "Không Tìm Thấy Thanh Toán",
-            "noResults": "Không có thanh toán nào phù hợp với bộ lọc của bạn.",
-            "noTransactions": "Bạn chưa có giao dịch thanh toán nào.",
-            "clearFilter": "Xóa Bộ Lọc"
-        },
-        "modal": {
-            "title": "Chi Tiết Thanh Toán",
-            "transactionId": "Mã Giao Dịch",
-            "status": "Trạng Thái",
-            "tenant": "Người Thuê",
-            "room": "Phòng",
-            "bank": "Ngân Hàng",
-            "accountNumber": "Số Tài Khoản",
-            "amount": "Số Tiền",
-            "description": "Mô Tả",
-            "createdAt": "Ngày Tạo",
-            "completedAt": "Ngày Hoàn Thành",
-            "close": "Đóng"
-        },
-        "errors": {
-            "loadFailed": "Không thể tải dữ liệu thanh toán. Vui lòng thử lại."
-        }
-    },
-    "staffUsers": {
-        "title": "Quản Lý Người Dùng",
-        "subtitle": "Quản lý tài khoản người dùng và chủ nhà",
-        "createAccount": "Tạo Tài Khoản",
-        "stats": {
-            "totalUsers": "Tổng Người Dùng",
-            "totalOwners": "Tổng Chủ Nhà",
-            "active": "Hoạt Động",
-            "inactive": "Không Hoạt Động"
-        },
-        "tabs": {
-            "all": "Tất Cả",
-            "users": "Người Dùng",
-            "owners": "Chủ Nhà",
-            "ownerRequests": "Yêu Cầu Chủ Nhà",
-            "active": "Hoạt Động",
-            "inactive": "Không Hoạt Động"
-        },
-        "table": {
-            "accountId": "Mã Tài Khoản",
-            "reason": "Lý Do",
-            "submittedAt": "Ngày Gửi",
-            "status": "Trạng Thái",
-            "actions": "Thao Tác",
-            "fullName": "Họ Tên",
-            "email": "Email",
-            "phone": "Số Điện Thoại",
-            "role": "Vai Trò",
-            "createdAt": "Ngày Tạo"
-        },
-        "actions": {
-            "approve": "Duyệt",
-            "reject": "Từ Chối",
-            "view": "Xem",
-            "edit": "Sửa",
-            "activate": "Kích Hoạt",
-            "deactivate": "Vô Hiệu Hóa"
-        },
-        "status": {
-            "pending": "Đang Chờ",
-            "approved": "Đã Duyệt",
-            "rejected": "Đã Từ Chối",
-            "active": "Hoạt Động",
-            "inactive": "Không Hoạt Động"
-        },
-        "roles": {
-            "user": "Người Dùng",
-            "owner": "Chủ Nhà"
-        },
-        "modal": {
-            "createTitle": "Tạo Tài Khoản Mới",
-            "editTitle": "Chỉnh Sửa Tài Khoản",
-            "viewTitle": "Chi Tiết Người Dùng",
-            "rejectTitle": "Từ Chối Yêu Cầu Chủ Nhà",
-            "accountType": "Loại Tài Khoản",
-            "fullName": "Họ Tên",
-            "email": "Email",
-            "phone": "Số Điện Thoại",
-            "password": "Mật Khẩu",
-            "rejectReason": "Lý Do Từ Chối",
-            "cancel": "Hủy",
-            "save": "Lưu",
-            "create": "Tạo",
-            "confirm": "Xác Nhận"
-        },
-        "emptyState": {
-            "noRequests": "Không có yêu cầu chủ nhà nào",
-            "noUsers": "Không tìm thấy người dùng"
         }
     }
 }
