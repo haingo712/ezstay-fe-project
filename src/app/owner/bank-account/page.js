@@ -6,10 +6,12 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
 import paymentService from '@/services/paymentService';
 import { paymentAPI } from '@/utils/api';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function BankAccountPage() {
     const { user } = useAuth();
     const router = useRouter();
+    const { t } = useTranslation();
 
     const [loading, setLoading] = useState(true);
     const [loadingDetail, setLoadingDetail] = useState(false);
@@ -297,7 +299,7 @@ export default function BankAccountPage() {
                 <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                        <p className="mt-4 text-gray-600 dark:text-gray-400">Loading bank accounts...</p>
+                        <p className="mt-4 text-gray-600 dark:text-gray-400">{t('bankAccount.loading')}</p>
                     </div>
                 </div>
             </ProtectedRoute>
@@ -327,7 +329,7 @@ export default function BankAccountPage() {
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                             </svg>
                                         </span>
-                                        Bank Accounts
+                                        {t('bankAccount.title')}
                                     </h1>
 
                                 </div>
@@ -341,7 +343,7 @@ export default function BankAccountPage() {
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                     </svg>
-                                    Add Account
+                                    {t('bankAccount.addAccount')}
                                 </button>
                             )}
                         </div>
@@ -355,7 +357,7 @@ export default function BankAccountPage() {
                             <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">Total Accounts</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('bankAccount.totalAccounts') || 'Tổng tài khoản'}</p>
                                         <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{bankAccounts.length}</p>
                                     </div>
                                     <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
@@ -368,7 +370,7 @@ export default function BankAccountPage() {
                             <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">Active</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('bankAccount.active')}</p>
                                         <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{bankAccounts.filter(a => a.isActive).length}</p>
                                     </div>
                                     <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
@@ -381,7 +383,7 @@ export default function BankAccountPage() {
                             <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">Inactive</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('bankAccount.inactive')}</p>
                                         <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{bankAccounts.filter(a => !a.isActive).length}</p>
                                     </div>
                                     <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl">
@@ -416,7 +418,7 @@ export default function BankAccountPage() {
                                     </svg>
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                                    {isEditing ? 'Edit Bank Account' : 'Add New Bank Account'}
+                                    {isEditing ? t('bankAccount.editAccount') : t('bankAccount.addNewAccount')}
                                 </h2>
                             </div>
 
@@ -424,12 +426,12 @@ export default function BankAccountPage() {
                                 {/* Bank Name */}
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                        Bank <span className="text-red-500">*</span>
+                                        {t('bankAccount.bank')} <span className="text-red-500">*</span>
                                     </label>
                                     {loadingBanks ? (
                                         <div className="flex items-center justify-center py-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50">
                                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                                            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading banks...</span>
+                                            <span className="ml-3 text-gray-600 dark:text-gray-400">{t('bankAccount.loadingBanks')}</span>
                                         </div>
                                     ) : availableBanks.length === 0 ? (
                                         <div className="w-full px-4 py-4 border border-amber-300 dark:border-amber-600 rounded-xl bg-amber-50 dark:bg-amber-900/20">
@@ -437,7 +439,7 @@ export default function BankAccountPage() {
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                                 </svg>
-                                                No active banks found. Please contact admin to enable banks.
+                                                {t('bankAccount.noBanksFound')}
                                             </p>
                                         </div>
                                     ) : (
@@ -456,7 +458,7 @@ export default function BankAccountPage() {
                                                 required
                                                 className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
                                             >
-                                                <option value="">-- Select a bank --</option>
+                                                <option value="">{t('bankAccount.selectBank')}</option>
                                                 {availableBanks.map((bank) => (
                                                     <option key={bank.id} value={String(bank.id)}>
                                                         {bank.fullName} ({bank.bankName})
@@ -473,7 +475,7 @@ export default function BankAccountPage() {
                                 {/* Account Number */}
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                        Account Number <span className="text-red-500">*</span>
+                                        {t('bankAccount.accountNumber')} <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="text"
@@ -481,7 +483,7 @@ export default function BankAccountPage() {
                                         value={formData.accountNumber}
                                         onChange={handleInputChange}
                                         required
-                                        placeholder="Enter your account number"
+                                        placeholder={t('bankAccount.accountNumberPlaceholder')}
                                         className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
                                     />
                                 </div>
@@ -489,14 +491,14 @@ export default function BankAccountPage() {
                                 {/* Description */}
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                        Description
+                                        {t('bankAccount.description')}
                                     </label>
                                     <textarea
                                         name="description"
                                         value={formData.description}
                                         onChange={handleInputChange}
                                         rows={3}
-                                        placeholder="Add a description for this account (optional)"
+                                        placeholder={t('bankAccount.descriptionPlaceholder')}
                                         className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all resize-none"
                                     />
                                 </div>
@@ -504,8 +506,8 @@ export default function BankAccountPage() {
                                 {/* Active Status */}
                                 <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                                     <div>
-                                        <p className="font-semibold text-gray-700 dark:text-gray-300">Active Status</p>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">Enable this account to receive payments</p>
+                                        <p className="font-semibold text-gray-700 dark:text-gray-300">{t('bankAccount.status')}</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('bankAccount.enableToReceive') || 'Bật để nhận thanh toán'}</p>
                                     </div>
                                     <button
                                         type="button"
@@ -525,7 +527,7 @@ export default function BankAccountPage() {
                                         onClick={handleCancel}
                                         className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-all"
                                     >
-                                        Cancel
+                                        {t('bankAccount.cancel')}
                                     </button>
                                     <button
                                         type="submit"
@@ -535,14 +537,14 @@ export default function BankAccountPage() {
                                         {loading ? (
                                             <>
                                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                                Saving...
+                                                {t('bankAccount.saving')}
                                             </>
                                         ) : (
                                             <>
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                                 </svg>
-                                                {isEditing ? 'Update Account' : 'Save Account'}
+                                                {isEditing ? (t('bankAccount.updateAccount') || 'Cập nhật') : t('bankAccount.save')}
                                             </>
                                         )}
                                     </button>
@@ -577,7 +579,7 @@ export default function BankAccountPage() {
                                             type="text"
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            placeholder="Search by bank name, account number..."
+                                            placeholder={t('bankAccount.searchPlaceholder')}
                                             className="w-full pl-12 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
                                         />
                                     </div>
@@ -592,7 +594,7 @@ export default function BankAccountPage() {
                                             : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                             }`}
                                     >
-                                        All
+                                        {t('bankAccount.all')}
                                     </button>
                                     <button
                                         onClick={() => setFilterStatus('active')}
@@ -601,7 +603,7 @@ export default function BankAccountPage() {
                                             : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                             }`}
                                     >
-                                        Active
+                                        {t('bankAccount.active')}
                                     </button>
                                     <button
                                         onClick={() => setFilterStatus('inactive')}
@@ -610,14 +612,14 @@ export default function BankAccountPage() {
                                             : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                             }`}
                                     >
-                                        Inactive
+                                        {t('bankAccount.inactive')}
                                     </button>
                                 </div>
                             </div>
 
                             {/* Results count */}
                             <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                                Showing <span className="font-semibold text-blue-600 dark:text-blue-400">{filteredAccounts.length}</span> of {bankAccounts.length} accounts
+                                {t('bankAccount.showingAccounts')} <span className="font-semibold text-blue-600 dark:text-blue-400">{filteredAccounts.length}</span> {t('bankAccount.of')} {bankAccounts.length} {t('bankAccount.accounts')}
                             </div>
                         </div>
                     )}
@@ -652,7 +654,7 @@ export default function BankAccountPage() {
                                                         : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                                                         }`}>
                                                         <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${account.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                                        {account.isActive ? 'Active' : 'Inactive'}
+                                                        {account.isActive ? t('bankAccount.active') : t('bankAccount.inactive')}
                                                     </span>
                                                 </div>
                                             </div>
@@ -692,7 +694,7 @@ export default function BankAccountPage() {
                                             <div className="space-y-4">
                                                 <div>
                                                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                                                        Account Number
+                                                        {t('bankAccount.accountNumber')}
                                                     </label>
                                                     <p className="text-lg font-mono font-bold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700/50 px-3 py-2 rounded-lg">
                                                         {account.accountNumber}
@@ -702,7 +704,7 @@ export default function BankAccountPage() {
                                                 {account.description && (
                                                     <div>
                                                         <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                                                            Description
+                                                            {t('bankAccount.description')}
                                                         </label>
                                                         <p className="text-gray-700 dark:text-gray-300 text-sm">
                                                             {account.description}
@@ -712,7 +714,7 @@ export default function BankAccountPage() {
 
                                                 <div>
                                                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                                                        Status
+                                                        {t('bankAccount.status')}
                                                     </label>
                                                     <div className="flex items-center gap-3">
                                                         <button
@@ -721,7 +723,7 @@ export default function BankAccountPage() {
                                                                 handleToggleActive(account);
                                                             }}
                                                             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${account.isActive ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'}`}
-                                                            title={account.isActive ? 'Click to deactivate' : 'Click to activate'}
+                                                            title={account.isActive ? t('bankAccount.clickToDisable') : t('bankAccount.clickToEnable')}
                                                         >
                                                             <span
                                                                 className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${account.isActive ? 'translate-x-6' : 'translate-x-1'}`}
@@ -739,14 +741,14 @@ export default function BankAccountPage() {
                                                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                             </svg>
-                                                            Created: {new Date(account.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                            {t('bankAccount.createdAt')}: {new Date(account.createdAt).toLocaleDateString('vi-VN', { year: 'numeric', month: 'short', day: 'numeric' })}
                                                         </p>
                                                         {account.updatedAt && (
                                                             <p className="flex items-center gap-1">
                                                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                                                 </svg>
-                                                                Updated: {new Date(account.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                                {t('bankAccount.updatedAt')}: {new Date(account.updatedAt).toLocaleDateString('vi-VN', { year: 'numeric', month: 'short', day: 'numeric' })}
                                                             </p>
                                                         )}
                                                     </div>
@@ -756,7 +758,7 @@ export default function BankAccountPage() {
                                             {/* Right Column - QR Code */}
                                             <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/30 dark:to-gray-700/50 rounded-xl p-4">
                                                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-                                                    QR Code
+                                                    {t('bankAccount.qrCode')}
                                                 </p>
                                                 {account.imageQR ? (
                                                     <div className="bg-white p-3 rounded-xl shadow-md">
@@ -776,12 +778,12 @@ export default function BankAccountPage() {
                                                             <svg className="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                                                             </svg>
-                                                            <p className="text-xs text-gray-500 dark:text-gray-400">No QR Code</p>
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400">{t('bankAccount.noQrCode')}</p>
                                                         </div>
                                                     </div>
                                                 )}
                                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center">
-                                                    Scan to transfer money
+                                                    {t('bankAccount.scanToTransfer')}
                                                 </p>
                                             </div>
                                         </div>
@@ -802,7 +804,7 @@ export default function BankAccountPage() {
                                 {loadingDetail ? (
                                     <div className="p-12 flex flex-col items-center justify-center">
                                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-                                        <p className="text-gray-600 dark:text-gray-400">Loading account details...</p>
+                                        <p className="text-gray-600 dark:text-gray-400">{t('bankAccount.loadingDetails') || 'Đang tải chi tiết...'}</p>
                                     </div>
                                 ) : accountDetail ? (
                                     <>
@@ -824,8 +826,8 @@ export default function BankAccountPage() {
                                                         </div>
                                                     )}
                                                     <div>
-                                                        <h2 className="text-xl font-bold">Account Details</h2>
-                                                        <p className="text-blue-100 text-sm">{accountDetail.bankGateway?.fullName || accountDetail.bankGateway?.bankName || 'Unknown Bank'}</p>
+                                                        <h2 className="text-xl font-bold">{t('bankAccount.accountDetails') || 'Chi tiết tài khoản'}</h2>
+                                                        <p className="text-blue-100 text-sm">{accountDetail.bankGateway?.fullName || accountDetail.bankGateway?.bankName || t('bankAccount.unknownBank') || 'Không xác định'}</p>
                                                     </div>
                                                 </div>
                                                 <button
@@ -848,7 +850,7 @@ export default function BankAccountPage() {
                                                     : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                                                     }`}>
                                                     <span className={`w-2 h-2 rounded-full mr-2 ${accountDetail.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                                    {accountDetail.isActive ? 'Active - Receiving Payments' : 'Inactive'}
+                                                    {accountDetail.isActive ? (t('bankAccount.activeReceiving') || 'Hoạt động - Đang nhận thanh toán') : t('bankAccount.inactive')}
                                                 </span>
                                             </div>
 
@@ -870,7 +872,7 @@ export default function BankAccountPage() {
                                                             </div>
                                                         )}
                                                         <div className="flex-1">
-                                                            <p className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">Bank Gateway</p>
+                                                            <p className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">{t('bankAccount.bankGateway') || 'Cổng ngân hàng'}</p>
                                                             <p className="text-lg font-bold text-gray-900 dark:text-white">{accountDetail.bankGateway.fullName || accountDetail.bankGateway.bankName}</p>
                                                             <p className="text-sm text-gray-600 dark:text-gray-400">{accountDetail.bankGateway.bankName}</p>
                                                             <div className="flex items-center gap-2 mt-1">
@@ -901,23 +903,23 @@ export default function BankAccountPage() {
                                                             <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                                                             </svg>
-                                                            <p className="text-sm text-gray-500">No QR Code</p>
+                                                            <p className="text-sm text-gray-500">{t('bankAccount.noQrCode')}</p>
                                                         </div>
                                                     </div>
                                                 )}
-                                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">Scan to transfer money</p>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{t('bankAccount.scanToTransfer')}</p>
                                             </div>
 
                                             {/* Account Info */}
                                             <div className="space-y-4">
                                                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-                                                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Account Number</label>
+                                                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t('bankAccount.accountNumber')}</label>
                                                     <p className="text-2xl font-mono font-bold text-gray-900 dark:text-white">{accountDetail.accountNumber}</p>
                                                 </div>
 
                                                 {/* Amount */}
                                                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 border border-green-100 dark:border-green-800">
-                                                    <label className="block text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wider mb-1">Balance / Amount</label>
+                                                    <label className="block text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wider mb-1">{t('bankAccount.balance') || 'Số dư'}</label>
                                                     <p className="text-2xl font-bold text-green-700 dark:text-green-400">
                                                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(accountDetail.amount || 0)}
                                                     </p>
@@ -925,7 +927,7 @@ export default function BankAccountPage() {
 
                                                 {accountDetail.description && (
                                                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-                                                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Description</label>
+                                                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t('bankAccount.description')}</label>
                                                         <p className="text-gray-700 dark:text-gray-300">{accountDetail.description}</p>
                                                     </div>
                                                 )}
@@ -935,21 +937,21 @@ export default function BankAccountPage() {
                                                 {/* Timestamps */}
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-                                                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Created At</label>
+                                                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t('bankAccount.createdAt')}</label>
                                                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                            {accountDetail.createdAt ? new Date(accountDetail.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
+                                                            {accountDetail.createdAt ? new Date(accountDetail.createdAt).toLocaleDateString('vi-VN', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
                                                         </p>
                                                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                            {accountDetail.createdAt ? new Date(accountDetail.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                                            {accountDetail.createdAt ? new Date(accountDetail.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ''}
                                                         </p>
                                                     </div>
                                                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-                                                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Updated At</label>
+                                                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t('bankAccount.updatedAt')}</label>
                                                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                            {accountDetail.updatedAt ? new Date(accountDetail.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
+                                                            {accountDetail.updatedAt ? new Date(accountDetail.updatedAt).toLocaleDateString('vi-VN', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
                                                         </p>
                                                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                            {accountDetail.updatedAt ? new Date(accountDetail.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                                            {accountDetail.updatedAt ? new Date(accountDetail.updatedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ''}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -971,7 +973,7 @@ export default function BankAccountPage() {
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                 </svg>
-                                                Edit Account
+                                                {t('bankAccount.editAccount')}
                                             </button>
                                             <button
                                                 onClick={() => {
@@ -984,7 +986,7 @@ export default function BankAccountPage() {
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
-                                                Delete
+                                                {t('bankAccount.delete')}
                                             </button>
                                         </div>
                                     </>
@@ -1003,10 +1005,10 @@ export default function BankAccountPage() {
                                     </svg>
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                                    No matching accounts
+                                    {t('bankAccount.noFilterResults')}
                                 </h3>
                                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                                    Try adjusting your search or filter criteria
+                                    {t('bankAccount.noFilterResultsDesc')}
                                 </p>
                                 <button
                                     onClick={() => {
@@ -1018,7 +1020,7 @@ export default function BankAccountPage() {
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
-                                    Clear Filters
+                                    {t('bankAccount.clearFilters') || 'Xóa bộ lọc'}
                                 </button>
                             </div>
                         </div>
@@ -1034,10 +1036,10 @@ export default function BankAccountPage() {
                                     </svg>
                                 </div>
                                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                                    No Bank Accounts Yet
+                                    {t('bankAccount.noAccountsFound')}
                                 </h3>
                                 <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
-                                    Add your bank account to start receiving payments from tenants. Your account information will be used for payment transfers.
+                                    {t('bankAccount.noAccountsFoundDesc')}
                                 </p>
                                 <button
                                     onClick={() => setShowForm(true)}
@@ -1046,7 +1048,7 @@ export default function BankAccountPage() {
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                     </svg>
-                                    Add Your First Account
+                                    {t('bankAccount.addFirstAccount') || 'Thêm tài khoản đầu tiên'}
                                 </button>
                             </div>
                         </div>

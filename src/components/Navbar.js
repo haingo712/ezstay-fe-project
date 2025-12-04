@@ -311,7 +311,7 @@ export default function Navbar() {
                       <div className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 border-b dark:border-gray-600">
                         <p className="font-semibold truncate">{userEmail}</p>
                       </div>
-                      
+
                       {/* Hồ sơ - Hiện cho tất cả roles */}
                       <Link
                         href="/profile"
@@ -354,6 +354,17 @@ export default function Navbar() {
                         </Link>
                       )}
 
+                      {/* Yêu cầu thuê của tôi - Chỉ cho User */}
+                      {(userRole === 1 || userRole === "user") && (
+                        <Link
+                          href="/my-rental-requests"
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          {t('nav.myRentalRequests')}
+                        </Link>
+                      )}
+
                       {/* Hóa đơn - Chỉ cho User */}
                       {(userRole === 1 || userRole === "user") && (
                         <Link
@@ -362,6 +373,17 @@ export default function Navbar() {
                           onClick={() => setIsUserMenuOpen(false)}
                         >
                           {t('nav.myBills')}
+                        </Link>
+                      )}
+
+                      {/* Lịch sử thanh toán - Chỉ cho User */}
+                      {(userRole === 1 || userRole === "user") && (
+                        <Link
+                          href="/payment/history"
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          {t('nav.paymentHistory') || 'Lịch sử thanh toán'}
                         </Link>
                       )}
 

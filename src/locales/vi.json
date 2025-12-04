@@ -9,7 +9,9 @@
         "profile": "Hồ sơ",
         "myChats": "Tin nhắn",
         "rentalHistory": "Lịch sử thuê",
+        "myRentalRequests": "Yêu cầu thuê",
         "myBills": "Hóa đơn",
+        "paymentHistory": "Lịch sử thanh toán",
         "dashboard": "Bảng điều khiển",
         "logout": "Đăng xuất"
     },
@@ -160,6 +162,26 @@
         "faceRegistration": "Đăng ký khuôn mặt",
         "registerFace": "Đăng ký khuôn mặt"
     },
+    "payment": {
+        "history": "Lịch sử thanh toán",
+        "amount": "Số tiền",
+        "transactionType": "Loại giao dịch",
+        "transferIn": "Nhận tiền",
+        "transferOut": "Chuyển tiền",
+        "transactionId": "Mã giao dịch",
+        "bank": "Ngân hàng",
+        "accountNumber": "Số tài khoản",
+        "transactionDate": "Ngày giao dịch",
+        "content": "Nội dung chuyển khoản",
+        "billId": "Mã hóa đơn",
+        "success": "Thành công",
+        "totalTransactions": "Tổng giao dịch",
+        "totalPaid": "Tổng đã thanh toán",
+        "detail": "Chi tiết",
+        "close": "Đóng",
+        "noHistory": "Chưa có lịch sử thanh toán",
+        "noHistoryDesc": "Khi bạn thanh toán hóa đơn, lịch sử sẽ hiển thị ở đây."
+    },
     "support": {
         "title": "Hỗ trợ khách hàng",
         "contactUs": "Liên hệ chúng tôi",
@@ -282,13 +304,16 @@
         "descriptionPlaceholder": "Tên hoặc ghi chú cho tài khoản này",
         "setAsActive": "Đặt làm tài khoản hoạt động",
         "cancel": "Hủy",
-        "save": "Lưu",
+        "save": "Lưu Tài Khoản",
         "saving": "Đang lưu...",
         "edit": "Chỉnh sửa",
         "delete": "Xóa",
         "status": "Trạng Thái",
         "active": "Hoạt động",
         "inactive": "Không hoạt động",
+        "totalAccounts": "Tổng Tài Khoản",
+        "enableToReceive": "Bật để nhận thanh toán",
+        "updateAccount": "Cập Nhật Tài Khoản",
         "searchFilter": "Tìm kiếm & Lọc",
         "searchPlaceholder": "Tìm kiếm theo tên ngân hàng, số tài khoản...",
         "all": "Tất cả",
@@ -316,7 +341,15 @@
         "noBanksFound": "Không tìm thấy ngân hàng nào đang active. Vui lòng kiểm tra backend hoặc kích hoạt ngân hàng trong admin panel.",
         "foundBanks": "Tìm thấy {{count}} ngân hàng",
         "clickToDisable": "Click để tắt",
-        "clickToEnable": "Click để bật"
+        "clickToEnable": "Click để bật",
+        "loadingDetails": "Đang tải chi tiết...",
+        "accountDetails": "Chi Tiết Tài Khoản",
+        "unknownBank": "Không xác định",
+        "activeReceiving": "Hoạt động - Đang nhận thanh toán",
+        "bankGateway": "Cổng Ngân Hàng",
+        "balance": "Số Dư",
+        "clearFilters": "Xóa Bộ Lọc",
+        "addFirstAccount": "Thêm Tài Khoản Đầu Tiên"
     },
     "favorites": {
         "title": "Bài viết yêu thích",
@@ -449,7 +482,57 @@
         "pending": "Đang chờ",
         "rejected": "Bị từ chối",
         "inactive": "Không hoạt động",
-        "loadFailed": "Không thể tải chi tiết bài đăng"
+        "loadFailed": "Không thể tải chi tiết bài đăng",
+        "sendRentalRequest": "Gửi yêu cầu thuê",
+        "rentalRequest": {
+            "title": "Yêu cầu thuê phòng",
+            "subtitle": "Điền thông tin để gửi yêu cầu thuê",
+            "loadingProfile": "Đang tải thông tin cá nhân...",
+            "updateProfile": "Cập nhật thông tin cá nhân",
+            "rentalInfoSection": "Thông tin thuê",
+            "personalInfoSection": "Thông tin cá nhân",
+            "cccdSection": "Thông tin CCCD/CMND",
+            "checkinDate": "Ngày nhận phòng",
+            "checkoutDate": "Ngày trả phòng",
+            "numberOfOccupants": "Số người ở",
+            "checkoutHint": "Thời gian thuê tối thiểu 1 tháng",
+            "fullName": "Họ và tên",
+            "fullNamePlaceholder": "Nhập họ và tên đầy đủ",
+            "phone": "Số điện thoại",
+            "email": "Email",
+            "gender": "Giới tính",
+            "genderMale": "Nam",
+            "genderFemale": "Nữ",
+            "genderOther": "Khác",
+            "dateOfBirth": "Ngày sinh",
+            "address": "Địa chỉ",
+            "addressPlaceholder": "Địa chỉ thường trú",
+            "cccdNumber": "Số CCCD/CMND",
+            "cccdIssuedDate": "Ngày cấp",
+            "cccdIssuedPlace": "Nơi cấp",
+            "cccdIssuedPlacePlaceholder": "VD: Cục CSQLHC về TTXH",
+            "cccdFront": "Mặt trước",
+            "cccdBack": "Mặt sau",
+            "infoNote": "Thông tin cá nhân của bạn sẽ được sử dụng để tạo hợp đồng thuê. Vui lòng kiểm tra kỹ trước khi gửi.",
+            "cancel": "Hủy",
+            "submit": "Gửi yêu cầu",
+            "submitting": "Đang gửi...",
+            "success": "Gửi yêu cầu thuê thành công! Chủ nhà sẽ xem xét và liên hệ với bạn.",
+            "errors": {
+                "checkinRequired": "Vui lòng chọn ngày nhận phòng",
+                "checkinPast": "Ngày nhận phòng phải từ hôm nay trở đi",
+                "checkoutRequired": "Vui lòng chọn ngày trả phòng",
+                "checkoutMinOneMonth": "Thời gian thuê tối thiểu 1 tháng",
+                "occupantsMin": "Số người ở phải từ 1 trở lên",
+                "missingInfo": "Thiếu thông tin chủ nhà hoặc phòng",
+                "failed": "Không thể gửi yêu cầu thuê. Vui lòng thử lại.",
+                "fullNameRequired": "Vui lòng nhập họ và tên",
+                "phoneRequired": "Vui lòng nhập số điện thoại",
+                "cccdRequired": "Vui lòng nhập số CCCD/CMND",
+                "incompleteCCCD": "Thông tin CCCD chưa đầy đủ. Vui lòng cập nhật hồ sơ trước khi gửi yêu cầu.",
+                "loadProfileFailed": "Không thể tải thông tin cá nhân. Vui lòng thử lại."
+            }
+        }
     },
     "searchRooms": {
         "title": "Tìm kiếm phòng",
@@ -874,6 +957,7 @@
         "loading": "Đang tải dữ liệu thanh toán...",
         "bankAccount": "Tài Khoản Ngân Hàng",
         "stats": {
+            "total": "Tổng giao dịch",
             "totalTransactions": "Tổng giao dịch",
             "completed": "Hoàn thành",
             "pending": "Chờ xử lý",
@@ -922,6 +1006,8 @@
             "title": "Không có giao dịch",
             "description": "Chưa có giao dịch thanh toán nào",
             "noMatchingResults": "Không tìm thấy giao dịch phù hợp với bộ lọc",
+            "noResults": "Không tìm thấy giao dịch phù hợp với bộ lọc",
+            "noTransactions": "Chưa có giao dịch thanh toán nào",
             "clearFilter": "Xóa bộ lọc"
         },
         "modal": {
@@ -934,6 +1020,7 @@
             "accountNumber": "Số tài khoản",
             "amount": "Số tiền",
             "description": "Mô tả",
+            "createdAt": "Ngày giao dịch",
             "createdDate": "Ngày tạo",
             "completedDate": "Ngày hoàn thành",
             "close": "Đóng"
@@ -1192,7 +1279,8 @@
             "signatureNotFound": "Không tìm thấy chữ ký",
             "contractSigned": "Ký hợp đồng thành công!",
             "confirmSignatureError": "Lỗi xác nhận chữ ký. Vui lòng thử lại.",
-            "uploadImageFile": "Vui lòng tải lên file ảnh"
+            "uploadImageFile": "Vui lòng tải lên file ảnh",
+            "rentalRequestLoaded": "Đã tải thông tin yêu cầu thuê. Vui lòng kiểm tra và hoàn tất hợp đồng."
         }
     },
     "contractDetail": {
@@ -1871,5 +1959,102 @@
         "activityRate": "Tỷ Lệ Hoạt Động",
         "active": "hoạt động",
         "ofTotal": "tổng số"
+    },
+    "myRentalRequests": {
+        "title": "Yêu cầu thuê của tôi",
+        "subtitle": "Theo dõi các yêu cầu thuê phòng của bạn",
+        "searchPlaceholder": "Tìm theo tên phòng, nhà trọ...",
+        "loading": "Đang tải yêu cầu thuê...",
+        "people": "người",
+        "price": "Giá thuê",
+        "checkin": "Check-in",
+        "checkout": "Check-out",
+        "sentOn": "Gửi ngày",
+        "justNow": "Vừa gửi",
+        "hoursAgo": "{{count}} giờ trước",
+        "daysAgo": "{{count}} ngày trước",
+        "stats": {
+            "total": "Tổng yêu cầu",
+            "pending": "Đang chờ",
+            "thisMonth": "Trong tháng"
+        },
+        "status": {
+            "pending": "Đang chờ",
+            "approved": "Đã duyệt",
+            "rejected": "Bị từ chối"
+        },
+        "empty": {
+            "title": "Chưa có yêu cầu thuê nào",
+            "description": "Tìm phòng và gửi yêu cầu thuê ngay",
+            "browse": "Tìm phòng"
+        },
+        "errors": {
+            "loadFailed": "Không thể tải danh sách yêu cầu thuê"
+        }
+    },
+    "ownerRentalRequests": {
+        "title": "Quản lý yêu cầu thuê",
+        "subtitle": "Xem và xử lý các yêu cầu thuê phòng",
+        "searchPlaceholder": "Tìm theo tên phòng, nhà trọ, người thuê...",
+        "loading": "Đang tải yêu cầu thuê...",
+        "people": "người",
+        "price": "Giá thuê",
+        "checkin": "Check-in",
+        "checkout": "Check-out",
+        "sentOn": "Gửi ngày",
+        "requestFrom": "Yêu cầu từ",
+        "justNow": "Vừa gửi",
+        "hoursAgo": "{{count}} giờ trước",
+        "daysAgo": "{{count}} ngày trước",
+        "approve": "Duyệt",
+        "reject": "Từ chối",
+        "createContract": "Tạo hợp đồng",
+        "approveSuccess": "Đã duyệt yêu cầu thuê",
+        "rejectSuccess": "Đã từ chối yêu cầu thuê",
+        "viewDetails": "Xem chi tiết",
+        "hideDetails": "Ẩn chi tiết",
+        "tenantDetails": "Thông tin người thuê",
+        "basicInfo": "Thông tin cơ bản",
+        "addressInfo": "Địa chỉ",
+        "cccdInfo": "Thông tin CCCD",
+        "fullName": "Họ và tên",
+        "gender": "Giới tính",
+        "genderMale": "Nam",
+        "genderFemale": "Nữ",
+        "genderOther": "Khác",
+        "dateOfBirth": "Ngày sinh",
+        "phone": "Số điện thoại",
+        "email": "Email",
+        "address": "Địa chỉ",
+        "ward": "Phường/Xã",
+        "province": "Tỉnh/Thành phố",
+        "temporaryResidence": "Tạm trú",
+        "cccdNumber": "Số CCCD",
+        "cccdIssuedDate": "Ngày cấp",
+        "cccdIssuedPlace": "Nơi cấp",
+        "cccdImages": "Ảnh CCCD",
+        "cccdFront": "Mặt trước",
+        "cccdBack": "Mặt sau",
+        "stats": {
+            "total": "Tổng yêu cầu",
+            "pending": "Đang chờ",
+            "thisMonth": "Trong tháng"
+        },
+        "status": {
+            "pending": "Đang chờ",
+            "approved": "Đã duyệt",
+            "rejected": "Đã từ chối"
+        },
+        "empty": {
+            "title": "Chưa có yêu cầu thuê nào",
+            "description": "Khi có người gửi yêu cầu thuê phòng, chúng sẽ hiển thị ở đây"
+        },
+        "errors": {
+            "loadFailed": "Không thể tải danh sách yêu cầu thuê",
+            "approveFailed": "Không thể duyệt yêu cầu",
+            "rejectFailed": "Không thể từ chối yêu cầu",
+            "noBoardingHouse": "Không tìm thấy thông tin nhà trọ",
+            "createContractFailed": "Không thể tạo hợp đồng"
+        }
     }
 }

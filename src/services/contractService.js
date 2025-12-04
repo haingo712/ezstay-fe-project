@@ -39,7 +39,7 @@ const contractService = {
     try {
       // Try ByOwnerId first (Owner role endpoint)
       console.log('📊 Fetching contracts for owner...');
-      const response = await api.get('/api/Contract/ByOwnerId?$count=false');
+      const response = await api.get('/api/Contract/all/owner?$count=false');
       console.log('📊 OData Response:', response);
 
       // OData returns data in { value: [...] } format
@@ -124,7 +124,7 @@ const contractService = {
   terminate: async (id, reason) => {
     try {
       // Backend expects string in body, not object
-      const response = await api.put(`/api/Contract/${id}/cancelcontract`, `"${reason}"`);
+      const response = await api.put(`/api/Contract/${id}/cancel`, `"${reason}"`);
       return response.data || response;
     } catch (error) {
       console.error('Error cancelling contract:', error);
@@ -228,6 +228,49 @@ const contractService = {
     } catch (error) {
       console.error('Error fetching signatures:', error);
       return null;
+    }
+  },
+
+  // ==================== RENTAL REQUEST ====================
+  // Create rental request (User sends request to Owner)
+  createRentalRequest: async (ownerId, roomId, data) => {
+    try {
+      console.log("📝 Creating rental request:", { ownerId, roomId, data });
+      // API: POST /api/Contract/{ownerId}/rental-request/{roomId}
+      const response = await api.post(`/api/Contract/${ownerId}/rental-request/${roomId}`, data);
+      console.log("✅ Rental request created:", response);
+      return response.data || response;
+    } catch (error) {
+      console.error('❌ Error creating rental request:', error);
+      throw error;
+    }
+  },
+
+  // Get rental requests for owner
+  getRentalRequestsByOwner: async () => {
+    try {
+      const response = await api.get('/api/Contract/rental-requests/owner');
+      if (response && response.value) {
+        return response.value;
+      }
+      return response.data || response || [];
+    } catch (error) {
+      console.error('❌ Error fetching rental requests for owner:', error);
+      return [];
+    }
+  },
+
+  // Get rental requests for user
+  getRentalRequestsByUser: async () => {
+    try {
+      const response = await api.get('/api/Contract/rental-requests/user');
+      if (response && response.value) {
+        return response.value;
+      }
+      return response.data || response || [];
+    } catch (error) {
+      console.error('❌ Error fetching rental requests for user:', error);
+      return [];
     }
   }
 };
