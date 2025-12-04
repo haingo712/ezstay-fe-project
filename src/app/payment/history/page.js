@@ -1,15 +1,37 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/hooks/useTranslation';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import {
+    CreditCard,
+    Calendar,
+    ArrowLeft,
+    Search,
+    Filter,
+    Eye,
+    CheckCircle,
+    Clock,
+    XCircle,
+    Banknote,
+    Building2,
+    Receipt,
+    TrendingUp,
+    X
+} from 'lucide-react';
 
 export default function PaymentHistoryPage() {
     const router = useRouter();
+    const { t } = useTranslation();
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedPayment, setSelectedPayment] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all');
 
     useEffect(() => {
         fetchPayments();
@@ -22,7 +44,8 @@ export default function PaymentHistoryPage() {
                 localStorage.getItem('ezstay_token') ||
                 localStorage.getItem('token');
 
-            const response = await fetch('https://payment-api-r4zy.onrender.com/api/Payment/my-payments', {
+            // Gọi API lịch sử thanh toán mới
+            const response = await fetch('https://payment-api-r4zy.onrender.com/api/Payment/history/user', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -32,13 +55,18 @@ export default function PaymentHistoryPage() {
             if (response.ok) {
                 const data = await response.json();
                 console.log('📜 Payment history:', data);
-                setPayments(data.data || data || []);
+                // API trả về { isSuccess, data, message }
+                const paymentList = data.data || data || [];
+                // Sắp xếp theo ngày mới nhất
+                paymentList.sort((a, b) => new Date(b.transactionDate || b.TransactionDate) - new Date(a.transactionDate || a.TransactionDate));
+                setPayments(paymentList);
             } else {
-                setError('Failed to load payment history');
+                console.error('Failed to load payment history:', response.status);
+                setError('Không thể tải lịch sử thanh toán');
             }
         } catch (err) {
             console.error('Error fetching payments:', err);
-            setError('Failed to load payment history');
+            setError('Không thể tải lịch sử thanh toán');
         } finally {
             setLoading(false);
         }
@@ -63,37 +91,49 @@ export default function PaymentHistoryPage() {
         });
     };
 
-    const getStatusConfig = (status) => {
-        const configs = {
-            'Success': { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: '✓', label: 'Success' },
-            'Pending': { bg: 'bg-amber-100', text: 'text-amber-700', icon: '⏳', label: 'Pending' },
-            'Failed': { bg: 'bg-red-100', text: 'text-red-700', icon: '✗', label: 'Failed' },
-            'Rejected': { bg: 'bg-red-100', text: 'text-red-700', icon: '✗', label: 'Rejected' }
+    const getGatewayLabel = (gateway) => {
+        const gateways = {
+            'MB': { label: 'MB Bank', color: 'text-blue-600' },
+            'VCB': { label: 'Vietcombank', color: 'text-green-600' },
+            'TCB': { label: 'Techcombank', color: 'text-red-600' },
+            'ACB': { label: 'ACB', color: 'text-blue-700' },
+            'TPB': { label: 'TPBank', color: 'text-purple-600' },
+            'SePay': { label: 'SePay', color: 'text-indigo-600' }
         };
-        return configs[status] || { bg: 'bg-gray-100', text: 'text-gray-700', icon: '?', label: status };
+        return gateways[gateway] || { label: gateway || 'Ngân hàng', color: 'text-gray-600' };
     };
 
-    const getPaymentMethodLabel = (method) => {
-        const methods = {
-            'Online': { label: 'Bank Transfer', icon: '🏦' },
-            'Offline': { label: 'Cash', icon: '💵' }
-        };
-        return methods[method] || { label: method, icon: '💳' };
-    };
+    // Filter payments based on search and status
+    const filteredPayments = payments.filter(payment => {
+        const matchSearch = !searchTerm ||
+            (payment.transactionId || payment.TransactionId || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (payment.content || payment.Content || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (payment.accountNumber || payment.AccountNumber || '').includes(searchTerm);
+
+        return matchSearch;
+    });
 
     const openPaymentDetail = (payment) => {
         setSelectedPayment(payment);
         setShowModal(true);
     };
 
+    // Calculate stats
+    const totalAmount = payments.reduce((sum, p) => sum + (p.transferAmount || p.TransferAmount || 0), 0);
+    const totalPayments = payments.length;
+
     if (loading) {
         return (
             <ProtectedRoute allowedRoles={['User']}>
-                <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto"></div>
-                        <p className="mt-4 text-gray-600 font-medium">Loading payment history...</p>
+                <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                    <Navbar />
+                    <div className="flex items-center justify-center py-20">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto"></div>
+                            <p className="mt-4 text-gray-600 dark:text-gray-400">Đang tải lịch sử thanh toán...</p>
+                        </div>
                     </div>
+                    <Footer />
                 </div>
             </ProtectedRoute>
         );
@@ -101,101 +141,177 @@ export default function PaymentHistoryPage() {
 
     return (
         <ProtectedRoute allowedRoles={['User']}>
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8 px-4">
-                <div className="max-w-6xl mx-auto">
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                <Navbar />
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {/* Header */}
                     <div className="mb-8">
                         <button
                             onClick={() => router.push('/bills')}
-                            className="flex items-center text-gray-600 hover:text-blue-600 mb-4 transition-colors group"
+                            className="flex items-center text-gray-600 dark:text-gray-400 hover:text-blue-600 mb-4 transition-colors"
                         >
-                            <svg className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                            Back to Bills
+                            <ArrowLeft className="w-5 h-5 mr-2" />
+                            Quay lại Hóa đơn
                         </button>
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-900">Payment History</h1>
-                                <p className="text-gray-600 mt-1">View all your payment transactions</p>
-                            </div>
-                            <div className="bg-white rounded-xl shadow-sm px-6 py-3 border border-gray-100">
-                                <p className="text-sm text-gray-500">Total Payments</p>
-                                <p className="text-2xl font-bold text-blue-600">{payments.length}</p>
+                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                                    <Receipt className="h-8 w-8 text-blue-600" />
+                                    Lịch sử thanh toán
+                                </h1>
+                                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                                    Xem tất cả các giao dịch thanh toán của bạn
+                                </p>
                             </div>
                         </div>
                     </div>
 
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                    <CreditCard className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Tổng giao dịch</p>
+                                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalPayments}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                                    <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Tổng đã thanh toán</p>
+                                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">{formatCurrency(totalAmount)}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                                    <CheckCircle className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Thành công</p>
+                                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalPayments}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Search */}
+                    <div className="mb-6">
+                        <div className="relative max-w-md">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="Tìm theo mã giao dịch, nội dung..."
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                    </div>
+
                     {error && (
-                        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+                        <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl">
                             {error}
                         </div>
                     )}
 
                     {/* Payment List */}
-                    {payments.length === 0 ? (
-                        <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-                            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
+                    {filteredPayments.length === 0 ? (
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-12 text-center border border-gray-200 dark:border-gray-700">
+                            <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Receipt className="w-10 h-10 text-gray-400" />
                             </div>
-                            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Payment History</h3>
-                            <p className="text-gray-600">You haven't made any payments yet.</p>
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Chưa có lịch sử thanh toán</h3>
+                            <p className="text-gray-600 dark:text-gray-400">Khi bạn thanh toán hóa đơn, lịch sử sẽ hiển thị ở đây.</p>
                         </div>
                     ) : (
-                        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
                             <div className="overflow-x-auto">
                                 <table className="w-full">
-                                    <thead className="bg-gray-50 border-b border-gray-200">
+                                    <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                                         <tr>
-                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Transaction ID</th>
-                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Method</th>
-                                            <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
-                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ngày giao dịch</th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mã GD</th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ngân hàng</th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Loại GD</th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nội dung</th>
+                                            <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Số tiền</th>
+                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Thao tác</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {payments.map((payment) => {
-                                            const statusConfig = getStatusConfig(payment.status || payment.Status);
-                                            const methodConfig = getPaymentMethodLabel(payment.paymentMethod || payment.PaymentMethod);
+                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                        {filteredPayments.map((payment) => {
+                                            const gatewayInfo = getGatewayLabel(payment.gateway || payment.Gateway);
                                             return (
-                                                <tr key={payment.id || payment.Id} className="hover:bg-gray-50 transition-colors">
+                                                <tr key={payment.id || payment.Id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                                     <td className="px-6 py-4">
-                                                        <div className="text-sm font-medium text-gray-900">
-                                                            {formatDate(payment.completedDate || payment.CompletedDate || payment.createdDate || payment.CreatedDate)}
+                                                        <div className="flex items-center gap-2">
+                                                            <Calendar className="h-4 w-4 text-gray-400" />
+                                                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                                                {formatDate(payment.transactionDate || payment.TransactionDate)}
+                                                            </span>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">
-                                                        <div className="text-sm font-mono text-gray-600">
-                                                            {payment.transactionId || payment.TransactionId || (payment.id || payment.Id)?.substring(0, 8).toUpperCase()}
-                                                        </div>
+                                                        <span className="text-sm font-mono text-gray-600 dark:text-gray-400">
+                                                            {(payment.transactionId || payment.TransactionId || '').substring(0, 12)}...
+                                                        </span>
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-2">
-                                                            <span>{methodConfig.icon}</span>
-                                                            <span className="text-sm text-gray-700">{methodConfig.label}</span>
+                                                            <Building2 className="h-4 w-4 text-gray-400" />
+                                                            <span className={`text-sm font-medium ${gatewayInfo.color}`}>
+                                                                {gatewayInfo.label}
+                                                            </span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <span className="text-sm font-semibold text-gray-900">
-                                                            {formatCurrency(payment.amount || payment.Amount)}
+                                                    <td className="px-6 py-4">
+                                                        {(payment.transferType || payment.TransferType) === 'in' ? (
+                                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+                                                                <ArrowLeft className="h-3 w-3" />
+                                                                {t('payment.transferOut') || 'Chuyển tiền'}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                                                                <TrendingUp className="h-3 w-3" />
+                                                                {t('payment.transferIn') || 'Nhận tiền'}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[200px] block">
+                                                            {payment.content || payment.Content || 'N/A'}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.text}`}>
-                                                            <span>{statusConfig.icon}</span>
-                                                            {statusConfig.label}
-                                                        </span>
+                                                    <td className="px-6 py-4 text-right">
+                                                        {(payment.transferType || payment.TransferType) === 'in' ? (
+                                                            <span className="text-sm font-bold text-red-600 dark:text-red-400">
+                                                                -{formatCurrency(payment.transferAmount || payment.TransferAmount)}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                                                                +{formatCurrency(payment.transferAmount || payment.TransferAmount)}
+                                                            </span>
+                                                        )}
                                                     </td>
                                                     <td className="px-6 py-4 text-center">
                                                         <button
                                                             onClick={() => openPaymentDetail(payment)}
-                                                            className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline"
+                                                            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                                         >
-                                                            View Detail
+                                                            <Eye className="h-4 w-4" />
+                                                            Chi tiết
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -206,124 +322,114 @@ export default function PaymentHistoryPage() {
                             </div>
                         </div>
                     )}
-
-                    {/* Summary Cards */}
-                    {payments.length > 0 && (
-                        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 text-white shadow-lg">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                    </div>
-                                    <span className="font-medium">Successful</span>
-                                </div>
-                                <p className="text-3xl font-bold">
-                                    {payments.filter(p => (p.status || p.Status) === 'Success').length}
-                                </p>
-                                <p className="text-emerald-100 text-sm mt-1">
-                                    {formatCurrency(payments.filter(p => (p.status || p.Status) === 'Success').reduce((sum, p) => sum + (p.amount || p.Amount || 0), 0))}
-                                </p>
-                            </div>
-                            <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </div>
-                                    <span className="font-medium">Pending</span>
-                                </div>
-                                <p className="text-3xl font-bold">
-                                    {payments.filter(p => (p.status || p.Status) === 'Pending').length}
-                                </p>
-                                <p className="text-amber-100 text-sm mt-1">
-                                    {formatCurrency(payments.filter(p => (p.status || p.Status) === 'Pending').reduce((sum, p) => sum + (p.amount || p.Amount || 0), 0))}
-                                </p>
-                            </div>
-                            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                        </svg>
-                                    </div>
-                                    <span className="font-medium">Total Paid</span>
-                                </div>
-                                <p className="text-2xl font-bold">
-                                    {formatCurrency(payments.filter(p => (p.status || p.Status) === 'Success').reduce((sum, p) => sum + (p.amount || p.Amount || 0), 0))}
-                                </p>
-                            </div>
-                        </div>
-                    )}
                 </div>
+
+                <Footer />
 
                 {/* Payment Detail Modal */}
                 {showModal && selectedPayment && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-                            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
-                                <h3 className="text-xl font-bold text-white">Payment Detail</h3>
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                            {/* Modal Header */}
+                            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <Receipt className="h-6 w-6" />
+                                    Chi tiết giao dịch
+                                </h3>
                                 <button
                                     onClick={() => setShowModal(false)}
-                                    className="text-white/80 hover:text-white"
+                                    className="text-white/80 hover:text-white p-1"
                                 >
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
+                                    <X className="w-6 h-6" />
                                 </button>
                             </div>
+
+                            {/* Modal Body */}
                             <div className="p-6 space-y-4">
-                                <div className="text-center pb-4 border-b">
-                                    <p className="text-sm text-gray-500 mb-1">Amount</p>
-                                    <p className="text-3xl font-bold text-gray-900">
-                                        {formatCurrency(selectedPayment.amount || selectedPayment.Amount)}
-                                    </p>
-                                    <span className={`inline-flex items-center gap-1 mt-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusConfig(selectedPayment.status || selectedPayment.Status).bg} ${getStatusConfig(selectedPayment.status || selectedPayment.Status).text}`}>
-                                        {getStatusConfig(selectedPayment.status || selectedPayment.Status).label}
+                                {/* Amount */}
+                                <div className="text-center pb-4 border-b border-gray-200 dark:border-gray-700">
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('payment.amount') || 'Số tiền'}</p>
+                                    {(selectedPayment.transferType || selectedPayment.TransferType) === 'in' ? (
+                                        <p className="text-3xl font-bold text-red-600 dark:text-red-400">
+                                            -{formatCurrency(selectedPayment.transferAmount || selectedPayment.TransferAmount)}
+                                        </p>
+                                    ) : (
+                                        <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                                            +{formatCurrency(selectedPayment.transferAmount || selectedPayment.TransferAmount)}
+                                        </p>
+                                    )}
+                                    <span className="inline-flex items-center gap-1 mt-2 px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                                        <CheckCircle className="h-4 w-4" />
+                                        Thành công
                                     </span>
                                 </div>
 
+                                {/* Details */}
                                 <div className="space-y-3">
-                                    <div className="flex justify-between py-2 border-b border-gray-100">
-                                        <span className="text-gray-500">Payment ID</span>
-                                        <span className="font-mono text-sm text-gray-900">{(selectedPayment.id || selectedPayment.Id)?.substring(0, 8).toUpperCase()}</span>
+                                    <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <span className="text-gray-500 dark:text-gray-400">Mã giao dịch</span>
+                                        <span className="font-mono text-sm text-gray-900 dark:text-white">
+                                            {selectedPayment.transactionId || selectedPayment.TransactionId}
+                                        </span>
                                     </div>
-                                    <div className="flex justify-between py-2 border-b border-gray-100">
-                                        <span className="text-gray-500">Transaction ID</span>
-                                        <span className="font-mono text-sm text-gray-900">{selectedPayment.transactionId || selectedPayment.TransactionId || 'N/A'}</span>
+                                    <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <span className="text-gray-500 dark:text-gray-400">Ngân hàng</span>
+                                        <span className="text-gray-900 dark:text-white">
+                                            {getGatewayLabel(selectedPayment.gateway || selectedPayment.Gateway).label}
+                                        </span>
                                     </div>
-                                    <div className="flex justify-between py-2 border-b border-gray-100">
-                                        <span className="text-gray-500">Payment Method</span>
-                                        <span className="text-gray-900">{getPaymentMethodLabel(selectedPayment.paymentMethod || selectedPayment.PaymentMethod).label}</span>
+                                    <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <span className="text-gray-500 dark:text-gray-400">Số tài khoản</span>
+                                        <span className="font-mono text-gray-900 dark:text-white">
+                                            {selectedPayment.accountNumber || selectedPayment.AccountNumber}
+                                        </span>
                                     </div>
-                                    <div className="flex justify-between py-2 border-b border-gray-100">
-                                        <span className="text-gray-500">Bank</span>
-                                        <span className="text-gray-900">{selectedPayment.bankBrandName || selectedPayment.BankBrandName || 'N/A'}</span>
+                                    <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <span className="text-gray-500 dark:text-gray-400">{t('payment.transactionType') || 'Loại giao dịch'}</span>
+                                        {(selectedPayment.transferType || selectedPayment.TransferType) === 'in' ? (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+                                                <ArrowLeft className="h-3 w-3" />
+                                                {t('payment.transferOut') || 'Chuyển tiền'}
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                                                <TrendingUp className="h-3 w-3" />
+                                                {t('payment.transferIn') || 'Nhận tiền'}
+                                            </span>
+                                        )}
                                     </div>
-                                    <div className="flex justify-between py-2 border-b border-gray-100">
-                                        <span className="text-gray-500">Created Date</span>
-                                        <span className="text-gray-900">{formatDate(selectedPayment.createdDate || selectedPayment.CreatedDate)}</span>
+                                    <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <span className="text-gray-500 dark:text-gray-400">Ngày giao dịch</span>
+                                        <span className="text-gray-900 dark:text-white">
+                                            {formatDate(selectedPayment.transactionDate || selectedPayment.TransactionDate)}
+                                        </span>
                                     </div>
-                                    <div className="flex justify-between py-2 border-b border-gray-100">
-                                        <span className="text-gray-500">Completed Date</span>
-                                        <span className="text-gray-900">{formatDate(selectedPayment.completedDate || selectedPayment.CompletedDate)}</span>
-                                    </div>
-                                    {(selectedPayment.transactionContent || selectedPayment.TransactionContent) && (
+                                    {(selectedPayment.content || selectedPayment.Content) && (
                                         <div className="py-2">
-                                            <span className="text-gray-500 block mb-1">Transaction Content</span>
-                                            <span className="text-gray-900 text-sm bg-gray-50 p-2 rounded block">{selectedPayment.transactionContent || selectedPayment.TransactionContent}</span>
+                                            <span className="text-gray-500 dark:text-gray-400 block mb-2">Nội dung chuyển khoản</span>
+                                            <p className="text-gray-900 dark:text-white text-sm bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                                                {selectedPayment.content || selectedPayment.Content}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {(selectedPayment.billId || selectedPayment.BillId) && (
+                                        <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                            <span className="text-gray-500 dark:text-gray-400">Mã hóa đơn</span>
+                                            <span className="font-mono text-sm text-blue-600 dark:text-blue-400">
+                                                {(selectedPayment.billId || selectedPayment.BillId)?.substring(0, 8).toUpperCase()}
+                                            </span>
                                         </div>
                                     )}
                                 </div>
                             </div>
-                            <div className="px-6 py-4 bg-gray-50 border-t">
+
+                            {/* Modal Footer */}
+                            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 rounded-b-2xl">
                                 <button
                                     onClick={() => setShowModal(false)}
-                                    className="w-full px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+                                    className="w-full px-6 py-3 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white rounded-xl font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
                                 >
-                                    Close
+                                    Đóng
                                 </button>
                             </div>
                         </div>

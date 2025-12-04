@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import contractService from "@/services/contractService";
 import roomService from "@/services/roomService";
 import otpService from "@/services/otpService";
@@ -22,9 +22,12 @@ export default function ContractsManagementPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   const houseId = params.id; // Get boarding house ID from URL
+  const actionParam = searchParams.get('action');
+  const fromRentalRequest = searchParams.get('fromRentalRequest') === 'true';
 
   // Ref to track if we're loading profiles from backend (edit mode)
   const isLoadingProfilesRef = useRef(false);
@@ -183,6 +186,80 @@ export default function ContractsManagementPage() {
       fetchRooms();
     }
   }, [authLoading, isAuthenticated, user, houseId]);
+
+  // Load rental request data if coming from rental requests page
+  useEffect(() => {
+    if (mounted && actionParam === 'create' && fromRentalRequest) {
+      console.log('📋 Loading rental request data...');
+      try {
+        const rentalRequestDataStr = sessionStorage.getItem('rentalRequestData');
+        if (rentalRequestDataStr) {
+          const rentalRequestData = JSON.parse(rentalRequestDataStr);
+          console.log('📋 Rental request data loaded:', rentalRequestData);
+
+          // Pre-fill contract form with rental request data
+          setContractData(prev => ({
+            ...prev,
+            roomId: rentalRequestData.roomId || '',
+            roomPrice: rentalRequestData.roomPrice || 0,
+            checkinDate: rentalRequestData.checkinDate ? rentalRequestData.checkinDate.split('T')[0] : '',
+            checkoutDate: rentalRequestData.checkoutDate ? rentalRequestData.checkoutDate.split('T')[0] : '',
+            numberOfOccupants: rentalRequestData.numberOfOccupants || 1,
+            notes: ''
+          }));
+
+          // If there's tenant profile data from rental request, pre-fill the first profile
+          if (rentalRequestData.tenantProfile) {
+            const tp = rentalRequestData.tenantProfile;
+            console.log('👤 Tenant profile from rental request:', tp);
+
+            // Create tenant profile with data from rental request
+            const tenantProfile = {
+              fullName: tp.fullName || '',
+              gender: tp.gender ?? 0,
+              dateOfBirth: tp.dateOfBirth ? new Date(tp.dateOfBirth).toISOString().split('T')[0] : '',
+              phone: tp.phone || '',
+              email: tp.email || '',
+              provinceId: tp.provinceId || '',
+              provinceName: tp.provinceName || '',
+              wardId: tp.wardId || '',
+              wardName: tp.wardName || '',
+              address: tp.address || '',
+              temporaryResidence: tp.temporaryResidence || '',
+              citizenIdNumber: tp.citizenIdNumber || '',
+              citizenIdIssuedDate: tp.citizenIdIssuedDate ? new Date(tp.citizenIdIssuedDate).toISOString().split('T')[0] : '',
+              citizenIdIssuedPlace: tp.citizenIdIssuedPlace || '',
+              frontImageUrl: tp.frontImageUrl || '',
+              backImageUrl: tp.backImageUrl || '',
+              avatar: tp.avatar || '',
+              isRepresentative: true,
+              userId: rentalRequestData.tenantUserId || ''
+            };
+
+            // Set profiles with tenant profile as first entry
+            setProfiles([tenantProfile]);
+            console.log('✅ Tenant profile pre-filled from rental request');
+          } else if (rentalRequestData.tenantUserId) {
+            // Fallback: If no profile data, store tenant ID for later use
+            console.log('👤 Tenant user ID from rental request:', rentalRequestData.tenantUserId);
+            sessionStorage.setItem('pendingTenantUserId', rentalRequestData.tenantUserId);
+          }
+
+          // Open create contract modal
+          setShowCreateContractModal(true);
+          setModalType('create');
+          setCreateStep(1);
+
+          // Clear rental request data from sessionStorage after loading
+          sessionStorage.removeItem('rentalRequestData');
+
+          toast.info(t('ownerContracts.toast.rentalRequestLoaded'));
+        }
+      } catch (error) {
+        console.error('❌ Error loading rental request data:', error);
+      }
+    }
+  }, [mounted, actionParam, fromRentalRequest]);
 
   useEffect(() => {
     // Load provinces data when component mounts
@@ -4156,7 +4233,7 @@ export default function ContractsManagementPage() {
                       </div>
                     </div>
 
-                  {/* Agreement Checkbox
+                    {/* Agreement Checkbox
                   <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <label className="flex items-start space-x-3">
                       <div className="flex items-center h-5 mt-0.5">
@@ -4170,81 +4247,81 @@ export default function ContractsManagementPage() {
                     </label>
                   </div> */}
 
-                  {/* Action Buttons - Step 1 */}
-                  <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <button
-                      onClick={handleCloseSignatureModal}
-                      className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleContinueToOtp}
-                      className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={!signaturePreview || sendingOtp}
-                    >
-                      {sendingOtp ? (
-                        <span className="flex items-center">
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Sending OTP...
-                        </span>
-                      ) : (
-                        'Continue →'
-                      )}
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {/* STEP 2: OTP Verification */}
-              {signatureStep === 2 && (
-                <>
-                  <div className="mb-6">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-                      <p className="text-sm text-blue-800 dark:text-blue-200">
-                        OTP code has been sent to email: <strong>{signatureEmail}</strong>
-                      </p>
-                      <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-                        Please check your inbox or spam folder
-                      </p>
-                    </div>
-
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Enter OTP Code (6 digits) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={otpCode}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                        setOtpCode(value);
-                      }}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center text-2xl tracking-widest font-mono"
-                      placeholder="000000"
-                      maxLength={6}
-                    />
-
-                    {/* Timer and Resend */}
-                    <div className="mt-4 flex items-center justify-between">
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {otpTimer > 0 ? (
-                          <span>Code expires in: <strong className="text-blue-600">{Math.floor(otpTimer / 60)}:{(otpTimer % 60).toString().padStart(2, '0')}</strong></span>
-                        ) : (
-                          <span className="text-red-600">OTP code expired</span>
-                        )}
-                      </div>
+                    {/* Action Buttons - Step 1 */}
+                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                       <button
-                        onClick={handleResendOtp}
-                        disabled={!canResendOtp || sendingOtp}
-                        className="text-sm text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed font-medium"
+                        onClick={handleCloseSignatureModal}
+                        className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                       >
-                        {sendingOtp ? 'Sending...' : 'Resend OTP'}
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleContinueToOtp}
+                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!signaturePreview || sendingOtp}
+                      >
+                        {sendingOtp ? (
+                          <span className="flex items-center">
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Sending OTP...
+                          </span>
+                        ) : (
+                          'Continue →'
+                        )}
                       </button>
                     </div>
-                  </div>
+                  </>
+                )}
+
+                {/* STEP 2: OTP Verification */}
+                {signatureStep === 2 && (
+                  <>
+                    <div className="mb-6">
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                        <p className="text-sm text-blue-800 dark:text-blue-200">
+                          OTP code has been sent to email: <strong>{signatureEmail}</strong>
+                        </p>
+                        <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                          Please check your inbox or spam folder
+                        </p>
+                      </div>
+
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Enter OTP Code (6 digits) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={otpCode}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                          setOtpCode(value);
+                        }}
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center text-2xl tracking-widest font-mono"
+                        placeholder="000000"
+                        maxLength={6}
+                      />
+
+                      {/* Timer and Resend */}
+                      <div className="mt-4 flex items-center justify-between">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          {otpTimer > 0 ? (
+                            <span>Code expires in: <strong className="text-blue-600">{Math.floor(otpTimer / 60)}:{(otpTimer % 60).toString().padStart(2, '0')}</strong></span>
+                          ) : (
+                            <span className="text-red-600">OTP code expired</span>
+                          )}
+                        </div>
+                        <button
+                          onClick={handleResendOtp}
+                          disabled={!canResendOtp || sendingOtp}
+                          className="text-sm text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed font-medium"
+                        >
+                          {sendingOtp ? 'Sending...' : 'Resend OTP'}
+                        </button>
+                      </div>
+                    </div>
 
                     {/* Signature Preview in Step 2 */}
                     <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">

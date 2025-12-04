@@ -9,7 +9,9 @@
         "profile": "Profile",
         "myChats": "My Chats",
         "rentalHistory": "Rental History",
+        "myRentalRequests": "Rental Requests",
         "myBills": "My Bills",
+        "paymentHistory": "Payment History",
         "dashboard": "Dashboard",
         "logout": "Logout"
     },
@@ -160,6 +162,26 @@
         "faceRegistration": "Face Registration",
         "registerFace": "Register Face"
     },
+    "payment": {
+        "history": "Payment History",
+        "amount": "Amount",
+        "transactionType": "Transaction Type",
+        "transferIn": "Money In",
+        "transferOut": "Money Out",
+        "transactionId": "Transaction ID",
+        "bank": "Bank",
+        "accountNumber": "Account Number",
+        "transactionDate": "Transaction Date",
+        "content": "Transfer Content",
+        "billId": "Bill ID",
+        "success": "Success",
+        "totalTransactions": "Total Transactions",
+        "totalPaid": "Total Paid",
+        "detail": "Detail",
+        "close": "Close",
+        "noHistory": "No Payment History",
+        "noHistoryDesc": "When you pay a bill, history will be shown here."
+    },
     "support": {
         "title": "Customer Support",
         "contactUs": "Contact Us",
@@ -282,13 +304,16 @@
         "descriptionPlaceholder": "Name or note for this account",
         "setAsActive": "Set as active account",
         "cancel": "Cancel",
-        "save": "Save",
+        "save": "Save Account",
         "saving": "Saving...",
         "edit": "Edit",
         "delete": "Delete",
         "status": "Status",
         "active": "Active",
         "inactive": "Inactive",
+        "totalAccounts": "Total Accounts",
+        "enableToReceive": "Enable to receive payments",
+        "updateAccount": "Update Account",
         "searchFilter": "Search & Filter",
         "searchPlaceholder": "Search by bank name, account number...",
         "all": "All",
@@ -316,7 +341,15 @@
         "noBanksFound": "No active banks found. Please check the backend or activate a bank in admin panel.",
         "foundBanks": "Found {{count}} banks",
         "clickToDisable": "Click to disable",
-        "clickToEnable": "Click to enable"
+        "clickToEnable": "Click to enable",
+        "loadingDetails": "Loading details...",
+        "accountDetails": "Account Details",
+        "unknownBank": "Unknown",
+        "activeReceiving": "Active - Receiving Payments",
+        "bankGateway": "Bank Gateway",
+        "balance": "Balance",
+        "clearFilters": "Clear Filters",
+        "addFirstAccount": "Add Your First Account"
     },
     "favorites": {
         "title": "Favorite Posts",
@@ -448,7 +481,57 @@
         "pending": "Pending",
         "rejected": "Rejected",
         "inactive": "Inactive",
-        "loadFailed": "Failed to load post details"
+        "loadFailed": "Failed to load post details",
+        "sendRentalRequest": "Send Rental Request",
+        "rentalRequest": {
+            "title": "Rental Request",
+            "subtitle": "Fill in the details to send a rental request",
+            "loadingProfile": "Loading your profile...",
+            "updateProfile": "Update your profile",
+            "rentalInfoSection": "Rental Information",
+            "personalInfoSection": "Personal Information",
+            "cccdSection": "ID Card Information",
+            "checkinDate": "Check-in Date",
+            "checkoutDate": "Check-out Date",
+            "numberOfOccupants": "Number of Occupants",
+            "checkoutHint": "Minimum rental period is 1 month",
+            "fullName": "Full Name",
+            "fullNamePlaceholder": "Enter your full name",
+            "phone": "Phone Number",
+            "email": "Email",
+            "gender": "Gender",
+            "genderMale": "Male",
+            "genderFemale": "Female",
+            "genderOther": "Other",
+            "dateOfBirth": "Date of Birth",
+            "address": "Address",
+            "addressPlaceholder": "Permanent address",
+            "cccdNumber": "ID Card Number",
+            "cccdIssuedDate": "Issue Date",
+            "cccdIssuedPlace": "Issue Place",
+            "cccdIssuedPlaceholder": "E.g. Department of Police",
+            "cccdFront": "Front Side",
+            "cccdBack": "Back Side",
+            "infoNote": "Your personal information will be used to create the rental contract. Please review carefully before submitting.",
+            "cancel": "Cancel",
+            "submit": "Submit Request",
+            "submitting": "Submitting...",
+            "success": "Rental request submitted successfully! The owner will review and contact you.",
+            "errors": {
+                "checkinRequired": "Please select a check-in date",
+                "checkinPast": "Check-in date must be today or later",
+                "checkoutRequired": "Please select a check-out date",
+                "checkoutMinOneMonth": "Minimum rental period is 1 month",
+                "occupantsMin": "Number of occupants must be at least 1",
+                "missingInfo": "Missing owner or room information",
+                "failed": "Failed to submit rental request. Please try again.",
+                "fullNameRequired": "Please enter your full name",
+                "phoneRequired": "Please enter your phone number",
+                "cccdRequired": "Please enter your ID card number",
+                "incompleteCCCD": "ID card information is incomplete. Please update your profile before submitting.",
+                "loadProfileFailed": "Failed to load your profile. Please try again."
+            }
+        }
     },
     "searchRooms": {
         "title": "Search Rooms",
@@ -873,6 +956,7 @@
         "loading": "Loading payment data...",
         "bankAccount": "Bank Account",
         "stats": {
+            "total": "Total Transactions",
             "totalTransactions": "Total Transactions",
             "completed": "Completed",
             "pending": "Pending",
@@ -915,12 +999,15 @@
             "of": "of",
             "transactions": "transactions",
             "previous": "Previous",
-            "next": "Next"
+            "next": "Next",
+            "prev": "Previous"
         },
         "emptyState": {
             "title": "No transactions",
             "description": "No payment transactions yet",
             "noMatchingResults": "No transactions match the filter",
+            "noResults": "No transactions match the filter",
+            "noTransactions": "No payment transactions yet",
             "clearFilter": "Clear Filter"
         },
         "modal": {
@@ -933,6 +1020,7 @@
             "accountNumber": "Account Number",
             "amount": "Amount",
             "description": "Description",
+            "createdAt": "Transaction Date",
             "createdDate": "Created Date",
             "completedDate": "Completed Date",
             "close": "Close"
@@ -1192,6 +1280,7 @@
             "contractSigned": "Contract signed successfully!",
             "confirmSignatureError": "Error confirming signature. Please try again.",
             "uploadImageFile": "Please upload an image file",
+            "rentalRequestLoaded": "Rental request loaded. Please review and complete the contract."
             "tenantNotSigned": "Tenant has not signed the contract yet. Please wait for tenant to sign first.",
             "alreadySigned": "You have already signed this contract"
         }
@@ -1923,6 +2012,105 @@
             "updateSuccess": "Notification updated successfully!",
             "deleteSuccess": "Notification deleted successfully!",
             "deleteFailed": "Unable to delete notification"
+        }
+    },
+    "myRentalRequests": {
+        "title": "My Rental Requests",
+        "subtitle": "Track your rental requests",
+        "refresh": "Refresh",
+        "searchPlaceholder": "Search by room, boarding house...",
+        "loading": "Loading rental requests...",
+        "people": "people",
+        "price": "Rent Price",
+        "checkin": "Check-in",
+        "checkout": "Check-out",
+        "sentOn": "Sent on",
+        "createdAt": "Sent on",
+        "justNow": "Just now",
+        "hoursAgo": "{{count}} hours ago",
+        "daysAgo": "{{count}} days ago",
+        "stats": {
+            "total": "Total Requests",
+            "pending": "Pending",
+            "thisMonth": "This Month"
+        },
+        "status": {
+            "pending": "Pending",
+            "approved": "Approved",
+            "rejected": "Rejected"
+        },
+        "empty": {
+            "title": "No rental requests yet",
+            "description": "Find a room and send a rental request",
+            "browse": "Browse Rooms"
+        },
+        "errors": {
+            "loadFailed": "Failed to load rental requests"
+        }
+    },
+    "ownerRentalRequests": {
+        "title": "Manage Rental Requests",
+        "subtitle": "View and process rental requests",
+        "searchPlaceholder": "Search by room, boarding house, tenant...",
+        "loading": "Loading rental requests...",
+        "people": "people",
+        "price": "Rent Price",
+        "checkin": "Check-in",
+        "checkout": "Check-out",
+        "sentOn": "Sent on",
+        "requestFrom": "Request from",
+        "justNow": "Just now",
+        "hoursAgo": "{{count}} hours ago",
+        "daysAgo": "{{count}} days ago",
+        "approve": "Approve",
+        "reject": "Reject",
+        "createContract": "Create Contract",
+        "approveSuccess": "Request approved successfully",
+        "rejectSuccess": "Request rejected successfully",
+        "viewDetails": "View Details",
+        "hideDetails": "Hide Details",
+        "tenantDetails": "Tenant Information",
+        "basicInfo": "Basic Information",
+        "addressInfo": "Address",
+        "cccdInfo": "ID Card Information",
+        "fullName": "Full Name",
+        "gender": "Gender",
+        "genderMale": "Male",
+        "genderFemale": "Female",
+        "genderOther": "Other",
+        "dateOfBirth": "Date of Birth",
+        "phone": "Phone",
+        "email": "Email",
+        "address": "Address",
+        "ward": "Ward/Commune",
+        "province": "Province/City",
+        "temporaryResidence": "Temporary Residence",
+        "cccdNumber": "ID Card Number",
+        "cccdIssuedDate": "Issue Date",
+        "cccdIssuedPlace": "Issue Place",
+        "cccdImages": "ID Card Images",
+        "cccdFront": "Front Side",
+        "cccdBack": "Back Side",
+        "stats": {
+            "total": "Total Requests",
+            "pending": "Pending",
+            "thisMonth": "This Month"
+        },
+        "status": {
+            "pending": "Pending",
+            "approved": "Approved",
+            "rejected": "Rejected"
+        },
+        "empty": {
+            "title": "No rental requests yet",
+            "description": "When someone sends a rental request, it will appear here"
+        },
+        "errors": {
+            "loadFailed": "Failed to load rental requests",
+            "approveFailed": "Failed to approve request",
+            "rejectFailed": "Failed to reject request",
+            "noBoardingHouse": "Boarding house information not found",
+            "createContractFailed": "Failed to create contract"
         }
     },
     "adminOverview": {
