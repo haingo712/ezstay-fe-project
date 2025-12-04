@@ -1191,7 +1191,9 @@
             "signatureNotFound": "Signature not found",
             "contractSigned": "Contract signed successfully!",
             "confirmSignatureError": "Error confirming signature. Please try again.",
-            "uploadImageFile": "Please upload an image file"
+            "uploadImageFile": "Please upload an image file",
+            "tenantNotSigned": "Tenant has not signed the contract yet. Please wait for tenant to sign first.",
+            "alreadySigned": "You have already signed this contract"
         }
     },
     "contractDetail": {

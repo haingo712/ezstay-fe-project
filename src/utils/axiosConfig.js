@@ -36,6 +36,9 @@ axiosInstance.interceptors.request.use(
   }
 );
 
+// List of public pages where guest should NOT be redirected on 401
+const PUBLIC_PAGES = ['/', '/about', '/support', '/login', '/register', '/forgot-password'];
+
 // Response interceptor for error handling
 axiosInstance.interceptors.response.use(
   (response) => {
@@ -48,6 +51,18 @@ axiosInstance.interceptors.response.use(
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
       console.warn('🔐 Unauthorized access detected');
+      
+      // Check if current page is a public page - don't redirect if so
+      if (typeof window !== 'undefined') {
+        const currentPath = window.location.pathname;
+        const isPublicPage = PUBLIC_PAGES.some(page => currentPath === page || currentPath === page + '/');
+        
+        if (isPublicPage) {
+          console.log('📍 On public page, skipping redirect to login');
+          return Promise.reject(error);
+        }
+      }
+      
       const token = localStorage.getItem('ezstay_token') || localStorage.getItem('authToken');
       console.log('Token in localStorage:', token?.substring(0, 50));
       console.log('Response:', error.response?.data);
@@ -58,7 +73,7 @@ axiosInstance.interceptors.response.use(
       localStorage.removeItem('ezstay_user');
       localStorage.removeItem('userEmail');
       
-      // Redirect to login
+      // Redirect to login only from protected pages
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
       }

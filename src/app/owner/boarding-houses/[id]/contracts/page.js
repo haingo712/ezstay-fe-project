@@ -1750,6 +1750,20 @@ export default function ContractsManagementPage() {
       console.log('✅ Contract details loaded:', fullContract);
       console.log('📋 Identity profiles:', fullContract.identityProfiles);
 
+      // Kiểm tra xem người thuê đã ký chưa - Owner chỉ được ký sau khi Tenant đã ký
+      const tenantSignature = fullContract.tenantSignature || fullContract.TenantSignature;
+      if (!tenantSignature) {
+        toast.error(t('ownerContracts.toast.tenantNotSigned') || 'Người thuê chưa ký hợp đồng. Vui lòng đợi người thuê ký trước.');
+        return;
+      }
+
+      // Kiểm tra xem Owner đã ký chưa
+      const ownerSignature = fullContract.ownerSignature || fullContract.OwnerSignature;
+      if (ownerSignature) {
+        toast.warning(t('ownerContracts.toast.alreadySigned') || 'Bạn đã ký hợp đồng này rồi');
+        return;
+      }
+
       // Get owner info from contract position [1] (owner profile)
       const ownerProfile = fullContract.identityProfiles?.[1];
       const ownerName = ownerProfile?.fullName || ownerProfile?.FullName || user?.fullName || user?.name || '';

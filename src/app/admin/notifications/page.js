@@ -137,12 +137,13 @@ export default function AdminNotificationsPage() {
         notificationType: 0
     });
 
-    // Fetch notifications using GetByRoleOrUser API
+    // Fetch notifications - Admin gets ALL notifications
     const fetchNotifications = async () => {
         try {
             setLoading(true);
             setError("");
-            const data = await apiFetch("/api/Notification/by-role");
+            // Admin uses /all endpoint to get ALL notifications in system
+            const data = await apiFetch("/api/Notification/all");
             setNotifications(data || []);
         } catch (err) {
             console.error("Error loading notifications:", err);
