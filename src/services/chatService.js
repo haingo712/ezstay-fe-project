@@ -180,7 +180,7 @@ class ChatService {
   async getChatRooms() {
     try {
       console.log('Fetching user chat rooms...');
-      const response = await fetch(`${API_GATEWAY_URL}/api/Chat`, {
+      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/chat-room/user`, {
         method: 'GET',
         headers: this.getHeaders(),
       });
@@ -211,7 +211,7 @@ class ChatService {
   async getOwnerChatRooms() {
     try {
       console.log('Fetching owner chat rooms...');
-      const response = await fetch(`${API_GATEWAY_URL}/api/Chat`, {
+      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/chat-room/owner`, {
         method: 'GET',
         headers: this.getHeaders(),
       });
