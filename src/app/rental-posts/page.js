@@ -25,7 +25,7 @@ export default function RentalPostsPage() {
 
   useEffect(() => {
     loadPosts();
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -55,8 +55,8 @@ export default function RentalPostsPage() {
       const allPosts = await rentalPostService.getAllForUser();
 
       // Debug: Log để kiểm tra authorName
-      console.log('📋 Posts loaded:', allPosts.length);
-      if (allPosts.length > 0) {
+      console.log('📋 Posts loaded:', allPosts?.length || 0);
+      if (allPosts && allPosts.length > 0) {
         console.log('📋 Sample post with author:', {
           id: allPosts[0].id,
           title: allPosts[0].title,
@@ -127,7 +127,7 @@ export default function RentalPostsPage() {
     event.stopPropagation();
 
     if (!isAuthenticated) {
-      alert(t('rentalPosts.loginToSave'));
+      toast.info(t('rentalPosts.loginToSave'));
       router.push('/login');
       return;
     }
@@ -148,7 +148,7 @@ export default function RentalPostsPage() {
       setFavorites((prev) => [...prev, favoriteRecord]);
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
-      alert(t('rentalPosts.favoriteError'));
+      toast.error(t('rentalPosts.favoriteError'));
     } finally {
       setFavoriteLoading((prev) => ({ ...prev, [postId]: false }));
     }

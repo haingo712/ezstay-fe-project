@@ -10,18 +10,33 @@ import { Building, Home, MapPin, Calendar } from 'lucide-react';
 export default function LatestPosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { isGuest, getAuthHref } = useGuestRedirect();
+  const { isGuest, isAuthenticated, loading: authLoading } = useGuestRedirect();
   const router = useRouter();
 
   useEffect(() => {
-    loadLatestPosts();
-  }, []);
+    // Wait for auth to finish loading before fetching
+    if (!authLoading) {
+      loadLatestPosts();
+    }
+  }, [authLoading, isAuthenticated]); // Re-load when auth state changes
 
   const loadLatestPosts = async () => {
     try {
       setLoading(true);
-      const allPosts = await rentalPostService.getAllForUser();
-      console.log('📦 All posts loaded:', allPosts);
+      
+      let allPosts = [];
+      
+      // If authenticated, use the authenticated API (with token)
+      // If guest, try public API first, then fall back to empty
+      if (isAuthenticated) {
+        console.log('🔐 User authenticated, using getAllForUser()');
+        allPosts = await rentalPostService.getAllForUser();
+      } else {
+        console.log('👤 Guest user, trying getAllPublic()');
+        allPosts = await rentalPostService.getAllPublic();
+      }
+      
+      console.log('📦 All posts loaded:', allPosts?.length || 0);
       
       // Get 9 latest posts (sort by createdAt desc)
       const sortedPosts = (allPosts || [])
@@ -37,17 +52,13 @@ export default function LatestPosts() {
   };
 
   const handlePostClick = (e, postId) => {
-    if (isGuest) {
-      e.preventDefault();
-      router.push(`/login?returnUrl=${encodeURIComponent(`/rental-posts/${postId}`)}`);
-    }
+    // Guest can view rental post detail - no redirect needed
+    // Just let them navigate to the detail page
   };
 
   const handleViewAllClick = (e) => {
-    if (isGuest) {
-      e.preventDefault();
-      router.push(`/login?returnUrl=${encodeURIComponent('/rental-posts')}`);
-    }
+    // Guest can view all rental posts - no redirect needed
+    // Just let them navigate to the rental-posts page
   };
 
   const formatDate = (dateString) => {

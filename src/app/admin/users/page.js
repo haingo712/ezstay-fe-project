@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import userManagementService from '@/services/userManagementService';
 import { useTranslation } from '@/hooks/useTranslation';
+import { toast } from 'react-toastify';
 
 export default function AdminUsersPage() {
   const { t } = useTranslation();
@@ -36,7 +37,7 @@ export default function AdminUsersPage() {
       await userManagementService.updateAccountStatus(userId, !currentStatus);
       await loadUsers();
     } catch (error) {
-      alert('Failed to update status');
+      toast.error(t('adminUsers.toast.updateStatusFailed') || 'Failed to update status');
     }
   };
 
@@ -45,10 +46,10 @@ export default function AdminUsersPage() {
     
     try {
       await userManagementService.deleteAccount(userId);
-      alert('User deleted successfully');
+      toast.success(t('adminUsers.toast.deleteSuccess') || 'User deleted successfully');
       await loadUsers();
     } catch (error) {
-      alert('Failed to delete user');
+      toast.error(t('adminUsers.toast.deleteFailed') || 'Failed to delete user');
     }
   };
 

@@ -7,6 +7,7 @@ import { rentalPostService } from '@/services/rentalPostService';
 import boardingHouseService from '@/services/boardingHouseService';
 import roomService from '@/services/roomService';
 import { FileText, Plus, Edit2, Trash2, Copy, X, Building, Home } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 export default function PostsPage() {
   const { user } = useAuth();
@@ -213,13 +214,13 @@ export default function PostsPage() {
     try {
       if (editingPost) {
         await rentalPostService.updatePost(editingPost.id, postData);
-        alert(t('ownerPosts.messages.updateSuccess'));
+        toast.success(t('ownerPosts.messages.updateSuccess'));
       } else {
         const response = await rentalPostService.createPost(postData);
         if (response.isSuccess) {
-          alert(response.message || t('ownerPosts.messages.createSuccess'));
+          toast.success(response.message || t('ownerPosts.messages.createSuccess'));
         } else {
-          alert(response.message || t('ownerPosts.messages.createFailed'));
+          toast.error(response.message || t('ownerPosts.messages.createFailed'));
           return;
         }
       }
@@ -236,7 +237,7 @@ export default function PostsPage() {
       setImagePreviews([]);
     } catch (error) {
       console.error('Error submitting post:', error);
-      alert(error.response?.data?.message || t('ownerPosts.messages.createFailed'));
+      toast.error(error.response?.data?.message || t('ownerPosts.messages.createFailed'));
     }
   };
 
@@ -245,10 +246,10 @@ export default function PostsPage() {
       try {
         await rentalPostService.deletePost(postId, user.id);
         await loadPosts();
-        alert(t('ownerPosts.messages.deleteSuccess'));
+        toast.success(t('ownerPosts.messages.deleteSuccess'));
       } catch (error) {
         console.error('Error deleting post:', error);
-        alert(error.response?.data?.message || t('ownerPosts.messages.deleteFailed'));
+        toast.error(error.response?.data?.message || t('ownerPosts.messages.deleteFailed'));
       }
     }
   };
@@ -265,10 +266,10 @@ export default function PostsPage() {
       };
       await rentalPostService.createPost(duplicatedData);
       await loadPosts();
-      alert(t('ownerPosts.messages.duplicateSuccess'));
+      toast.success(t('ownerPosts.messages.duplicateSuccess'));
     } catch (error) {
       console.error('Error duplicating post:', error);
-      alert(error.response?.data?.message || t('ownerPosts.messages.duplicateFailed'));
+      toast.error(error.response?.data?.message || t('ownerPosts.messages.duplicateFailed'));
     }
   };
 
@@ -282,19 +283,19 @@ export default function PostsPage() {
     const validFiles = newFiles.filter(file => {
       if (!file.type.startsWith('image/')) return false;
       if (file.size > maxFileSize) {
-        alert(t('ownerPosts.messages.fileTooLarge').replace('{{name}}', file.name));
+        toast.warning(t('ownerPosts.messages.fileTooLarge').replace('{{name}}', file.name));
         return false;
       }
       return true;
     });
 
     if (validFiles.length === 0) {
-      alert(t('ownerPosts.messages.noValidImages'));
+      toast.warning(t('ownerPosts.messages.noValidImages'));
       return;
     }
 
     if (validFiles.length !== newFiles.length) {
-      alert(t('ownerPosts.messages.someFilesSkipped'));
+      toast.info(t('ownerPosts.messages.someFilesSkipped'));
     }
 
     // Limit total images (e.g., max 10)
@@ -302,7 +303,7 @@ export default function PostsPage() {
     const maxImages = 10;
 
     if (existingCount >= maxImages) {
-      alert(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
+      toast.warning(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
       return;
     }
 
@@ -310,7 +311,7 @@ export default function PostsPage() {
     const filesToAdd = validFiles.slice(0, availableSlots);
 
     if (filesToAdd.length < validFiles.length) {
-      alert(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
+      toast.warning(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
     }
 
     // Add to existing images
@@ -386,7 +387,7 @@ export default function PostsPage() {
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
 
     if (imageFiles.length === 0) {
-      alert(t('ownerPosts.messages.onlyImagesAllowed'));
+      toast.warning(t('ownerPosts.messages.onlyImagesAllowed'));
       return;
     }
 
@@ -395,7 +396,7 @@ export default function PostsPage() {
     const maxImages = 10;
 
     if (existingCount >= maxImages) {
-      alert(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
+      toast.warning(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
       return;
     }
 
@@ -403,7 +404,7 @@ export default function PostsPage() {
     const filesToAdd = imageFiles.slice(0, availableSlots);
 
     if (filesToAdd.length < imageFiles.length) {
-      alert(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
+      toast.warning(t('ownerPosts.messages.maxImagesReached').replace('{{max}}', maxImages));
     }
 
     const updatedImages = [...postData.images, ...filesToAdd];

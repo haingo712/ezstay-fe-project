@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import paymentService from '@/services/paymentService';
+import { toast } from 'react-toastify';
 
 export default function PaymentGatewaysPage() {
   const [gateways, setGateways] = useState([]);
@@ -39,10 +40,10 @@ export default function PaymentGatewaysPage() {
       setSyncing(true);
       await paymentService.syncBankGateways();
       await fetchGateways(); // Refresh list after sync
-      alert('Bank list refreshed successfully!');
+      toast.success('Bank list refreshed successfully!');
     } catch (err) {
       console.error('Error refreshing bank list:', err);
-      alert('Unable to refresh bank list. Please try again.');
+      toast.error('Unable to refresh bank list. Please try again.');
     } finally {
       setSyncing(false);
     }
@@ -60,10 +61,10 @@ export default function PaymentGatewaysPage() {
         g.id === id ? { ...g, isActive: newStatus } : g
       ));
 
-      alert(`Bank ${newStatus ? 'activated' : 'deactivated'} successfully!`);
+      toast.success(`Bank ${newStatus ? 'activated' : 'deactivated'} successfully!`);
     } catch (err) {
       console.error('Error toggling gateway:', err);
-      alert('Unable to update status. Please try again.');
+      toast.error('Unable to update status. Please try again.');
     }
   };
 

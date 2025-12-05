@@ -100,7 +100,16 @@ export default function RentalPostDetailPage() {
   const loadPost = async () => {
     try {
       setLoading(true);
-      const postData = await rentalPostService.getPostById(postId);
+      
+      // Use authenticated API if logged in, public API for guests
+      let postData = null;
+      if (isAuthenticated) {
+        console.log('🔐 User authenticated, using getPostById()');
+        postData = await rentalPostService.getPostById(postId);
+      } else {
+        console.log('👤 Guest user, trying getByIdPublic()');
+        postData = await rentalPostService.getByIdPublic(postId);
+      }
       console.log('📋 Post detail:', postData);
 
       if (!postData || !postData.id) {
@@ -160,9 +169,17 @@ export default function RentalPostDetailPage() {
   const fetchUserNames = async (reviewsList) => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) return;
-
       const uniqueUserIds = [...new Set(reviewsList.map(r => r.userId))];
+      
+      // If no token (guest), set all as Anonymous
+      if (!token) {
+        const namesMap = {};
+        uniqueUserIds.forEach(userId => {
+          namesMap[userId] = 'Người dùng ẩn danh';
+        });
+        setUserNames(namesMap);
+        return;
+      }
       const namesMap = {};
 
       await Promise.all(
@@ -680,7 +697,7 @@ export default function RentalPostDetailPage() {
                         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-blue-300 dark:border-blue-700">
                           <Building2 className="h-5 w-5 text-blue-600" />
                           <h3 className="font-bold text-lg text-gray-900 dark:text-white">
-                            Room ID: {roomId.substring(0, 13)}...
+                            {roomReviews[0]?.roomName || `Phòng ${roomId.substring(0, 8)}`}
                           </h3>
                           <span className="ml-auto bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-sm font-semibold">
                             {roomReviews.length} {roomReviews.length === 1 ? t('rentalPostDetail.review') : t('rentalPostDetail.reviewsCount')}
@@ -695,14 +712,14 @@ export default function RentalPostDetailPage() {
                               <div className="flex items-start gap-4">
                                 <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
                                   <span className="text-white font-bold text-base">
-                                    {userNames[review.userId] ? userNames[review.userId][0].toUpperCase() : '?'}
+                                    {userNames[review.userId] ? userNames[review.userId][0].toUpperCase() : 'U'}
                                   </span>
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-start justify-between gap-3 mb-2">
                                     <div className="flex-1 min-w-0">
                                       <span className="font-bold text-gray-900 dark:text-white text-base block truncate">
-                                        {userNames[review.userId] || 'Loading...'}
+                                        {userNames[review.userId] || 'Người dùng'}
                                       </span>
                                       <div className="flex items-center gap-2 mt-1">
                                         <StarRating rating={review.rating} />
@@ -715,12 +732,13 @@ export default function RentalPostDetailPage() {
                                   <p className="text-gray-800 dark:text-gray-200 mb-2 leading-relaxed text-sm">
                                     {review.content}
                                   </p>
-                                  {review.imageUrl && review.imageUrl !== '' && (
+                                  {review.imageUrl && review.imageUrl.trim() !== '' && review.imageUrl !== 'null' && (
                                     <div className="mb-2">
                                       <img
                                         src={review.imageUrl}
                                         alt="Review"
                                         className="rounded-lg max-h-48 w-auto object-cover border-2 border-gray-200 dark:border-gray-600 shadow-md"
+                                        onError={(e) => { e.target.style.display = 'none'; }}
                                       />
                                     </div>
                                   )}
@@ -749,7 +767,7 @@ export default function RentalPostDetailPage() {
                         <div className="flex items-start gap-4">
                           <div className="h-14 w-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg border-2 border-white dark:border-gray-700">
                             <span className="text-white font-bold text-lg">
-                              {userNames[review.userId] ? userNames[review.userId][0].toUpperCase() : '?'}
+                              {userNames[review.userId] ? userNames[review.userId][0].toUpperCase() : 'U'}
                             </span>
                           </div>
                           <div className="flex-1 min-w-0">
@@ -757,7 +775,7 @@ export default function RentalPostDetailPage() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className="font-bold text-gray-900 dark:text-white truncate text-lg">
-                                    {userNames[review.userId] || 'Loading...'}
+                                    {userNames[review.userId] || 'Người dùng'}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -771,12 +789,13 @@ export default function RentalPostDetailPage() {
                             <p className="text-gray-800 dark:text-gray-200 mb-3 leading-relaxed text-base">
                               {review.content}
                             </p>
-                            {review.imageUrl && review.imageUrl !== '' && (
+                            {review.imageUrl && review.imageUrl.trim() !== '' && review.imageUrl !== 'null' && (
                               <div className="mb-3">
                                 <img
                                   src={review.imageUrl}
                                   alt="Review"
                                   className="rounded-lg max-h-64 w-auto object-cover border-2 border-gray-200 dark:border-gray-600 shadow-md"
+                                  onError={(e) => { e.target.style.display = 'none'; }}
                                 />
                               </div>
                             )}
@@ -789,10 +808,10 @@ export default function RentalPostDetailPage() {
                                   day: 'numeric'
                                 })}</span>
                               </div>
-                              {review.roomId && (
+                              {review.roomName && (
                                 <div className="flex items-center gap-1.5 border-l border-gray-300 dark:border-gray-600 pl-4">
                                   <Building2 className="h-3.5 w-3.5 text-blue-600" />
-                                  <span className="font-medium">Room: {review.roomId.substring(0, 8)}...</span>
+                                  <span className="font-medium">{review.roomName}</span>
                                 </div>
                               )}
                             </div>

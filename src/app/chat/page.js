@@ -609,13 +609,6 @@ export default function UserChatsPage() {
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                        title="Add emoji"
-                      >
-                        <Smile className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => imageInputRef.current?.click()}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                         title="Send image"

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { reviewAPI } from '@/utils/api';
 import { useTranslation } from '@/hooks/useTranslation';
+import { toast } from 'react-toastify';
 
 // ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
 const MOCK_REVIEWS = [
@@ -235,7 +236,7 @@ export default function OwnerReviewsPage() {
   const handleSubmitResponse = async (e) => {
     e.preventDefault();
     if (!responseData.content.trim()) {
-      alert(t('ownerReviews.messages.enterReply'));
+      toast.warning(t('ownerReviews.messages.enterReply'));
       return;
     }
 
@@ -297,7 +298,7 @@ export default function OwnerReviewsPage() {
   const handleSubmitReport = async (e) => {
     e.preventDefault();
     if (!reportData.reason.trim()) {
-      alert(t('ownerReviews.messages.enterReason'));
+      toast.warning(t('ownerReviews.messages.enterReason'));
       return;
     }
 

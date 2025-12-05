@@ -9,9 +9,9 @@ import { paymentAPI } from '@/utils/api';
 import { useTranslation } from '@/hooks/useTranslation';
 
 export default function BankAccountPage() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const router = useRouter();
-    const { t } = useTranslation();
 
     const [loading, setLoading] = useState(true);
     const [loadingDetail, setLoadingDetail] = useState(false);

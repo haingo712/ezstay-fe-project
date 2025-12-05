@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/utils/api";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { toast } from 'react-toastify';
 
 export default function RegisterOwnerPage() {
     const router = useRouter();
@@ -10,6 +11,38 @@ export default function RegisterOwnerPage() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
     const [reason, setReason] = useState("");
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                setError("Vui lòng chọn file hình ảnh (jpg, png, gif...)");
+                return;
+            }
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                setError("Kích thước file không được vượt quá 5MB");
+                return;
+            }
+            setImageFile(file);
+            setError("");
+            
+            // Create preview
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const removeImage = () => {
+        setImageFile(null);
+        setImagePreview(null);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -22,17 +55,35 @@ export default function RegisterOwnerPage() {
             return;
         }
 
+        if (!imageFile) {
+            setError("Vui lòng tải lên hình ảnh tài sản (CMND/CCCD hoặc giấy tờ liên quan).");
+            setLoading(false);
+            return;
+        }
+
         try {
-            const response = await apiFetch("/api/TestAccount/request-owner", {
+            // Use FormData for file upload
+            const formData = new FormData();
+            formData.append("Reason", reason);
+            formData.append("Imageasset", imageFile);
+
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/OwnerRequest/request-owner`, {
                 method: "POST",
-                body: JSON.stringify({ reason: reason }),
                 headers: {
-                    "Content-Type": "application/json"
-                }
+                    "Authorization": `Bearer ${token}`
+                },
+                body: formData
             });
 
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || "Gửi đơn đăng ký thất bại");
+            }
+
             setSuccess(true);
-            alert("Đơn đăng ký Owner đã được gửi thành công! Vui lòng chờ Staff phê duyệt.");
+            toast.success("Đơn đăng ký Owner đã được gửi thành công! Vui lòng chờ Staff phê duyệt.");
 
             // Chuyển về trang home sau 2 giây
             setTimeout(() => {
@@ -107,6 +158,67 @@ export default function RegisterOwnerPage() {
                                 />
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                                     Vui lòng mô tả chi tiết lý do và mục đích đăng ký trở thành Owner
+                                </p>
+                            </div>
+
+                            {/* Upload hình ảnh */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Hình ảnh xác minh (CMND/CCCD hoặc giấy tờ liên quan) <span className="text-red-500">*</span>
+                                </label>
+                                
+                                {!imagePreview ? (
+                                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg hover:border-blue-500 transition-colors">
+                                        <div className="space-y-1 text-center">
+                                            <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                            <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                                                <label htmlFor="image-upload" className="relative cursor-pointer bg-white dark:bg-gray-700 rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                                                    <span>Tải lên hình ảnh</span>
+                                                    <input
+                                                        id="image-upload"
+                                                        name="image-upload"
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handleImageChange}
+                                                        className="sr-only"
+                                                    />
+                                                </label>
+                                                <p className="pl-1">hoặc kéo thả vào đây</p>
+                                            </div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-500">
+                                                PNG, JPG, GIF tối đa 5MB
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="relative mt-1">
+                                        <img
+                                            src={imagePreview}
+                                            alt="Preview"
+                                            className="w-full max-h-64 object-contain rounded-lg border border-gray-300 dark:border-gray-600"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={removeImage}
+                                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                        <p className="text-sm text-green-600 dark:text-green-400 mt-2 flex items-center">
+                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            {imageFile?.name}
+                                        </p>
+                                    </div>
+                                )}
+                                
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                    Vui lòng tải lên hình ảnh CMND/CCCD hoặc giấy tờ chứng minh quyền sở hữu tài sản
                                 </p>
                             </div>
 
