@@ -1280,7 +1280,7 @@
             "contractSigned": "Contract signed successfully!",
             "confirmSignatureError": "Error confirming signature. Please try again.",
             "uploadImageFile": "Please upload an image file",
-            "rentalRequestLoaded": "Rental request loaded. Please review and complete the contract."
+            "rentalRequestLoaded": "Rental request loaded. Please review and complete the contract.",
             "tenantNotSigned": "Tenant has not signed the contract yet. Please wait for tenant to sign first.",
             "alreadySigned": "You have already signed this contract"
         }

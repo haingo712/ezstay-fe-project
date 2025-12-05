@@ -23,10 +23,19 @@ export default function TopRankedHouses() {
   const fetchRankedHouses = async () => {
     try {
       setLoading(true);
-      // Use public API for guest access (no auth required)
-      const data = !isAuthenticated 
-        ? await boardingHouseService.getRankedHousesPublic(rankType, "desc", 6)
-        : await boardingHouseService.getRankedHouses(rankType, "desc", 6);
+      
+      let data = [];
+      
+      // If authenticated, use the authenticated API (with token)
+      // If guest, try public API first
+      if (isAuthenticated) {
+        console.log('🔐 User authenticated, using getRankedHouses()');
+        data = await boardingHouseService.getRankedHouses(rankType, "desc", 6);
+      } else {
+        console.log('👤 Guest user, trying getRankedHousesPublic()');
+        data = await boardingHouseService.getRankedHousesPublic(rankType, "desc", 6);
+      }
+      
       setRankedHouses(data || []);
     } catch (error) {
       console.error("Error fetching ranked houses:", error);
@@ -38,19 +47,13 @@ export default function TopRankedHouses() {
 
   const handleViewDetails = (houseId) => {
     const targetUrl = `/rental-posts?boardingHouseId=${houseId}`;
-    if (isGuest) {
-      router.push(`/login?returnUrl=${encodeURIComponent(targetUrl)}`);
-    } else {
-      router.push(targetUrl);
-    }
+    // Guest can view rental posts - no redirect needed
+    router.push(targetUrl);
   };
 
   const handleViewAll = () => {
-    if (isGuest) {
-      router.push(`/login?returnUrl=${encodeURIComponent('/rental-posts')}`);
-    } else {
-      router.push('/rental-posts');
-    }
+    // Guest can view rental posts - no redirect needed
+    router.push('/rental-posts');
   };
 
   const getRankIcon = (index) => {

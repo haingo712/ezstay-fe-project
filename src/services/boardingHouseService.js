@@ -133,9 +133,25 @@ class BoardingHouseService {
   async getRankedHousesPublic(type = "Rating", order = "desc", limit = 10) {
     try {
       console.log(`🌐🏆 Fetching PUBLIC ranked boarding houses... Type: ${type}, Order: ${order}, Limit: ${limit}`);
-      const response = await boardingHouseAPI.getRankedPublic(type, order, limit);
-      console.log("✅ Public ranked boarding houses fetched successfully:", response);
-      return response;
+      
+      // Use native fetch directly to avoid axios interceptors
+      const baseUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL;
+      const params = new URLSearchParams({ type, order, limit: limit.toString() });
+      const response = await fetch(`${baseUrl}/api/BoardingHouses/rank?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("✅ Public ranked boarding houses fetched successfully:", data);
+      return data;
     } catch (error) {
       console.error("❌ Error fetching public ranked boarding houses:", error);
       // Return empty array instead of throwing for guest access

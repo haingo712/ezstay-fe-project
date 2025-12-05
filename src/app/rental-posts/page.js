@@ -26,7 +26,7 @@ export default function RentalPostsPage() {
 
   useEffect(() => {
     loadPosts();
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -53,11 +53,20 @@ export default function RentalPostsPage() {
   const loadPosts = async () => {
     try {
       setLoading(true);
-      const allPosts = await rentalPostService.getAllForUser();
+      
+      // Use authenticated API if logged in, public API for guests
+      let allPosts = [];
+      if (isAuthenticated) {
+        console.log('🔐 User authenticated, using getAllForUser()');
+        allPosts = await rentalPostService.getAllForUser();
+      } else {
+        console.log('👤 Guest user, trying getAllPublic()');
+        allPosts = await rentalPostService.getAllPublic();
+      }
       
       // Debug: Log để kiểm tra authorName
-      console.log('📋 Posts loaded:', allPosts.length);
-      if (allPosts.length > 0) {
+      console.log('📋 Posts loaded:', allPosts?.length || 0);
+      if (allPosts && allPosts.length > 0) {
         console.log('📋 Sample post with author:', {
           id: allPosts[0].id,
           title: allPosts[0].title,

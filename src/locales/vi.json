@@ -1238,7 +1238,7 @@
             "contractSigned": "Ký hợp đồng thành công!",
             "confirmSignatureError": "Lỗi xác nhận chữ ký. Vui lòng thử lại.",
             "uploadImageFile": "Vui lòng tải lên file ảnh",
-            "rentalRequestLoaded": "Đã tải thông tin yêu cầu thuê. Vui lòng kiểm tra và hoàn tất hợp đồng."
+            "rentalRequestLoaded": "Đã tải thông tin yêu cầu thuê. Vui lòng kiểm tra và hoàn tất hợp đồng.",
             "tenantNotSigned": "Người thuê chưa ký hợp đồng. Vui lòng đợi người thuê ký trước.",
             "alreadySigned": "Bạn đã ký hợp đồng này rồi"
         }
