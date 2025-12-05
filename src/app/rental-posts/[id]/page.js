@@ -28,100 +28,22 @@ import {
   Mail,
   CreditCard,
   FileText,
-  AlertCircle
+  AlertCircle,
+  DollarSign,
+  Maximize2,
+  Wifi,
+  Tv,
+  Wind,
+  Refrigerator,
+  Droplets,
+  Car,
+  Shield,
+  Zap
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ChatDialog from '@/components/ChatDialog';
 import Image from 'next/image';
-
-// ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
-const MOCK_POST_DETAIL = {
-  id: '1',
-  title: 'Phòng trọ cao cấp quận 1 - Full nội thất, view đẹp',
-  description: `🏠 PHÒNG TRỌ CAO CẤP QUẬN 1 - FULL NỘI THẤT
-
-📍 Vị trí: 123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh
-
-✨ TIỆN ÍCH:
-• Máy lạnh Daikin Inverter tiết kiệm điện
-• Tủ lạnh mini 90L
-• Máy giặt cửa trước 7kg
-• Bếp từ đơn + Lò vi sóng
-• Giường đệm cao cấp 1m6
-• Tủ quần áo 3 cánh
-• Bàn làm việc + ghế xoay
-• Wifi tốc độ cao 100Mbps
-
-🔐 AN NINH:
-• Bảo vệ 24/7
-• Khóa vân tay thông minh
-• Camera an ninh
-• Thẻ từ ra vào tòa nhà
-
-💰 CHI PHÍ:
-• Giá thuê: 5,500,000 VND/tháng
-• Điện: 3,500 VND/kWh (giá nhà nước)
-• Nước: 15,000 VND/m³
-• Wifi: Miễn phí
-• Gửi xe: Miễn phí
-
-📞 Liên hệ xem phòng ngay!`,
-  houseName: 'Nhà trọ Sunshine Residence',
-  roomName: 'Phòng A101 - Studio Premium',
-  authorId: 'owner1',
-  authorName: 'Nguyễn Văn An',
-  contactPhone: '0901234567',
-  contactEmail: 'nguyenvanan@email.com',
-  createdAt: '2025-11-28T10:00:00Z',
-  isActive: true,
-  isApproved: 1,
-  price: 5500000,
-  area: 35,
-  boardingHouseId: 'house1',
-  roomId: 'room1',
-  imageUrls: ['/image.png', '/image.png', '/image.png'],
-  reviews: [
-    {
-      id: 'review1',
-      userId: 'user1',
-      rating: 5,
-      content: 'Phòng rất đẹp và sạch sẽ, chủ nhà nhiệt tình. Nội thất đầy đủ, tiện nghi. Vị trí trung tâm, đi lại thuận tiện. Rất hài lòng với phòng này!',
-      createdAt: '2025-11-25T10:00:00Z',
-      imageUrl: '/image.png'
-    },
-    {
-      id: 'review2',
-      userId: 'user2',
-      rating: 4,
-      content: 'Phòng ổn, giá hợp lý cho vị trí trung tâm. Wifi ổn định, máy lạnh mát. Chỉ hơi ồn vào ban đêm do gần đường lớn.',
-      createdAt: '2025-11-20T14:30:00Z',
-      imageUrl: null
-    },
-    {
-      id: 'review3',
-      userId: 'user3',
-      rating: 5,
-      content: 'Tuyệt vời! Đã ở được 6 tháng, không có gì phàn nàn. Chủ nhà rất tốt, hỗ trợ sửa chữa nhanh chóng khi có vấn đề.',
-      createdAt: '2025-11-15T09:00:00Z',
-      imageUrl: '/image.png'
-    }
-  ]
-};
-
-const MOCK_USER_NAMES = {
-  'user1': 'Trần Thị Bình',
-  'user2': 'Lê Minh Cường',
-  'user3': 'Phạm Hoàng Dũng'
-};
-
-const MOCK_HOUSE_LOCATION = {
-  fullAddress: '123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
-  provinceName: 'TP. Hồ Chí Minh',
-  communeName: 'Phường Bến Nghé',
-  addressDetail: '123 Nguyễn Huệ'
-};
-// ============ END MOCK DATA ============
 
 export default function RentalPostDetailPage() {
   const params = useParams();
@@ -190,18 +112,21 @@ export default function RentalPostDetailPage() {
       }
       console.log('📋 Post detail:', postData);
 
-      // ============ USE MOCK DATA IF NO REAL DATA ============
-      const postToUse = postData && postData.id ? postData : MOCK_POST_DETAIL;
-      setPost(postToUse);
-      // ============ END MOCK DATA USAGE ============
+      if (!postData || !postData.id) {
+        console.error('❌ No post data found');
+        setPost(null);
+        return;
+      }
+
+      setPost(postData);
 
       // Fetch boarding house location if boardingHouseId exists
-      if (postToUse.boardingHouseId) {
-        fetchHouseLocation(postToUse.boardingHouseId);
+      if (postData.boardingHouseId) {
+        fetchHouseLocation(postData.boardingHouseId);
       }
 
       // BE RentalPostsAPI returns reviews in post.Reviews (already normalized to camelCase)
-      const reviewsData = postToUse.reviews || [];
+      const reviewsData = postData.reviews || [];
       console.log('📝 Reviews from BE:', reviewsData);
       setReviews(Array.isArray(reviewsData) ? reviewsData : []);
 
@@ -211,12 +136,7 @@ export default function RentalPostDetailPage() {
       }
     } catch (error) {
       console.error('❌ Error loading post:', error);
-      // ============ USE MOCK DATA ON ERROR ============
-      setPost(MOCK_POST_DETAIL);
-      setReviews(MOCK_POST_DETAIL.reviews);
-      setUserNames(MOCK_USER_NAMES);
-      setHouseLocation(MOCK_HOUSE_LOCATION);
-      // ============ END MOCK DATA ON ERROR ============
+      setPost(null);
     } finally {
       setLoading(false);
     }
@@ -662,33 +582,55 @@ export default function RentalPostDetailPage() {
                 {post.title}
               </h1>
 
-              {/* Address highlight */}
-              {houseLocation && houseLocation.fullAddress && (
-                <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                        📍 {t('rentalPostDetail.location')}
-                      </p>
-                      <p className="font-semibold text-gray-900 dark:text-white text-base">
-                        {houseLocation.fullAddress}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               <div className="flex items-center gap-4 mb-6 text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  {new Date(post.createdAt).toLocaleDateString()}
+                  {new Date(post.createdAt).toLocaleDateString('vi-VN')}
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  {post.authorName || 'Unknown'}
+                  {post.authorName || 'Không rõ'}
                 </div>
               </div>
+
+              {/* Amenities Section */}
+              {(post.room?.amenities?.length > 0 || post.boardingHouse?.amenities?.length > 0) && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    ✨ Tiện ích phòng
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {(post.room?.amenities || post.boardingHouse?.amenities || []).map((amenity, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-col items-center p-4 bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 hover:shadow-md transition-shadow"
+                      >
+                        {/* Amenity Image */}
+                        <div className="w-12 h-12 mb-2 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-600 flex items-center justify-center">
+                          {(amenity.imageUrl || amenity.ImageUrl || amenity.icon || amenity.Icon) ? (
+                            <img
+                              src={amenity.imageUrl || amenity.ImageUrl || amenity.icon || amenity.Icon}
+                              alt={amenity.name || amenity.amenityName || amenity.Name || amenity.AmenityName || 'Amenity'}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <div className={`w-full h-full items-center justify-center text-2xl ${(amenity.imageUrl || amenity.ImageUrl || amenity.icon || amenity.Icon) ? 'hidden' : 'flex'}`}>
+                            ✓
+                          </div>
+                        </div>
+                        {/* Amenity Name */}
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center">
+                          {amenity.name || amenity.amenityName || amenity.Name || amenity.AmenityName || amenity}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Description */}
               <div className="prose dark:prose-invert max-w-none">
@@ -886,76 +828,82 @@ export default function RentalPostDetailPage() {
           {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 sticky top-24">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              {/* Price highlight */}
+              {(post.price || post.room?.price) && (
+                <div className="mb-6 p-4 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl text-white">
+                  <p className="text-sm opacity-90 mb-1">{t('rentalPostDetail.rentalPrice')}</p>
+                  <p className="text-2xl font-bold">
+                    {(post.price || post.room?.price)?.toLocaleString('vi-VN')} đ
+                  </p>
+                  <p className="text-sm opacity-90">{t('rentalPostDetail.perMonth')}</p>
+                </div>
+              )}
+
+              {/* Quick Info */}
+              {(post.area || post.room?.area) && (
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center gap-3">
+                  <Maximize2 className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('rentalPostDetail.area')}</p>
+                    <p className="font-semibold text-blue-600">{post.area || post.room?.area} m²</p>
+                  </div>
+                </div>
+              )}
+
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
                 {t('rentalPostDetail.propertyDetails')}
               </h3>
 
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <Building2 className="h-5 w-5 text-gray-400 mt-1" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('rentalPostDetail.house')}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {post.houseName || 'N/A'}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                  <Building2 className="h-5 w-5 text-purple-500" />
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('rentalPostDetail.house')}</p>
+                    <p className="font-medium text-gray-900 dark:text-white text-sm">
+                      {post.houseName || t('rentalPostDetail.notUpdated')}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <Building2 className="h-5 w-5 text-gray-400 mt-1" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('rentalPostDetail.room')}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {post.roomName || 'N/A'}
+                <div className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                  <Home className="h-5 w-5 text-orange-500" />
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('rentalPostDetail.room')}</p>
+                    <p className="font-medium text-gray-900 dark:text-white text-sm">
+                      {post.roomName || t('rentalPostDetail.allRooms')}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <Phone className="h-5 w-5 text-gray-400 mt-1" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('rentalPostDetail.contact')}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {post.contactPhone || 'N/A'}
+                <div className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                  <Phone className="h-5 w-5 text-green-500" />
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('rentalPostDetail.contact')}</p>
+                    <p className="font-medium text-gray-900 dark:text-white text-sm">
+                      {post.contactPhone || t('rentalPostDetail.notUpdated')}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <User className="h-5 w-5 text-gray-400 mt-1" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('rentalPostDetail.postedBy')}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {post.authorName || 'Unknown'}
+                <div className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                  <User className="h-5 w-5 text-blue-500" />
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('rentalPostDetail.postedBy')}</p>
+                    <p className="font-medium text-gray-900 dark:text-white text-sm">
+                      {post.authorName || t('rentalPostDetail.unknown')}
                     </p>
                   </div>
                 </div>
 
                 {/* Address Section */}
                 {houseLocation && houseLocation.fullAddress && (
-                  <div className="flex items-start gap-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <MapPin className="h-5 w-5 text-red-500 mt-1 flex-shrink-0" />
+                  <div className="flex items-start gap-3 p-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <MapPin className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('rentalPostDetail.address')}</p>
-                      <p className="font-medium text-gray-900 dark:text-white leading-relaxed">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('rentalPostDetail.address')}</p>
+                      <p className="font-medium text-gray-900 dark:text-white text-sm leading-relaxed">
                         {houseLocation.fullAddress}
                       </p>
-                      {(houseLocation.provinceName || houseLocation.communeName) && (
-                        <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                          {houseLocation.communeName && (
-                            <div className="flex items-center gap-1">
-                              <span className="font-medium">📍</span>
-                              <span>{houseLocation.communeName}</span>
-                            </div>
-                          )}
-                          {houseLocation.provinceName && (
-                            <div className="flex items-center gap-1">
-                              <span className="font-medium">🌍</span>
-                              <span>{houseLocation.provinceName}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
@@ -982,11 +930,6 @@ export default function RentalPostDetailPage() {
                       <MessageSquare className="h-4 w-4" />
                       {t('rentalPostDetail.chatWithOwner')}
                     </button>
-
-                    {/* <button className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2">
-                      <Phone className="h-4 w-4" />
-                      {t('rentalPostDetail.callOwner')}
-                    </button> */}
                   </>
                 ) : (
                   <div className="space-y-3">

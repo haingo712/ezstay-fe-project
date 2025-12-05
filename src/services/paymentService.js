@@ -106,12 +106,14 @@ class PaymentService {
 
             const externalApiUrl = `https://payment-api-r4zy.onrender.com/api/Bank/gateway/${id}?isActive=${isActive}`;
 
-            console.log('🏦 Calling toggle API:', externalApiUrl);
+            // Get token for Admin authorization
+            const token = getAuthToken();
 
             const response = await fetch(externalApiUrl, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 

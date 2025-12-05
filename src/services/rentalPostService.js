@@ -28,6 +28,29 @@ const normalizePostData = (post) => {
     }
   }
 
+  // Normalize nested Room object
+  const roomData = post.room || post.Room;
+  const normalizedRoom = roomData ? {
+    ...roomData,
+    id: roomData.id || roomData.Id,
+    roomName: roomData.roomName || roomData.RoomName,
+    price: roomData.price || roomData.Price,
+    area: roomData.area || roomData.Area,
+    amenities: roomData.amenities || roomData.Amenities || roomData.roomAmenities || roomData.RoomAmenities,
+    roomStatus: roomData.roomStatus || roomData.RoomStatus,
+    maxOccupants: roomData.maxOccupants || roomData.MaxOccupants
+  } : null;
+
+  // Normalize nested BoardingHouse object
+  const houseData = post.boardingHouse || post.BoardingHouse;
+  const normalizedHouse = houseData ? {
+    ...houseData,
+    id: houseData.id || houseData.Id,
+    houseName: houseData.houseName || houseData.HouseName,
+    location: houseData.location || houseData.Location,
+    amenities: houseData.amenities || houseData.Amenities
+  } : null;
+
   const normalized = {
     ...post,
     id: post.id || post.Id,
@@ -41,17 +64,37 @@ const normalizePostData = (post) => {
     houseName: post.houseName || post.HouseName,
     title: post.title || post.Title,
     content: post.content || post.Content,
-    description: post.content || post.Content || post.description, // Map Content to description for compatibility
+    description: post.content || post.Content || post.description || post.Description,
     contactPhone: post.contactPhone || post.ContactPhone,
     isActive: post.isActive !== undefined ? post.isActive : post.IsActive,
     isApproved: post.isApproved !== undefined ? post.isApproved : post.IsApproved,
+    postStatus: post.postStatus !== undefined ? post.postStatus : post.PostStatus,
     createdAt: post.createdAt || post.CreatedAt,
     updatedAt: post.updatedAt || post.UpdatedAt,
-    reviews: post.reviews || post.Reviews // Include reviews from backend
+    reviews: post.reviews || post.Reviews,
+    // Room details from nested Room object
+    price: post.price || post.Price || normalizedRoom?.price,
+    area: post.area || post.Area || normalizedRoom?.area,
+    // Nested objects (normalized)
+    boardingHouse: normalizedHouse,
+    room: normalizedRoom,
+    // Additional fields
+    approvedBy: post.approvedBy || post.ApprovedBy,
+    approvedAt: post.approvedAt || post.ApprovedAt
   };
 
-  console.log('✅ Normalized post id:', normalized.id, 'type:', typeof normalized.id);
-  console.log('✅ Normalized reviews:', normalized.reviews);
+  // Log all important fields for debugging
+  console.log('✅ Normalized post:', {
+    id: normalized.id,
+    title: normalized.title,
+    houseName: normalized.houseName,
+    roomName: normalized.roomName,
+    contactPhone: normalized.contactPhone,
+    authorName: normalized.authorName,
+    price: normalized.price,
+    boardingHouse: normalized.boardingHouse,
+    room: normalized.room
+  });
 
   if (!normalized.id) {
     console.error('❌ CRITICAL: Normalized post has no id!', post);
@@ -137,7 +180,7 @@ export const rentalPostService = {
   // Get all posts for owner (using token authentication)
   getOwnerPosts: async () => {
     try {
-      const response = await axiosInstance.get('/api/RentalPosts');
+      const response = await axiosInstance.get('/api/RentalPosts/owner');
       let posts = response.data;
 
       console.log('📋 Raw posts from backend:', posts);
@@ -320,6 +363,12 @@ export const rentalPostService = {
       const response = await axiosInstance.get('/api/RentalPosts');
       let posts = response.data;
 
+      // Handle if response is wrapped in ApiResponse structure
+      if (posts && posts.data && posts.isSuccess !== undefined) {
+        posts = posts.data;
+        console.log('📋 Unwrapped posts:', posts);
+      }
+
       // Normalize and enrich posts data
       if (Array.isArray(posts)) {
         posts = posts.map(normalizePostData);
@@ -329,10 +378,11 @@ export const rentalPostService = {
           posts.map(post => enrichPostWithNames(post, false)) // verbose = false for public posts
         );
 
+        console.log('📋 Enriched posts count:', enrichedPosts.length);
         return enrichedPosts;
       }
 
-      return posts;
+      return posts || [];
     } catch (error) {
       console.error('Error fetching posts:', error);
       throw error;
