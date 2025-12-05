@@ -23,11 +23,20 @@ export default function LatestPosts() {
   const loadLatestPosts = async () => {
     try {
       setLoading(true);
-      // Use public API for guest access (no auth required)
-      const allPosts = !isAuthenticated 
-        ? await rentalPostService.getAllPublic()
-        : await rentalPostService.getAllForUser();
-      console.log('📦 All posts loaded:', allPosts);
+      
+      let allPosts = [];
+      
+      // If authenticated, use the authenticated API (with token)
+      // If guest, try public API first, then fall back to empty
+      if (isAuthenticated) {
+        console.log('🔐 User authenticated, using getAllForUser()');
+        allPosts = await rentalPostService.getAllForUser();
+      } else {
+        console.log('👤 Guest user, trying getAllPublic()');
+        allPosts = await rentalPostService.getAllPublic();
+      }
+      
+      console.log('📦 All posts loaded:', allPosts?.length || 0);
       
       // Get 9 latest posts (sort by createdAt desc)
       const sortedPosts = (allPosts || [])
@@ -43,17 +52,13 @@ export default function LatestPosts() {
   };
 
   const handlePostClick = (e, postId) => {
-    if (isGuest) {
-      e.preventDefault();
-      router.push(`/login?returnUrl=${encodeURIComponent(`/rental-posts/${postId}`)}`);
-    }
+    // Guest can view rental post detail - no redirect needed
+    // Just let them navigate to the detail page
   };
 
   const handleViewAllClick = (e) => {
-    if (isGuest) {
-      e.preventDefault();
-      router.push(`/login?returnUrl=${encodeURIComponent('/rental-posts')}`);
-    }
+    // Guest can view all rental posts - no redirect needed
+    // Just let them navigate to the rental-posts page
   };
 
   const formatDate = (dateString) => {

@@ -229,8 +229,34 @@ export const rentalPostService = {
   // Get all posts PUBLIC (no auth required) - for homepage guest access
   getAllPublic: async () => {
     try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL;
       console.log('🌐 Fetching public rental posts (no auth)...');
-      const posts = await publicApiFetch('/api/RentalPosts', { method: 'GET' });
+      console.log('🔗 Base URL:', baseUrl);
+      console.log('🔗 Full URL:', `${baseUrl}/api/RentalPosts`);
+      
+      if (!baseUrl) {
+        console.error('❌ NEXT_PUBLIC_API_GATEWAY_URL is not defined!');
+        return [];
+      }
+      
+      // Use native fetch directly to avoid axios interceptors
+      const response = await fetch(`${baseUrl}/api/RentalPosts`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      console.log('📡 Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Response error:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const posts = await response.json();
+      console.log('📦 Public posts fetched:', posts?.length || 0, posts);
 
       // Normalize posts data
       if (Array.isArray(posts)) {
@@ -239,9 +265,52 @@ export const rentalPostService = {
 
       return posts || [];
     } catch (error) {
-      console.error('Error fetching public posts:', error);
+      console.error('❌ Error fetching public posts:', error);
       // Return empty array instead of throwing for guest access
       return [];
+    }
+  },
+
+  // Get post by ID PUBLIC (no auth required) - for guest access
+  getByIdPublic: async (postId) => {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL;
+      console.log('🌐 Fetching public post detail (no auth)...');
+      console.log('🔗 Full URL:', `${baseUrl}/api/RentalPosts/${postId}`);
+      
+      if (!baseUrl) {
+        console.error('❌ NEXT_PUBLIC_API_GATEWAY_URL is not defined!');
+        return null;
+      }
+      
+      // Use native fetch directly to avoid axios interceptors
+      const response = await fetch(`${baseUrl}/api/RentalPosts/${postId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      console.log('📡 Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Response error:', errorText);
+        return null;
+      }
+
+      let postData = await response.json();
+      console.log('📦 Public post fetched:', postData);
+
+      // Check if response is wrapped in ApiResponse structure
+      if (postData && postData.data && postData.isSuccess !== undefined) {
+        postData = postData.data;
+      }
+
+      return normalizePostData(postData);
+    } catch (error) {
+      console.error('❌ Error fetching public post detail:', error);
+      return null;
     }
   },
 
