@@ -46,25 +46,25 @@ export default function ChatDialog({
         onClose();
         return;
       }
-      
+
       // ownerId is passed directly as prop from parent component
       if (!ownerId) {
         console.error('❌ ownerId is missing from props');
         throw new Error('Cannot get owner information. Owner ID is missing.');
       }
-      
+
       console.log('🔍 Looking for chat room with ownerId:', ownerId);
-      
+
       // Get all existing chat rooms
       const allRoomsResponse = await chatService.getChatRooms();
       const allRooms = allRoomsResponse?.data || allRoomsResponse || [];
-      
+
       // Find existing chat room with this owner
       let chatRoom = allRooms.find(room => {
         const roomOwnerId = room.ownerId || room.OwnerId;
         return roomOwnerId && roomOwnerId.toString() === ownerId.toString();
       });
-      
+
       // If no chat room exists, create one
       if (!chatRoom) {
         console.log('📝 Creating new chat room with ownerId:', ownerId);
@@ -151,31 +151,33 @@ export default function ChatDialog({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md h-[600px] flex flex-col">
+    <div className="fixed bottom-4 right-4 z-50">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-[380px] h-[500px] flex flex-col border border-gray-200 dark:border-gray-700 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-600 to-blue-700">
           <div className="flex items-center gap-3">
-            <MessageSquare className="h-5 w-5 text-blue-600" />
+            <div className="p-2 bg-white/20 rounded-full">
+              <MessageSquare className="h-5 w-5 text-white" />
+            </div>
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">
+              <h3 className="font-semibold text-white">
                 Chat with {ownerName || 'Owner'}
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+              <p className="text-sm text-blue-100 truncate max-w-[200px]">
                 About: {postTitle}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+            className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
           >
-            <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+            <X className="h-5 w-5 text-white" />
           </button>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -183,8 +185,8 @@ export default function ChatDialog({
           ) : messages.length === 0 ? (
             <div className="flex items-center justify-center h-full text-center">
               <div>
-                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-500 dark:text-gray-400">
+                <MessageSquare className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-400 dark:text-gray-500 text-sm">
                   No messages yet. Start the conversation!
                 </p>
               </div>
@@ -203,13 +205,13 @@ export default function ChatDialog({
                     className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${isOwn
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                      className={`max-w-[75%] px-4 py-2.5 rounded-2xl shadow-sm ${isOwn
+                        ? 'bg-blue-600 text-white rounded-br-md'
+                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-md border border-gray-100 dark:border-gray-600'
                         }`}
                     >
-                      <p className="text-sm">{message.content || message.Content}</p>
-                      <p className={`text-xs mt-1 ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
+                      <p className="text-sm leading-relaxed">{message.content || message.Content}</p>
+                      <p className={`text-xs mt-1 ${isOwn ? 'text-blue-200' : 'text-gray-400 dark:text-gray-500'
                         }`}>
                         {formatMessageTime(message.sentAt || message.SentAt || message.createdAt)}
                       </p>
@@ -223,25 +225,25 @@ export default function ChatDialog({
         </div>
 
         {/* Message Input */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <form onSubmit={handleSendMessage} className="flex gap-2">
             <input
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Type a message..."
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+              className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm"
               disabled={sending || !chatRoomId}
             />
             <button
               type="submit"
               disabled={!newMessage.trim() || sending || !chatRoomId}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="p-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md hover:shadow-lg"
             >
               {sending ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
               ) : (
-                <Send className="h-4 w-4" />
+                <Send className="h-5 w-5" />
               )}
             </button>
           </form>
