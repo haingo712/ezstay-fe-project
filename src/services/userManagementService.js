@@ -70,7 +70,7 @@ class UserManagementService {
       // Backend uses ban/unban instead of status endpoint
       // isActive = true means unban, isActive = false means ban
       const endpoint = isActive ? 'unban' : 'ban';
-      const response = await api.patch(`${this.accountApiUrl}/${userId}/${endpoint}`);
+      const response = await api.put(`${this.accountApiUrl}/${userId}/${endpoint}`);
       console.log(`✅ Updated account ${userId} status (${endpoint}):`, response);
       return response;
     } catch (error) {

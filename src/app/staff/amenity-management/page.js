@@ -370,9 +370,26 @@ export default function AmenityManagementPage() {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   {amenity.amenityName}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  ID: {amenity.id}
-                </p>
+                
+                {/* Created & Updated dates */}
+                <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 mb-3">
+                  {amenity.createdAt && (
+                    <p className="flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Created: {new Date(amenity.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                    </p>
+                  )}
+                  {amenity.updatedAt && (
+                    <p className="flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span>Updated: {new Date(amenity.updatedAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                    </p>
+                  )}
+                </div>
 
                 {/* Actions */}
                 <div className="flex gap-2">

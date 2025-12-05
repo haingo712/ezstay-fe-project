@@ -59,7 +59,7 @@ const contractService = {
       if (error.response?.status === 500 || error.response?.status === 400) {
         try {
           console.log('⚠️ Trying MyContract endpoint instead...');
-          const retryResponse = await api.get('/api/Contract/MyContract?$count=false');
+          const retryResponse = await api.get('/api/Contract/my-contract?$count=false');
           if (retryResponse && retryResponse.value) {
             return retryResponse.value;
           }
@@ -98,7 +98,7 @@ const contractService = {
   // Get contracts by tenant
   getByTenantId: async (tenantId) => {
     try {
-      const response = await api.get(`/api/Contract/MyContract`);
+      const response = await api.get(`/api/Contract/my-contract`);
       return response.data || response;
     } catch (error) {
       console.error('Error fetching contracts by tenant:', error);
