@@ -144,6 +144,8 @@ class ProfileService {
   }
 
   // Cập nhật profile với FormData (UpdateUserDTO) - Tất cả roles
+  // Backend UpdateUserDTO expects string? for Avatar, FrontImageUrl, BackImageUrl (not IFormFile)
+  // So we need to upload files first via ImageService, then send the URL strings
   async updateProfile(profileData) {
     try {
       console.log("👤 Updating profile...", profileData);
@@ -168,18 +170,24 @@ class ProfileService {
       if (profileData.fullName) {
         formData.append('FullName', profileData.fullName);
       }
-      // Avatar field - ONLY send if it's a File object (new upload)
-      // If not sent (null/undefined) - backend will keep existing avatar
+      
+      // Avatar field - Backend expects string? (URL), not IFormFile
+      // If File object -> upload first via ImageService, then send URL
+      // If string URL -> send directly
       if (profileData.avatar !== undefined && profileData.avatar !== null) {
         if (profileData.avatar instanceof File) {
-          // New file upload
-          formData.append('Avatar', profileData.avatar);
+          // New file upload - upload first, then send URL
           console.log('📤 Uploading new avatar file:', profileData.avatar.name);
-        } else {
-          // Not a File - don't send to FormData
-          console.log('ℹ️ Avatar is not a File object - backend will keep existing');
+          const avatarUrl = await this.uploadAvatar(profileData.avatar);
+          formData.append('Avatar', avatarUrl);
+          console.log('✅ Avatar uploaded, URL:', avatarUrl);
+        } else if (typeof profileData.avatar === 'string' && profileData.avatar.length > 0) {
+          // Existing URL string - send directly
+          formData.append('Avatar', profileData.avatar);
+          console.log('ℹ️ Sending existing avatar URL:', profileData.avatar);
         }
       }
+      
       if (profileData.detailAddress !== undefined && profileData.detailAddress !== null) {
         formData.append('DetailAddress', profileData.detailAddress);
       }
@@ -191,29 +199,32 @@ class ProfileService {
         formData.append('WardId', profileData.wardId); // Backend uses WardId
       }
       
-      // CCCD fields (optional)
-      // ONLY send if it's a File object (new upload)
-      // If string URL - DON'T send, backend will keep existing image
+      // CCCD fields - Backend expects string? (URL), not IFormFile
+      // If File object -> upload first via ImageService, then send URL
+      // If string URL -> send directly
       if (profileData.frontImageUrl !== undefined && profileData.frontImageUrl !== null) {
         if (profileData.frontImageUrl instanceof File) {
-          formData.append('FrontImageUrl', profileData.frontImageUrl);
           console.log('📤 Uploading new front CCCD image file:', profileData.frontImageUrl.name);
-        } else if (typeof profileData.frontImageUrl === 'string') {
-          // String URL - DON'T send to FormData (backend expects IFormFile only)
-          // Backend will keep existing URL if field is not sent
-          console.log('ℹ️ Keeping existing front CCCD image (not sending URL string)');
+          const frontUrl = await imageService.upload(profileData.frontImageUrl);
+          formData.append('FrontImageUrl', frontUrl);
+          console.log('✅ Front CCCD uploaded, URL:', frontUrl);
+        } else if (typeof profileData.frontImageUrl === 'string' && profileData.frontImageUrl.length > 0) {
+          formData.append('FrontImageUrl', profileData.frontImageUrl);
+          console.log('ℹ️ Sending existing front CCCD URL:', profileData.frontImageUrl);
         }
       }
       if (profileData.backImageUrl !== undefined && profileData.backImageUrl !== null) {
         if (profileData.backImageUrl instanceof File) {
-          formData.append('BackImageUrl', profileData.backImageUrl);
           console.log('📤 Uploading new back CCCD image file:', profileData.backImageUrl.name);
-        } else if (typeof profileData.backImageUrl === 'string') {
-          // String URL - DON'T send to FormData (backend expects IFormFile only)
-          // Backend will keep existing URL if field is not sent
-          console.log('ℹ️ Keeping existing back CCCD image (not sending URL string)');
+          const backUrl = await imageService.upload(profileData.backImageUrl);
+          formData.append('BackImageUrl', backUrl);
+          console.log('✅ Back CCCD uploaded, URL:', backUrl);
+        } else if (typeof profileData.backImageUrl === 'string' && profileData.backImageUrl.length > 0) {
+          formData.append('BackImageUrl', profileData.backImageUrl);
+          console.log('ℹ️ Sending existing back CCCD URL:', profileData.backImageUrl);
         }
       }
+      
       if (profileData.temporaryResidence !== undefined && profileData.temporaryResidence !== null) {
         formData.append('TemporaryResidence', profileData.temporaryResidence);
       }

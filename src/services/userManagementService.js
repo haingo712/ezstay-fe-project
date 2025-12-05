@@ -168,7 +168,7 @@ class UserManagementService {
    */
   async banAccount(userId) {
     try {
-      const response = await api.patch(`/api/Accounts/${userId}/ban`);
+      const response = await api.put(`/api/Accounts/${userId}/ban`);
       console.log(`✅ Banned account ${userId}:`, response);
       return response;
     } catch (error) {
@@ -184,7 +184,7 @@ class UserManagementService {
    */
   async unbanAccount(userId) {
     try {
-      const response = await api.patch(`/api/Accounts/${userId}/unban`);
+      const response = await api.put(`/api/Accounts/${userId}/unban`);
       console.log(`✅ Unbanned account ${userId}:`, response);
       return response;
     } catch (error) {
