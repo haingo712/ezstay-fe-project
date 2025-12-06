@@ -6,7 +6,7 @@ import api from "@/utils/api";
  */
 class UserManagementService {
   constructor() {
-    this.accountApiUrl = "/api/TestAccount"; // Use TestAccount endpoint
+    this.accountApiUrl = "/api/Accounts"; // Use Accounts endpoint
     this.authApiUrl = "/api/Auth";
   }
 
@@ -17,7 +17,7 @@ class UserManagementService {
   async getAllAccounts() {
     try {
       const response = await api.get(this.accountApiUrl);
-      console.log("✅ Fetched all accounts from TestAccount:", response);
+      console.log("✅ Fetched all accounts from Accounts:", response);
       return response;
     } catch (error) {
       console.error("❌ Error fetching accounts:", error);
@@ -60,17 +60,18 @@ class UserManagementService {
   }
 
   /**
-   * Update account status (active/inactive)
+   * Update account status (active/inactive) using ban/unban
    * @param {string} userId - User ID
    * @param {boolean} isActive - New active status
    * @returns {Promise<Object>} Update result
    */
   async updateAccountStatus(userId, isActive) {
     try {
-      const response = await api.put(`${this.accountApiUrl}/${userId}/status`, {
-        isActive: isActive
-      });
-      console.log(`✅ Updated account ${userId} status:`, response);
+      // Backend uses ban/unban instead of status endpoint
+      // isActive = true means unban, isActive = false means ban
+      const endpoint = isActive ? 'unban' : 'ban';
+      const response = await api.put(`${this.accountApiUrl}/${userId}/${endpoint}`);
+      console.log(`✅ Updated account ${userId} status (${endpoint}):`, response);
       return response;
     } catch (error) {
       console.error(`❌ Error updating account ${userId} status:`, error);
@@ -148,9 +149,9 @@ class UserManagementService {
       };
 
       console.log(`🔄 Updating account ${userId} with payload:`, payload);
-      console.log(`🔄 URL: /api/TestAccount/${userId}`);
+      console.log(`🔄 URL: /api/Accounts/${userId}`);
 
-      const response = await api.put(`/api/TestAccount/${userId}`, payload);
+      const response = await api.put(`/api/Accounts/${userId}`, payload);
       console.log(`✅ Updated account ${userId}:`, response);
       return response;
     } catch (error) {
@@ -167,7 +168,7 @@ class UserManagementService {
    */
   async banAccount(userId) {
     try {
-      const response = await api.patch(`/api/TestAccount/${userId}/ban`);
+      const response = await api.put(`/api/Accounts/${userId}/ban`);
       console.log(`✅ Banned account ${userId}:`, response);
       return response;
     } catch (error) {
@@ -183,7 +184,7 @@ class UserManagementService {
    */
   async unbanAccount(userId) {
     try {
-      const response = await api.patch(`/api/TestAccount/${userId}/unban`);
+      const response = await api.put(`/api/Accounts/${userId}/unban`);
       console.log(`✅ Unbanned account ${userId}:`, response);
       return response;
     } catch (error) {
@@ -198,7 +199,7 @@ class UserManagementService {
    */
   async getOwnerRequests() {
     try {
-      const response = await api.get(`/api/TestAccount/request-owner`);
+      const response = await api.get(`/api/OwnerRequest`);
       console.log(`✅ Fetched owner requests:`, response);
       return Array.isArray(response) ? response : [];
     } catch (error) {
@@ -218,7 +219,7 @@ class UserManagementService {
    */
   async approveOwnerRequest(requestId) {
     try {
-      const response = await api.put(`/api/TestAccount/request-owner/approve/${requestId}`);
+      const response = await api.put(`/api/OwnerRequest/approve/${requestId}`);
       console.log(`✅ Approved owner request ${requestId}:`, response);
       return response;
     } catch (error) {
@@ -236,7 +237,7 @@ class UserManagementService {
   async rejectOwnerRequest(requestId, reason) {
     try {
       const payload = { RejectionReason: reason };
-      const response = await api.put(`/api/TestAccount/request-owner/reject/${requestId}`, payload);
+      const response = await api.put(`/api/OwnerRequest/reject/${requestId}`, payload);
       console.log(`✅ Rejected owner request ${requestId}:`, response);
       return response;
     } catch (error) {

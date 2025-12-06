@@ -588,6 +588,7 @@
         "sendRequest": "Send Support Request",
         "fullName": "Full Name",
         "email": "Email",
+        "emailPlaceholder": "Enter your email address",
         "phone": "Phone Number",
         "category": "Category",
         "categoryGeneral": "General Question",
@@ -598,10 +599,14 @@
         "categoryOther": "Other",
         "subject": "Subject",
         "subjectPlaceholder": "Brief description of your issue",
+        "description": "Description",
+        "descriptionPlaceholder": "Describe your issue in detail...",
         "message": "Message",
         "messagePlaceholder": "Describe your issue in detail...",
         "submit": "Send Support Request",
+        "submitting": "Sending...",
         "submitSuccess": "Support request sent! We will respond within 24 hours.",
+        "submitError": "An error occurred while sending the request. Please try again.",
         "virtualAssistant": "EZStay Virtual Assistant",
         "askAnything": "Ask me anything about our services!",
         "quickQuestions": "Quick questions",
@@ -637,6 +642,29 @@
         "emailLabel": "Email",
         "hotlineLabel": "Hotline",
         "addressLabel": "Address"
+    },
+    "staffSupport": {
+        "title": "Support Request Management",
+        "subtitle": "View and process support requests from users",
+        "total": "Total",
+        "statusPending": "Pending",
+        "statusAccept": "Accept",
+        "statusReject": "Reject",
+        "searchPlaceholder": "Search by subject, email, content...",
+        "allStatus": "All Status",
+        "requestList": "Request List",
+        "requestDetail": "Request Detail",
+        "subject": "Subject",
+        "email": "Email",
+        "createdAt": "Created At",
+        "status": "Status",
+        "description": "Description",
+        "updateStatus": "Update Status",
+        "selectRequest": "Select a request to view details",
+        "noRequests": "No support requests",
+        "errorLoading": "Could not load support requests",
+        "updateSuccess": "Status updated successfully!",
+        "updateError": "Could not update status"
     },
     "searchRooms": {
         "loading": "Loading...",
@@ -1291,7 +1319,9 @@
             "contractSigned": "Contract signed successfully!",
             "confirmSignatureError": "Error confirming signature. Please try again.",
             "uploadImageFile": "Please upload an image file",
-            "rentalRequestLoaded": "Rental request loaded. Please review and complete the contract."
+            "rentalRequestLoaded": "Rental request loaded. Please review and complete the contract.",
+            "tenantNotSigned": "Tenant has not signed the contract yet. Please wait for tenant to sign first.",
+            "alreadySigned": "You have already signed this contract"
         }
     },
     "contractDetail": {
@@ -1610,6 +1640,9 @@
     },
     "staffPosts": {
         "title": "Posts Review",
+        "subtitle": "Review and moderate rental property listings",
+        "refresh": "Refresh",
+        "pendingReviews": "pending reviews",
         "tabs": {
             "pending": "Pending",
             "approved": "Approved",
@@ -1627,7 +1660,21 @@
         "actions": {
             "approve": "Approve",
             "reject": "Reject",
-            "view": "View Details"
+            "view": "View Details",
+            "viewDetail": "View Detail",
+            "close": "Close"
+        },
+        "modal": {
+            "title": "Post Details",
+            "images": "Images",
+            "postTitle": "Title",
+            "description": "Description",
+            "house": "Boarding House",
+            "room": "Room",
+            "author": "Author",
+            "contact": "Contact",
+            "createdAt": "Created At",
+            "postId": "Post ID"
         },
         "toast": {
             "approveSuccess": "Post approved successfully!",
@@ -1636,9 +1683,10 @@
             "rejectFailed": "Failed to reject post. Please try again."
         },
         "loading": "Loading posts...",
-        "empty": "No posts to review",
+        "empty": "All Caught Up!",
+        "emptyDescription": "No posts are currently pending review. Check back later.",
         "error": "Error Loading Posts",
-        "retry": "Try Again"
+        "retry": "Retry"
     },
     "staffNotifications": {
         "title": "Notification Management",
@@ -1846,29 +1894,6 @@
             "staff": "Staff Only"
         }
     },
-    "staffPosts": {
-        "title": "Posts Review",
-        "subtitle": "Review and moderate rental property listings",
-        "error": "Error Loading Posts",
-        "retry": "Try Again",
-        "empty": "No posts found",
-        "loading": "Loading posts...",
-        "tabs": {
-            "pending": "Pending",
-            "approved": "Approved",
-            "rejected": "Rejected"
-        },
-        "actions": {
-            "approve": "Approve",
-            "reject": "Reject",
-            "viewDetails": "View Details"
-        },
-        "modal": {
-            "rejectTitle": "Reject Post",
-            "rejectMessage": "Please enter the reason for rejection:",
-            "confirmReject": "Confirm Reject"
-        }
-    },
     "staffReports": {
         "title": "Review Reports",
         "subtitle": "Manage review reports from owners",
@@ -1938,6 +1963,14 @@
             "passwordHint": "Leave empty to keep current password",
             "accountId": "Account ID"
         },
+        "validation": {
+            "fullNameMin": "Full name must be at least 2 characters",
+            "invalidEmail": "Please enter a valid email address",
+            "phoneMin": "Phone number must be at least 10 digits",
+            "passwordMin": "Password must be at least 6 characters",
+            "passwordRequired": "Password is required for new accounts",
+            "fillAllFields": "Please fill in all required fields"
+        },
         "modal": {
             "createTitle": "Create Staff Account",
             "editTitle": "Edit Staff Account",
@@ -1945,6 +1978,79 @@
             "deleteTitle": "Delete Staff Account",
             "deleteMessage": "Are you sure you want to permanently delete",
             "deleteWarning": "This action cannot be undone!"
+        },
+        "toast": {
+            "statusSuccess": "Account status updated successfully!",
+            "statusFailed": "Failed to update status",
+            "createSuccess": "Staff account created successfully!",
+            "createFailed": "Failed to create staff account",
+            "updateSuccess": "Staff account updated successfully!",
+            "updateFailed": "Failed to update staff account",
+            "deleteSuccess": "Staff account deleted successfully!",
+            "deleteFailed": "Failed to delete staff account",
+            "banSuccess": "Account banned successfully!",
+            "banFailed": "Failed to ban account",
+            "unbanSuccess": "Account unbanned successfully!",
+            "unbanFailed": "Failed to unban account",
+            "passwordRequired": "Password is required for new accounts",
+            "fillAllFields": "Please fill in all required fields"
+        }
+    },
+    "adminNotifications": {
+        "title": "Admin Notifications",
+        "subtitle": "Manage and send system notifications",
+        "loading": "Loading notifications...",
+        "error": "Unable to load notification list",
+        "noNotifications": "No notifications",
+        "noNotificationsDesc": "No notifications found",
+        "createTitle": "Create New Notification",
+        "editTitle": "Edit Notification",
+        "scheduleTitle": "Schedule Notification",
+        "createButton": "Create Notification",
+        "scheduleButton": "Schedule",
+        "refreshButton": "Refresh",
+        "sendButton": "Send Notification",
+        "updateButton": "Update Notification",
+        "personalNotification": "Personal Notification",
+        "byRoleNotification": "Notification by Role",
+        "selectRoleError": "Please select at least one role",
+        "selectTimeError": "Please select scheduled time",
+        "confirmDelete": "Are you sure you want to delete notification",
+        "new": "New",
+        "created": "Created",
+        "scheduled": "Scheduled",
+        "markRead": "Mark Read",
+        "read": "Read",
+        "totalNotifications": "Total notifications",
+        "filter": {
+            "all": "All",
+            "unread": "Unread",
+            "read": "Read"
+        },
+        "form": {
+            "title": "Title",
+            "titlePlaceholder": "Enter notification title",
+            "content": "Content",
+            "contentPlaceholder": "Enter notification content",
+            "type": "Notification Type",
+            "selectRoles": "Select Target Roles",
+            "scheduledTime": "Scheduled Time",
+            "scheduledTimeHint": "Notification will be sent automatically at the selected time"
+        },
+        "types": {
+            "general": "General",
+            "system": "System",
+            "warning": "Warning",
+            "promotion": "Promotion"
+        },
+        "toast": {
+            "markReadFailed": "Unable to mark as read",
+            "createSuccess": "Notification created successfully!",
+            "createByRoleSuccess": "Notification sent to selected roles successfully!",
+            "scheduleSuccess": "Scheduled notification created successfully!",
+            "updateSuccess": "Notification updated successfully!",
+            "deleteSuccess": "Notification deleted successfully!",
+            "deleteFailed": "Unable to delete notification"
         }
     },
     "myRentalRequests": {
@@ -2069,5 +2175,148 @@
         "activityRate": "Activity Rate",
         "active": "active",
         "ofTotal": "of total"
+    },
+    "paymentManagement": {
+        "title": "Payment Management",
+        "subtitle": "Track and manage all payment transactions",
+        "loading": "Loading payments...",
+        "bankAccountBtn": "Bank Account Settings",
+        "stats": {
+            "total": "Total Transactions",
+            "completed": "Completed",
+            "pending": "Pending",
+            "failed": "Failed",
+            "totalIncome": "Total Income"
+        },
+        "status": {
+            "completed": "Completed",
+            "pending": "Pending",
+            "failed": "Failed"
+        },
+        "filter": {
+            "search": "Search",
+            "searchPlaceholder": "Search by tenant, room, transaction ID...",
+            "fromDate": "From Date",
+            "toDate": "To Date",
+            "status": "Status",
+            "all": "All",
+            "completed": "Completed",
+            "pending": "Pending",
+            "failed": "Failed",
+            "showing": "Showing",
+            "transactions": "transactions"
+        },
+        "table": {
+            "transactionId": "Transaction ID",
+            "tenant": "Tenant",
+            "room": "Room",
+            "amount": "Amount",
+            "bank": "Bank",
+            "status": "Status",
+            "createdAt": "Created At",
+            "actions": "Actions",
+            "viewDetails": "View Details"
+        },
+        "pagination": {
+            "showing": "Showing",
+            "to": "to",
+            "of": "of",
+            "transactions": "transactions",
+            "prev": "Previous",
+            "next": "Next"
+        },
+        "emptyState": {
+            "title": "No Payments Found",
+            "noResults": "No payments match your filter criteria.",
+            "noTransactions": "You don't have any payment transactions yet.",
+            "clearFilter": "Clear Filters"
+        },
+        "modal": {
+            "title": "Payment Details",
+            "transactionId": "Transaction ID",
+            "status": "Status",
+            "tenant": "Tenant",
+            "room": "Room",
+            "bank": "Bank",
+            "accountNumber": "Account Number",
+            "amount": "Amount",
+            "description": "Description",
+            "createdAt": "Created At",
+            "completedAt": "Completed At",
+            "close": "Close"
+        },
+        "errors": {
+            "loadFailed": "Failed to load payment data. Please try again."
+        }
+    },
+    "staffUsers": {
+        "title": "User Management",
+        "subtitle": "Manage user and property owner accounts",
+        "createAccount": "Create Account",
+        "stats": {
+            "totalUsers": "Total Users",
+            "totalOwners": "Total Owners",
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        "tabs": {
+            "all": "All Users",
+            "users": "Users",
+            "owners": "Owners",
+            "ownerRequests": "Owner Requests",
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        "table": {
+            "accountId": "Account ID",
+            "reason": "Reason",
+            "submittedAt": "Submitted At",
+            "status": "Status",
+            "actions": "Actions",
+            "fullName": "Full Name",
+            "email": "Email",
+            "phone": "Phone",
+            "role": "Role",
+            "createdAt": "Created At"
+        },
+        "actions": {
+            "approve": "Approve",
+            "reject": "Reject",
+            "view": "View",
+            "edit": "Edit",
+            "activate": "Activate",
+            "deactivate": "Deactivate"
+        },
+        "status": {
+            "pending": "Pending",
+            "approved": "Approved",
+            "rejected": "Rejected",
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        "roles": {
+            "user": "User",
+            "owner": "Owner"
+        },
+        "modal": {
+            "createTitle": "Create New Account",
+            "editTitle": "Edit Account",
+            "viewTitle": "User Details",
+            "rejectTitle": "Reject Owner Request",
+            "accountType": "Account Type",
+            "fullName": "Full Name",
+            "email": "Email",
+            "phone": "Phone",
+            "password": "Password",
+            "rejectReason": "Rejection Reason",
+            "cancel": "Cancel",
+            "save": "Save",
+            "create": "Create",
+            "confirm": "Confirm"
+        },
+        "emptyState": {
+            "noRequests": "No owner requests found",
+            "noUsers": "No users found"
+        }
     }
 }

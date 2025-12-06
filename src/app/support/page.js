@@ -5,6 +5,8 @@ import Navbar from "@/components/Navbar";
 import RoleBasedRedirect from "@/components/RoleBasedRedirect";
 import { useTranslation } from "@/hooks/useTranslation";
 import aiAssistantService from "@/services/aiAssistantService";
+import supportService from "@/services/supportService";
+import { toast } from 'react-toastify';
 
 export default function SupportPage() {
   const { t } = useTranslation();
@@ -18,13 +20,11 @@ export default function SupportPage() {
   
   const [activeTab, setActiveTab] = useState("contact");
   const [contactForm, setContactForm] = useState({
-    name: "",
     email: "",
-    phone: "",
     subject: "",
-    message: "",
-    category: "general",
+    description: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [chatMessages, setChatMessages] = useState([WELCOME_MESSAGE]);
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -122,18 +122,35 @@ export default function SupportPage() {
     }
   };
 
-  const handleContactSubmit = (e) => {
+  const handleContactSubmit = async (e) => {
     e.preventDefault();
-    // Handle contact form submission
-    alert(t('supportPage.submitSuccess'));
-    setContactForm({
-      name: "",
-      email: "",
-      phone: "",
-      subject: "",
-      message: "",
-      category: "general",
-    });
+    
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
+    try {
+      const result = await supportService.createSupportRequest({
+        email: contactForm.email,
+        subject: contactForm.subject,
+        description: contactForm.description,
+      });
+      
+      if (result.success) {
+        toast.success(t('supportPage.submitSuccess'));
+        setContactForm({
+          email: "",
+          subject: "",
+          description: "",
+        });
+      } else {
+        toast.error(result.message || t('supportPage.submitError'));
+      }
+    } catch (error) {
+      console.error('Error submitting support request:', error);
+      toast.error(t('supportPage.submitError'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChatSubmit = async (e) => {
@@ -204,84 +221,23 @@ export default function SupportPage() {
               </h2>
 
               <form onSubmit={handleContactSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {t('supportPage.fullName')} *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      value={contactForm.name}
-                      onChange={(e) =>
-                        setContactForm((prev) => ({
-                          ...prev,
-                          name: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {t('supportPage.email')} *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      value={contactForm.email}
-                      onChange={(e) =>
-                        setContactForm((prev) => ({
-                          ...prev,
-                          email: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {t('supportPage.phone')}
-                    </label>
-                    <input
-                      type="tel"
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      value={contactForm.phone}
-                      onChange={(e) =>
-                        setContactForm((prev) => ({
-                          ...prev,
-                          phone: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {t('supportPage.category')}
-                    </label>
-                    <select
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      value={contactForm.category}
-                      onChange={(e) =>
-                        setContactForm((prev) => ({
-                          ...prev,
-                          category: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="general">{t('supportPage.categoryGeneral')}</option>
-                      <option value="technical">{t('supportPage.categoryTechnical')}</option>
-                      <option value="account">{t('supportPage.categoryAccount')}</option>
-                      <option value="payment">{t('supportPage.categoryPayment')}</option>
-                      <option value="report">{t('supportPage.categoryReport')}</option>
-                      <option value="other">{t('supportPage.categoryOther')}</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('supportPage.email')} *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    value={contactForm.email}
+                    onChange={(e) =>
+                      setContactForm((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                    placeholder={t('supportPage.emailPlaceholder')}
+                  />
                 </div>
 
                 <div>
@@ -305,28 +261,33 @@ export default function SupportPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('supportPage.message')} *
+                    {t('supportPage.description')} *
                   </label>
                   <textarea
                     required
                     rows={6}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    value={contactForm.message}
+                    value={contactForm.description}
                     onChange={(e) =>
                       setContactForm((prev) => ({
                         ...prev,
-                        message: e.target.value,
+                        description: e.target.value,
                       }))
                     }
-                    placeholder={t('supportPage.messagePlaceholder')}
+                    placeholder={t('supportPage.descriptionPlaceholder')}
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors"
+                  disabled={isSubmitting}
+                  className={`w-full py-3 rounded-lg font-medium transition-colors ${
+                    isSubmitting 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
                 >
-                  {t('supportPage.submit')}
+                  {isSubmitting ? t('supportPage.submitting') : t('supportPage.submit')}
                 </button>
               </form>
             </div>

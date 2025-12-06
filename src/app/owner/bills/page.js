@@ -311,16 +311,6 @@ export default function OwnerBillsPage() {
                             Quản lý hóa đơn tiền phòng, điện nước cho các phòng trọ
                         </p>
                     </div>
-                    <button
-                        onClick={() => {
-                            fetchContracts();
-                            setShowCreateModal(true);
-                        }}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-                    >
-                        <Plus className="w-5 h-5" />
-                        Tạo hóa đơn mới
-                    </button>
                 </div>
             </div>
 

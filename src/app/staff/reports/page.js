@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { reviewAPI } from "@/utils/api";
 import { useTranslation } from "@/hooks/useTranslation";
+import { toast } from 'react-toastify';
 
 function StatusBadge({ status, t }) {
     // Backend có thể trả về số (0,1,2) hoặc string
@@ -62,10 +63,10 @@ export default function StaffReportsPage() {
 
             // Reload lại danh sách để đảm bảo sync với server
             setTimeout(() => loadReports(), 500);
-            alert('Duyệt báo cáo thành công!');
+            toast.success(t('staffReports.toast.approveSuccess') || 'Duyệt báo cáo thành công!');
         } catch (err) {
             console.error('Approve error:', err);
-            alert('Xử lý thất bại: ' + (err.message || 'Vui lòng thử lại'));
+            toast.error((err.message || t('staffReports.toast.processFailed') || 'Xử lý thất bại. Vui lòng thử lại'));
         } finally {
             setProcessing(null);
         }
@@ -75,7 +76,7 @@ export default function StaffReportsPage() {
 
     const handleReject = async () => {
         if (!rejectModal.reason.trim()) {
-            alert('Vui lòng nhập lý do từ chối');
+            toast.warning(t('staffReports.toast.enterRejectReason') || 'Vui lòng nhập lý do từ chối');
             return;
         }
         setProcessing(rejectModal.id);
@@ -91,10 +92,10 @@ export default function StaffReportsPage() {
 
             // Reload lại danh sách để đảm bảo sync với server
             setTimeout(() => loadReports(), 500);
-            alert('Từ chối báo cáo thành công!');
+            toast.success(t('staffReports.toast.rejectSuccess') || 'Từ chối báo cáo thành công!');
         } catch (err) {
             console.error(err);
-            alert('Xử lý thất bại, thử lại');
+            toast.error(t('staffReports.toast.processFailed') || 'Xử lý thất bại. Vui lòng thử lại');
         } finally {
             setProcessing(null);
         }

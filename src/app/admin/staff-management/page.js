@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import userManagementService from '@/services/userManagementService';
 import AuthService from '@/services/authService';
 import { useTranslation } from '@/hooks/useTranslation';
+import { toast } from 'react-toastify';
 
 export default function StaffManagementPage() {
   const { t } = useTranslation();
@@ -73,7 +74,7 @@ export default function StaffManagementPage() {
   const loadStaff = async () => {
     try {
       setLoading(true);
-      // Use Accounts API from AuthApi, not TestAccount
+      // Use Accounts API
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts`, {
         method: 'GET',
         headers: {
@@ -115,19 +116,19 @@ export default function StaffManagementPage() {
     
     // Validate inputs
     if (!newStaff.fullName || newStaff.fullName.length < 2) {
-      alert('Full name must be at least 2 characters');
+      toast.warning(t('staffManagement.validation.fullNameMin') || 'Full name must be at least 2 characters');
       return;
     }
     if (!newStaff.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newStaff.email)) {
-      alert('Please enter a valid email address');
+      toast.warning(t('staffManagement.validation.invalidEmail') || 'Please enter a valid email address');
       return;
     }
     if (!newStaff.phone || newStaff.phone.length < 10) {
-      alert('Phone number must be at least 10 digits');
+      toast.warning(t('staffManagement.validation.phoneMin') || 'Phone number must be at least 10 digits');
       return;
     }
     if (!newStaff.password || newStaff.password.length < 6) {
-      alert('Password must be at least 6 characters');
+      toast.warning(t('staffManagement.validation.passwordMin') || 'Password must be at least 6 characters');
       return;
     }
     
@@ -155,7 +156,7 @@ export default function StaffManagementPage() {
       if (response.ok) {
         const result = await response.json();
         console.log('✅ Staff created:', result);
-        alert('✅ Staff account created successfully!');
+        toast.success(t('staffManagement.toast.createSuccess') || 'Staff account created successfully!');
         setShowCreateModal(false);
         setNewStaff({ fullName: '', email: '', phone: '', password: '' });
         await loadStaff();
@@ -168,11 +169,11 @@ export default function StaffManagementPage() {
           errorMessage = await response.text() || errorMessage;
         }
         console.error('❌ Error response:', errorMessage);
-        alert(`❌ ${errorMessage}`);
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error('❌ Error creating staff:', error);
-      alert('❌ Failed to create staff account: ' + error.message);
+      toast.error(t('staffManagement.toast.createFailed') || 'Failed to create staff account');
     }
   };
 
@@ -187,9 +188,9 @@ export default function StaffManagementPage() {
     try {
       console.log(`🔄 ${actionText}ning staff ID:`, staffId);
       
-      // Use TestAccount API for ban/unban
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/TestAccount/${staffId}/${action}`, {
-        method: 'PATCH',
+      // Use Accounts API for ban/unban
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts/${staffId}/${action}`, {
+        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${AuthService.getToken()}`,
           'Content-Type': 'application/json'
@@ -201,10 +202,10 @@ export default function StaffManagementPage() {
       }
       
       await loadStaff();
-      alert(`✅ Staff account ${currentStatus ? 'banned' : 'unbanned'} successfully!`);
+      toast.success(t('staffManagement.toast.statusSuccess') || `Staff account ${currentStatus ? 'banned' : 'unbanned'} successfully!`);
     } catch (error) {
       console.error(`❌ Error ${action}ning staff:`, error);
-      alert(`❌ Failed to ${action} staff account: ${error.message || 'Unknown error'}`);
+      toast.error(t('staffManagement.toast.statusFailed') || `Failed to ${action} staff account`);
     }
   };
 
@@ -224,19 +225,19 @@ export default function StaffManagementPage() {
     
     // Validate inputs
     if (editStaff.fullName && editStaff.fullName.length < 2) {
-      alert('Full name must be at least 2 characters');
+      toast.warning(t('staffManagement.validation.fullNameMin') || 'Full name must be at least 2 characters');
       return;
     }
     if (editStaff.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editStaff.email)) {
-      alert('Please enter a valid email address');
+      toast.warning(t('staffManagement.validation.invalidEmail') || 'Please enter a valid email address');
       return;
     }
     if (editStaff.phone && editStaff.phone.length < 10) {
-      alert('Phone number must be at least 10 digits');
+      toast.warning(t('staffManagement.validation.phoneMin') || 'Phone number must be at least 10 digits');
       return;
     }
     if (editStaff.password && editStaff.password.length < 6) {
-      alert('Password must be at least 6 characters');
+      toast.warning(t('staffManagement.validation.passwordMin') || 'Password must be at least 6 characters');
       return;
     }
     
@@ -271,13 +272,13 @@ export default function StaffManagementPage() {
         throw new Error(error.message || 'Update failed');
       }
       
-      alert('✅ Staff account updated successfully!');
+      toast.success(t('staffManagement.toast.updateSuccess') || 'Staff account updated successfully!');
       setShowEditModal(false);
       setSelectedStaff(null);
       await loadStaff();
     } catch (error) {
       console.error('❌ Error updating staff:', error);
-      alert(`❌ Failed to update staff account: ${error.message || 'Unknown error'}`);
+      toast.error(t('staffManagement.toast.updateFailed') || 'Failed to update staff account');
     }
   };
 
@@ -316,14 +317,14 @@ export default function StaffManagementPage() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      alert('✅ Staff account deleted successfully!');
+      toast.success(t('staffManagement.toast.deleteSuccess') || 'Staff account deleted successfully!');
       setShowDeleteConfirm(false);
       setShowViewModal(false);
       setSelectedStaff(null);
       await loadStaff();
     } catch (error) {
       console.error('❌ Error deleting staff:', error);
-      alert(`❌ Failed to delete staff account: ${error.message || 'Unknown error'}`);
+      toast.error(t('staffManagement.toast.deleteFailed') || 'Failed to delete staff account');
     }
   };
 
@@ -377,16 +378,6 @@ export default function StaffManagementPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <button
-            onClick={exportToCSV}
-            disabled={filteredAndSortedStaff.length === 0}
-            className="flex items-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            {t('staffManagement.exportCSV')}
-          </button>
           <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-lg"

@@ -4,131 +4,8 @@ import { useState, useEffect } from 'react';
 import userManagementService from '@/services/userManagementService';
 import AuthService from '@/services/authService';
 import { useTranslation } from '@/hooks/useTranslation';
-
-// ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
-const MOCK_USERS = [
-  {
-    id: 'user-001',
-    fullName: 'Nguyễn Văn An',
-    email: 'nguyenvanan@email.com',
-    phone: '0901234567',
-    role: 2,
-    roleId: 2,
-    isActive: true,
-    isBanned: false,
-    createAt: '2025-10-15T10:00:00Z',
-    createdAt: '2025-10-15T10:00:00Z',
-    avatar: '/image.png'
-  },
-  {
-    id: 'user-002',
-    fullName: 'Trần Thị Bình',
-    email: 'tranthib@email.com',
-    phone: '0912345678',
-    role: 1,
-    roleId: 1,
-    isActive: true,
-    isBanned: false,
-    createAt: '2025-10-20T14:30:00Z',
-    createdAt: '2025-10-20T14:30:00Z',
-    avatar: '/image.png'
-  },
-  {
-    id: 'user-003',
-    fullName: 'Lê Minh Cường',
-    email: 'leminhc@email.com',
-    phone: '0923456789',
-    role: 1,
-    roleId: 1,
-    isActive: true,
-    isBanned: false,
-    createAt: '2025-11-01T09:00:00Z',
-    createdAt: '2025-11-01T09:00:00Z',
-    avatar: '/image.png'
-  },
-  {
-    id: 'user-004',
-    fullName: 'Phạm Hoàng Dũng',
-    email: 'phamhoangd@email.com',
-    phone: '0934567890',
-    role: 2,
-    roleId: 2,
-    isActive: true,
-    isBanned: false,
-    createAt: '2025-11-05T16:00:00Z',
-    createdAt: '2025-11-05T16:00:00Z',
-    avatar: '/image.png'
-  },
-  {
-    id: 'user-005',
-    fullName: 'Võ Thị Hồng',
-    email: 'vothihong@email.com',
-    phone: '0945678901',
-    role: 1,
-    roleId: 1,
-    isActive: false,
-    isBanned: true,
-    createAt: '2025-09-10T11:00:00Z',
-    createdAt: '2025-09-10T11:00:00Z',
-    avatar: '/image.png'
-  },
-  {
-    id: 'user-006',
-    fullName: 'Đặng Văn Khoa',
-    email: 'dangvankhoa@email.com',
-    phone: '0956789012',
-    role: 1,
-    roleId: 1,
-    isActive: true,
-    isBanned: false,
-    createAt: '2025-11-20T08:30:00Z',
-    createdAt: '2025-11-20T08:30:00Z',
-    avatar: '/image.png'
-  }
-];
-
-const MOCK_OWNER_REQUESTS = [
-  {
-    id: 'req-001',
-    userId: 'user-007',
-    fullName: 'Nguyễn Thị Mai',
-    email: 'nguyenthimai@email.com',
-    phone: '0967890123',
-    identityCardFront: '/image.png',
-    identityCardBack: '/image.png',
-    businessLicense: '/image.png',
-    requestReason: 'Tôi có 3 căn nhà trọ muốn đăng cho thuê trên EZStay',
-    status: 'pending',
-    createdAt: '2025-11-28T10:00:00Z'
-  },
-  {
-    id: 'req-002',
-    userId: 'user-008',
-    fullName: 'Trần Văn Long',
-    email: 'tranvanlong@email.com',
-    phone: '0978901234',
-    identityCardFront: '/image.png',
-    identityCardBack: '/image.png',
-    businessLicense: '/image.png',
-    requestReason: 'Muốn trở thành chủ nhà để quản lý phòng trọ của gia đình',
-    status: 'pending',
-    createdAt: '2025-11-27T14:30:00Z'
-  },
-  {
-    id: 'req-003',
-    userId: 'user-009',
-    fullName: 'Lê Thị Hạnh',
-    email: 'lethihanh@email.com',
-    phone: '0989012345',
-    identityCardFront: '/image.png',
-    identityCardBack: '/image.png',
-    businessLicense: null,
-    requestReason: 'Đăng ký làm chủ nhà để cho thuê căn hộ mini',
-    status: 'pending',
-    createdAt: '2025-11-26T09:00:00Z'
-  }
-];
-// ============ END MOCK DATA ============
+import { toast } from 'react-toastify';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function UserManagementPage() {
   const { t } = useTranslation();
@@ -143,6 +20,8 @@ export default function UserManagementPage() {
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
   const [newAccount, setNewAccount] = useState({
     fullName: '',
     email: '',
@@ -167,15 +46,10 @@ export default function UserManagementPage() {
   const loadOwnerRequests = async () => {
     try {
       const data = await userManagementService.getOwnerRequests();
-      // ============ USE MOCK DATA IF NO REAL DATA ============
-      const dataToUse = data && data.length > 0 ? data : MOCK_OWNER_REQUESTS;
-      setOwnerRequests(dataToUse);
-      // ============ END MOCK DATA USAGE ============
+      setOwnerRequests(data || []);
     } catch (error) {
       console.error('Error loading owner requests:', error);
-      // ============ USE MOCK DATA ON ERROR ============
-      setOwnerRequests(MOCK_OWNER_REQUESTS);
-      // ============ END MOCK DATA ON ERROR ============
+      setOwnerRequests([]);
     }
   };
 
@@ -183,7 +57,7 @@ export default function UserManagementPage() {
     try {
       setLoading(true);
       const data = await userManagementService.getAllAccounts();
-      console.log('📊 User data from API:', data[0]); // Debug: xem structure của data
+      console.log('📊 User data from API:', data); // Debug: xem structure của data
 
       // Transform API response to match frontend format
       const transformedData = Array.isArray(data) ? data.map(user => ({
@@ -193,15 +67,10 @@ export default function UserManagementPage() {
         createdAt: user.createAt, // Map createAt to createdAt
       })) : [];
 
-      // ============ USE MOCK DATA IF NO REAL DATA ============
-      const dataToUse = transformedData && transformedData.length > 0 ? transformedData : MOCK_USERS;
-      setUsers(dataToUse);
-      // ============ END MOCK DATA USAGE ============
+      setUsers(transformedData);
     } catch (error) {
       console.error('Error loading users:', error);
-      // ============ USE MOCK DATA ON ERROR ============
-      setUsers(MOCK_USERS);
-      // ============ END MOCK DATA ON ERROR ============
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -210,11 +79,11 @@ export default function UserManagementPage() {
   const handleApproveRequest = async (requestId) => {
     try {
       await userManagementService.approveOwnerRequest(requestId);
-      alert('Request approved successfully');
+      toast.success(t('staffUsers.toast.approveSuccess') || 'Request approved successfully');
       loadOwnerRequests();
     } catch (error) {
       console.error('Error approving request:', error);
-      alert('Failed to approve request');
+      toast.error(t('staffUsers.toast.approveFailed') || 'Failed to approve request');
     }
   };
 
@@ -222,13 +91,13 @@ export default function UserManagementPage() {
     if (!selectedUser) return;
     try {
       await userManagementService.rejectOwnerRequest(selectedUser.id, rejectionReason);
-      alert('Request rejected successfully');
+      toast.success(t('staffUsers.toast.rejectSuccess') || 'Request rejected successfully');
       setShowRejectionModal(false);
       setRejectionReason('');
       loadOwnerRequests();
     } catch (error) {
       console.error('Error rejecting request:', error);
-      alert('Failed to reject request');
+      toast.error(t('staffUsers.toast.rejectFailed') || 'Failed to reject request');
     }
   };
 
@@ -252,11 +121,11 @@ export default function UserManagementPage() {
   const handleStatusToggle = async (userId, currentStatus) => {
     try {
       await userManagementService.updateAccountStatus(userId, !currentStatus);
-      alert('Account status updated successfully!');
+      toast.success(t('staffUsers.toast.statusSuccess') || 'Account status updated successfully!');
       await loadUsers();
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Failed to update account status');
+      toast.error(t('staffUsers.toast.statusFailed') || 'Failed to update account status');
     }
   };
 
@@ -288,17 +157,17 @@ export default function UserManagementPage() {
       });
 
       if (response.ok) {
-        alert('Account created successfully!');
+        toast.success(t('staffUsers.toast.createSuccess') || 'Account created successfully!');
         setShowCreateModal(false);
         setNewAccount({ fullName: '', email: '', phone: '', password: '', roleId: 1 });
         await loadUsers();
       } else {
         const error = await response.json();
-        alert(error.message || 'Failed to create account');
+        toast.error(error.message || t('staffUsers.toast.createFailed') || 'Failed to create account');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Failed to create account');
+      toast.error(t('staffUsers.toast.createFailed') || 'Failed to create account');
     }
   };
 
@@ -309,13 +178,13 @@ export default function UserManagementPage() {
       console.log('🔍 Update data:', editAccount);
 
       await userManagementService.updateAccount(selectedUser.id, editAccount);
-      alert('Account updated successfully!');
+      toast.success(t('staffUsers.toast.updateSuccess') || 'Account updated successfully!');
       setShowEditModal(false);
       setSelectedUser(null);
       await loadUsers();
     } catch (error) {
       console.error('Error updating account:', error);
-      alert(`Failed to update account: ${error.message || 'Unknown error'}`);
+      toast.error(`${t('staffUsers.toast.updateFailed') || 'Failed to update account'}: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -379,8 +248,8 @@ export default function UserManagementPage() {
         </div>
       </div>
 
-      <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+      <div className="border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <nav className="-mb-px flex space-x-4 min-w-max" aria-label="Tabs">
           <button onClick={() => setActiveTab('all')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'all' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>{t('staffUsers.tabs.all')}</button>
           <button onClick={() => setActiveTab('users')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'users' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>{t('staffUsers.tabs.users')}</button>
           <button onClick={() => setActiveTab('owners')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'owners' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>{t('staffUsers.tabs.owners')}</button>
@@ -454,8 +323,87 @@ export default function UserManagementPage() {
             </table>
           </div>
         ) : (
-          <div className="p-8 text-center text-gray-600 dark:text-gray-400">
-            Please select "Owner Requests" tab to view owner registration requests
+          <div className="overflow-x-auto">
+            <table className="w-full table-fixed min-w-[900px]">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-[15%]">{t('staffUsers.table.fullName') || 'Full Name'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-[20%]">{t('staffUsers.table.email') || 'Email'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-[12%]">{t('staffUsers.table.phone') || 'Phone'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-[10%]">{t('staffUsers.table.role') || 'Role'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-[10%]">{t('staffUsers.table.status') || 'Status'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-[12%]">{t('staffUsers.table.createdAt') || 'Created At'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-[21%]">{t('staffUsers.table.actions') || 'Actions'}</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                      {t('staffUsers.emptyState.noUsers') || 'No users found'}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map(user => (
+                    <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white truncate">{user.fullName}</td>
+                      <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400 truncate">{user.email}</td>
+                      <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">{user.phone || 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                          user.roleId === 2 
+                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' 
+                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                        }`}>
+                          {user.roleId === 2 ? (t('staffUsers.roles.owner') || 'Owner') : (t('staffUsers.roles.user') || 'User')}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-sm">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                          user.isActive 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                        }`}>
+                          {user.isActive ? (t('staffUsers.status.active') || 'Active') : (t('staffUsers.status.inactive') || 'Inactive')}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">
+                        {formatDate(user.createdAt)}
+                      </td>
+                      <td className="px-4 py-4 text-sm font-medium">
+                        <div className="flex flex-wrap gap-1">
+                          <button
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowViewModal(true);
+                            }}
+                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700"
+                          >
+                            {t('staffUsers.actions.view') || 'View'}
+                          </button>
+                          <button
+                            onClick={() => handleEditAccount(user)}
+                            className="px-2 py-1 bg-yellow-500 text-white text-xs rounded-md hover:bg-yellow-600"
+                          >
+                            {t('staffUsers.actions.edit') || 'Edit'}
+                          </button>
+                          <button
+                            onClick={() => handleStatusToggle(user.id, user.isActive)}
+                            className={`px-2 py-1 rounded-md text-white text-xs whitespace-nowrap ${
+                              user.isActive 
+                                ? 'bg-red-600 hover:bg-red-700' 
+                                : 'bg-green-600 hover:bg-green-700'
+                            }`}
+                          >
+                            {user.isActive ? (t('staffUsers.actions.deactivate') || 'Deactivate') : (t('staffUsers.actions.activate') || 'Activate')}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -525,15 +473,24 @@ export default function UserManagementPage() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Password *
                   </label>
-                  <input
-                    type="password"
-                    required
-                    value={newAccount.password}
-                    onChange={(e) => setNewAccount({ ...newAccount, password: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Minimum 6 characters"
-                    minLength={6}
-                  />
+                  <div className="relative">
+                    <input
+                      type={showCreatePassword ? "text" : "password"}
+                      required
+                      value={newAccount.password}
+                      onChange={(e) => setNewAccount({ ...newAccount, password: e.target.value })}
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="Minimum 6 characters"
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCreatePassword(!showCreatePassword)}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      {showCreatePassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="flex gap-2 pt-4">
                   <button
@@ -620,13 +577,22 @@ export default function UserManagementPage() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     New Password
                   </label>
-                  <input
-                    type="password"
-                    value={editAccount.password}
-                    onChange={(e) => setEditAccount({ ...editAccount, password: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Leave empty to keep current password"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showEditPassword ? "text" : "password"}
+                      value={editAccount.password}
+                      onChange={(e) => setEditAccount({ ...editAccount, password: e.target.value })}
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="Leave empty to keep current password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditPassword(!showEditPassword)}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      {showEditPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Leave empty to keep current password
                   </p>

@@ -21,6 +21,7 @@ import {
   Maximize2
 } from 'lucide-react';
 import Image from 'next/image';
+import { toast } from 'react-toastify';
 
 export default function PostsReviewPage() {
   const { t } = useTranslation();
@@ -28,10 +29,11 @@ export default function PostsReviewPage() {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('pending');
   const [posts, setPosts] = useState([]);
   const [processingId, setProcessingId] = useState(null);
   const [selectedPost, setSelectedPost] = useState(null);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Load pending posts from API
   const loadPendingPosts = useCallback(async () => {
@@ -70,6 +72,9 @@ export default function PostsReviewPage() {
   });
 
   const handleApprove = async (postId) => {
+    if (!confirm('Are you sure you want to approve this post? It will be visible to all users.')) {
+      return;
+    }
     try {
       setProcessingId(postId);
       await rentalPostService.approvePost(postId);
@@ -98,6 +103,11 @@ export default function PostsReviewPage() {
     } finally {
       setProcessingId(null);
     }
+  };
+
+  const handleViewDetail = (post) => {
+    setSelectedPost(post);
+    setShowDetailModal(true);
   };
 
   const formatDate = (dateString) => {
@@ -235,7 +245,7 @@ export default function PostsReviewPage() {
       </div>
 
       {/* Posts List */}
-      {filteredPosts.length > 0 ? (
+      {posts.length > 0 ? (
         <div className="space-y-4">
           {filteredPosts.map((post) => {
             const status = getStatusBadge(post);
@@ -426,6 +436,145 @@ export default function PostsReviewPage() {
                 : (t('staffPosts.emptyRejected') || 'Không có bài đăng nào bị từ chối.')
             }
           </p>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {showDetailModal && selectedPost && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  {t('staffPosts.modal.title') || 'Post Details'}
+                </h2>
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Images Gallery */}
+              {selectedPost.imageUrls && selectedPost.imageUrls.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                    {t('staffPosts.modal.images') || 'Images'} ({selectedPost.imageUrls.length})
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {selectedPost.imageUrls.map((url, index) => (
+                      <img
+                        key={index}
+                        src={url}
+                        alt={`${selectedPost.title} - Image ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Post Info */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {t('staffPosts.modal.postTitle') || 'Title'}
+                  </h3>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {selectedPost.title || 'Untitled'}
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {t('staffPosts.modal.description') || 'Description'}
+                  </h3>
+                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    {selectedPost.content || selectedPost.description || 'No description'}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {t('staffPosts.modal.house') || 'Boarding House'}
+                    </h3>
+                    <p className="text-gray-900 dark:text-white">{selectedPost.houseName || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {t('staffPosts.modal.room') || 'Room'}
+                    </h3>
+                    <p className="text-gray-900 dark:text-white">{selectedPost.roomName || 'All rooms'}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {t('staffPosts.modal.author') || 'Author'}
+                    </h3>
+                    <p className="text-gray-900 dark:text-white">{selectedPost.authorName || selectedPost.authorId || 'Unknown'}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {t('staffPosts.modal.contact') || 'Contact'}
+                    </h3>
+                    <p className="text-gray-900 dark:text-white">{selectedPost.contactPhone || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {t('staffPosts.modal.createdAt') || 'Created At'}
+                    </h3>
+                    <p className="text-gray-900 dark:text-white">{formatDate(selectedPost.createdAt)}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {t('staffPosts.modal.postId') || 'Post ID'}
+                    </h3>
+                    <p className="text-gray-900 dark:text-white text-xs font-mono">{selectedPost.id}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => {
+                    handleApprove(selectedPost.id);
+                    setShowDetailModal(false);
+                  }}
+                  className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {t('staffPosts.actions.approve') || 'Approve Post'}
+                </button>
+
+                <button
+                  onClick={() => {
+                    handleReject(selectedPost.id);
+                    setShowDetailModal(false);
+                  }}
+                  className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  {t('staffPosts.actions.reject') || 'Reject Post'}
+                </button>
+
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors"
+                >
+                  {t('staffPosts.actions.close') || 'Close'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

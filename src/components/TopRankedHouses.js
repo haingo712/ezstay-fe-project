@@ -8,19 +8,34 @@ import { FaStar, FaSmile, FaMeh, FaFrown, FaMapMarkerAlt, FaTrophy } from "react
 
 export default function TopRankedHouses() {
   const router = useRouter();
-  const { isGuest } = useGuestRedirect();
+  const { isGuest, isAuthenticated, loading: authLoading } = useGuestRedirect();
   const [rankedHouses, setRankedHouses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rankType, setRankType] = useState("Rating"); // "Rating" or "Sentiment"
 
   useEffect(() => {
-    fetchRankedHouses();
-  }, [rankType]);
+    // Wait for auth to finish loading before fetching
+    if (!authLoading) {
+      fetchRankedHouses();
+    }
+  }, [rankType, authLoading, isAuthenticated]); // Re-fetch when auth state or rank type changes
 
   const fetchRankedHouses = async () => {
     try {
       setLoading(true);
-      const data = await boardingHouseService.getRankedHouses(rankType, "desc", 6);
+      
+      let data = [];
+      
+      // If authenticated, use the authenticated API (with token)
+      // If guest, try public API first
+      if (isAuthenticated) {
+        console.log('🔐 User authenticated, using getRankedHouses()');
+        data = await boardingHouseService.getRankedHouses(rankType, "desc", 6);
+      } else {
+        console.log('👤 Guest user, trying getRankedHousesPublic()');
+        data = await boardingHouseService.getRankedHousesPublic(rankType, "desc", 6);
+      }
+      
       setRankedHouses(data || []);
     } catch (error) {
       console.error("Error fetching ranked houses:", error);
@@ -32,19 +47,13 @@ export default function TopRankedHouses() {
 
   const handleViewDetails = (houseId) => {
     const targetUrl = `/rental-posts?boardingHouseId=${houseId}`;
-    if (isGuest) {
-      router.push(`/login?returnUrl=${encodeURIComponent(targetUrl)}`);
-    } else {
-      router.push(targetUrl);
-    }
+    // Guest can view rental posts - no redirect needed
+    router.push(targetUrl);
   };
 
   const handleViewAll = () => {
-    if (isGuest) {
-      router.push(`/login?returnUrl=${encodeURIComponent('/rental-posts')}`);
-    } else {
-      router.push('/rental-posts');
-    }
+    // Guest can view rental posts - no redirect needed
+    router.push('/rental-posts');
   };
 
   const getRankIcon = (index) => {

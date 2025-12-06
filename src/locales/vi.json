@@ -589,6 +589,7 @@
         "sendRequest": "Gửi yêu cầu hỗ trợ",
         "fullName": "Họ và tên",
         "email": "Email",
+        "emailPlaceholder": "Nhập địa chỉ email của bạn",
         "phone": "Số điện thoại",
         "category": "Danh mục",
         "categoryGeneral": "Câu hỏi chung",
@@ -599,10 +600,14 @@
         "categoryOther": "Khác",
         "subject": "Tiêu đề",
         "subjectPlaceholder": "Mô tả ngắn gọn vấn đề của bạn",
+        "description": "Mô tả chi tiết",
+        "descriptionPlaceholder": "Mô tả chi tiết vấn đề của bạn...",
         "message": "Nội dung",
         "messagePlaceholder": "Mô tả chi tiết vấn đề của bạn...",
         "submit": "Gửi yêu cầu hỗ trợ",
+        "submitting": "Đang gửi...",
         "submitSuccess": "Yêu cầu hỗ trợ đã được gửi! Chúng tôi sẽ phản hồi trong vòng 24 giờ.",
+        "submitError": "Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại.",
         "virtualAssistant": "Trợ lý ảo EZStay",
         "askAnything": "Hỏi tôi bất cứ điều gì về dịch vụ của chúng tôi!",
         "quickQuestions": "Câu hỏi nhanh",
@@ -639,47 +644,28 @@
         "hotlineLabel": "Đường dây nóng",
         "addressLabel": "Địa chỉ"
     },
-    "searchRooms": {
-        "loading": "Đang tải...",
-        "searchPlaceholder": "Tìm theo tên, địa chỉ, mô tả...",
-        "filters": "Bộ lọc",
-        "clearAll": "Xóa tất cả",
-        "location": "Vị trí",
-        "allAreas": "Tất cả khu vực",
-        "rentPrice": "Giá thuê (VND/tháng)",
-        "from": "Từ",
-        "to": "Đến",
-        "area": "Diện tích (m²)",
-        "maxOccupancy": "Số người tối đa",
-        "noRequirement": "Không yêu cầu",
-        "onePerson": "1 người",
-        "twoPeople": "2 người",
-        "threePeople": "3 người",
-        "fourPlusPeople": "4+ người",
+    "staffSupport": {
+        "title": "Quản lý yêu cầu hỗ trợ",
+        "subtitle": "Xem và xử lý các yêu cầu hỗ trợ từ người dùng",
+        "total": "Tổng cộng",
+        "statusPending": "Chờ xử lý",
+        "statusAccept": "Chấp nhận",
+        "statusReject": "Từ chối",
+        "searchPlaceholder": "Tìm kiếm theo tiêu đề, email, nội dung...",
+        "allStatus": "Tất cả trạng thái",
+        "requestList": "Danh sách yêu cầu",
+        "requestDetail": "Chi tiết yêu cầu",
+        "subject": "Tiêu đề",
+        "email": "Email",
+        "createdAt": "Ngày gửi",
         "status": "Trạng thái",
-        "all": "Tất cả",
-        "available": "Còn trống",
-        "rented": "Đã cho thuê",
-        "minRating": "Đánh giá tối thiểu",
-        "starUp": "sao trở lên",
-        "starsUp": "sao trở lên",
-        "fiveStars": "5 sao",
-        "amenities": "Tiện ích",
-        "searchResults": "Kết quả tìm kiếm",
-        "foundRooms": "Tìm thấy {count} phòng",
-        "newest": "Mới nhất",
-        "priceLowHigh": "Giá: Thấp đến Cao",
-        "priceHighLow": "Giá: Cao đến Thấp",
-        "areaLargeSmall": "Diện tích: Lớn đến Nhỏ",
-        "areaSmallLarge": "Diện tích: Nhỏ đến Lớn",
-        "highestRated": "Đánh giá cao nhất",
-        "perMonth": "/tháng",
-        "sqm": "m²",
-        "people": "người",
-        "viewDetails": "Xem chi tiết",
-        "noResults": "Không tìm thấy kết quả",
-        "noRoomsMatch": "Không có phòng nào phù hợp với tiêu chí tìm kiếm của bạn",
-        "clearFilters": "Xóa bộ lọc"
+        "description": "Nội dung",
+        "updateStatus": "Cập nhật trạng thái",
+        "selectRequest": "Chọn một yêu cầu để xem chi tiết",
+        "noRequests": "Không có yêu cầu hỗ trợ nào",
+        "errorLoading": "Không thể tải danh sách yêu cầu hỗ trợ",
+        "updateSuccess": "Cập nhật trạng thái thành công!",
+        "updateError": "Không thể cập nhật trạng thái"
     },
     "reviewDetail": {
         "serverError": "Lỗi máy chủ",
@@ -1291,7 +1277,9 @@
             "contractSigned": "Ký hợp đồng thành công!",
             "confirmSignatureError": "Lỗi xác nhận chữ ký. Vui lòng thử lại.",
             "uploadImageFile": "Vui lòng tải lên file ảnh",
-            "rentalRequestLoaded": "Đã tải thông tin yêu cầu thuê. Vui lòng kiểm tra và hoàn tất hợp đồng."
+            "rentalRequestLoaded": "Đã tải thông tin yêu cầu thuê. Vui lòng kiểm tra và hoàn tất hợp đồng.",
+            "tenantNotSigned": "Người thuê chưa ký hợp đồng. Vui lòng đợi người thuê ký trước.",
+            "alreadySigned": "Bạn đã ký hợp đồng này rồi"
         }
     },
     "contractDetail": {
@@ -1506,40 +1494,57 @@
         }
     },
     "staffUsers": {
-        "title": "Quản Lý Người Dùng",
+        "title": "Quản lý Người dùng & Chủ trọ",
+        "subtitle": "Quản lý tài khoản người dùng và chủ nhà",
         "tabs": {
             "all": "Tất Cả",
             "users": "Người Dùng",
-            "owners": "Chủ Trọ",
+            "owners": "Chủ Nhà",
             "active": "Hoạt Động",
             "inactive": "Không Hoạt Động",
-            "ownerRequests": "Yêu Cầu Làm Chủ Trọ"
+            "ownerRequests": "Yêu Cầu Chủ Nhà"
         },
         "createAccount": "Tạo Tài Khoản",
+        "stats": {
+            "totalUsers": "Tổng Người Dùng",
+            "totalOwners": "Tổng Chủ Nhà",
+            "active": "Hoạt Động",
+            "inactive": "Không Hoạt Động"
+        },
         "table": {
             "name": "Tên",
+            "fullName": "Họ Tên",
             "email": "Email",
             "phone": "Số Điện Thoại",
             "role": "Vai Trò",
             "status": "Trạng Thái",
-            "actions": "Thao Tác"
+            "actions": "Thao Tác",
+            "createdAt": "Ngày Tạo",
+            "accountId": "Mã Tài Khoản",
+            "reason": "Lý Do"
         },
         "roles": {
             "user": "Người dùng",
-            "owner": "Chủ trọ",
+            "owner": "Chủ Nhà",
             "staff": "Nhân viên",
             "admin": "Quản trị viên"
         },
         "status": {
-            "active": "Hoạt động",
-            "inactive": "Không hoạt động"
+            "active": "Hoạt Động",
+            "inactive": "Khóa"
         },
         "actions": {
             "view": "Xem",
             "edit": "Sửa",
-            "toggleStatus": "Thay Đổi Trạng Thái",
-            "approve": "Phê Duyệt",
-            "reject": "Từ Chối"
+            "toggleStatus": "Đổi Trạng Thái",
+            "approve": "Duyệt",
+            "reject": "Từ Chối",
+            "activate": "Kích Hoạt",
+            "deactivate": "Vô Hiệu Hóa"
+        },
+        "emptyState": {
+            "noUsers": "Không tìm thấy người dùng",
+            "noRequests": "Không có yêu cầu nào"
         },
         "modal": {
             "createTitle": "Tạo Tài Khoản Mới",
@@ -1610,6 +1615,9 @@
     },
     "staffPosts": {
         "title": "Duyệt Bài Đăng",
+        "subtitle": "Kiểm duyệt bài đăng cho thuê từ chủ trọ",
+        "refresh": "Làm mới",
+        "pendingReviews": "bài chờ duyệt",
         "tabs": {
             "pending": "Chờ Duyệt",
             "approved": "Đã Duyệt",
@@ -1627,7 +1635,21 @@
         "actions": {
             "approve": "Phê Duyệt",
             "reject": "Từ Chối",
-            "view": "Xem Chi Tiết"
+            "view": "Xem Chi Tiết",
+            "viewDetail": "Xem Chi Tiết",
+            "close": "Đóng"
+        },
+        "modal": {
+            "title": "Chi Tiết Bài Đăng",
+            "images": "Hình Ảnh",
+            "postTitle": "Tiêu Đề",
+            "description": "Mô Tả",
+            "house": "Nhà Trọ",
+            "room": "Phòng",
+            "author": "Tác Giả",
+            "contact": "Liên Hệ",
+            "createdAt": "Ngày Tạo",
+            "postId": "Mã Bài Đăng"
         },
         "toast": {
             "approveSuccess": "Phê duyệt bài đăng thành công!",
@@ -1636,7 +1658,8 @@
             "rejectFailed": "Không thể từ chối bài đăng. Vui lòng thử lại."
         },
         "loading": "Đang tải bài đăng...",
-        "empty": "Không có bài đăng cần duyệt",
+        "empty": "Đã Hoàn Thành!",
+        "emptyDescription": "Không có bài đăng nào đang chờ duyệt. Quay lại sau nhé.",
         "error": "Lỗi Tải Bài Đăng",
         "retry": "Thử Lại"
     },
@@ -1846,52 +1869,6 @@
             "staff": "Chỉ Nhân Viên"
         }
     },
-    "staffPosts": {
-        "title": "Duyệt Bài Đăng",
-        "subtitle": "Kiểm duyệt bài đăng cho thuê",
-        "error": "Lỗi Tải Bài Đăng",
-        "retry": "Thử Lại",
-        "empty": "Không tìm thấy bài đăng",
-        "loading": "Đang tải bài đăng...",
-        "tabs": {
-            "pending": "Chờ Duyệt",
-            "approved": "Đã Duyệt",
-            "rejected": "Đã Từ Chối"
-        },
-        "actions": {
-            "approve": "Duyệt",
-            "reject": "Từ Chối",
-            "viewDetails": "Xem Chi Tiết"
-        },
-        "modal": {
-            "rejectTitle": "Từ Chối Bài Đăng",
-            "rejectMessage": "Vui lòng nhập lý do từ chối:",
-            "confirmReject": "Xác Nhận Từ Chối"
-        }
-    },
-    "staffReports": {
-        "title": "Báo Cáo Đánh Giá",
-        "subtitle": "Quản lý các báo cáo đánh giá từ chủ nhà",
-        "searchPlaceholder": "Tìm kiếm reviewId hoặc lý do...",
-        "empty": "Không tìm thấy báo cáo",
-        "loading": "Đang tải báo cáo...",
-        "error": "Lỗi tải báo cáo",
-        "filters": {
-            "all": "Tất Cả",
-            "pending": "Chờ Xử Lý",
-            "approved": "Đã Duyệt",
-            "rejected": "Đã Từ Chối"
-        },
-        "actions": {
-            "approve": "Duyệt",
-            "reject": "Từ Chối"
-        },
-        "modal": {
-            "rejectTitle": "Từ Chối Báo Cáo",
-            "rejectMessage": "Bạn đang từ chối báo cáo này. Vui lòng nhập lý do:",
-            "confirmReject": "Xác Nhận Từ Chối"
-        }
-    },
     "staffManagement": {
         "title": "Quản Lý Nhân Viên",
         "subtitle": "Quản lý tài khoản nhân viên (Chỉ Admin)",
@@ -1938,6 +1915,14 @@
             "passwordHint": "Để trống nếu giữ nguyên mật khẩu hiện tại",
             "accountId": "ID Tài Khoản"
         },
+        "validation": {
+            "fullNameMin": "Họ tên phải có ít nhất 2 ký tự",
+            "invalidEmail": "Vui lòng nhập địa chỉ email hợp lệ",
+            "phoneMin": "Số điện thoại phải có ít nhất 10 chữ số",
+            "passwordMin": "Mật khẩu phải có ít nhất 6 ký tự",
+            "passwordRequired": "Mật khẩu là bắt buộc cho tài khoản mới",
+            "fillAllFields": "Vui lòng điền đầy đủ thông tin bắt buộc"
+        },
         "modal": {
             "createTitle": "Tạo Tài Khoản Nhân Viên",
             "editTitle": "Sửa Tài Khoản Nhân Viên",
@@ -1945,6 +1930,22 @@
             "deleteTitle": "Xóa Tài Khoản Nhân Viên",
             "deleteMessage": "Bạn có chắc muốn xóa vĩnh viễn",
             "deleteWarning": "Hành động này không thể hoàn tác!"
+        },
+        "toast": {
+            "statusSuccess": "Cập nhật trạng thái tài khoản thành công!",
+            "statusFailed": "Cập nhật trạng thái thất bại",
+            "createSuccess": "Tạo tài khoản nhân viên thành công!",
+            "createFailed": "Tạo tài khoản nhân viên thất bại",
+            "updateSuccess": "Cập nhật tài khoản nhân viên thành công!",
+            "updateFailed": "Cập nhật tài khoản nhân viên thất bại",
+            "deleteSuccess": "Xóa tài khoản nhân viên thành công!",
+            "deleteFailed": "Xóa tài khoản nhân viên thất bại",
+            "banSuccess": "Khóa tài khoản thành công!",
+            "banFailed": "Khóa tài khoản thất bại",
+            "unbanSuccess": "Mở khóa tài khoản thành công!",
+            "unbanFailed": "Mở khóa tài khoản thất bại",
+            "passwordRequired": "Mật khẩu là bắt buộc cho tài khoản mới",
+            "fillAllFields": "Vui lòng điền đầy đủ thông tin bắt buộc"
         }
     },
     "adminOverview": {
