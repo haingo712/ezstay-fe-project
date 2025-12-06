@@ -24,9 +24,7 @@ export default function AdminLayout({ children }) {
   }, []);
 
   const handleLogout = () => {
-    if (confirm(t('common.logoutConfirm') || 'Are you sure you want to logout?')) {
-      logout();
-    }
+    logout();
   };
 
   const navigation = [
