@@ -23,12 +23,12 @@ class ProfileService {
   async createProfile(profileData) {
     try {
       console.log("👤 Creating new profile...", profileData);
-      
+
       // Create FormData for [FromForm] UserDTO with IFormFile Avatar
       const formData = new FormData();
-      
+
       formData.append('Gender', this.getGenderEnum(profileData.gender || "Male"));
-      
+
       // Avatar: IFormFile (required in backend)
       if (profileData.avatar instanceof File) {
         formData.append('Avatar', profileData.avatar);
@@ -36,26 +36,26 @@ class ProfileService {
       } else {
         console.warn("⚠️ No avatar file provided for create");
       }
-      
+
       formData.append('Bio', profileData.bio || "");
-      
+
       if (profileData.dateOfBirth) {
         const date = new Date(profileData.dateOfBirth);
         formData.append('DateOfBirth', date.toISOString());
       }
-      
+
       if (profileData.detailAddress) {
         formData.append('DetailAddress', profileData.detailAddress);
       }
-      
+
       if (profileData.provinceId) {
         formData.append('ProvinceId', profileData.provinceId);
       }
-      
+
       if (profileData.wardId) {
         formData.append('WardId', profileData.wardId);
       }
-      
+
       // CCCD fields (optional)
       // ONLY send File objects, NOT string URLs
       if (profileData.frontImageUrl) {
@@ -87,12 +87,12 @@ class ProfileService {
       if (profileData.citizenIdIssuedPlace) {
         formData.append('CitizenIdIssuedPlace', profileData.citizenIdIssuedPlace);
       }
-      
+
       console.log("📤 FormData being sent to backend (create-profile):");
       for (let [key, value] of formData.entries()) {
         console.log(`  ${key}: ${value instanceof File ? value.name : value}`);
       }
-      
+
       // Use postFormData for FormData, not post (which would stringify it)
       const response = await api.postFormData(`${this.baseUrl}/create-profile`, formData);
       console.log("✅ Profile created successfully:", response);
@@ -102,13 +102,13 @@ class ProfileService {
       console.error("❌ Error response:", error.response?.data);
       console.error("❌ Error status:", error.response?.status);
       console.error("❌ Error message:", error.response?.data?.message || error.message);
-      
+
       // Throw detailed error for UI display
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.title ||
-                          error.response?.data ||
-                          error.message ||
-                          "Failed to create profile";
+      const errorMessage = error.response?.data?.message ||
+        error.response?.data?.title ||
+        error.response?.data ||
+        error.message ||
+        "Failed to create profile";
       throw new Error(errorMessage);
     }
   }
@@ -137,7 +137,7 @@ class ProfileService {
         url: error.config?.url,
         method: error.config?.method
       });
-      
+
       // Don't throw error - let frontend handle gracefully
       return null;
     }
@@ -149,59 +149,66 @@ class ProfileService {
   async updateProfile(profileData) {
     try {
       console.log("👤 Updating profile...", profileData);
-      
+
       // Create FormData for [FromForm] UpdateUserDTO
+      // ALL fields are now REQUIRED by backend
       const formData = new FormData();
-      
-      // Add fields that have actual values (not empty strings)
-      if (profileData.gender !== undefined) {
-        const genderEnum = this.getGenderEnum(profileData.gender);
-        formData.append('Gender', genderEnum);
-      }
-      if (profileData.bio !== undefined && profileData.bio !== null) {
-        formData.append('Bio', profileData.bio);
-      }
+
+      // Required: Gender
+      const genderEnum = this.getGenderEnum(profileData.gender || 'Male');
+      formData.append('Gender', genderEnum);
+
+      // Required: Bio
+      formData.append('Bio', profileData.bio || '');
+
+      // Required: DateOfBirth
       if (profileData.dateOfBirth) {
-        // Backend expects DateTime format, ensure proper format
         const date = new Date(profileData.dateOfBirth);
         console.log("📅 Date conversion:", profileData.dateOfBirth, "→", date.toISOString());
         formData.append('DateOfBirth', date.toISOString());
+      } else {
+        throw new Error('DateOfBirth is required');
       }
+
+      // Required: FullName
       if (profileData.fullName) {
         formData.append('FullName', profileData.fullName);
+      } else {
+        throw new Error('FullName is required');
       }
-      
-      // Avatar field - Backend expects string? (URL), not IFormFile
-      // If File object -> upload first via ImageService, then send URL
-      // If string URL -> send directly
+
+      // Required: DetailAddress
+      formData.append('DetailAddress', profileData.detailAddress || '');
+
+      // Required: ProvinceId
+      if (profileData.provinceId) {
+        formData.append('ProvinceId', profileData.provinceId);
+      } else {
+        throw new Error('ProvinceId is required');
+      }
+
+      // Required: WardId
+      if (profileData.wardId) {
+        formData.append('WardId', profileData.wardId);
+      } else {
+        throw new Error('WardId is required');
+      }
+
+      // Avatar field - upload if File, send URL if string
       if (profileData.avatar !== undefined && profileData.avatar !== null) {
         if (profileData.avatar instanceof File) {
-          // New file upload - upload first, then send URL
           console.log('📤 Uploading new avatar file:', profileData.avatar.name);
           const avatarUrl = await this.uploadAvatar(profileData.avatar);
           formData.append('Avatar', avatarUrl);
           console.log('✅ Avatar uploaded, URL:', avatarUrl);
         } else if (typeof profileData.avatar === 'string' && profileData.avatar.length > 0) {
-          // Existing URL string - send directly
           formData.append('Avatar', profileData.avatar);
           console.log('ℹ️ Sending existing avatar URL:', profileData.avatar);
         }
       }
-      
-      if (profileData.detailAddress !== undefined && profileData.detailAddress !== null) {
-        formData.append('DetailAddress', profileData.detailAddress);
-      }
-      // Backend UpdateUserDTO uses ProvinceId/WardId
-      if (profileData.provinceId) {
-        formData.append('ProvinceId', profileData.provinceId);
-      }
-      if (profileData.wardId) {
-        formData.append('WardId', profileData.wardId); // Backend uses WardId
-      }
-      
-      // CCCD fields - Backend expects string? (URL), not IFormFile
-      // If File object -> upload first via ImageService, then send URL
-      // If string URL -> send directly
+
+      // Required: CCCD fields
+      // FrontImageUrl - upload if File, send URL if string
       if (profileData.frontImageUrl !== undefined && profileData.frontImageUrl !== null) {
         if (profileData.frontImageUrl instanceof File) {
           console.log('📤 Uploading new front CCCD image file:', profileData.frontImageUrl.name);
@@ -211,8 +218,14 @@ class ProfileService {
         } else if (typeof profileData.frontImageUrl === 'string' && profileData.frontImageUrl.length > 0) {
           formData.append('FrontImageUrl', profileData.frontImageUrl);
           console.log('ℹ️ Sending existing front CCCD URL:', profileData.frontImageUrl);
+        } else {
+          throw new Error('FrontImageUrl is required');
         }
+      } else {
+        throw new Error('FrontImageUrl is required');
       }
+
+      // BackImageUrl - upload if File, send URL if string
       if (profileData.backImageUrl !== undefined && profileData.backImageUrl !== null) {
         if (profileData.backImageUrl instanceof File) {
           console.log('📤 Uploading new back CCCD image file:', profileData.backImageUrl.name);
@@ -222,28 +235,43 @@ class ProfileService {
         } else if (typeof profileData.backImageUrl === 'string' && profileData.backImageUrl.length > 0) {
           formData.append('BackImageUrl', profileData.backImageUrl);
           console.log('ℹ️ Sending existing back CCCD URL:', profileData.backImageUrl);
+        } else {
+          throw new Error('BackImageUrl is required');
         }
+      } else {
+        throw new Error('BackImageUrl is required');
       }
-      
-      if (profileData.temporaryResidence !== undefined && profileData.temporaryResidence !== null) {
-        formData.append('TemporaryResidence', profileData.temporaryResidence);
-      }
-      if (profileData.citizenIdNumber !== undefined && profileData.citizenIdNumber !== null) {
+
+      // Required: TemporaryResidence
+      formData.append('TemporaryResidence', profileData.temporaryResidence || '');
+
+      // Required: CitizenIdNumber
+      if (profileData.citizenIdNumber) {
         formData.append('CitizenIdNumber', profileData.citizenIdNumber);
+      } else {
+        throw new Error('CitizenIdNumber is required');
       }
+
+      // Required: CitizenIdIssuedDate
       if (profileData.citizenIdIssuedDate) {
         const date = new Date(profileData.citizenIdIssuedDate);
         formData.append('CitizenIdIssuedDate', date.toISOString());
+      } else {
+        throw new Error('CitizenIdIssuedDate is required');
       }
-      if (profileData.citizenIdIssuedPlace !== undefined && profileData.citizenIdIssuedPlace !== null) {
+
+      // Required: CitizenIdIssuedPlace
+      if (profileData.citizenIdIssuedPlace) {
         formData.append('CitizenIdIssuedPlace', profileData.citizenIdIssuedPlace);
+      } else {
+        throw new Error('CitizenIdIssuedPlace is required');
       }
-      
+
       console.log("📤 FormData being sent to backend:");
       for (let [key, value] of formData.entries()) {
         console.log(`  ${key}: ${value}`);
       }
-      
+
       // Use putFormData for FormData, not put (which would stringify it)
       const response = await api.putFormData(`${this.baseUrl}/update-profile`, formData);
       console.log("✅ Profile updated successfully:", response);
@@ -303,13 +331,13 @@ class ProfileService {
   // Helper: Map gender text to enum
   getGenderEnum(genderText) {
     console.log("🔄 Converting gender text to enum:", genderText, typeof genderText);
-    
+
     // Ensure genderText is a string and handle null/undefined
     if (!genderText || typeof genderText !== 'string') {
       console.log("⚠️ Invalid gender text, defaulting to Male (1)");
       return 1; // default to male
     }
-    
+
     const result = (() => {
       switch (genderText.toLowerCase()) {
         case "male":
@@ -322,7 +350,7 @@ class ProfileService {
           return 1; // default to male
       }
     })();
-    
+
     console.log("✅ Gender conversion result:", genderText, "→", result);
     return result;
   }

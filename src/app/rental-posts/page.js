@@ -6,7 +6,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
-import RoleBasedRedirect from '../../components/RoleBasedRedirect';
 import { rentalPostService } from '@/services/rentalPostService';
 import favoritePostService from '@/services/favoritePostService';
 import { Building, Home, Calendar, Search, Filter, Heart, MapPin, Maximize2, DollarSign, User, Phone } from 'lucide-react';
@@ -52,7 +51,16 @@ export default function RentalPostsPage() {
   const loadPosts = async () => {
     try {
       setLoading(true);
-      const allPosts = await rentalPostService.getAllForUser();
+
+      // Use public API for guests, authenticated API for logged-in users
+      let allPosts;
+      if (isAuthenticated) {
+        console.log('🔐 Loading posts with auth');
+        allPosts = await rentalPostService.getAllForUser();
+      } else {
+        console.log('👤 Loading posts without auth (public)');
+        allPosts = await rentalPostService.getAllPublic();
+      }
 
       // Debug: Log để kiểm tra authorName
       console.log('📋 Posts loaded:', allPosts?.length || 0);
@@ -178,182 +186,180 @@ export default function RentalPostsPage() {
   }
 
   return (
-    <RoleBasedRedirect>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Navbar />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Navbar />
 
-        <div className="py-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-                {t('rentalPosts.title')}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 text-lg">
-                {t('rentalPosts.subtitle')}
+      <div className="py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              {t('rentalPosts.title')}
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">
+              {t('rentalPosts.subtitle')}
+            </p>
+          </div>
+
+          {/* Search & Filter Bar */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8 border border-gray-200 dark:border-gray-700">
+            <div className="w-full">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder={t('rentalPosts.searchPlaceholder')}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Results count */}
+            <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+              {t('rentalPosts.showing')} {filteredPosts.length} {t('rentalPosts.of')} {posts.length} {t('rentalPosts.posts')}
+            </div>
+          </div>
+
+          {/* Posts Grid */}
+          {filteredPosts.length === 0 ? (
+            <div className="text-center py-20">
+              <Building className="w-20 h-20 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                {t('rentalPosts.noPosts')}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                {searchTerm || statusFilter !== 'all'
+                  ? t('rentalPosts.adjustSearch')
+                  : t('rentalPosts.noPostsDesc')}
               </p>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredPosts.map((post) => {
+                const status = getStatusBadge(post);
+                const price = post.price || post.room?.price;
+                const area = post.area || post.room?.area;
 
-            {/* Search & Filter Bar */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8 border border-gray-200 dark:border-gray-700">
-              <div className="w-full">
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder={t('rentalPosts.searchPlaceholder')}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
+                return (
+                  <div
+                    key={post.id}
+                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
+                    onClick={() => handleViewDetails(post.id)}
+                  >
+                    {/* Image */}
+                    <div className="relative h-52 overflow-hidden">
+                      <img
+                        src={post.imageUrls?.[0] || "/image.png"}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
 
-              {/* Results count */}
-              <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                {t('rentalPosts.showing')} {filteredPosts.length} {t('rentalPosts.of')} {posts.length} {t('rentalPosts.posts')}
-              </div>
-            </div>
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-            {/* Posts Grid */}
-            {filteredPosts.length === 0 ? (
-              <div className="text-center py-20">
-                <Building className="w-20 h-20 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  {t('rentalPosts.noPosts')}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {searchTerm || statusFilter !== 'all'
-                    ? t('rentalPosts.adjustSearch')
-                    : t('rentalPosts.noPostsDesc')}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredPosts.map((post) => {
-                  const status = getStatusBadge(post);
-                  const price = post.price || post.room?.price;
-                  const area = post.area || post.room?.area;
-
-                  return (
-                    <div
-                      key={post.id}
-                      className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
-                      onClick={() => handleViewDetails(post.id)}
-                    >
-                      {/* Image */}
-                      <div className="relative h-52 overflow-hidden">
-                        <img
-                          src={post.imageUrls?.[0] || "/image.png"}
-                          alt={post.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      {/* Favorite button */}
+                      <button
+                        onClick={(event) => handleToggleFavorite(post.id, event)}
+                        disabled={favoriteLoading[post.id]}
+                        className="absolute top-3 left-3 p-2.5 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-full shadow-lg transition-all hover:scale-110 hover:bg-white disabled:opacity-60"
+                        title={isFavorited(post.id) ? t('rentalPosts.removeFromFavorites') : t('rentalPosts.addToFavorites')}
+                      >
+                        <Heart
+                          className={`w-5 h-5 transition-colors ${isFavorited(post.id)
+                            ? 'fill-red-500 text-red-500'
+                            : 'text-gray-500 hover:text-red-400'
+                            }`}
                         />
+                      </button>
 
-                        {/* Gradient overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-
-                        {/* Favorite button */}
-                        <button
-                          onClick={(event) => handleToggleFavorite(post.id, event)}
-                          disabled={favoriteLoading[post.id]}
-                          className="absolute top-3 left-3 p-2.5 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-full shadow-lg transition-all hover:scale-110 hover:bg-white disabled:opacity-60"
-                          title={isFavorited(post.id) ? t('rentalPosts.removeFromFavorites') : t('rentalPosts.addToFavorites')}
-                        >
-                          <Heart
-                            className={`w-5 h-5 transition-colors ${isFavorited(post.id)
-                              ? 'fill-red-500 text-red-500'
-                              : 'text-gray-500 hover:text-red-400'
-                              }`}
-                          />
-                        </button>
-
-                        {/* Status badge */}
-                        <div className="absolute top-3 right-3">
-                          <span className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg ${status.class}`}>
-                            {status.text}
-                          </span>
-                        </div>
-
-                        {/* Price tag */}
-                        {price && (
-                          <div className="absolute bottom-3 left-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg">
-                            <span className="font-bold text-lg">{price.toLocaleString('vi-VN')}đ</span>
-                            <span className="text-xs opacity-90">/{t('common.month')}</span>
-                          </div>
-                        )}
-
-                        {/* Area tag */}
-                        {area && (
-                          <div className="absolute bottom-3 right-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm text-gray-800 dark:text-white px-3 py-2 rounded-xl shadow-lg flex items-center gap-1.5">
-                            <Maximize2 className="w-4 h-4 text-blue-500" />
-                            <span className="font-semibold text-sm">{area} m²</span>
-                          </div>
-                        )}
+                      {/* Status badge */}
+                      <div className="absolute top-3 right-3">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg ${status.class}`}>
+                          {status.text}
+                        </span>
                       </div>
 
-                      {/* Content */}
-                      <div className="p-5">
-                        {/* Title */}
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                          {post.title}
-                        </h3>
-
-                        {/* Description */}
-                        <p className="text-gray-500 dark:text-gray-400 text-sm mb-4 line-clamp-2">
-                          {post.description}
-                        </p>
-
-                        {/* Property Info */}
-                        <div className="space-y-2 mb-4">
-                          <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
-                            <Building className="w-4 h-4 mr-2 flex-shrink-0 text-purple-500" />
-                            <span className="truncate font-medium">{post.houseName || t('rentalPosts.unknownHouse')}</span>
-                          </div>
-                          <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
-                            <Home className="w-4 h-4 mr-2 flex-shrink-0 text-orange-500" />
-                            <span className="truncate">{post.roomName || t('rentalPosts.allRooms')}</span>
-                          </div>
+                      {/* Price tag */}
+                      {price && (
+                        <div className="absolute bottom-3 left-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg">
+                          <span className="font-bold text-lg">{price.toLocaleString('vi-VN')}đ</span>
+                          <span className="text-xs opacity-90">/{t('common.month')}</span>
                         </div>
+                      )}
 
-                        {/* Divider */}
-                        <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-                          {/* Author & Date */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md flex-shrink-0">
-                                {post.authorName ? post.authorName[0].toUpperCase() : 'U'}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                                  {post.authorName || t('rentalPosts.unknownAuthor')}
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                  <Calendar className="w-3 h-3" />
-                                  {formatDate(post.createdAt)}
-                                </p>
-                              </div>
+                      {/* Area tag */}
+                      {area && (
+                        <div className="absolute bottom-3 right-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm text-gray-800 dark:text-white px-3 py-2 rounded-xl shadow-lg flex items-center gap-1.5">
+                          <Maximize2 className="w-4 h-4 text-blue-500" />
+                          <span className="font-semibold text-sm">{area} m²</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-5">
+                      {/* Title */}
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        {post.title}
+                      </h3>
+
+                      {/* Description */}
+                      <p className="text-gray-500 dark:text-gray-400 text-sm mb-4 line-clamp-2">
+                        {post.description}
+                      </p>
+
+                      {/* Property Info */}
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
+                          <Building className="w-4 h-4 mr-2 flex-shrink-0 text-purple-500" />
+                          <span className="truncate font-medium">{post.houseName || t('rentalPosts.unknownHouse')}</span>
+                        </div>
+                        <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
+                          <Home className="w-4 h-4 mr-2 flex-shrink-0 text-orange-500" />
+                          <span className="truncate">{post.roomName || t('rentalPosts.allRooms')}</span>
+                        </div>
+                      </div>
+
+                      {/* Divider */}
+                      <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+                        {/* Author & Date */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md flex-shrink-0">
+                              {post.authorName ? post.authorName[0].toUpperCase() : 'U'}
                             </div>
-
-                            {/* Phone icon */}
-                            {post.contactPhone && (
-                              <div className="flex-shrink-0 p-2 bg-green-50 dark:bg-green-900/30 rounded-full" title={post.contactPhone}>
-                                <Phone className="w-4 h-4 text-green-600" />
-                              </div>
-                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                {post.authorName || t('rentalPosts.unknownAuthor')}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {formatDate(post.createdAt)}
+                              </p>
+                            </div>
                           </div>
+
+                          {/* Phone icon */}
+                          {post.contactPhone && (
+                            <div className="flex-shrink-0 p-2 bg-green-50 dark:bg-green-900/30 rounded-full" title={post.contactPhone}>
+                              <Phone className="w-4 h-4 text-green-600" />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-
-        <Footer />
       </div>
-    </RoleBasedRedirect>
+
+      <Footer />
+    </div>
   );
 }

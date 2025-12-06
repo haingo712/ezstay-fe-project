@@ -350,20 +350,18 @@ export default function UserManagementPage() {
                       <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400 truncate">{user.email}</td>
                       <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">{user.phone || 'N/A'}</td>
                       <td className="px-4 py-4 text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                          user.roleId === 2 
-                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' 
-                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${user.roleId === 2
+                          ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+                          : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                          }`}>
                           {user.roleId === 2 ? (t('staffUsers.roles.owner') || 'Owner') : (t('staffUsers.roles.user') || 'User')}
                         </span>
                       </td>
                       <td className="px-4 py-4 text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                          user.isActive 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
-                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${user.isActive
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                          }`}>
                           {user.isActive ? (t('staffUsers.status.active') || 'Active') : (t('staffUsers.status.inactive') || 'Inactive')}
                         </span>
                       </td>
@@ -389,11 +387,10 @@ export default function UserManagementPage() {
                           </button>
                           <button
                             onClick={() => handleStatusToggle(user.id, user.isActive)}
-                            className={`px-2 py-1 rounded-md text-white text-xs whitespace-nowrap ${
-                              user.isActive 
-                                ? 'bg-red-600 hover:bg-red-700' 
-                                : 'bg-green-600 hover:bg-green-700'
-                            }`}
+                            className={`px-2 py-1 rounded-md text-white text-xs whitespace-nowrap ${user.isActive
+                              ? 'bg-red-600 hover:bg-red-700'
+                              : 'bg-green-600 hover:bg-green-700'
+                              }`}
                           >
                             {user.isActive ? (t('staffUsers.actions.deactivate') || 'Deactivate') : (t('staffUsers.actions.activate') || 'Activate')}
                           </button>
@@ -409,8 +406,8 @@ export default function UserManagementPage() {
       </div>
 
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-2xl transform transition-all">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 Create New Account
@@ -514,8 +511,8 @@ export default function UserManagementPage() {
       )}
 
       {showEditModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-2xl transform transition-all">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 Edit Account
@@ -622,8 +619,8 @@ export default function UserManagementPage() {
       )}
 
       {showViewModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full shadow-2xl transform transition-all">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <div>
@@ -660,10 +657,10 @@ export default function UserManagementPage() {
                   <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Phone</label>
                   <p className="text-gray-900 dark:text-white mt-1">{selectedUser.phone || 'N/A'}</p>
                 </div>
-                <div>
+                {/* <div>
                   <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Account ID</label>
                   <p className="text-gray-900 dark:text-white mt-1">{selectedUser.id}</p>
-                </div>
+                </div> */}
                 <div>
                   <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</label>
                   <p className="mt-1">
@@ -687,25 +684,13 @@ export default function UserManagementPage() {
                     setShowViewModal(false);
                     handleEditAccount(selectedUser);
                   }}
-                  className="px-4 py-2 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-200 rounded-lg font-medium"
+                  className="px-4 py-2 bg-yellow-500 text-white hover:bg-yellow-600 rounded-lg font-medium transition"
                 >
                   Edit Account
                 </button>
                 <button
-                  onClick={() => {
-                    setShowViewModal(false);
-                    handleStatusToggle(selectedUser.id, selectedUser.isActive);
-                  }}
-                  className={`px-4 py-2 rounded-lg font-medium ${selectedUser.isActive
-                    ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-200'
-                    : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-200'
-                    }`}
-                >
-                  {selectedUser.isActive ? 'Ban Account' : 'Unban Account'}
-                </button>
-                <button
                   onClick={() => setShowViewModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 font-medium"
+                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-medium transition"
                 >
                   Close
                 </button>
@@ -716,8 +701,8 @@ export default function UserManagementPage() {
       )}
 
       {showRejectionModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full shadow-2xl">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full shadow-2xl transform transition-all">
             <div className="p-6">
               {/* Header */}
               <div className="flex justify-between items-start mb-6">

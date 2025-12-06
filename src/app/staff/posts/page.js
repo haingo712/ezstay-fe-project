@@ -32,8 +32,8 @@ export default function PostsReviewPage() {
   const [posts, setPosts] = useState([]);
   const [processingId, setProcessingId] = useState(null);
   const [selectedPost, setSelectedPost] = useState(null);
-  const [selectedPost, setSelectedPost] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('pending');
 
   // Load pending posts from API
   const loadPendingPosts = useCallback(async () => {
@@ -65,9 +65,10 @@ export default function PostsReviewPage() {
   }, [mounted, user, loadPendingPosts]);
 
   const filteredPosts = posts.filter(post => {
-    if (activeTab === 'pending') return post.isApproved === null || post.isApproved === undefined;
-    if (activeTab === 'approved') return post.isApproved === 1 || post.isApproved === true;
-    if (activeTab === 'rejected') return post.isApproved === 0 || post.isApproved === false;
+    const status = post.isApproved ?? post.IsApproved;
+    if (activeTab === 'pending') return status === 0;
+    if (activeTab === 'approved') return status === 1;
+    if (activeTab === 'rejected') return status === 2;
     return true;
   });
 
@@ -122,24 +123,34 @@ export default function PostsReviewPage() {
   };
 
   const getStatusBadge = (post) => {
-    if (post.isApproved === null || post.isApproved === undefined) {
+    const status = post.isApproved ?? post.IsApproved;
+
+    if (status === 0) {
       return {
         text: t('staffPosts.status.pending') || 'Chờ duyệt',
         icon: Clock,
         class: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
       };
     }
-    if (post.isApproved === 1 || post.isApproved === true) {
+    if (status === 1) {
       return {
         text: t('staffPosts.status.approved') || 'Đã duyệt',
         icon: CheckCircle,
         class: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
       };
     }
+    if (status === 2) {
+      return {
+        text: t('staffPosts.status.rejected') || 'Đã từ chối',
+        icon: XCircle,
+        class: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+      };
+    }
+    // Fallback for unknown status
     return {
-      text: t('staffPosts.status.rejected') || 'Từ chối',
+      text: 'Unknown',
       icon: XCircle,
-      class: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+      class: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
     };
   };
 
@@ -225,15 +236,15 @@ export default function PostsReviewPage() {
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
                   className={`flex-1 py-4 px-4 font-medium text-sm transition-colors border-b-2 flex items-center justify-center gap-2 ${activeTab === tab.key
-                      ? `border-${tab.color}-500 text-${tab.color}-600 dark:text-${tab.color}-400 bg-white dark:bg-gray-800`
-                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                    ? `border-${tab.color}-500 text-${tab.color}-600 dark:text-${tab.color}-400 bg-white dark:bg-gray-800`
+                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                     }`}
                 >
                   <Icon className={`w-4 h-4 ${activeTab === tab.key ? `text-${tab.color}-500` : ''}`} />
                   {tab.label}
                   <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === tab.key
-                      ? `bg-${tab.color}-100 text-${tab.color}-700 dark:bg-${tab.color}-900/30 dark:text-${tab.color}-400`
-                      : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                    ? `bg-${tab.color}-100 text-${tab.color}-700 dark:bg-${tab.color}-900/30 dark:text-${tab.color}-400`
+                    : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
                     }`}>
                     {tab.count}
                   </span>
@@ -251,7 +262,8 @@ export default function PostsReviewPage() {
             const status = getStatusBadge(post);
             const StatusIcon = status.icon;
             const isProcessing = processingId === post.id;
-            const isPending = post.isApproved === null || post.isApproved === undefined;
+            const postStatus = post.isApproved ?? post.IsApproved;
+            const isPending = postStatus === 0;
 
             return (
               <div
@@ -409,7 +421,7 @@ export default function PostsReviewPage() {
                       {/* Approved/Rejected info */}
                       {!isPending && post.approvedAt && (
                         <div className="text-sm text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700">
-                          {post.isApproved === 1 ? 'Đã duyệt' : 'Đã từ chối'} lúc: {formatDate(post.approvedAt)}
+                          {postStatus === 1 ? 'Đã duyệt' : 'Đã từ chối'} lúc: {formatDate(post.approvedAt)}
                           {post.approvedBy && ` bởi ${post.approvedBy}`}
                         </div>
                       )}

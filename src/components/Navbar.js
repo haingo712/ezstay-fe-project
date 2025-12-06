@@ -111,7 +111,7 @@ export default function Navbar() {
         console.log("📸 Navbar: Avatar already present:", user.avatar || user.avata);
       }
     }
-  }, [isAuthenticated, user?.id]); // Only re-run when authentication status or user ID changes
+  }, [isAuthenticated, user?.id, loadUserAvatar]); // Include loadUserAvatar in dependencies
 
   // Get user role from user object or default to guest
   const userRole = user?.role || "guest";
@@ -145,7 +145,7 @@ export default function Navbar() {
   const getNavigationItems = () => {
     const baseItems = [
       { href: "/", label: t('nav.home'), requireAuth: false },
-      { href: "/rental-posts", label: t('nav.rentalPost'), requireAuth: true },
+      { href: "/rental-posts", label: t('nav.rentalPost'), requireAuth: false },
       { href: "/support", label: t('nav.support'), requireAuth: false },
       { href: "/about", label: t('nav.about'), requireAuth: false },
     ];

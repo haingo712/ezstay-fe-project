@@ -8,7 +8,6 @@ import rentalPostService from '@/services/rentalPostService';
 import reviewService from '@/services/reviewService';
 import boardingHouseService from '@/services/boardingHouseService';
 import contractService from '@/services/contractService';
-import profileService from '@/services/profileService';
 import { toast } from 'react-toastify';
 import {
   Building2,
@@ -65,31 +64,36 @@ export default function RentalPostDetailPage() {
   const [rentalRequestData, setRentalRequestData] = useState({
     checkinDate: '',
     checkoutDate: '',
-    numberOfOccupants: 1,
-    // Identity Profile fields
-    fullName: '',
-    gender: 0,
-    dateOfBirth: '',
-    phone: '',
-    email: '',
-    provinceId: '',
-    provinceName: '',
-    wardId: '',
-    wardName: '',
-    address: '',
-    temporaryResidence: '',
-    citizenIdNumber: '',
-    citizenIdIssuedDate: '',
-    citizenIdIssuedPlace: '',
-    frontImageUrl: '',
-    backImageUrl: '',
-    avatar: ''
+    citizenIdNumbers: [''] // Array of CCCD, start with one empty field
   });
   const [rentalRequestErrors, setRentalRequestErrors] = useState({});
   const [submittingRentalRequest, setSubmittingRentalRequest] = useState(false);
-  const [loadingUserProfile, setLoadingUserProfile] = useState(false);
-  const [userProfileLoaded, setUserProfileLoaded] = useState(false);
-  const [profileError, setProfileError] = useState(null);
+
+  // Handle dynamic CCCD fields
+  const handleAddCCCD = () => {
+    setRentalRequestData(prev => ({
+      ...prev,
+      citizenIdNumbers: [...prev.citizenIdNumbers, '']
+    }));
+  };
+
+  const handleRemoveCCCD = (index) => {
+    setRentalRequestData(prev => ({
+      ...prev,
+      citizenIdNumbers: prev.citizenIdNumbers.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleChangeCCCD = (index, value) => {
+    setRentalRequestData(prev => {
+      const newCitizenIdNumbers = [...prev.citizenIdNumbers];
+      newCitizenIdNumbers[index] = value;
+      return {
+        ...prev,
+        citizenIdNumbers: newCitizenIdNumbers
+      };
+    });
+  };
 
   useEffect(() => {
     if (postId) {
@@ -100,20 +104,28 @@ export default function RentalPostDetailPage() {
   const loadPost = async () => {
     try {
       setLoading(true);
-      
+
+      console.log('🔍 Loading post, isAuthenticated:', isAuthenticated);
+
       // Use authenticated API if logged in, public API for guests
       let postData = null;
       if (isAuthenticated) {
         console.log('🔐 User authenticated, using getPostById()');
-        postData = await rentalPostService.getPostById(postId);
+        try {
+          postData = await rentalPostService.getPostById(postId);
+        } catch (authError) {
+          console.warn('⚠️ Authenticated call failed, trying public API:', authError);
+          postData = await rentalPostService.getByIdPublic(postId);
+        }
       } else {
-        console.log('👤 Guest user, trying getByIdPublic()');
+        console.log('👤 Guest user, using getByIdPublic()');
         postData = await rentalPostService.getByIdPublic(postId);
       }
       console.log('📋 Post detail:', postData);
 
       if (!postData || !postData.id) {
         console.error('❌ No post data found');
+        toast.error('Không tìm thấy bài đăng này');
         setPost(null);
         return;
       }
@@ -170,7 +182,7 @@ export default function RentalPostDetailPage() {
     try {
       const token = localStorage.getItem('token');
       const uniqueUserIds = [...new Set(reviewsList.map(r => r.userId))];
-      
+
       // If no token (guest), set all as Anonymous
       if (!token) {
         const namesMap = {};
@@ -217,106 +229,10 @@ export default function RentalPostDetailPage() {
     setRentalRequestData({
       checkinDate: today.toISOString().split('T')[0],
       checkoutDate: nextMonth.toISOString().split('T')[0],
-      numberOfOccupants: 1,
-      fullName: '',
-      gender: 0,
-      dateOfBirth: '',
-      phone: '',
-      email: '',
-      provinceId: '',
-      provinceName: '',
-      wardId: '',
-      wardName: '',
-      address: '',
-      temporaryResidence: '',
-      citizenIdNumber: '',
-      citizenIdIssuedDate: '',
-      citizenIdIssuedPlace: '',
-      frontImageUrl: '',
-      backImageUrl: '',
-      avatar: ''
+      citizenIdNumbers: [''] // Array of CCCD, start with one empty field
     });
     setRentalRequestErrors({});
-    setProfileError(null);
-    setUserProfileLoaded(false);
     setShowRentalRequestModal(true);
-
-    // Load user profile
-    if (user?.id) {
-      setLoadingUserProfile(true);
-      try {
-        // Use profileService.getProfile() which calls /api/Profile/profile
-        // This returns full profile data including CCCD info
-        const profile = await profileService.getProfile();
-        console.log('📋 User profile loaded from profileService:', profile);
-
-        if (profile) {
-          console.log('📋 Profile data details:', {
-            fullName: profile.fullName || profile.FullName,
-            phone: profile.phone || profile.Phone,
-            email: profile.email || profile.Email,
-            gender: profile.gender ?? profile.Gender,
-            dateOfBirth: profile.dateOfBirth || profile.DateOfBirth,
-            detailAddress: profile.detailAddress || profile.DetailAddress,
-            provinceId: profile.provinceId || profile.ProvinceId,
-            provinceName: profile.provinceName || profile.ProvinceName,
-            wardId: profile.wardId || profile.WardId,
-            wardName: profile.wardName || profile.WardName,
-            citizenIdNumber: profile.citizenIdNumber || profile.CitizenIdNumber,
-            citizenIdIssuedDate: profile.citizenIdIssuedDate || profile.CitizenIdIssuedDate,
-            citizenIdIssuedPlace: profile.citizenIdIssuedPlace || profile.CitizenIdIssuedPlace,
-            frontImageUrl: profile.frontImageUrl || profile.FrontImageUrl,
-            backImageUrl: profile.backImageUrl || profile.BackImageUrl
-          });
-
-          // Helper function to safely format date
-          const formatDateSafe = (dateValue) => {
-            if (!dateValue) return '';
-            try {
-              const date = new Date(dateValue);
-              if (isNaN(date.getTime())) return '';
-              return date.toISOString().split('T')[0];
-            } catch {
-              return '';
-            }
-          };
-
-          setRentalRequestData(prev => ({
-            ...prev,
-            fullName: profile.fullName || profile.FullName || '',
-            gender: profile.gender ?? profile.Gender ?? 0,
-            dateOfBirth: formatDateSafe(profile.dateOfBirth || profile.DateOfBirth),
-            phone: profile.phone || profile.Phone || '',
-            email: profile.email || profile.Email || '',
-            provinceId: profile.provinceId || profile.ProvinceId || '',
-            provinceName: profile.provinceName || profile.ProvinceName || '',
-            wardId: profile.wardId || profile.WardId || '',
-            wardName: profile.wardName || profile.WardName || '',
-            address: profile.detailAddress || profile.DetailAddress || '',
-            temporaryResidence: profile.temporaryResidence || profile.TemporaryResidence || '',
-            citizenIdNumber: profile.citizenIdNumber || profile.CitizenIdNumber || '',
-            citizenIdIssuedDate: formatDateSafe(profile.citizenIdIssuedDate || profile.CitizenIdIssuedDate),
-            citizenIdIssuedPlace: profile.citizenIdIssuedPlace || profile.CitizenIdIssuedPlace || '',
-            frontImageUrl: profile.frontImageUrl || profile.FrontImageUrl || '',
-            backImageUrl: profile.backImageUrl || profile.BackImageUrl || '',
-            avatar: profile.avatar || profile.Avatar || ''
-          }));
-          setUserProfileLoaded(true);
-
-          // Check if profile is complete
-          if (!profile.citizenIdNumber && !profile.CitizenIdNumber) {
-            setProfileError(t('rentalPostDetail.rentalRequest.errors.incompleteCCCD'));
-          }
-        } else {
-          setProfileError(t('rentalPostDetail.rentalRequest.errors.loadProfileFailed'));
-        }
-      } catch (error) {
-        console.error('❌ Error loading user profile:', error);
-        setProfileError(t('rentalPostDetail.rentalRequest.errors.loadProfileFailed'));
-      } finally {
-        setLoadingUserProfile(false);
-      }
-    }
   };
 
   const validateRentalRequest = () => {
@@ -324,17 +240,19 @@ export default function RentalPostDetailPage() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Validate CheckinDate
     if (!rentalRequestData.checkinDate) {
-      errors.checkinDate = t('rentalPostDetail.rentalRequest.errors.checkinRequired');
+      errors.checkinDate = t('rentalPostDetail.rentalRequest.errors.checkinRequired') || 'Vui lòng chọn ngày nhận phòng';
     } else {
       const checkinDate = new Date(rentalRequestData.checkinDate);
       if (checkinDate < today) {
-        errors.checkinDate = t('rentalPostDetail.rentalRequest.errors.checkinPast');
+        errors.checkinDate = t('rentalPostDetail.rentalRequest.errors.checkinPast') || 'Ngày nhận phòng phải từ hôm nay trở đi';
       }
     }
 
+    // Validate CheckoutDate
     if (!rentalRequestData.checkoutDate) {
-      errors.checkoutDate = t('rentalPostDetail.rentalRequest.errors.checkoutRequired');
+      errors.checkoutDate = t('rentalPostDetail.rentalRequest.errors.checkoutRequired') || 'Vui lòng chọn ngày trả phòng';
     } else if (rentalRequestData.checkinDate) {
       const checkinDate = new Date(rentalRequestData.checkinDate);
       const checkoutDate = new Date(rentalRequestData.checkoutDate);
@@ -342,23 +260,14 @@ export default function RentalPostDetailPage() {
       minCheckout.setMonth(minCheckout.getMonth() + 1);
 
       if (checkoutDate < minCheckout) {
-        errors.checkoutDate = t('rentalPostDetail.rentalRequest.errors.checkoutMinOneMonth');
+        errors.checkoutDate = t('rentalPostDetail.rentalRequest.errors.checkoutMinOneMonth') || 'Ngày trả phòng phải ít nhất 1 tháng sau ngày nhận phòng';
       }
     }
 
-    if (!rentalRequestData.numberOfOccupants || rentalRequestData.numberOfOccupants < 1) {
-      errors.numberOfOccupants = t('rentalPostDetail.rentalRequest.errors.occupantsMin');
-    }
-
-    // Validate identity profile info
-    if (!rentalRequestData.fullName?.trim()) {
-      errors.fullName = t('rentalPostDetail.rentalRequest.errors.fullNameRequired');
-    }
-    if (!rentalRequestData.phone?.trim()) {
-      errors.phone = t('rentalPostDetail.rentalRequest.errors.phoneRequired');
-    }
-    if (!rentalRequestData.citizenIdNumber?.trim()) {
-      errors.citizenIdNumber = t('rentalPostDetail.rentalRequest.errors.cccdRequired');
+    // Validate CitizenIdNumbers (at least one non-empty CCCD)
+    const validCCCDs = rentalRequestData.citizenIdNumbers.filter(cccd => cccd.trim());
+    if (validCCCDs.length === 0) {
+      errors.citizenIdNumbers = t('rentalPostDetail.rentalRequest.errors.cccdRequired') || 'Vui lòng nhập ít nhất 1 số CCCD';
     }
 
     setRentalRequestErrors(errors);
@@ -379,35 +288,17 @@ export default function RentalPostDetailPage() {
     try {
       setSubmittingRentalRequest(true);
 
+      // Backend chỉ cần 4 fields: CheckinDate, CheckoutDate, NumberOfOccupants, CitizenIdNumber (array)
+      // NumberOfOccupants tự động tính từ số lượng CCCD
+      const validCCCDs = rentalRequestData.citizenIdNumbers.filter(cccd => cccd.trim());
       const requestData = {
         CheckinDate: new Date(rentalRequestData.checkinDate).toISOString(),
         CheckoutDate: new Date(rentalRequestData.checkoutDate).toISOString(),
-        NumberOfOccupants: parseInt(rentalRequestData.numberOfOccupants),
-        // Identity Profile fields
-        Gender: parseInt(rentalRequestData.gender) || 0,
-        FullName: rentalRequestData.fullName,
-        Avatar: rentalRequestData.avatar || '',
-        DateOfBirth: rentalRequestData.dateOfBirth
-          ? new Date(rentalRequestData.dateOfBirth).toISOString()
-          : null,
-        Phone: rentalRequestData.phone,
-        Email: rentalRequestData.email || '',
-        ProvinceId: rentalRequestData.provinceId || '',
-        ProvinceName: rentalRequestData.provinceName || '',
-        WardId: rentalRequestData.wardId || '',
-        WardName: rentalRequestData.wardName || '',
-        Address: rentalRequestData.address || '',
-        TemporaryResidence: rentalRequestData.temporaryResidence || '',
-        CitizenIdNumber: rentalRequestData.citizenIdNumber,
-        CitizenIdIssuedDate: rentalRequestData.citizenIdIssuedDate
-          ? new Date(rentalRequestData.citizenIdIssuedDate).toISOString()
-          : null,
-        CitizenIdIssuedPlace: rentalRequestData.citizenIdIssuedPlace || '',
-        FrontImageUrl: rentalRequestData.frontImageUrl || '',
-        BackImageUrl: rentalRequestData.backImageUrl || ''
+        NumberOfOccupants: validCCCDs.length,
+        CitizenIdNumber: validCCCDs
       };
 
-      console.log('📝 Submitting rental request with full profile:', { ownerId, roomId, requestData });
+      console.log('📝 Submitting rental request:', { ownerId, roomId, requestData });
 
       await contractService.createRentalRequest(ownerId, roomId, requestData);
 
@@ -990,301 +881,122 @@ export default function RentalPostDetailPage() {
 
             {/* Modal Body */}
             <div className="p-6 space-y-5">
-              {/* Loading state */}
-              {loadingUserProfile && (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    {t('rentalPostDetail.rentalRequest.loadingProfile')}
+              {/* Section: Rental Info */}
+              <div className="space-y-4">
+                <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-green-600" />
+                  {t('rentalPostDetail.rentalRequest.rentalInfoSection') || 'Thông tin thuê'}
+                </h4>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Check-in Date */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('rentalPostDetail.rentalRequest.checkinDate') || 'Ngày nhận phòng'} <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={rentalRequestData.checkinDate}
+                      min={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setRentalRequestData({ ...rentalRequestData, checkinDate: e.target.value })}
+                      className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${rentalRequestErrors.checkinDate ? 'border-red-500' : 'border-gray-300'}`}
+                    />
+                    {rentalRequestErrors.checkinDate && (
+                      <p className="mt-1 text-sm text-red-500">{rentalRequestErrors.checkinDate}</p>
+                    )}
+                  </div>
+
+                  {/* Check-out Date */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('rentalPostDetail.rentalRequest.checkoutDate') || 'Ngày trả phòng'} <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={rentalRequestData.checkoutDate}
+                      min={rentalRequestData.checkinDate || new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setRentalRequestData({ ...rentalRequestData, checkoutDate: e.target.value })}
+                      className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${rentalRequestErrors.checkoutDate ? 'border-red-500' : 'border-gray-300'}`}
+                    />
+                    {rentalRequestErrors.checkoutDate && (
+                      <p className="mt-1 text-sm text-red-500">{rentalRequestErrors.checkoutDate}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Number of Occupants (Read-only, calculated from CCCD count) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <Users className="h-4 w-4 inline mr-1" />
+                    {t('rentalPostDetail.rentalRequest.numberOfOccupants') || 'Số người ở'}
+                  </label>
+                  <input
+                    type="text"
+                    value={rentalRequestData.citizenIdNumbers.filter(cccd => cccd.trim()).length}
+                    readOnly
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white cursor-not-allowed"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {t('rentalPostDetail.rentalRequest.autoCalculated') || 'Tự động tính từ số lượng CCCD'}
                   </p>
                 </div>
-              )}
 
-              {/* Profile Error */}
-              {profileError && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg p-4 flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium">
-                      {profileError}
-                    </p>
+                {/* CCCD Numbers (Dynamic fields) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <CreditCard className="h-4 w-4 inline mr-1" />
+                    {t('rentalPostDetail.rentalRequest.cccdNumbers') || 'Số CCCD các người ở'} <span className="text-red-500">*</span>
+                  </label>
+
+                  <div className="space-y-3">
+                    {rentalRequestData.citizenIdNumbers.map((cccd, index) => (
+                      <div key={index} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={cccd}
+                          onChange={(e) => handleChangeCCCD(index, e.target.value)}
+                          placeholder={`${t('rentalPostDetail.rentalRequest.cccdNumber') || 'Số CCCD'} ${index + 1}`}
+                          className={`flex-1 px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${rentalRequestErrors.citizenIdNumbers ? 'border-red-500' : 'border-gray-300'}`}
+                        />
+                        {rentalRequestData.citizenIdNumbers.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCCCD(index)}
+                            className="px-3 py-2.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                            title={t('rentalPostDetail.rentalRequest.removeCCCD') || 'Xóa CCCD'}
+                          >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    ))}
+
+                    {rentalRequestErrors.citizenIdNumbers && (
+                      <p className="text-sm text-red-500">{rentalRequestErrors.citizenIdNumbers}</p>
+                    )}
+
                     <button
-                      onClick={() => router.push('/profile')}
-                      className="text-sm text-yellow-600 dark:text-yellow-400 underline mt-1 hover:text-yellow-800"
+                      type="button"
+                      onClick={handleAddCCCD}
+                      className="w-full px-4 py-2.5 border-2 border-dashed border-green-300 dark:border-green-700 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors font-medium flex items-center justify-center gap-2"
                     >
-                      {t('rentalPostDetail.rentalRequest.updateProfile')}
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      {t('rentalPostDetail.rentalRequest.addCCCD') || 'Thêm CCCD'}
                     </button>
                   </div>
                 </div>
-              )}
 
-              {!loadingUserProfile && (
-                <>
-                  {/* Section: Rental Info */}
-                  <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
-                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-green-600" />
-                      {t('rentalPostDetail.rentalRequest.rentalInfoSection')}
-                    </h4>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      {/* Check-in Date */}
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                          {t('rentalPostDetail.rentalRequest.checkinDate')} <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="date"
-                          value={rentalRequestData.checkinDate}
-                          min={new Date().toISOString().split('T')[0]}
-                          onChange={(e) => setRentalRequestData({ ...rentalRequestData, checkinDate: e.target.value })}
-                          className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${rentalRequestErrors.checkinDate ? 'border-red-500' : 'border-gray-300'}`}
-                        />
-                        {rentalRequestErrors.checkinDate && (
-                          <p className="mt-1 text-xs text-red-500">{rentalRequestErrors.checkinDate}</p>
-                        )}
-                      </div>
-
-                      {/* Check-out Date */}
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                          {t('rentalPostDetail.rentalRequest.checkoutDate')} <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="date"
-                          value={rentalRequestData.checkoutDate}
-                          min={rentalRequestData.checkinDate || new Date().toISOString().split('T')[0]}
-                          onChange={(e) => setRentalRequestData({ ...rentalRequestData, checkoutDate: e.target.value })}
-                          className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${rentalRequestErrors.checkoutDate ? 'border-red-500' : 'border-gray-300'}`}
-                        />
-                        {rentalRequestErrors.checkoutDate && (
-                          <p className="mt-1 text-xs text-red-500">{rentalRequestErrors.checkoutDate}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Number of Occupants */}
-                    <div className="mt-3">
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                        <Users className="h-3 w-3 inline mr-1" />
-                        {t('rentalPostDetail.rentalRequest.numberOfOccupants')} <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        value={rentalRequestData.numberOfOccupants}
-                        min="1"
-                        max="10"
-                        onChange={(e) => setRentalRequestData({ ...rentalRequestData, numberOfOccupants: parseInt(e.target.value) || 1 })}
-                        className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${rentalRequestErrors.numberOfOccupants ? 'border-red-500' : 'border-gray-300'}`}
-                      />
-                      {rentalRequestErrors.numberOfOccupants && (
-                        <p className="mt-1 text-xs text-red-500">{rentalRequestErrors.numberOfOccupants}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Section: Personal Info */}
-                  <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
-                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                      <User className="h-4 w-4 text-blue-600" />
-                      {t('rentalPostDetail.rentalRequest.personalInfoSection')}
-                    </h4>
-
-                    <div className="space-y-3">
-                      {/* Full Name */}
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                          {t('rentalPostDetail.rentalRequest.fullName')} <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={rentalRequestData.fullName}
-                          onChange={(e) => setRentalRequestData({ ...rentalRequestData, fullName: e.target.value })}
-                          className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${rentalRequestErrors.fullName ? 'border-red-500' : 'border-gray-300'}`}
-                          placeholder={t('rentalPostDetail.rentalRequest.fullNamePlaceholder')}
-                        />
-                        {rentalRequestErrors.fullName && (
-                          <p className="mt-1 text-xs text-red-500">{rentalRequestErrors.fullName}</p>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        {/* Phone */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                            <Phone className="h-3 w-3 inline mr-1" />
-                            {t('rentalPostDetail.rentalRequest.phone')} <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="tel"
-                            value={rentalRequestData.phone}
-                            onChange={(e) => setRentalRequestData({ ...rentalRequestData, phone: e.target.value })}
-                            className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${rentalRequestErrors.phone ? 'border-red-500' : 'border-gray-300'}`}
-                            placeholder="0901234567"
-                          />
-                          {rentalRequestErrors.phone && (
-                            <p className="mt-1 text-xs text-red-500">{rentalRequestErrors.phone}</p>
-                          )}
-                        </div>
-
-                        {/* Email */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                            <Mail className="h-3 w-3 inline mr-1" />
-                            {t('rentalPostDetail.rentalRequest.email')}
-                          </label>
-                          <input
-                            type="email"
-                            value={rentalRequestData.email}
-                            onChange={(e) => setRentalRequestData({ ...rentalRequestData, email: e.target.value })}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            placeholder="email@example.com"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        {/* Gender */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                            {t('rentalPostDetail.rentalRequest.gender')}
-                          </label>
-                          <select
-                            value={rentalRequestData.gender}
-                            onChange={(e) => setRentalRequestData({ ...rentalRequestData, gender: parseInt(e.target.value) })}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          >
-                            <option value={0}>{t('rentalPostDetail.rentalRequest.genderMale')}</option>
-                            <option value={1}>{t('rentalPostDetail.rentalRequest.genderFemale')}</option>
-                            <option value={2}>{t('rentalPostDetail.rentalRequest.genderOther')}</option>
-                          </select>
-                        </div>
-
-                        {/* Date of Birth */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                            {t('rentalPostDetail.rentalRequest.dateOfBirth')}
-                          </label>
-                          <input
-                            type="date"
-                            value={rentalRequestData.dateOfBirth}
-                            onChange={(e) => setRentalRequestData({ ...rentalRequestData, dateOfBirth: e.target.value })}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Address */}
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                          <MapPin className="h-3 w-3 inline mr-1" />
-                          {t('rentalPostDetail.rentalRequest.address')}
-                        </label>
-                        <input
-                          type="text"
-                          value={`${rentalRequestData.address}${rentalRequestData.wardName ? ', ' + rentalRequestData.wardName : ''}${rentalRequestData.provinceName ? ', ' + rentalRequestData.provinceName : ''}`}
-                          readOnly
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-600 dark:border-gray-600 dark:text-gray-300"
-                          placeholder={t('rentalPostDetail.rentalRequest.addressPlaceholder')}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Section: CCCD Info */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                      <CreditCard className="h-4 w-4 text-purple-600" />
-                      {t('rentalPostDetail.rentalRequest.cccdSection')}
-                    </h4>
-
-                    <div className="space-y-3">
-                      {/* CCCD Number */}
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                          {t('rentalPostDetail.rentalRequest.cccdNumber')} <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={rentalRequestData.citizenIdNumber}
-                          onChange={(e) => setRentalRequestData({ ...rentalRequestData, citizenIdNumber: e.target.value })}
-                          className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${rentalRequestErrors.citizenIdNumber ? 'border-red-500' : 'border-gray-300'}`}
-                          placeholder="0123456789012"
-                        />
-                        {rentalRequestErrors.citizenIdNumber && (
-                          <p className="mt-1 text-xs text-red-500">{rentalRequestErrors.citizenIdNumber}</p>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        {/* Issue Date */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                            {t('rentalPostDetail.rentalRequest.cccdIssuedDate')}
-                          </label>
-                          <input
-                            type="date"
-                            value={rentalRequestData.citizenIdIssuedDate}
-                            onChange={(e) => setRentalRequestData({ ...rentalRequestData, citizenIdIssuedDate: e.target.value })}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                        </div>
-
-                        {/* Issue Place */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                            {t('rentalPostDetail.rentalRequest.cccdIssuedPlace')}
-                          </label>
-                          <input
-                            type="text"
-                            value={rentalRequestData.citizenIdIssuedPlace}
-                            onChange={(e) => setRentalRequestData({ ...rentalRequestData, citizenIdIssuedPlace: e.target.value })}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            placeholder={t('rentalPostDetail.rentalRequest.cccdIssuedPlacePlaceholder')}
-                          />
-                        </div>
-                      </div>
-
-                      {/* CCCD Images Preview */}
-                      {(rentalRequestData.frontImageUrl || rentalRequestData.backImageUrl) && (
-                        <div className="grid grid-cols-2 gap-3">
-                          {rentalRequestData.frontImageUrl && (
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                {t('rentalPostDetail.rentalRequest.cccdFront')}
-                              </label>
-                              <img
-                                src={rentalRequestData.frontImageUrl}
-                                alt="CCCD Front"
-                                className="w-full h-20 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
-                              />
-                            </div>
-                          )}
-                          {rentalRequestData.backImageUrl && (
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                {t('rentalPostDetail.rentalRequest.cccdBack')}
-                              </label>
-                              <img
-                                src={rentalRequestData.backImageUrl}
-                                alt="CCCD Back"
-                                className="w-full h-20 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Info Box */}
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      💡 {t('rentalPostDetail.rentalRequest.infoNote')}
-                    </p>
-                  </div>
-                </>
-              )}
+                {/* Info box */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <p className="text-sm text-blue-800 dark:text-blue-300">
+                    💡 {t('rentalPostDetail.rentalRequest.infoNote') || 'Thông tin này sẽ được sử dụng để tạo hợp đồng thuê. Vui lòng kiểm tra kỹ trước khi gửi.'}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Modal Footer */}
@@ -1293,22 +1005,22 @@ export default function RentalPostDetailPage() {
                 onClick={() => setShowRentalRequestModal(false)}
                 className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
               >
-                {t('rentalPostDetail.rentalRequest.cancel')}
+                {t('rentalPostDetail.rentalRequest.cancel') || 'Hủy'}
               </button>
               <button
                 onClick={handleSubmitRentalRequest}
-                disabled={submittingRentalRequest || loadingUserProfile}
+                disabled={submittingRentalRequest}
                 className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {submittingRentalRequest ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                    {t('rentalPostDetail.rentalRequest.submitting')}
+                    {t('rentalPostDetail.rentalRequest.submitting') || 'Đang gửi...'}
                   </>
                 ) : (
                   <>
                     <CheckCircle className="h-4 w-4" />
-                    {t('rentalPostDetail.rentalRequest.submit')}
+                    {t('rentalPostDetail.rentalRequest.submit') || 'Gửi yêu cầu'}
                   </>
                 )}
               </button>

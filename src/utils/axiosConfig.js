@@ -26,7 +26,7 @@ axiosInstance.interceptors.request.use(
       console.warn('⚠️ No token found in localStorage');
       console.log('Available keys:', Object.keys(localStorage));
     }
-    
+
     console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`);
     return config;
   },
@@ -39,6 +39,11 @@ axiosInstance.interceptors.request.use(
 // List of public pages where guest should NOT be redirected on 401
 const PUBLIC_PAGES = ['/', '/about', '/support', '/login', '/register', '/forgot-password'];
 
+// List of public URL patterns (regex) where guest should NOT be redirected
+const PUBLIC_PATTERNS = [
+  /^\/rental-posts($|\/)/,  // Allow /rental-posts and /rental-posts/123
+];
+
 // Response interceptor for error handling
 axiosInstance.interceptors.response.use(
   (response) => {
@@ -47,38 +52,39 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     console.error(`❌ API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url}`, error.response?.data || error.message);
-    
+
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
       console.warn('🔐 Unauthorized access detected');
-      
+
       // Check if current page is a public page - don't redirect if so
       if (typeof window !== 'undefined') {
         const currentPath = window.location.pathname;
         const isPublicPage = PUBLIC_PAGES.some(page => currentPath === page || currentPath === page + '/');
-        
-        if (isPublicPage) {
-          console.log('📍 On public page, skipping redirect to login');
+        const matchesPublicPattern = PUBLIC_PATTERNS.some(pattern => pattern.test(currentPath));
+
+        if (isPublicPage || matchesPublicPattern) {
+          console.log('📍 On public page/pattern, skipping redirect to login');
           return Promise.reject(error);
         }
       }
-      
+
       const token = localStorage.getItem('ezstay_token') || localStorage.getItem('authToken');
       console.log('Token in localStorage:', token?.substring(0, 50));
       console.log('Response:', error.response?.data);
-      
+
       // Clear all token variations
       localStorage.removeItem('ezstay_token');
       localStorage.removeItem('authToken');
       localStorage.removeItem('ezstay_user');
       localStorage.removeItem('userEmail');
-      
+
       // Redirect to login only from protected pages
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
       }
     }
-    
+
     return Promise.reject(error);
   }
 );

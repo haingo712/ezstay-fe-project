@@ -102,10 +102,8 @@ export default function OwnerNavbar() {
   const userAvatar = user?.avatar || user?.avata || null;
 
   const handleLogout = () => {
-    if (confirm(t('common.logoutConfirm') || 'Bạn có chắc muốn đăng xuất?')) {
-      logout();
-      router.push("/");
-    }
+    logout();
+    router.push("/");
   };
 
   return (

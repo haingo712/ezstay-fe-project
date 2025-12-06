@@ -124,7 +124,7 @@ export default function StaffReportsPage() {
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h1 className="text-2xl font-semibold">{t('staffReports.title')}</h1>
-                    <p className="text-sm text-gray-500">{t('staffReports.subtitle') || 'Quản lý các báo cáo đánh giá từ chủ nhà'}</p>
+                    {/* <p className="text-sm text-gray-500">{'Quản lý các báo cáo đánh giá từ chủ nhà'}</p> */}
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -140,7 +140,9 @@ export default function StaffReportsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filtered.length === 0 && (
-                    <div className="col-span-full p-6 bg-white dark:bg-gray-800 rounded">{t('staffReports.empty')}</div>
+                    <div className="col-span-full p-8 text-center bg-white dark:bg-gray-800 rounded-lg">
+                        <p className="text-gray-500 dark:text-gray-400 text-lg">{t('staffReports.noReports') || 'No reports found'}</p>
+                    </div>
                 )}
 
                 {filtered.map(r => {
