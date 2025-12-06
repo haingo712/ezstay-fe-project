@@ -247,7 +247,7 @@ export const boardingHouseAPI = {
     const params = new URLSearchParams({ type, order, limit: limit.toString() });
     return publicApi.get(`/api/BoardingHouses/rank?${params.toString()}`);
   },
-  
+
   // Authenticated endpoints
   getAll: () => api.get('/api/BoardingHouses'),
   getById: (id) => api.get(`/api/BoardingHouses/${id}`),
@@ -262,8 +262,8 @@ export const boardingHouseAPI = {
   },
   // Create with FormData (supports multiple image upload)
   create: (formData) => api.postFormData('/api/BoardingHouses', formData),
-  // Update with FormData (supports multiple image upload)
-  update: (id, formData) => api.putFormData(`/api/BoardingHouses/${id}`, formData),
+  // Update with JSON (backend expects ImageUrls array)
+  update: (id, data) => api.put(`/api/BoardingHouses/${id}`, data),
   delete: (id) => api.delete(`/api/BoardingHouses/${id}`),
 
   // Ranking & Analytics APIs
@@ -509,10 +509,10 @@ export const paymentAPI = {
 export const supportAPI = {
   // Get all support tickets (Staff only)
   getAll: () => api.get('/api/Support'),
-  
+
   // Create support ticket
   create: (data) => api.post('/api/Support', data),
-  
+
   // Update support ticket status (Staff only)
   updateStatus: (id, data) => api.put(`/api/Support/${id}/status`, data)
 };

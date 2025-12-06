@@ -35,10 +35,14 @@ const AddressSelector = ({
   const loadProvinces = async () => {
     setIsLoadingProvinces(true);
     try {
-      const data = await vietnamAddressService.getAllProvinces();
-      setProvinces(data);
+      const response = await vietnamAddressService.getAllProvinces();
+      console.log('📍 Provinces API response:', response);
+      // Handle different response structures
+      const provincesData = response?.provinces || response?.data?.provinces || response || [];
+      setProvinces(Array.isArray(provincesData) ? provincesData : []);
     } catch (error) {
       console.error('❌ Error loading provinces:', error);
+      setProvinces([]);
     } finally {
       setIsLoadingProvinces(false);
     }
@@ -48,40 +52,54 @@ const AddressSelector = ({
     console.log('🔄 Loading wards for province:', provinceCode);
     setIsLoadingWards(true);
     try {
-      const data = await vietnamAddressService.getWardsByProvince(provinceCode);
-      console.log('✅ Loaded wards:', data.length, 'wards');
-      console.log('📋 First few wards:', data.slice(0, 3));
-      setWards(data);
+      const response = await vietnamAddressService.getWardsByProvince(provinceCode);
+      console.log('🏘️ Wards API response:', response);
+      // Handle different response structures
+      const wardsData = response?.communes || response?.data?.communes || response || [];
+      const wardsArray = Array.isArray(wardsData) ? wardsData : [];
+      console.log('✅ Loaded wards:', wardsArray.length, 'wards');
+      setWards(wardsArray);
     } catch (error) {
       console.error('❌ Error loading wards:', error);
+      setWards([]);
     } finally {
       setIsLoadingWards(false);
     }
   };
 
   const handleProvinceChange = useCallback((e) => {
-    const provinceCode = parseInt(e.target.value);
-    const selectedProvince = provinces.find(p => p.code === provinceCode);
+    const selectedValue = e.target.value;
+    const selectedProvince = provinces.find(p => String(p.code) === String(selectedValue));
 
-    console.log('🏙️ Province changed:', { provinceCode, provinceName: selectedProvince?.name });
+    console.log('🏙️ Province changed:', {
+      selectedValue,
+      provinceCode: selectedProvince?.code,
+      provinceName: selectedProvince?.name
+    });
 
     onChange({
       ...value,
-      provinceCode: provinceCode || null,
-      provinceName: selectedProvince ? selectedProvince.name : '',
+      provinceCode: selectedProvince?.code ? String(selectedProvince.code) : null,
+      provinceName: selectedProvince?.name || '',
       wardCode: null,
       wardName: ''
     });
   }, [provinces, value, onChange]);
 
   const handleWardChange = useCallback((e) => {
-    const wardCode = parseInt(e.target.value);
-    const selectedWard = wards.find(w => w.code === wardCode);
+    const selectedValue = e.target.value;
+    const selectedWard = wards.find(w => String(w.code) === String(selectedValue));
+
+    console.log('🏘️ Ward changed:', {
+      selectedValue,
+      wardCode: selectedWard?.code,
+      wardName: selectedWard?.name
+    });
 
     onChange({
       ...value,
-      wardCode: wardCode || null,
-      wardName: selectedWard ? selectedWard.name : ''
+      wardCode: selectedWard?.code ? String(selectedWard.code) : null,
+      wardName: selectedWard?.name || ''
     });
   }, [wards, value, onChange]);
 
@@ -115,7 +133,7 @@ const AddressSelector = ({
         </label>
         <div className="relative">
           <select
-            value={value.provinceCode || ''}
+            value={String(value.provinceCode || '')}
             onChange={handleProvinceChange}
             disabled={disabled || isLoadingProvinces}
             className={getInputClass('province')}
@@ -124,7 +142,7 @@ const AddressSelector = ({
               {isLoadingProvinces ? `🔄 ${t('common.loading')}` : `📍 ${t('profile.selectProvince')}`}
             </option>
             {provinces.map((province) => (
-              <option key={province.code} value={province.code} className="text-gray-900 dark:text-white">
+              <option key={String(province.code)} value={String(province.code)} className="text-gray-900 dark:text-white">
                 {province.name}
               </option>
             ))}
@@ -149,7 +167,7 @@ const AddressSelector = ({
         </label>
         <div className="relative">
           <select
-            value={value.wardCode || ''}
+            value={String(value.wardCode || '')}
             onChange={handleWardChange}
             disabled={disabled || isLoadingWards || !value.provinceCode}
             className={getInputClass('ward')}
@@ -163,7 +181,7 @@ const AddressSelector = ({
               }
             </option>
             {wards.map((ward) => (
-              <option key={ward.code} value={ward.code} className="text-gray-900 dark:text-white">
+              <option key={String(ward.code)} value={String(ward.code)} className="text-gray-900 dark:text-white">
                 {ward.name}
               </option>
             ))}

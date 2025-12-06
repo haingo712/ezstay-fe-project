@@ -500,29 +500,71 @@ export default function ProfilePage() {
     setSuccess("");
 
     try {
-      // ✅ Validate ONLY required fields (matching backend UserDTO)
-      if (!profile.bio || profile.bio.trim() === '') {
-        setError('Bio is required');
-        setLoading(false);
-        return;
-      }
-
+      // ✅ Validate ONLY required fields (matching backend CreateUserDTO)
       if (!profile.dateOfBirth) {
         setError('Date of birth is required');
         setLoading(false);
         return;
       }
 
-      if (!profileExists && !avatarFile) {
-        setError('Avatar is required when creating profile');
-        setLoading(false);
-        return;
+      // Validate address fields (required for create)
+      if (!profileExists) {
+        if (!profile.detailAddress?.trim()) {
+          setError('Detail address is required');
+          setLoading(false);
+          return;
+        }
+        if (!profile.provinceId) {
+          setError('Province is required');
+          setLoading(false);
+          return;
+        }
+        if (!profile.wardId) {
+          setError('Ward is required');
+          setLoading(false);
+          return;
+        }
+        if (!frontImageFile) {
+          setError('Front CCCD image is required');
+          setLoading(false);
+          return;
+        }
+        if (!backImageFile) {
+          setError('Back CCCD image is required');
+          setLoading(false);
+          return;
+        }
+        if (!profile.temporaryResidence?.trim()) {
+          setError('Temporary residence is required');
+          setLoading(false);
+          return;
+        }
+        if (!profile.citizenIdNumber?.trim()) {
+          setError('Citizen ID number is required');
+          setLoading(false);
+          return;
+        }
+        if (!/^\d{12}$/.test(profile.citizenIdNumber)) {
+          setError('Citizen ID must be exactly 12 digits');
+          setLoading(false);
+          return;
+        }
+        if (!profile.citizenIdIssuedDate) {
+          setError('Citizen ID issued date is required');
+          setLoading(false);
+          return;
+        }
+        if (!profile.citizenIdIssuedPlace?.trim()) {
+          setError('Citizen ID issued place is required');
+          setLoading(false);
+          return;
+        }
       }
 
       // Prepare data for backend API
       const profileData = {
         gender: profile.gender,
-        bio: profile.bio.trim(),
+        bio: profile.bio?.trim() || '',
         dateOfBirth: profile.dateOfBirth,
         // Optional fields
         fullName: profile.fullName?.trim() || '',
@@ -897,9 +939,9 @@ export default function ProfilePage() {
                 </label>
                 <AddressSelector
                   value={{
-                    provinceCode: profile.provinceId ? parseInt(profile.provinceId) : null,
+                    provinceCode: profile.provinceId ? String(profile.provinceId) : null,
                     provinceName: profile.provinceName,
-                    wardCode: profile.wardId ? parseInt(profile.wardId) : null,
+                    wardCode: profile.wardId ? String(profile.wardId) : null,
                     wardName: profile.wardName,
                     address: profile.detailAddress
                   }}

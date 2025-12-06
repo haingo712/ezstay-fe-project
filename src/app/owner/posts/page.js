@@ -6,7 +6,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { rentalPostService } from '@/services/rentalPostService';
 import boardingHouseService from '@/services/boardingHouseService';
 import roomService from '@/services/roomService';
-import { FileText, Plus, Edit2, Trash2, Copy, X, Building, Home } from 'lucide-react';
+import { FileText, Plus, Edit2, Trash2, Copy, X, Building, Home, Eye } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 export default function PostsPage() {
@@ -17,7 +17,9 @@ export default function PostsPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [posts, setPosts] = useState([]);
   const [showPostModal, setShowPostModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
+  const [detailPost, setDetailPost] = useState(null);
   const [postData, setPostData] = useState({
     boardingHouseId: '',
     roomIds: [],
@@ -273,6 +275,11 @@ export default function PostsPage() {
     }
   };
 
+  const handleViewDetail = (post) => {
+    setDetailPost(post);
+    setShowDetailModal(true);
+  };
+
   const handleImageChange = (e) => {
     const newFiles = Array.from(e.target.files);
 
@@ -519,13 +526,7 @@ export default function PostsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center">
             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('ownerPosts.emptyState.title')}</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">{t('ownerPosts.emptyState.description')}</p>
-            <button
-              onClick={handleNewPost}
-              className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors"
-            >
-              {t('ownerPosts.createPost')}
-            </button>
+            <p className="text-gray-600 dark:text-gray-400">{t('ownerPosts.emptyState.description')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -559,6 +560,13 @@ export default function PostsPage() {
                       {getStatusText(post)}
                     </span>
                     <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleViewDetail(post)}
+                        className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
+                        title="View Details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => handleEditPost(post)}
                         className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
@@ -951,6 +959,240 @@ export default function PostsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {showDetailModal && detailPost && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
+            {/* Header */}
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between z-10">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mr-3">
+                  <Eye className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {t('ownerPosts.detailTitle') || 'Post Details'}
+                </h2>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  setDetailPost(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Status and Date Row */}
+              <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
+                <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(detailPost)}`}>
+                  {getStatusText(detailPost)}
+                </span>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  <div>📅 {t('ownerPosts.card.created')}: {formatDate(detailPost.createdAt)}</div>
+                  {detailPost.updatedAt && detailPost.updatedAt !== detailPost.createdAt && (
+                    <div className="mt-1">🔄 {t('ownerPosts.card.updated') || 'Updated'}: {formatDate(detailPost.updatedAt)}</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Title Section */}
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl p-6">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                  {t('ownerPosts.detail.title') || 'Title'}
+                </h3>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {detailPost.title}
+                </p>
+              </div>
+
+              {/* Images Gallery */}
+              {detailPost.imageUrls && detailPost.imageUrls.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                    <span>🖼️</span>
+                    {t('ownerPosts.detail.images') || 'Images'}
+                    <span className="text-sm font-normal text-gray-500">({detailPost.imageUrls.length})</span>
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {detailPost.imageUrls.map((url, index) => (
+                      <div key={index} className="relative aspect-video rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 shadow-md hover:shadow-xl transition-shadow">
+                        <img
+                          src={url}
+                          alt={`${detailPost.title} - ${index + 1}`}
+                          className="w-full h-full object-cover hover:scale-110 transition-transform duration-300 cursor-pointer"
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                          }}
+                        />
+                        <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                          {index + 1}/{detailPost.imageUrls.length}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                  <span>📝</span>
+                  {t('ownerPosts.detail.description') || 'Description'}
+                </h3>
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                    {detailPost.content || detailPost.description || (
+                      <span className="text-gray-400 italic">{t('ownerPosts.detail.noDescription') || 'No description available'}</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Info Grid */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                  <span>ℹ️</span>
+                  {t('ownerPosts.detail.information') || 'Information'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Author */}
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                    <div className="flex items-center text-blue-600 dark:text-blue-400 mb-2">
+                      <span className="text-xl mr-2">👤</span>
+                      <span className="text-sm font-semibold">{t('ownerPosts.detail.author') || 'Author'}</span>
+                    </div>
+                    <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
+                      {detailPost.authorName || 'Unknown Author'}
+                    </p>
+                  </div>
+
+                  {/* Boarding House */}
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
+                    <div className="flex items-center text-purple-600 dark:text-purple-400 mb-2">
+                      <Building className="w-5 h-5 mr-2" />
+                      <span className="text-sm font-semibold">{t('ownerPosts.detail.boardingHouse') || 'Boarding House'}</span>
+                    </div>
+                    <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
+                      {detailPost.houseName || t('ownerPosts.card.noHouse')}
+                    </p>
+                  </div>
+
+                  {/* Room */}
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                    <div className="flex items-center text-green-600 dark:text-green-400 mb-2">
+                      <Home className="w-5 h-5 mr-2" />
+                      <span className="text-sm font-semibold">{t('ownerPosts.detail.room') || 'Room'}</span>
+                    </div>
+                    <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
+                      {detailPost.roomName || t('ownerPosts.card.allRooms')}
+                    </p>
+                  </div>
+
+                  {/* Contact Phone */}
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 rounded-lg p-4 border border-orange-200 dark:border-orange-700">
+                    <div className="flex items-center text-orange-600 dark:text-orange-400 mb-2">
+                      <span className="text-xl mr-2">📞</span>
+                      <span className="text-sm font-semibold">{t('ownerPosts.detail.contact') || 'Contact'}</span>
+                    </div>
+                    <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
+                      {detailPost.contactPhone || 'N/A'}
+                    </p>
+                  </div>
+
+                  {/* Post ID */}
+                  {detailPost.id && (
+                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-600/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                      <div className="flex items-center text-gray-600 dark:text-gray-400 mb-2">
+                        <span className="text-xl mr-2">🔑</span>
+                        <span className="text-sm font-semibold">Post ID</span>
+                      </div>
+                      <p className="text-gray-900 dark:text-white font-mono text-sm ml-7 break-all">
+                        {detailPost.id}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Boarding House ID */}
+                  {detailPost.boardingHouseId && (
+                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-600/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                      <div className="flex items-center text-gray-600 dark:text-gray-400 mb-2">
+                        <span className="text-xl mr-2">🏷️</span>
+                        <span className="text-sm font-semibold">House ID</span>
+                      </div>
+                      <p className="text-gray-900 dark:text-white font-mono text-sm ml-7 break-all">
+                        {detailPost.boardingHouseId}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Amenities Section */}
+              {detailPost.amenities && detailPost.amenities.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                    <span>✨</span>
+                    {t('ownerPosts.detail.amenities') || 'Amenities'}
+                    <span className="text-sm font-normal text-gray-500">({detailPost.amenities.length})</span>
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {detailPost.amenities.map((amenity, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-lg p-3 border border-indigo-200 dark:border-indigo-700 hover:shadow-md transition-shadow"
+                      >
+                        {amenity.imageUrl ? (
+                          <img
+                            src={amenity.imageUrl}
+                            alt={amenity.amenityName || amenity.name}
+                            className="w-10 h-10 object-cover rounded-lg shadow-sm"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextElementSibling.style.display = 'block';
+                            }}
+                          />
+                        ) : null}
+                        <span className={`text-2xl ${!amenity.imageUrl ? '' : 'hidden'}`}>🏠</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white flex-1">
+                          {amenity.amenityName || amenity.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    handleEditPost(detailPost);
+                  }}
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                >
+                  <Edit2 className="w-5 h-5" />
+                  {t('common.edit') || 'Edit'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setDetailPost(null);
+                  }}
+                  className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
+                >
+                  {t('common.close') || 'Close'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

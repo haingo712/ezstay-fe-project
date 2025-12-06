@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import userManagementService from '@/services/userManagementService';
 import AuthService from '@/services/authService';
 import { useTranslation } from '@/hooks/useTranslation';
-import { toast } from 'react-toastify';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function UserManagementPage() {
@@ -79,11 +78,11 @@ export default function UserManagementPage() {
   const handleApproveRequest = async (requestId) => {
     try {
       await userManagementService.approveOwnerRequest(requestId);
-      toast.success(t('staffUsers.toast.approveSuccess') || 'Request approved successfully');
+      console.log('✅ Request approved successfully');
       loadOwnerRequests();
     } catch (error) {
       console.error('Error approving request:', error);
-      toast.error(t('staffUsers.toast.approveFailed') || 'Failed to approve request');
+      console.error('❌ Failed to approve request');
     }
   };
 
@@ -91,13 +90,13 @@ export default function UserManagementPage() {
     if (!selectedUser) return;
     try {
       await userManagementService.rejectOwnerRequest(selectedUser.id, rejectionReason);
-      toast.success(t('staffUsers.toast.rejectSuccess') || 'Request rejected successfully');
+      console.log('✅ Request rejected successfully');
       setShowRejectionModal(false);
       setRejectionReason('');
       loadOwnerRequests();
     } catch (error) {
       console.error('Error rejecting request:', error);
-      toast.error(t('staffUsers.toast.rejectFailed') || 'Failed to reject request');
+      console.error('❌ Failed to reject request');
     }
   };
 
@@ -120,12 +119,14 @@ export default function UserManagementPage() {
 
   const handleStatusToggle = async (userId, currentStatus) => {
     try {
-      await userManagementService.updateAccountStatus(userId, !currentStatus);
-      toast.success(t('staffUsers.toast.statusSuccess') || 'Account status updated successfully!');
+      const newStatus = currentStatus ? 0 : 1;
+      console.log(`🔄 Toggling status for user ${userId}: ${currentStatus} → ${newStatus}`);
+      await userManagementService.updateAccountStatus(userId, newStatus);
+      console.log('✅ Account status updated successfully');
       await loadUsers();
     } catch (error) {
       console.error('Error updating status:', error);
-      toast.error(t('staffUsers.toast.statusFailed') || 'Failed to update account status');
+      console.error('❌ Failed to update account status');
     }
   };
 
@@ -218,15 +219,6 @@ export default function UserManagementPage() {
             {t('staffUsers.subtitle') || 'Manage user and property owner accounts'}
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-lg"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          {t('staffUsers.createAccount')}
-        </button>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
@@ -378,12 +370,6 @@ export default function UserManagementPage() {
                             className="px-2 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700"
                           >
                             {t('staffUsers.actions.view') || 'View'}
-                          </button>
-                          <button
-                            onClick={() => handleEditAccount(user)}
-                            className="px-2 py-1 bg-yellow-500 text-white text-xs rounded-md hover:bg-yellow-600"
-                          >
-                            {t('staffUsers.actions.edit') || 'Edit'}
                           </button>
                           <button
                             onClick={() => handleStatusToggle(user.id, user.isActive)}

@@ -858,8 +858,8 @@ export default function ContractsManagementPage() {
         const newWardsByProfile = {};
         mappedProfiles.forEach((profile, index) => {
           if (profile.provinceId) {
-            const provinceCode = parseInt(profile.provinceId);
-            const selectedProvince = currentProvinces.find(p => p.code === provinceCode);
+            const provinceCode = String(profile.provinceId);
+            const selectedProvince = currentProvinces.find(p => String(p.code) === provinceCode);
             if (selectedProvince) {
               newWardsByProfile[index] = selectedProvince.wards || [];
               console.log(`🏘️ Wards loaded for profile ${index} province ${provinceCode}:`, selectedProvince.wards?.length, "wards");

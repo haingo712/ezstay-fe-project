@@ -34,6 +34,10 @@ export default function PostsReviewPage() {
   const [selectedPost, setSelectedPost] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [activeTab, setActiveTab] = useState('pending');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Load pending posts from API
   const loadPendingPosts = useCallback(async () => {
@@ -73,42 +77,81 @@ export default function PostsReviewPage() {
   });
 
   const handleApprove = async (postId) => {
-    if (!confirm('Are you sure you want to approve this post? It will be visible to all users.')) {
-      return;
-    }
-    try {
-      setProcessingId(postId);
-      await rentalPostService.approvePost(postId);
-      await loadPendingPosts();
-      alert(t('staffPosts.approveSuccess') || 'Bài đăng đã được duyệt thành công!');
-    } catch (error) {
-      console.error('Error approving post:', error);
-      alert(t('staffPosts.approveError') || 'Không thể duyệt bài đăng. Vui lòng thử lại.');
-    } finally {
-      setProcessingId(null);
-    }
+    setConfirmMessage(t('staffPosts.confirmApprove') || 'Bạn có chắc muốn duyệt bài đăng này? Bài đăng sẽ hiển thị cho tất cả người dùng.');
+    setConfirmAction(() => async () => {
+      try {
+        setProcessingId(postId);
+        setShowConfirmModal(false);
+        await rentalPostService.approvePost(postId);
+        await loadPendingPosts();
+        setSuccessMessage(t('staffPosts.approveSuccess') || 'Bài đăng đã được duyệt thành công!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (error) {
+        console.error('Error approving post:', error);
+        toast.error(t('staffPosts.approveError') || 'Không thể duyệt bài đăng. Vui lòng thử lại.');
+      } finally {
+        setProcessingId(null);
+      }
+    });
+    setShowConfirmModal(true);
   };
 
   const handleReject = async (postId) => {
-    if (!confirm(t('staffPosts.confirmReject') || 'Bạn có chắc muốn từ chối bài đăng này?')) {
-      return;
-    }
-    try {
-      setProcessingId(postId);
-      await rentalPostService.rejectPost(postId);
-      await loadPendingPosts();
-      alert(t('staffPosts.rejectSuccess') || 'Bài đăng đã bị từ chối.');
-    } catch (error) {
-      console.error('Error rejecting post:', error);
-      alert(t('staffPosts.rejectError') || 'Không thể từ chối bài đăng. Vui lòng thử lại.');
-    } finally {
-      setProcessingId(null);
-    }
+    setConfirmMessage(t('staffPosts.confirmReject') || 'Bạn có chắc muốn từ chối bài đăng này?');
+    setConfirmAction(() => async () => {
+      try {
+        setProcessingId(postId);
+        setShowConfirmModal(false);
+        await rentalPostService.rejectPost(postId);
+        await loadPendingPosts();
+        setSuccessMessage(t('staffPosts.rejectSuccess') || 'Bài đăng đã bị từ chối.');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (error) {
+        console.error('Error rejecting post:', error);
+        toast.error(t('staffPosts.rejectError') || 'Không thể từ chối bài đăng. Vui lòng thử lại.');
+      } finally {
+        setProcessingId(null);
+      }
+    });
+    setShowConfirmModal(true);
   };
 
-  const handleViewDetail = (post) => {
-    setSelectedPost(post);
-    setShowDetailModal(true);
+  const handleViewDetail = async (post) => {
+    try {
+      setShowDetailModal(true);
+      setSelectedPost({ ...post, loading: true }); // Show modal with loading state
+
+      console.log('👁️ Fetching full post details for ID:', post.id);
+
+      // Fetch full post details from API
+      const fullPost = await rentalPostService.getPostById(post.id);
+      console.log('✅ Full post data received:', fullPost);
+      console.log('Full post structure:', {
+        id: fullPost.id,
+        title: fullPost.title,
+        content: fullPost.content,
+        imageUrls: fullPost.imageUrls,
+        houseName: fullPost.houseName,
+        roomName: fullPost.roomName,
+        authorName: fullPost.authorName,
+        contactPhone: fullPost.contactPhone,
+        isApproved: fullPost.isApproved,
+        isActive: fullPost.isActive,
+        createdAt: fullPost.createdAt,
+        updatedAt: fullPost.updatedAt,
+        room: fullPost.room,
+        'room.price': fullPost.room?.price,
+        'room.area': fullPost.room?.area,
+        'room.amenities': fullPost.room?.amenities,
+        boardingHouse: fullPost.boardingHouse
+      });
+
+      setSelectedPost(fullPost);
+    } catch (error) {
+      console.error('❌ Error fetching post details:', error);
+      toast.error('Không thể tải chi tiết bài đăng. Vui lòng thử lại.');
+      setShowDetailModal(false);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -324,50 +367,15 @@ export default function PostsReviewPage() {
                       </p>
 
                       {/* Post Info Grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="flex items-center gap-2">
-                          <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                            <DollarSign className="w-4 h-4 text-green-600 dark:text-green-400" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Giá thuê</p>
-                            <p className="font-semibold text-gray-900 dark:text-white">
-                              {post.price ? `${post.price.toLocaleString('vi-VN')}đ` : 'N/A'}
-                            </p>
-                          </div>
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                          <Calendar className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                            <Maximize2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Diện tích</p>
-                            <p className="font-semibold text-gray-900 dark:text-white">
-                              {post.area ? `${post.area} m²` : 'N/A'}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                            <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Tác giả</p>
-                            <p className="font-semibold text-gray-900 dark:text-white truncate">
-                              {post.authorName || 'N/A'}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                            <Calendar className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Ngày đăng</p>
-                            <p className="font-semibold text-gray-900 dark:text-white text-sm">
-                              {formatDate(post.createdAt)}
-                            </p>
-                          </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Ngày đăng</p>
+                          <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                            {formatDate(post.createdAt)}
+                          </p>
                         </div>
                       </div>
 
@@ -409,7 +417,7 @@ export default function PostsReviewPage() {
                           </button>
 
                           <button
-                            onClick={() => window.open(`/rental-posts/${post.id}`, '_blank')}
+                            onClick={() => handleViewDetail(post)}
                             className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors"
                           >
                             <Eye className="w-4 h-4" />
@@ -453,139 +461,300 @@ export default function PostsReviewPage() {
 
       {/* Detail Modal */}
       {showDetailModal && selectedPost && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              {/* Modal Header */}
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {t('staffPosts.modal.title') || 'Post Details'}
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                  <Eye className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {t('staffPosts.modal.title') || 'Chi tiết bài đăng'}
                 </h2>
-                <button
-                  onClick={() => setShowDetailModal(false)}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
               </div>
-
-              {/* Images Gallery */}
-              {selectedPost.imageUrls && selectedPost.imageUrls.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                    {t('staffPosts.modal.images') || 'Images'} ({selectedPost.imageUrls.length})
-                  </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {selectedPost.imageUrls.map((url, index) => (
-                      <img
-                        key={index}
-                        src={url}
-                        alt={`${selectedPost.title} - Image ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Post Info */}
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    {t('staffPosts.modal.postTitle') || 'Title'}
-                  </h3>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {selectedPost.title || 'Untitled'}
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    {t('staffPosts.modal.description') || 'Description'}
-                  </h3>
-                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                    {selectedPost.content || selectedPost.description || 'No description'}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      {t('staffPosts.modal.house') || 'Boarding House'}
-                    </h3>
-                    <p className="text-gray-900 dark:text-white">{selectedPost.houseName || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      {t('staffPosts.modal.room') || 'Room'}
-                    </h3>
-                    <p className="text-gray-900 dark:text-white">{selectedPost.roomName || 'All rooms'}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      {t('staffPosts.modal.author') || 'Author'}
-                    </h3>
-                    <p className="text-gray-900 dark:text-white">{selectedPost.authorName || selectedPost.authorId || 'Unknown'}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      {t('staffPosts.modal.contact') || 'Contact'}
-                    </h3>
-                    <p className="text-gray-900 dark:text-white">{selectedPost.contactPhone || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      {t('staffPosts.modal.createdAt') || 'Created At'}
-                    </h3>
-                    <p className="text-gray-900 dark:text-white">{formatDate(selectedPost.createdAt)}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      {t('staffPosts.modal.postId') || 'Post ID'}
-                    </h3>
-                    <p className="text-gray-900 dark:text-white text-xs font-mono">{selectedPost.id}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Modal Actions */}
-              <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={() => {
-                    handleApprove(selectedPost.id);
-                    setShowDetailModal(false);
-                  }}
-                  className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {t('staffPosts.actions.approve') || 'Approve Post'}
-                </button>
-
-                <button
-                  onClick={() => {
-                    handleReject(selectedPost.id);
-                    setShowDetailModal(false);
-                  }}
-                  className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  {t('staffPosts.actions.reject') || 'Reject Post'}
-                </button>
-
-                <button
-                  onClick={() => setShowDetailModal(false)}
-                  className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors"
-                >
-                  {t('staffPosts.actions.close') || 'Close'}
-                </button>
-              </div>
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
+
+            <div className="p-6 space-y-6">
+              {/* Loading State */}
+              {selectedPost.loading ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
+                  <p className="text-gray-600 dark:text-gray-400">{t('staffPosts.modal.loading') || 'Đang tải chi tiết bài đăng...'}</p>
+                </div>
+              ) : (
+                <>
+                  {/* Title */}
+                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl p-6">
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                      {t('staffPosts.modal.postTitle') || 'Tiêu đề'}
+                    </h3>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {selectedPost.title || 'Untitled'}
+                    </p>
+                  </div>
+
+                  {/* Images Gallery */}
+                  {selectedPost.imageUrls && selectedPost.imageUrls.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                        <span>🖼️</span>
+                        {t('staffPosts.modal.images') || 'Hình ảnh'}
+                        <span className="text-sm font-normal text-gray-500">({selectedPost.imageUrls.length})</span>
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {selectedPost.imageUrls.map((url, index) => (
+                          <div key={index} className="relative aspect-video rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 shadow-md hover:shadow-xl transition-shadow">
+                            <img
+                              src={url}
+                              alt={`${selectedPost.title} - ${index + 1}`}
+                              className="w-full h-full object-cover hover:scale-110 transition-transform duration-300 cursor-pointer"
+                              onError={(e) => {
+                                e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                              }}
+                            />
+                            <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                              {index + 1}/{selectedPost.imageUrls.length}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Description */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <span>📝</span>
+                      {t('staffPosts.modal.description') || 'Mô tả'}
+                    </h3>
+                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                      <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                        {selectedPost.content || selectedPost.description || (
+                          <span className="text-gray-400 italic">{t('staffPosts.modal.noDescription') || 'Không có mô tả'}</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Status and Date */}
+                  <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
+                    <span className={`px-4 py-2 rounded-full text-sm font-medium ${selectedPost.isApproved === 1 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                      selectedPost.isApproved === 2 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                        selectedPost.isApproved === 0 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                      }`}>
+                      {selectedPost.isApproved === 1 ? `✓ ${t('staffPosts.status.approved') || 'Đã duyệt'}` :
+                        selectedPost.isApproved === 2 ? `✗ ${t('staffPosts.status.rejected') || 'Đã từ chối'}` :
+                          selectedPost.isApproved === 0 ? `⏳ ${t('staffPosts.status.pending') || 'Chờ duyệt'}` :
+                            `🚫 ${t('staffPosts.status.inactive') || 'Không hoạt động'}`}
+                    </span>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div>📅 {formatDate(selectedPost.createdAt)}</div>
+                      {selectedPost.updatedAt && selectedPost.updatedAt !== selectedPost.createdAt && (
+                        <div className="mt-1">🔄 {formatDate(selectedPost.updatedAt)}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Information Grid */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <span>ℹ️</span>
+                      {t('staffPosts.modal.detailInfo') || 'Thông tin chi tiết'}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Boarding House */}
+                      <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
+                        <div className="flex items-center text-purple-600 dark:text-purple-400 mb-2">
+                          <Building2 className="w-5 h-5 mr-2" />
+                          <span className="text-sm font-semibold">{t('staffPosts.modal.boardingHouse') || 'Nhà trọ'}</span>
+                        </div>
+                        <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
+                          {selectedPost.houseName || 'N/A'}
+                        </p>
+                      </div>
+
+                      {/* Room */}
+                      <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                        <div className="flex items-center text-green-600 dark:text-green-400 mb-2">
+                          <Home className="w-5 h-5 mr-2" />
+                          <span className="text-sm font-semibold">{t('staffPosts.modal.room') || 'Phòng'}</span>
+                        </div>
+                        <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
+                          {selectedPost.room?.roomName || selectedPost.roomName || 'All rooms'}
+                        </p>
+                      </div>
+
+                      {/* Price */}
+                      <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/30 rounded-lg p-4 border border-emerald-200 dark:border-emerald-700">
+                        <div className="flex items-center text-emerald-600 dark:text-emerald-400 mb-2">
+                          <DollarSign className="w-5 h-5 mr-2" />
+                          <span className="text-sm font-semibold">{t('staffPosts.modal.price') || 'Giá thuê'}</span>
+                        </div>
+                        <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
+                          {selectedPost.room?.price ? `${selectedPost.room.price.toLocaleString('vi-VN')}đ` :
+                            selectedPost.price ? `${selectedPost.price.toLocaleString('vi-VN')}đ` : 'N/A'}
+                        </p>
+                      </div>
+
+                      {/* Area */}
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                        <div className="flex items-center text-blue-600 dark:text-blue-400 mb-2">
+                          <Maximize2 className="w-5 h-5 mr-2" />
+                          <span className="text-sm font-semibold">{t('staffPosts.modal.area') || 'Diện tích'}</span>
+                        </div>
+                        <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
+                          {selectedPost.room?.area ? `${selectedPost.room.area} m²` :
+                            selectedPost.area ? `${selectedPost.area} m²` : 'N/A'}
+                        </p>
+                      </div>
+
+                      {/* Author */}
+                      <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/30 dark:to-indigo-800/30 rounded-lg p-4 border border-indigo-200 dark:border-indigo-700">
+                        <div className="flex items-center text-indigo-600 dark:text-indigo-400 mb-2">
+                          <User className="w-5 h-5 mr-2" />
+                          <span className="text-sm font-semibold">{t('staffPosts.modal.author') || 'Tác giả'}</span>
+                        </div>
+                        <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
+                          {selectedPost.authorName || 'Unknown Author'}
+                        </p>
+                      </div>
+
+                      {/* Contact */}
+                      <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 rounded-lg p-4 border border-orange-200 dark:border-orange-700">
+                        <div className="flex items-center text-orange-600 dark:text-orange-400 mb-2">
+                          <Phone className="w-5 h-5 mr-2" />
+                          <span className="text-sm font-semibold">{t('staffPosts.modal.contact') || 'Liên hệ'}</span>
+                        </div>
+                        <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
+                          {selectedPost.contactPhone || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Amenities */}
+                  {selectedPost.room?.amenities && selectedPost.room.amenities.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                        <span>✨</span>
+                        {t('staffPosts.modal.amenities') || 'Tiện nghi'}
+                        <span className="text-sm font-normal text-gray-500">({selectedPost.room.amenities.length})</span>
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {selectedPost.room.amenities.map((amenity, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-3 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-lg p-3 border border-indigo-200 dark:border-indigo-700 hover:shadow-md transition-shadow"
+                          >
+                            {amenity.imageUrl ? (
+                              <img
+                                src={amenity.imageUrl}
+                                alt={amenity.amenityName || amenity.name}
+                                className="w-10 h-10 object-cover rounded-lg shadow-sm"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextElementSibling.style.display = 'block';
+                                }}
+                              />
+                            ) : null}
+                            <span className={`text-2xl ${!amenity.imageUrl ? '' : 'hidden'}`}>🏠</span>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white flex-1">
+                              {amenity.amenityName || amenity.name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Modal Actions */}
+                  <div className="flex flex-wrap gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    {selectedPost.isApproved === null && (
+                      <>
+                        <button
+                          onClick={() => {
+                            handleApprove(selectedPost.id);
+                            setShowDetailModal(false);
+                          }}
+                          className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl"
+                        >
+                          <CheckCircle className="w-5 h-5" />
+                          {t('staffPosts.actions.approve') || 'Duyệt bài'}
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            handleReject(selectedPost.id);
+                            setShowDetailModal(false);
+                          }}
+                          className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl"
+                        >
+                          <XCircle className="w-5 h-5" />
+                          {t('staffPosts.actions.reject') || 'Từ chối'}
+                        </button>
+                      </>
+                    )}
+
+                    <button
+                      onClick={() => setShowDetailModal(false)}
+                      className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold transition-colors"
+                    >
+                      {t('staffPosts.actions.close') || 'Đóng'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              {t('common.confirm') || 'Xác nhận'}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              {confirmMessage}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                {t('common.cancel') || 'Hủy'}
+              </button>
+              <button
+                onClick={() => {
+                  if (confirmAction) confirmAction();
+                }}
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                {t('common.confirm') || 'Xác nhận'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Message */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-[70] animate-fade-in">
+          <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2">
+            <CheckCircle className="w-5 h-5" />
+            <span>{successMessage}</span>
           </div>
         </div>
       )}
