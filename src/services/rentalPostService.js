@@ -420,16 +420,20 @@ export const rentalPostService = {
     return rentalPostService.getById(postId);
   },
 
-  // ==================== STAFF POST MODERATION ====================
+  // ==================== STAFF MANAGEMENT APIS ====================
 
-  // Get all pending posts for staff review
+  // Get pending posts for staff review
+  // Backend: GET /api/RentalPosts/pending
   getPendingPosts: async () => {
     try {
       console.log('📋 Fetching pending posts for staff review...');
       const response = await axiosInstance.get('/api/RentalPosts/pending');
       let posts = response.data;
 
-      console.log('📋 Raw pending posts from backend:', posts);
+      // Handle if response is wrapped in ApiResponse structure
+      if (posts && posts.data && posts.isSuccess !== undefined) {
+        posts = posts.data;
+      }
 
       // Normalize posts data
       if (Array.isArray(posts)) {
@@ -440,22 +444,24 @@ export const rentalPostService = {
           posts.map(post => enrichPostWithNames(post, false))
         );
 
+        console.log('✅ Pending posts loaded:', enrichedPosts.length);
         return enrichedPosts;
       }
 
-      return posts;
+      return posts || [];
     } catch (error) {
       console.error('❌ Error fetching pending posts:', error);
       throw error;
     }
   },
 
-  // Approve a post (Staff only)
+  // Approve a post (Staff action)
+  // Backend: PUT /api/RentalPosts/{id}/approve
   approvePost: async (postId) => {
     try {
-      console.log(`✅ Approving post ${postId}...`);
+      console.log('✅ Approving post:', postId);
       const response = await axiosInstance.put(`/api/RentalPosts/${postId}/approve`);
-      console.log('✅ Post approved successfully:', response.data);
+      console.log('✅ Post approved successfully');
       return response.data;
     } catch (error) {
       console.error('❌ Error approving post:', error);
@@ -463,12 +469,13 @@ export const rentalPostService = {
     }
   },
 
-  // Reject a post (Staff only)
+  // Reject a post (Staff action)
+  // Backend: PUT /api/RentalPosts/{id}/reject
   rejectPost: async (postId) => {
     try {
-      console.log(`❌ Rejecting post ${postId}...`);
+      console.log('❌ Rejecting post:', postId);
       const response = await axiosInstance.put(`/api/RentalPosts/${postId}/reject`);
-      console.log('✅ Post rejected successfully:', response.data);
+      console.log('✅ Post rejected successfully');
       return response.data;
     } catch (error) {
       console.error('❌ Error rejecting post:', error);
