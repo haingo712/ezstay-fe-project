@@ -1899,6 +1899,7 @@
         "subtitle": "Manage review reports from owners",
         "searchPlaceholder": "Search by reviewId or reason...",
         "empty": "No reports found",
+        "noReports": "No reports found",
         "loading": "Loading reports...",
         "error": "Error loading reports",
         "filters": {

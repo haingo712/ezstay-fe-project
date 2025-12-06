@@ -1611,6 +1611,7 @@
         },
         "loading": "Đang tải báo cáo...",
         "empty": "Không tìm thấy báo cáo",
+        "noReports": "Chưa có báo cáo nào",
         "error": "Không thể tải danh sách báo cáo"
     },
     "staffPosts": {

@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import amenityService from '@/services/amenityService';
+import imageService from '@/services/imageService';
+import api from '@/utils/api';
 import SafeImage from '@/components/SafeImage';
 import { useTranslation } from '@/hooks/useTranslation';
 import { toast } from 'react-toastify';
@@ -30,6 +32,7 @@ export default function AmenityManagementPage() {
     imageFile: null
   });
   const [editImagePreview, setEditImagePreview] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load amenities with OData parameters
   const loadAmenities = useCallback(async () => {
@@ -117,7 +120,11 @@ export default function AmenityManagementPage() {
       return;
     }
 
+    if (isSubmitting) return; // Prevent duplicate submissions
+
     try {
+      setIsSubmitting(true);
+
       // Create FormData for file upload to backend
       // Backend will upload the file to Filebase IPFS and return IPFS URL
       const formData = new FormData();
@@ -142,6 +149,8 @@ export default function AmenityManagementPage() {
     } catch (error) {
       console.error('❌ Error creating amenity:', error);
       toast.error(error.message || t('staffAmenity.toast.createFailed') || 'Failed to create amenity');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -179,24 +188,37 @@ export default function AmenityManagementPage() {
       return;
     }
 
-    try {
-      // Create FormData for file upload to backend
-      const formData = new FormData();
-      formData.append('AmenityName', editAmenity.amenityName);
+    if (isSubmitting) return; // Prevent duplicate submissions
 
-      // Only append image if user selected a new one
+    try {
+      setIsSubmitting(true);
+
+      let imageUrl = selectedAmenity.imageUrl; // Keep current URL by default
+
+      // If user selected a new image, upload it to ImageAPI first
       if (editAmenity.imageFile) {
-        formData.append('ImageUrl', editAmenity.imageFile);
-        console.log('📤 Updating with new image:', editAmenity.imageFile.name);
+        console.log('📤 Uploading new image to ImageAPI:', editAmenity.imageFile.name);
+        toast.info('Uploading image...');
+
+        // Upload image and get URL string from ImageAPI
+        imageUrl = await imageService.upload(editAmenity.imageFile);
+        console.log('✅ Image uploaded successfully, URL:', imageUrl);
       } else {
-        console.log('📤 Updating without changing image');
+        console.log('📤 Updating without changing image, keeping URL:', imageUrl);
       }
 
-      console.log('📤 Sending update request for:', selectedAmenity.id);
+      // Send JSON data instead of FormData
+      const updateData = {
+        amenityName: editAmenity.amenityName,
+        imageUrl: imageUrl
+      };
 
-      const result = await amenityService.updateAmenity(selectedAmenity.id, formData);
+      console.log('📤 Sending update request to AmenityAPI for:', selectedAmenity.id);
+      console.log('📋 Data:', updateData);
 
-      console.log('✅ Update response:', result);
+      const response = await api.put(`/api/Amenity/${selectedAmenity.id}`, updateData);
+
+      console.log('✅ Update response:', response);
 
       setShowEditModal(false);
       setSelectedAmenity(null);
@@ -208,6 +230,8 @@ export default function AmenityManagementPage() {
     } catch (error) {
       console.error('❌ Error updating amenity:', error);
       toast.error(error.message || t('staffAmenity.toast.updateFailed') || 'Failed to update amenity');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -229,6 +253,7 @@ export default function AmenityManagementPage() {
     setImagePreview(null);
     setEditAmenity({ amenityName: '', imageFile: null });
     setEditImagePreview(null);
+    setIsSubmitting(false); // Reset submitting state
   };
 
   return (
@@ -370,7 +395,7 @@ export default function AmenityManagementPage() {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   {amenity.amenityName}
                 </h3>
-                
+
                 {/* Created & Updated dates */}
                 <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 mb-3">
                   {amenity.createdAt && (
@@ -414,25 +439,42 @@ export default function AmenityManagementPage() {
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && closeModals()}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-lg w-full shadow-2xl transform transition-all animate-in fade-in zoom-in duration-200">
             <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                ➕ {t('staffAmenities.modal.createTitle')}
-              </h2>
+              {/* Header */}
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                    <span className="text-2xl">➕</span>
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {t('staffAmenities.modal.createTitle') || 'Create New Amenity'}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeModals}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
-              <form onSubmit={handleCreateAmenity} className="space-y-4">
+              <form onSubmit={handleCreateAmenity} className="space-y-5">
                 {/* Amenity Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Amenity Name *
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Amenity Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={newAmenity.amenityName}
                     onChange={(e) => setNewAmenity({ ...newAmenity, amenityName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     placeholder="e.g. Wifi, Air Conditioner, Refrigerator..."
                     maxLength={100}
                   />
@@ -440,44 +482,67 @@ export default function AmenityManagementPage() {
 
                 {/* Image Upload */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('staffAmenities.modal.image')} *
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Image <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="file"
                     required
                     accept="image/*"
                     onChange={handleImageChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer cursor-pointer"
                   />
 
-                  {/* Image Preview - Use regular img tag for Data URL */}
+                  {/* Image Preview */}
                   {imagePreview && (
-                    <div className="mt-3 h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="max-h-full max-w-full object-contain"
-                      />
+                    <div className="mt-4 relative">
+                      <div className="absolute -top-2 left-3 z-10 bg-gradient-to-r from-green-600 to-green-700 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-lg">
+                        ✨ Image Preview
+                      </div>
+                      <div className="h-48 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl overflow-hidden border-2 border-green-500 flex items-center justify-center p-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="max-h-full max-w-full object-contain rounded-lg"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
 
                 {/* Buttons */}
-                <div className="flex gap-2 pt-4">
+                <div className="flex gap-3 pt-4">
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                    disabled={isSubmitting}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {t('common.add')}
+                    {isSubmitting ? (
+                      <>
+                        <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        {t('common.add') || 'Add'}
+                      </>
+                    )}
                   </button>
                   <button
                     type="button"
                     onClick={closeModals}
-                    className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
+                    className="flex-1 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"
                   >
-                    {t('common.cancel')}
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    {t('common.cancel') || 'Cancel'}
                   </button>
                 </div>
               </form>
@@ -488,25 +553,42 @@ export default function AmenityManagementPage() {
 
       {/* Edit Modal */}
       {showEditModal && selectedAmenity && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && closeModals()}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-lg w-full shadow-2xl transform transition-all animate-in fade-in zoom-in duration-200">
             <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                 {t('staffAmenities.modal.editTitle')}
-              </h2>
+              {/* Header */}
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                    <span className="text-2xl">✏️</span>
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {t('staffAmenities.modal.editTitle') || 'Edit Amenity'}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeModals}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
-              <form onSubmit={handleUpdateAmenity} className="space-y-4">
+              <form onSubmit={handleUpdateAmenity} className="space-y-5">
                 {/* Amenity Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('staffAmenities.modal.name')} *
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    {t('staffAmenities.modal.name') || 'Amenity Name'} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={editAmenity.amenityName}
                     onChange={(e) => setEditAmenity({ ...editAmenity, amenityName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     placeholder="e.g. Wifi, Air Conditioner, Refrigerator..."
                     maxLength={100}
                   />
@@ -514,10 +596,10 @@ export default function AmenityManagementPage() {
 
                 {/* Current Image */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('staffAmenities.modal.currentImage')}
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    {t('staffAmenities.modal.currentImage') || 'Current Image'}
                   </label>
-                  <div className="h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center relative">
+                  <div className="relative h-48 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-600 flex items-center justify-center">
                     <SafeImage
                       src={selectedAmenity.imageUrl}
                       alt={selectedAmenity.amenityName}
@@ -530,49 +612,72 @@ export default function AmenityManagementPage() {
 
                 {/* Upload New Image (Optional) */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('staffAmenities.modal.uploadNewImage') || 'Upload New Image (Optional)'}
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Change Image <span className="text-gray-400 text-xs">(Optional)</span>
                   </label>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleEditImageChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer cursor-pointer"
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {/* <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                     {t('staffAmenities.modal.leaveEmpty') || 'Leave empty to keep current image'}
-                  </p>
+                  </p> */}
 
                   {/* New Image Preview */}
                   {editImagePreview && (
-                    <div className="mt-3 h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center border-2 border-blue-500">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={editImagePreview}
-                        alt="New Preview"
-                        className="max-h-full max-w-full object-contain"
-                      />
-                      <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
-                        New Image
+                    <div className="mt-4 relative">
+                      <div className="absolute -top-2 left-3 z-10 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-lg">
+                        ✨ New Image Preview
+                      </div>
+                      <div className="h-48 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl overflow-hidden border-2 border-blue-500 flex items-center justify-center p-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={editImagePreview}
+                          alt="New Preview"
+                          className="max-h-full max-w-full object-contain rounded-lg"
+                        />
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* Buttons */}
-                <div className="flex gap-2 pt-4">
+                <div className="flex gap-3 pt-4">
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                    disabled={isSubmitting}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {t('common.update')}
+                    {isSubmitting ? (
+                      <>
+                        <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        {t('common.update') || 'Update'}
+                      </>
+                    )}
                   </button>
                   <button
                     type="button"
                     onClick={closeModals}
-                    className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
+                    className="flex-1 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"
                   >
-                    {t('common.cancel')}
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    {t('common.cancel') || 'Cancel'}
                   </button>
                 </div>
               </form>

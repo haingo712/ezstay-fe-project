@@ -12,7 +12,7 @@ export function useAuth() {
   const refreshUserInfo = useCallback(async (loadAvatar = false) => {
     const currentUser = AuthService.getUserInfo();
     console.log("🔄 Refreshing user info:", currentUser);
-    
+
     if (currentUser && currentUser.role) {
       // Only load avatar if explicitly requested
       if (loadAvatar) {
@@ -30,7 +30,7 @@ export function useAuth() {
           currentUser.avatar = null;
         }
       }
-      
+
       setUser(currentUser);
       setIsAuthenticated(true);
       console.log("✅ User authenticated with role:", currentUser.role);
@@ -51,12 +51,12 @@ export function useAuth() {
   const login = async (credentials) => {
     setLoading(true);
     console.log("🔑 Login attempt for:", credentials.email);
-    
+
     const result = await AuthService.login(credentials);
-    
+
     if (result.success) {
       console.log("✅ Login successful, refreshing user info...");
-      
+
       // Refresh user info immediately and await it
       await refreshUserInfo();
       setLoading(false);
@@ -68,7 +68,7 @@ export function useAuth() {
       setIsAuthenticated(false);
       setLoading(false);
     }
-    
+
     return result;
   };
 
@@ -80,15 +80,15 @@ export function useAuth() {
 
   const logout = () => {
     console.log("🚪 useAuth: Starting logout process");
-    
+
     // Clear authentication service data first
     AuthService.logout();
-    
+
     // Immediately clear state to prevent any race conditions
     setUser(null);
     setIsAuthenticated(false);
     setLoading(false);
-    
+
     // Redirect directly to login page
     console.log("✅ useAuth: Logout completed, redirecting to login");
     window.location.href = '/login';
@@ -96,6 +96,12 @@ export function useAuth() {
 
   // Method to load avatar for navbar
   const loadUserAvatar = useCallback(async () => {
+    // Only load avatar if user is authenticated
+    if (!isAuthenticated || !user) {
+      console.log("⚠️ Cannot load avatar: User not authenticated");
+      return;
+    }
+
     if (user && !user.avatar) {
       try {
         console.log("🖼️ Fetching user profile for avatar...");
@@ -113,7 +119,7 @@ export function useAuth() {
     } else if (user?.avatar) {
       console.log("ℹ️ Avatar already loaded:", user.avatar);
     }
-  }, [user]);
+  }, [user, isAuthenticated]);
 
   return {
     isAuthenticated,

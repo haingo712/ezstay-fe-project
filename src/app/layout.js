@@ -65,6 +65,7 @@ export default function RootLayout({ children }) {
               draggable
               pauseOnHover
               theme="colored"
+              style={{ zIndex: 9999 }}
             />
           </ClientThemeProvider>
         </LanguageProvider>

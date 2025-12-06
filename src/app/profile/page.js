@@ -135,7 +135,28 @@ export default function ProfilePage() {
         console.warn("⚠️ No userId found in user object:", user);
       }
 
-      const profileData = await profileService.getProfile();
+      // Try to load profile - handle 404 if profile doesn't exist
+      let profileData = null;
+      try {
+        profileData = await profileService.getProfile();
+      } catch (profileError) {
+        if (profileError.response?.status === 404 || profileError.message?.includes('404')) {
+          console.log("📝 Profile not found (404) - user needs to create one");
+          setProfileExists(false);
+          // Initialize with basic user data from account info
+          setProfile(prev => ({
+            ...prev,
+            email: accountInfo?.email || accountInfo?.Email || user?.email || "",
+            phone: accountInfo?.phone || accountInfo?.Phone || user?.phone || "",
+            fullName: accountInfo?.fullName || accountInfo?.FullName || user?.fullName || ""
+          }));
+          setLoading(false);
+          return; // Exit early
+        } else {
+          // Other errors
+          throw profileError;
+        }
+      }
 
       console.log("🔍 ===== PROFILE DATA DEBUG =====");
       console.log("🔍 Raw profile data from API:", JSON.stringify(profileData, null, 2));
@@ -479,21 +500,48 @@ export default function ProfilePage() {
     setSuccess("");
 
     try {
+      // ✅ Validate ONLY required fields (matching backend UserDTO)
+      if (!profile.bio || profile.bio.trim() === '') {
+        setError('Bio is required');
+        setLoading(false);
+        return;
+      }
+
+      if (!profile.dateOfBirth) {
+        setError('Date of birth is required');
+        setLoading(false);
+        return;
+      }
+
+      if (!profileExists && !avatarFile) {
+        setError('Avatar is required when creating profile');
+        setLoading(false);
+        return;
+      }
+
       // Prepare data for backend API
       const profileData = {
-        fullName: profile.fullName,
-        gender: profile.gender, // profileService will convert to enum
-        bio: profile.bio,
+        gender: profile.gender,
+        bio: profile.bio.trim(),
         dateOfBirth: profile.dateOfBirth,
-        detailAddress: profile.detailAddress,
-        provinceId: profile.provinceId,
-        wardId: profile.wardId, // Backend uses wardId
-        // CCCD fields (optional)
-        temporaryResidence: profile.temporaryResidence,
-        citizenIdNumber: profile.citizenIdNumber,
-        citizenIdIssuedDate: profile.citizenIdIssuedDate,
-        citizenIdIssuedPlace: profile.citizenIdIssuedPlace
+        // Optional fields
+        fullName: profile.fullName?.trim() || '',
+        detailAddress: profile.detailAddress?.trim() || '',
+        provinceId: profile.provinceId || '',
+        wardId: profile.wardId || '',
+        temporaryResidence: profile.temporaryResidence?.trim() || '',
+        citizenIdNumber: profile.citizenIdNumber?.trim() || '',
+        citizenIdIssuedPlace: profile.citizenIdIssuedPlace?.trim() || ''
       };
+
+      // Add optional citizenIdIssuedDate if provided
+      if (profile.citizenIdIssuedDate) {
+        profileData.citizenIdIssuedDate = profile.citizenIdIssuedDate;
+      }
+      // Add optional citizenIdIssuedDate if provided
+      if (profile.citizenIdIssuedDate) {
+        profileData.citizenIdIssuedDate = profile.citizenIdIssuedDate;
+      }
 
       console.log("📤 Profile data:", profileData);
       console.log("🖼️ Avatar file:", avatarFile);
@@ -501,39 +549,35 @@ export default function ProfilePage() {
       console.log("📷 Back CCCD file:", backImageFile);
       console.log("📝 Profile exists:", profileExists);
 
+      // Add avatar file - REQUIRED for create
       // Add avatar file to profileData ONLY if new file selected
-      // Backend expects IFormFile, not string URL
-      // If no new file - DON'T send field, backend will keep existing avatar
       if (avatarFile) {
         console.log("📤 Will send avatar file to backend...");
-        profileData.avatar = avatarFile; // Send IFormFile
+        profileData.avatar = avatarFile;
         console.log("✅ Avatar file added to FormData");
       } else {
-        // DON'T send avatar field - backend will keep existing avatar
         console.log("ℹ️ No new avatar file - backend will keep existing avatar");
       }
 
-      // Add CCCD image files to profileData ONLY if new files selected
-      // Backend expects IFormFile, not string URL
-      // If no new file - DON'T send field, backend will keep existing URL
+      // Add CCCD image files - REQUIRED
       if (frontImageFile) {
         console.log("📤 Will send front CCCD image file to backend...");
-        profileData.frontImageUrl = frontImageFile; // Send IFormFile
+        profileData.frontImageUrl = frontImageFile;
         console.log("✅ Front CCCD image file added to FormData");
-      } else {
-        // DON'T send string URL - backend expects IFormFile only
-        // Backend will keep existing URL if field is not sent (null check)
-        console.log("ℹ️ No new front CCCD file - backend will keep existing image");
+      } else if (profile.frontImageUrl) {
+        // Keep existing URL
+        profileData.frontImageUrl = profile.frontImageUrl;
+        console.log("ℹ️ Keeping existing front CCCD image");
       }
 
       if (backImageFile) {
         console.log("📤 Will send back CCCD image file to backend...");
-        profileData.backImageUrl = backImageFile; // Send IFormFile
+        profileData.backImageUrl = backImageFile;
         console.log("✅ Back CCCD image file added to FormData");
-      } else {
-        // DON'T send string URL - backend expects IFormFile only
-        // Backend will keep existing URL if field is not sent (null check)
-        console.log("ℹ️ No new back CCCD file - backend will keep existing image");
+      } else if (profile.backImageUrl) {
+        // Keep existing URL
+        profileData.backImageUrl = profile.backImageUrl;
+        console.log("ℹ️ Keeping existing back CCCD image");
       }
 
       let result;
@@ -551,9 +595,23 @@ export default function ProfilePage() {
       } else {
         // PUT: Update existing profile
         console.log("📝 Updating profile...");
-        result = await profileService.updateProfile(profileData);
-        console.log("📥 Profile updated:", result);
-        setSuccess("Profile updated successfully! Reloading...");
+        try {
+          result = await profileService.updateProfile(profileData);
+          console.log("📥 Profile updated:", result);
+          setSuccess("Profile updated successfully! Reloading...");
+        } catch (updateError) {
+          // If update fails with 404, profile might not exist - try creating instead
+          if (updateError.response?.status === 404 || updateError.message?.includes('404')) {
+            console.log("⚠️ Profile not found during update, creating new profile instead...");
+            result = await profileService.createProfile(profileData);
+            console.log("📥 Profile created:", result);
+            setSuccess("Profile created successfully! Reloading...");
+            setProfileExists(true);
+            await new Promise(resolve => setTimeout(resolve, 300));
+          } else {
+            throw updateError;
+          }
+        }
       }
 
       // Reload profile data to reflect changes
@@ -600,8 +658,8 @@ export default function ProfilePage() {
 
   return (
     <ProtectedRoute>
-      
-      
+
+
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-slate-800 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
