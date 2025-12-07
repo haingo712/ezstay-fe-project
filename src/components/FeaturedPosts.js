@@ -82,15 +82,15 @@ export default function FeaturedPosts() {
             Latest rental posts from our community
           </p>
         </div>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {featuredPosts.map(post => (
             <div key={post.id} className="bg-gray-50 dark:bg-gray-900 rounded-xl shadow hover:shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden transition-all flex flex-col h-full">
               <div className="relative">
-                <img 
-                  src={post.imageUrls?.[0] || '/placeholder-room.jpg'} 
-                  alt={post.title} 
-                  className="w-full h-48 object-cover" 
+                <img
+                  src={post.imageUrls?.[0] || '/placeholder-room.jpg'}
+                  alt={post.title}
+                  className="w-full h-48 object-cover"
                 />
                 <div className="absolute top-2 right-2">
                   <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
@@ -98,32 +98,32 @@ export default function FeaturedPosts() {
                   </span>
                 </div>
               </div>
-              
+
               <div className="p-4 flex flex-col flex-1">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
                   {post.title}
                 </h3>
-                
+
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-2 line-clamp-2">
                   {post.description}
                 </p>
-                
+
                 <div className="text-gray-700 dark:text-gray-300 text-sm mb-2">
-                  🏠 {post.houseName || 'N/A'} - {post.roomName || 'All rooms'}
+                  🏠 {post.houseName || 'N/A'}{post.roomName && post.roomName !== 'All rooms' && ` - ${post.roomName}`}
                 </div>
-                
+
                 <div className="flex-1"></div>
-                
+
                 <div className="mt-auto">
                   <div className="text-blue-600 dark:text-blue-400 font-bold text-xl mb-2">
                     {formatPrice(post.price)}
                   </div>
-                  
+
                   <div className="text-gray-500 dark:text-gray-400 text-xs mb-4">
                     By {post.authorName || 'Unknown'} • {new Date(post.createdAt).toLocaleDateString('vi-VN')}
                   </div>
-                  
-                  <Link 
+
+                  <Link
                     href={`/rental-posts/${post.id}`}
                     onClick={(e) => handlePostClick(e, post.id)}
                     className="inline-block w-full text-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-sm font-medium"
@@ -135,9 +135,9 @@ export default function FeaturedPosts() {
             </div>
           ))}
         </div>
-        
+
         <div className="flex justify-center mt-8">
-          <Link 
+          <Link
             href="/rental-posts"
             onClick={handleViewAllClick}
             className="inline-block px-8 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-semibold text-base"

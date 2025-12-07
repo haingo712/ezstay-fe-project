@@ -54,12 +54,12 @@ export default function StaffManagementPage() {
       staff.isActive ? 'Active' : 'Inactive',
       formatDate(staff.createdAt)
     ]);
-    
+
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
     ].join('\n');
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -82,17 +82,17 @@ export default function StaffManagementPage() {
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log('📊 All accounts from API:', data);
-      
+
       // Filter for staff only (role = 3)
       const staffAccounts = Array.isArray(data) ? data.filter(acc => acc.role === 3) : [];
-      
+
       // Transform API response to match frontend format
       const transformedData = staffAccounts.map(staff => ({
         ...staff,
@@ -100,7 +100,7 @@ export default function StaffManagementPage() {
         isActive: !staff.isBanned, // Map isBanned to isActive (inverse)
         createdAt: staff.createAt, // Map createAt to createdAt
       }));
-      
+
       console.log('✅ Transformed staff data:', transformedData);
       setStaffList(transformedData);
     } catch (error) {
@@ -113,7 +113,7 @@ export default function StaffManagementPage() {
 
   const handleCreateStaff = async (e) => {
     e.preventDefault();
-    
+
     // Validate inputs
     if (!newStaff.fullName || newStaff.fullName.length < 2) {
       toast.warning(t('staffManagement.validation.fullNameMin') || 'Full name must be at least 2 characters');
@@ -131,10 +131,10 @@ export default function StaffManagementPage() {
       toast.warning(t('staffManagement.validation.passwordMin') || 'Password must be at least 6 characters');
       return;
     }
-    
+
     try {
       console.log('🔍 Creating staff account:', newStaff);
-      
+
       // Use Accounts API to create staff
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts`, {
         method: 'POST',
@@ -150,9 +150,9 @@ export default function StaffManagementPage() {
           Role: 3 // Staff role
         })
       });
-      
+
       console.log('🔍 Response status:', response.status);
-      
+
       if (response.ok) {
         const result = await response.json();
         console.log('✅ Staff created:', result);
@@ -180,14 +180,13 @@ export default function StaffManagementPage() {
   const handleStatusToggle = async (staffId, currentStatus) => {
     const action = currentStatus ? 'ban' : 'unban';
     const actionText = currentStatus ? 'Ban' : 'Unban';
-    
-    if (!confirm(`⚠️ Are you sure you want to ${action} this staff account?\n\nThis will ${currentStatus ? 'restrict' : 'restore'} their access to the system.`)) {
-      return;
-    }
-    
+
+    // TODO: Nếu muốn xác nhận, dùng modal custom (showDeleteConfirm) thay vì window.confirm
+    // Hiện tại sẽ thực hiện luôn
+
     try {
       console.log(`🔄 ${actionText}ning staff ID:`, staffId);
-      
+
       // Use Accounts API for ban/unban
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts/${staffId}/${action}`, {
         method: 'PUT',
@@ -196,11 +195,11 @@ export default function StaffManagementPage() {
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       await loadStaff();
       toast.success(t('staffManagement.toast.statusSuccess') || `Staff account ${currentStatus ? 'banned' : 'unbanned'} successfully!`);
     } catch (error) {
@@ -222,7 +221,7 @@ export default function StaffManagementPage() {
 
   const handleUpdateStaff = async (e) => {
     e.preventDefault();
-    
+
     // Validate inputs
     if (editStaff.fullName && editStaff.fullName.length < 2) {
       toast.warning(t('staffManagement.validation.fullNameMin') || 'Full name must be at least 2 characters');
@@ -240,11 +239,11 @@ export default function StaffManagementPage() {
       toast.warning(t('staffManagement.validation.passwordMin') || 'Password must be at least 6 characters');
       return;
     }
-    
+
     try {
       console.log('🔍 Updating staff ID:', selectedStaff.id);
       console.log('🔍 Update data:', editStaff);
-      
+
       // Build AccountRequest payload for AuthApi
       const payload = {
         FullName: editStaff.fullName || selectedStaff.fullName,
@@ -252,12 +251,12 @@ export default function StaffManagementPage() {
         Phone: editStaff.phone || selectedStaff.phone,
         Role: 3 // Keep Staff role
       };
-      
+
       // Only add password if user entered a new one
       if (editStaff.password && editStaff.password.trim() !== '') {
         payload.Password = editStaff.password;
       }
-      
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts/${selectedStaff.id}`, {
         method: 'PUT',
         headers: {
@@ -266,12 +265,12 @@ export default function StaffManagementPage() {
         },
         body: JSON.stringify(payload)
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Update failed');
       }
-      
+
       toast.success(t('staffManagement.toast.updateSuccess') || 'Staff account updated successfully!');
       setShowEditModal(false);
       setSelectedStaff(null);
@@ -287,11 +286,11 @@ export default function StaffManagementPage() {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return 'N/A';
-      
+
       const day = date.getDate().toString().padStart(2, '0');
       const month = (date.getMonth() + 1).toString().padStart(2, '0');
       const year = date.getFullYear();
-      
+
       return `${day}/${month}/${year}`;
     } catch (error) {
       console.error('Date format error:', error);
@@ -301,10 +300,10 @@ export default function StaffManagementPage() {
 
   const handleDeleteStaff = async () => {
     if (!selectedStaff) return;
-    
+
     try {
       console.log(' Deleting staff ID:', selectedStaff.id);
-      
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts/${selectedStaff.id}`, {
         method: 'DELETE',
         headers: {
@@ -312,11 +311,11 @@ export default function StaffManagementPage() {
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       toast.success(t('staffManagement.toast.deleteSuccess') || 'Staff account deleted successfully!');
       setShowDeleteConfirm(false);
       setShowViewModal(false);
@@ -333,7 +332,7 @@ export default function StaffManagementPage() {
       // Filter by active tab
       if (activeTab === 'active' && !staff.isActive) return false;
       if (activeTab === 'inactive' && staff.isActive) return false;
-      
+
       // Filter by search query
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -344,22 +343,22 @@ export default function StaffManagementPage() {
           staff.id?.toLowerCase().includes(query)
         );
       }
-      
+
       return true;
     })
     .sort((a, b) => {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
-      
+
       if (aValue === null || aValue === undefined) return 1;
       if (bValue === null || bValue === undefined) return -1;
-      
+
       if (sortConfig.key === 'createdAt') {
         const aDate = new Date(aValue);
         const bDate = new Date(bValue);
         return sortConfig.direction === 'asc' ? aDate - bDate : bDate - aDate;
       }
-      
+
       const comparison = aValue.toString().localeCompare(bValue.toString());
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
@@ -414,10 +413,10 @@ export default function StaffManagementPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
-          <svg 
+          <svg
             className="absolute left-3 top-3.5 w-5 h-5 text-gray-400"
-            fill="none" 
-            stroke="currentColor" 
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -439,11 +438,10 @@ export default function StaffManagementPage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 font-medium rounded-lg transition-all ${
-                activeTab === tab
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
+              className={`px-6 py-3 font-medium rounded-lg transition-all ${activeTab === tab
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
@@ -493,140 +491,138 @@ export default function StaffManagementPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th 
-                    onClick={() => handleSort('fullName')}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    <div className="flex items-center gap-2">
-                      {t('staffManagement.table.staffInfo')}
-                      {sortConfig.key === 'fullName' && (
-                        <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
-                      )}
-                    </div>
-                  </th>
-                  <th 
-                    onClick={() => handleSort('email')}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    <div className="flex items-center gap-2">
-                      {t('staffManagement.table.contact')}
-                      {sortConfig.key === 'email' && (
-                        <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
-                      )}
-                    </div>
-                  </th>
-                  <th 
-                    onClick={() => handleSort('isActive')}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    <div className="flex items-center gap-2">
-                      {t('staffManagement.table.status')}
-                      {sortConfig.key === 'isActive' && (
-                        <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
-                      )}
-                    </div>
-                  </th>
-                  <th 
-                    onClick={() => handleSort('createdAt')}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    <div className="flex items-center gap-2">
-                      {t('staffManagement.table.createdDate')}
-                      {sortConfig.key === 'createdAt' && (
-                        <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
-                      )}
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                    {t('staffManagement.table.actions')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredAndSortedStaff.map((staff) => (
-                  <tr key={staff.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-bold">
-                          {(staff.fullName || staff.email).charAt(0).toUpperCase()}
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {staff.fullName || 'N/A'}
+                  <tr>
+                    <th
+                      onClick={() => handleSort('fullName')}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      <div className="flex items-center gap-2">
+                        {t('staffManagement.table.staffInfo')}
+                        {sortConfig.key === 'fullName' && (
+                          <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                          </svg>
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleSort('email')}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      <div className="flex items-center gap-2">
+                        {t('staffManagement.table.contact')}
+                        {sortConfig.key === 'email' && (
+                          <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                          </svg>
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleSort('isActive')}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      <div className="flex items-center gap-2">
+                        {t('staffManagement.table.status')}
+                        {sortConfig.key === 'isActive' && (
+                          <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                          </svg>
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleSort('createdAt')}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      <div className="flex items-center gap-2">
+                        {t('staffManagement.table.createdDate')}
+                        {sortConfig.key === 'createdAt' && (
+                          <svg className={`w-4 h-4 ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                          </svg>
+                        )}
+                      </div>
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                      {t('staffManagement.table.actions')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {filteredAndSortedStaff.map((staff) => (
+                    <tr key={staff.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-bold">
+                            {(staff.fullName || staff.email).charAt(0).toUpperCase()}
                           </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            ID: {staff.id}
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              {staff.fullName || 'N/A'}
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              ID: {staff.id}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {staff.email}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {staff.phone || 'N/A'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        staff.isActive
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {staff.email}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {staff.phone || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 text-xs font-medium rounded-full ${staff.isActive
                           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
                           : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                      }`}>
-                        {staff.isActive ? t('staffManagement.status.active') : t('staffManagement.status.inactive')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                      {formatDate(staff.createdAt)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
-                      <button
-                        onClick={() => {
-                          setSelectedStaff(staff);
-                          setShowViewModal(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        {t('common.view')}
-                      </button>
-                      <button
-                        onClick={() => handleEditStaff(staff)}
-                        className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
-                      >
-                        {t('common.edit')}
-                      </button>
-                      <button
-                        onClick={() => handleStatusToggle(staff.id, staff.isActive)}
-                        className={`${
-                          staff.isActive
+                          }`}>
+                          {staff.isActive ? t('staffManagement.status.active') : t('staffManagement.status.inactive')}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        {formatDate(staff.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
+                        <button
+                          onClick={() => {
+                            setSelectedStaff(staff);
+                            setShowViewModal(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          {t('common.view')}
+                        </button>
+                        <button
+                          onClick={() => handleEditStaff(staff)}
+                          className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
+                        >
+                          {t('common.edit')}
+                        </button>
+                        <button
+                          onClick={() => handleStatusToggle(staff.id, staff.isActive)}
+                          className={`${staff.isActive
                             ? 'text-red-600 hover:text-red-900 dark:text-red-400'
                             : 'text-green-600 hover:text-green-900 dark:text-green-400'
-                        }`}
-                      >
-                        {staff.isActive ? t('staffManagement.actions.ban') : t('staffManagement.actions.unban')}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                            }`}
+                        >
+                          {staff.isActive ? t('staffManagement.actions.ban') : t('staffManagement.actions.unban')}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </>
         )}
       </div>
 
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gray-200 bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
@@ -641,7 +637,7 @@ export default function StaffManagementPage() {
                     type="text"
                     required
                     value={newStaff.fullName}
-                    onChange={(e) => setNewStaff({...newStaff, fullName: e.target.value})}
+                    onChange={(e) => setNewStaff({ ...newStaff, fullName: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -653,7 +649,7 @@ export default function StaffManagementPage() {
                     type="email"
                     required
                     value={newStaff.email}
-                    onChange={(e) => setNewStaff({...newStaff, email: e.target.value})}
+                    onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -665,7 +661,7 @@ export default function StaffManagementPage() {
                     type="tel"
                     required
                     value={newStaff.phone}
-                    onChange={(e) => setNewStaff({...newStaff, phone: e.target.value})}
+                    onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -677,7 +673,7 @@ export default function StaffManagementPage() {
                     type="password"
                     required
                     value={newStaff.password}
-                    onChange={(e) => setNewStaff({...newStaff, password: e.target.value})}
+                    onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -703,7 +699,7 @@ export default function StaffManagementPage() {
       )}
 
       {showEditModal && selectedStaff && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gray-200 bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
@@ -717,7 +713,7 @@ export default function StaffManagementPage() {
                   <input
                     type="text"
                     value={editStaff.fullName}
-                    onChange={(e) => setEditStaff({...editStaff, fullName: e.target.value})}
+                    onChange={(e) => setEditStaff({ ...editStaff, fullName: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -728,7 +724,7 @@ export default function StaffManagementPage() {
                   <input
                     type="email"
                     value={editStaff.email}
-                    onChange={(e) => setEditStaff({...editStaff, email: e.target.value})}
+                    onChange={(e) => setEditStaff({ ...editStaff, email: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -739,7 +735,7 @@ export default function StaffManagementPage() {
                   <input
                     type="tel"
                     value={editStaff.phone}
-                    onChange={(e) => setEditStaff({...editStaff, phone: e.target.value})}
+                    onChange={(e) => setEditStaff({ ...editStaff, phone: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -750,7 +746,7 @@ export default function StaffManagementPage() {
                   <input
                     type="password"
                     value={editStaff.password}
-                    onChange={(e) => setEditStaff({...editStaff, password: e.target.value})}
+                    onChange={(e) => setEditStaff({ ...editStaff, password: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder={t('staffManagement.form.passwordPlaceholder')}
                   />
@@ -783,7 +779,7 @@ export default function StaffManagementPage() {
       )}
 
       {showDeleteConfirm && selectedStaff && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gray-200 bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
             <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 dark:bg-red-900 rounded-full">
               <svg className="w-8 h-8 text-red-600 dark:text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -820,7 +816,7 @@ export default function StaffManagementPage() {
       )}
 
       {showViewModal && selectedStaff && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gray-200 bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
@@ -862,11 +858,10 @@ export default function StaffManagementPage() {
                 <div>
                   <label className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('staffManagement.table.status')}</label>
                   <p className="mt-1">
-                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                      selectedStaff.isActive
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                    }`}>
+                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${selectedStaff.isActive
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                      }`}>
                       {selectedStaff.isActive ? t('staffManagement.status.active') : t('staffManagement.status.inactive')}
                     </span>
                   </p>
@@ -889,25 +884,15 @@ export default function StaffManagementPage() {
                 </button>
                 <button
                   onClick={() => {
-                    setShowViewModal(false);
                     handleStatusToggle(selectedStaff.id, selectedStaff.isActive);
+                    // Đóng modal sau khi loadStaff thành công trong handleStatusToggle
                   }}
-                  className={`px-4 py-2 rounded-lg font-medium ${
-                    selectedStaff.isActive
-                      ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-200'
-                      : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-200'
-                  }`}
+                  className={`px-4 py-2 rounded-lg font-medium ${selectedStaff.isActive
+                    ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-200'
+                    : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-200'
+                    }`}
                 >
                   {selectedStaff.isActive ? t('staffManagement.actions.banAccount') : t('staffManagement.actions.unbanAccount')}
-                </button>
-                <button
-                  onClick={() => {
-                    setShowViewModal(false);
-                    setShowDeleteConfirm(true);
-                  }}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
-                >
-                  {t('staffManagement.actions.deleteAccount')}
                 </button>
                 <button
                   onClick={() => setShowViewModal(false)}

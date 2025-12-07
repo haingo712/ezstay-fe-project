@@ -901,6 +901,7 @@
         "loading": "Loading posts...",
         "createPost": "Create Post",
         "editPost": "Edit Post",
+        "detailTitle": "Post Details",
         "stats": {
             "total": "Total",
             "active": "Active",
@@ -987,6 +988,21 @@
             "cancel": "Cancel",
             "create": "Create",
             "update": "Update"
+        },
+        "detail": {
+            "title": "Title",
+            "images": "Images",
+            "description": "Description",
+            "information": "Information",
+            "author": "Author",
+            "boardingHouse": "Boarding House",
+            "room": "Room",
+            "price": "Price",
+            "area": "Area",
+            "contact": "Contact",
+            "roomAmenities": "Room Amenities",
+            "houseAmenities": "House Amenities",
+            "noDescription": "No description available"
         }
     },
     "paymentManagement": {

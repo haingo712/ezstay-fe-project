@@ -381,9 +381,9 @@ export default function StaffNotificationsPage() {
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
                         Staff Notifications
                     </h1>
-                    <p className="text-gray-600 dark:text-gray-400">
+                    {/* <p className="text-gray-600 dark:text-gray-400">
                         Manage and view staff notifications
-                    </p>
+                    </p> */}
                 </div>
 
                 {/* Filter tabs */}

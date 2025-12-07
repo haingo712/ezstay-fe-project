@@ -8,6 +8,7 @@ import imageService from "@/services/imageService";
 import serviceService from "@/services/serviceService";
 import userService from "@/services/tenantService";
 import utilityReadingService, { UtilityType } from "@/services/utilityReadingService";
+import vietnamAddressService from "@/services/vietnamAddressService";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
 import { jsPDF } from "jspdf";
@@ -133,7 +134,6 @@ export default function ContractsManagementPage() {
     citizenIdIssuedDate: "",
     citizenIdIssuedPlace: "",
     notes: "",
-    avatarUrl: "",
     frontImageUrl: "",
     backImageUrl: ""
   }]);
@@ -180,6 +180,11 @@ export default function ContractsManagementPage() {
     setMounted(true);
   }, []);
 
+  // Load provinces from API on mount
+  useEffect(() => {
+    fetchProvinces();
+  }, []);
+
   useEffect(() => {
     if (!authLoading && isAuthenticated && user && houseId) {
       fetchData();
@@ -211,7 +216,6 @@ export default function ContractsManagementPage() {
           // If there's tenant profile data from rental request, pre-fill the first profile
           if (rentalRequestData.tenantProfile) {
             const tp = rentalRequestData.tenantProfile;
-            console.log('👤 Tenant profile from rental request:', tp);
 
             // Create tenant profile with data from rental request
             const tenantProfile = {
@@ -466,15 +470,21 @@ export default function ContractsManagementPage() {
   const fetchProvinces = async () => {
     try {
       setAddressLoading(true);
-      console.log("🏛️ Fetching provinces...");
+      console.log("🏛️ Fetching provinces from API Gateway...");
 
-      // Fetch provinces data from public folder
-      const response = await fetch('/data/vietnam-provinces.json');
-      const provincesData = await response.json();
+      // Fetch provinces from API Gateway (production.cas.so via gateway)
+      const response = await vietnamAddressService.getAllProvinces();
+      console.log("🏛️ API response:", response);
+
+      // Extract provinces array from response
+      const provincesData = response?.provinces || response?.data?.provinces || response || [];
       console.log("🏛️ Provinces fetched:", provincesData.length);
-      console.log("🏛️ First province sample:", provincesData[0]);
-      setProvinces(provincesData || []);
-      setVietnamProvinces(provincesData || []); // Also set for dependent form
+      if (provincesData.length > 0) {
+        console.log("🏛️ First province sample:", provincesData[0]);
+      }
+
+      setProvinces(Array.isArray(provincesData) ? provincesData : []);
+      setVietnamProvinces(Array.isArray(provincesData) ? provincesData : []); // Also set for dependent form
 
     } catch (error) {
       console.error("❌ Error fetching provinces:", error);
@@ -587,22 +597,17 @@ export default function ContractsManagementPage() {
 
       console.log('✅ Found User:', userData);
       console.log('✅ Full user data:', JSON.stringify(userData, null, 2));
-
-      // Find province to load wards dropdown
-      let wardsForProvince = [];
-      if (userData.provinceId) {
-        const selectedProvince = provinces.find(p => p.code.toString() === userData.provinceId.toString());
-        if (selectedProvince) {
-          wardsForProvince = selectedProvince.wards || [];
-          console.log('🏛️ Found province:', selectedProvince.name, 'with', wardsForProvince.length, 'wards');
-
-          // Update wards dropdown for this profile
-          setWardsByProfile(prev => ({
-            ...prev,
-            [profileIndex]: wardsForProvince
-          }));
-        }
-      }
+      console.log('📋 User data fields check:');
+      console.log('  - phone:', userData.phone);
+      console.log('  - Phone:', userData.Phone);
+      console.log('  - phoneNumber:', userData.phoneNumber);
+      console.log('  - PhoneNumber:', userData.PhoneNumber);
+      console.log('  - email:', userData.email);
+      console.log('  - Email:', userData.Email);
+      console.log('  - provinceId:', userData.provinceId);
+      console.log('  - ProvinceId:', userData.ProvinceId);
+      console.log('  - wardId:', userData.wardId);
+      console.log('  - WardId:', userData.WardId);
 
       // Map backend fields to form fields and auto-fill
       setProfiles(currentProfiles => {
@@ -614,15 +619,15 @@ export default function ContractsManagementPage() {
           // Personal info
           fullName: userData.fullName || userData.FullName || '',
           dateOfBirth: (userData.dateOfBirth || userData.DateOfBirth) ? (userData.dateOfBirth || userData.DateOfBirth).split('T')[0] : '',
-          phoneNumber: userData.phone || userData.Phone || '',
+          phoneNumber: userData.phone || userData.Phone || userData.phoneNumber || userData.PhoneNumber || '',
           email: userData.email || userData.Email || '',
           gender: userData.gender || userData.Gender || 'Male',
-          // Address with names from backend
+          // Address with names from backend - support multiple field names
           provinceId: userData.provinceId || userData.ProvinceId || '',
           provinceName: userData.provinceName || userData.ProvinceName || '',
           wardId: userData.wardId || userData.WardId || '',
           wardName: userData.wardName || userData.WardName || '',
-          address: userData.detailAddress || userData.DetailAddress || '',
+          address: userData.detailAddress || userData.DetailAddress || userData.address || userData.Address || '',
           temporaryResidence: userData.temporaryResidence || userData.TemporaryResidence || '',
           // Citizen ID - keep the searched value
           citizenIdNumber: userData.citizenIdNumber || userData.CitizenIdNumber || citizenId,
@@ -636,9 +641,43 @@ export default function ContractsManagementPage() {
         };
 
         console.log('✅ Profile auto-filled:', newProfiles[profileIndex]);
-        console.log('✅ Full profile data:', JSON.stringify(newProfiles[profileIndex], null, 2));
+        console.log('✅ Mapped values:');
+        console.log('  - phoneNumber:', newProfiles[profileIndex].phoneNumber);
+        console.log('  - email:', newProfiles[profileIndex].email);
+        console.log('  - provinceId:', newProfiles[profileIndex].provinceId);
+        console.log('  - provinceName:', newProfiles[profileIndex].provinceName);
+        console.log('  - wardId:', newProfiles[profileIndex].wardId);
+        console.log('  - wardName:', newProfiles[profileIndex].wardName);
         return newProfiles;
       });
+
+      // Load wards from API for the province that was auto-filled
+      const provinceCode = userData.provinceId || userData.ProvinceId;
+      if (provinceCode) {
+        console.log('🏘️ Auto-loading wards from API for province:', provinceCode);
+
+        try {
+          const response = await vietnamAddressService.getWardsByProvince(provinceCode);
+          console.log('🏘️ Wards API response:', response);
+
+          const wardsData = response?.communes || response?.data?.communes || response || [];
+          const wardsArray = Array.isArray(wardsData) ? wardsData : [];
+
+          setWardsByProfile(prev => ({
+            ...prev,
+            [profileIndex]: wardsArray
+          }));
+          console.log('✅ Wards loaded for auto-filled profile:', wardsArray.length, 'wards');
+        } catch (error) {
+          console.error('❌ Error loading wards for auto-filled profile:', error);
+          setWardsByProfile(prev => ({
+            ...prev,
+            [profileIndex]: []
+          }));
+        }
+      } else {
+        console.log('⚠️ No provinceCode to load wards');
+      }
 
       toast.success(t('ownerContracts.toast.profileAutoFilled', { name: userData.fullName }));
 
@@ -662,14 +701,14 @@ export default function ContractsManagementPage() {
     }
   };
 
-  const handleProvinceChange = (profileIndex, provinceCode) => {
+  const handleProvinceChange = async (profileIndex, provinceCode) => {
     console.log("🏛️ Province selected for profile", profileIndex, ":", provinceCode, "type:", typeof provinceCode);
     console.log("🏛️ Total provinces:", provinces.length);
     console.log("🏛️ First province sample:", provinces[0]);
 
-    // Find selected province and update wards FOR THIS PROFILE
+    // Find selected province
     const selectedProvince = provinces.find(p => {
-      const match = p.code.toString() === provinceCode.toString();
+      const match = String(p.code) === String(provinceCode);
       if (match) {
         console.log("✅ Found matching province:", p.name, "code:", p.code);
       }
@@ -682,18 +721,30 @@ export default function ContractsManagementPage() {
     updateProfile(profileIndex, 'wardId', ''); // Reset ward when province changes
     updateProfile(profileIndex, 'wardName', ''); // Reset ward name
 
-    if (selectedProvince) {
-      console.log("🏘️ Setting wards for profile", profileIndex, ":", selectedProvince.wards?.length, "wards");
-      setWardsByProfile(prev => {
-        const updated = {
+    // Load wards from API for this province
+    if (provinceCode) {
+      try {
+        console.log("🔄 Loading wards from API for province:", provinceCode);
+        const response = await vietnamAddressService.getWardsByProvince(provinceCode);
+        console.log("🏘️ Wards API response:", response);
+
+        const wardsData = response?.communes || response?.data?.communes || response || [];
+        const wardsArray = Array.isArray(wardsData) ? wardsData : [];
+
+        console.log("🏘️ Setting wards for profile", profileIndex, ":", wardsArray.length, "wards");
+        setWardsByProfile(prev => ({
           ...prev,
-          [profileIndex]: selectedProvince.wards || []
-        };
-        console.log("🏘️ WardsByProfile updated:", updated);
-        return updated;
-      });
+          [profileIndex]: wardsArray
+        }));
+      } catch (error) {
+        console.error("❌ Error loading wards:", error);
+        setWardsByProfile(prev => ({
+          ...prev,
+          [profileIndex]: []
+        }));
+      }
     } else {
-      console.log("❌ Province not found! provinceCode:", provinceCode);
+      console.log("⚠️ No province code provided");
       setWardsByProfile(prev => ({
         ...prev,
         [profileIndex]: []
@@ -3707,14 +3758,6 @@ export default function ContractsManagementPage() {
                           {profileErrors[`profile${profileIndex}_backImageUrl`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_backImageUrl`]}</p>}
                         </div>
 
-                        {/* Avatar URL */}
-                        <div className="md:col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avatar URL (Optional)</label>
-                          <input type="url" value={profile.avatarUrl} onChange={(e) => updateProfile(profileIndex, 'avatarUrl', e.target.value)}
-                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700"
-                            placeholder="https://... (optional)" />
-                        </div>
-
                         {/* Notes */}
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
@@ -3724,27 +3767,10 @@ export default function ContractsManagementPage() {
                         </div>
 
                         {/* Image Previews */}
-                        {(profile.avatarUrl || profile.frontImageUrl || profile.backImageUrl) && (
+                        {(profile.frontImageUrl || profile.backImageUrl) && (
                           <div className="md:col-span-2">
                             <h6 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">📷 Image Previews</h6>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              {/* Avatar Preview */}
-                              {profile.avatarUrl && (
-                                <div>
-                                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Avatar</p>
-                                  <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden aspect-square">
-                                    <img
-                                      src={profile.avatarUrl}
-                                      alt="Avatar"
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        e.target.style.display = 'none';
-                                        e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-400 text-xs">Image not available</div>';
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {/* Front ID Preview */}
                               {profile.frontImageUrl && (
                                 <div>

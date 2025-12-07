@@ -184,6 +184,12 @@ export default function ProfilePage() {
           backImageUrl: profileData.backImageUrl
         });
 
+        console.log("🗺️ ADDRESS DEBUG:");
+        console.log("  - provinceId:", profileData.provinceId, "type:", typeof profileData.provinceId);
+        console.log("  - provinceName:", profileData.provinceName);
+        console.log("  - wardId:", profileData.wardId, "type:", typeof profileData.wardId);
+        console.log("  - wardName:", profileData.wardName);
+
         setProfileExists(true); // Profile exists
 
         // Map backend response (camelCase format) to frontend state
@@ -566,15 +572,31 @@ export default function ProfilePage() {
         gender: profile.gender,
         bio: profile.bio?.trim() || '',
         dateOfBirth: profile.dateOfBirth,
-        // Optional fields
-        fullName: profile.fullName?.trim() || '',
+        // Required fields - DO NOT send empty strings, backend will reject
+        fullName: profile.fullName?.trim() || undefined,
+        phone: profile.phone?.trim() || undefined,
+        email: profile.email?.trim() || undefined,
+        // Address fields
         detailAddress: profile.detailAddress?.trim() || '',
         provinceId: profile.provinceId || '',
         wardId: profile.wardId || '',
+        // CCCD fields
         temporaryResidence: profile.temporaryResidence?.trim() || '',
         citizenIdNumber: profile.citizenIdNumber?.trim() || '',
         citizenIdIssuedPlace: profile.citizenIdIssuedPlace?.trim() || ''
       };
+
+      console.log("📤 Profile data being sent:", {
+        ...profileData,
+        hasFullName: !!profileData.fullName,
+        hasPhone: !!profileData.phone,
+        hasEmail: !!profileData.email
+      });
+      console.log("📋 Original profile state values:", {
+        fullName: profile.fullName,
+        phone: profile.phone,
+        email: profile.email
+      });
 
       // Add optional citizenIdIssuedDate if provided
       if (profile.citizenIdIssuedDate) {
@@ -738,110 +760,112 @@ export default function ProfilePage() {
 
           {/* Profile Form */}
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Avatar Section */}
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
-              <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
-                {t('profile.avatar')}
-              </h2>
-              <div className="flex items-center space-x-6">
-                <div className="relative">
-                  <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 border-4 border-white dark:border-gray-600 shadow-lg">
-                    {avatarPreview ? (
-                      <img
-                        src={avatarPreview}
-                        alt="Avatar preview"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          console.error("❌ Avatar URL failed to load:", avatarPreview);
-                          setError(`Invalid avatar URL: ${avatarPreview}`);
-                          setAvatarPreview("");
-                          setProfile(prev => ({ ...prev, avatar: "" }));
-                        }}
-                        onLoad={() => {
-                          console.log("✅ Avatar loaded successfully:", avatarPreview);
-                          setError(""); // Clear any previous errors
-                        }}
+            {/* Avatar Section - HIDDEN */}
+            {false && (
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
+                <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
+                  {t('profile.avatar')}
+                </h2>
+                <div className="flex items-center space-x-6">
+                  <div className="relative">
+                    <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 border-4 border-white dark:border-gray-600 shadow-lg">
+                      {avatarPreview ? (
+                        <img
+                          src={avatarPreview}
+                          alt="Avatar preview"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.error("❌ Avatar URL failed to load:", avatarPreview);
+                            setError(`Invalid avatar URL: ${avatarPreview}`);
+                            setAvatarPreview("");
+                            setProfile(prev => ({ ...prev, avatar: "" }));
+                          }}
+                          onLoad={() => {
+                            console.log("✅ Avatar loaded successfully:", avatarPreview);
+                            setError(""); // Clear any previous errors
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
+                          <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="space-y-3">
+                      <input
+                        type="file"
+                        id="avatar-upload"
+                        accept="image/*"
+                        onChange={handleAvatarFileChange}
+                        className="hidden"
                       />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
-                        <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      <label
+                        htmlFor="avatar-upload"
+                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors cursor-pointer"
+                      >
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <div className="space-y-3">
-                    <input
-                      type="file"
-                      id="avatar-upload"
-                      accept="image/*"
-                      onChange={handleAvatarFileChange}
-                      className="hidden"
-                    />
-                    <label
-                      htmlFor="avatar-upload"
-                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors cursor-pointer"
-                    >
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      {t('profile.uploadAvatar')}
-                    </label>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      JPG, PNG, or GIF. Max file size 2MB.
-                    </p>
-                    {avatarFile && (
-                      <p className="text-sm text-green-600 dark:text-green-400">
-                        ✅ Selected: {avatarFile.name}
+                        {t('profile.uploadAvatar')}
+                      </label>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        JPG, PNG, or GIF. Max file size 2MB.
                       </p>
-                    )}
+                      {avatarFile && (
+                        <p className="text-sm text-green-600 dark:text-green-400">
+                          ✅ Selected: {avatarFile.name}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Face Registration Button */}
-              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">
-                  {t('profile.faceRegistration')}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  {t('profile.registerFace')}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowFaceModal(true)}
-                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  {t('profile.registerFace')}
-                </button>
-              </div>
+                {/* Face Registration Button */}
+                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">
+                    {t('profile.faceRegistration')}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    {t('profile.registerFace')}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowFaceModal(true)}
+                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    {t('profile.registerFace')}
+                  </button>
+                </div>
 
-              {/* Change Password Button */}
-              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">
-                  {t('profile.settings')}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  {t('profile.changePassword')}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowChangePasswordModal(true)}
-                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                  </svg>
-                  {t('profile.changePassword')}
-                </button>
+                {/* Change Password Button */}
+                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">
+                    {t('profile.settings')}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    {t('profile.changePassword')}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowChangePasswordModal(true)}
+                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                    </svg>
+                    {t('profile.changePassword')}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Basic Information */}
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">

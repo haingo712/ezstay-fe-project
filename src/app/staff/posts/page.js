@@ -337,53 +337,45 @@ export default function PostsReviewPage() {
                     </div>
 
                     {/* Post Details */}
-                    <div className="flex-1 min-w-0 space-y-4">
-                      {/* Header */}
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                        <div className="min-w-0">
-                          <h3 className="text-xl font-bold text-gray-900 dark:text-white truncate">
+                    <div className="flex-1 min-w-0">
+                      {/* Header Row */}
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">
                             {post.title}
                           </h3>
-                          <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-600 dark:text-gray-400">
-                            <span className="flex items-center gap-1.5">
+                          <div className="flex flex-wrap items-center gap-3 text-sm">
+                            <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
                               <Building2 className="w-4 h-4 text-purple-500" />
-                              {post.houseName || 'N/A'}
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                              <Home className="w-4 h-4 text-orange-500" />
-                              {post.roomName || 'Tất cả phòng'}
-                            </span>
+                              <span className="font-medium">{post.houseName || 'N/A'}</span>
+                            </div>
+                            {post.roomName && post.roomName !== 'All rooms' && post.roomName !== 'Tất cả phòng' && (
+                              <>
+                                <span className="text-gray-300 dark:text-gray-600">•</span>
+                                <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                                  <Home className="w-4 h-4 text-green-500" />
+                                  <span className="font-medium">{post.roomName}</span>
+                                </div>
+                              </>
+                            )}
+                            <span className="text-gray-300 dark:text-gray-600">•</span>
+                            <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                              <Calendar className="w-4 h-4" />
+                              <span>{formatDate(post.createdAt)}</span>
+                            </div>
                           </div>
                         </div>
-                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${status.class}`}>
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap ${status.class}`}>
                           <StatusIcon className="w-4 h-4" />
                           {status.text}
                         </div>
                       </div>
 
-                      {/* Description */}
-                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                        {post.description || post.content || 'Không có mô tả'}
-                      </p>
-
-                      {/* Post Info Grid */}
-                      <div className="flex items-center gap-2">
-                        <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                          <Calendar className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Ngày đăng</p>
-                          <p className="font-semibold text-gray-900 dark:text-white text-sm">
-                            {formatDate(post.createdAt)}
-                          </p>
-                        </div>
-                      </div>
-
                       {/* Contact Info */}
                       {post.contactPhone && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 mb-4">
                           <Phone className="w-4 h-4 text-green-500" />
-                          <span>Liên hệ: {post.contactPhone}</span>
+                          <span>{post.contactPhone}</span>
                         </div>
                       )}
 
@@ -393,44 +385,56 @@ export default function PostsReviewPage() {
                           <button
                             onClick={() => handleApprove(post.id)}
                             disabled={isProcessing}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium rounded-lg transition-colors shadow-sm"
+                            className="inline-flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold rounded-lg transition-all shadow-sm hover:shadow-md"
                           >
                             {isProcessing ? (
                               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
                             ) : (
-                              <CheckCircle className="w-4 h-4" />
+                              <CheckCircle className="w-5 h-5" />
                             )}
-                            {t('staffPosts.actions.approve') || 'Duyệt bài'}
+                            {t('staffPosts.actions.approve') || 'Approve'}
                           </button>
 
                           <button
                             onClick={() => handleReject(post.id)}
                             disabled={isProcessing}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-medium rounded-lg transition-colors shadow-sm"
+                            className="inline-flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-semibold rounded-lg transition-all shadow-sm hover:shadow-md"
                           >
                             {isProcessing ? (
                               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
                             ) : (
-                              <XCircle className="w-4 h-4" />
+                              <XCircle className="w-5 h-5" />
                             )}
-                            {t('staffPosts.actions.reject') || 'Từ chối'}
+                            {t('staffPosts.actions.reject') || 'Reject'}
                           </button>
 
                           <button
                             onClick={() => handleViewDetail(post)}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors"
+                            className="inline-flex items-center gap-2 px-6 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 font-semibold rounded-lg transition-all"
                           >
-                            <Eye className="w-4 h-4" />
-                            {t('staffPosts.actions.view') || 'Xem chi tiết'}
+                            <Eye className="w-5 h-5" />
+                            {t('staffPosts.actions.view') || 'View Details'}
+                          </button>
+                        </div>
+                      )}
+
+                      {!isPending && (
+                        <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <button
+                            onClick={() => handleViewDetail(post)}
+                            className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all shadow-sm hover:shadow-md"
+                          >
+                            <Eye className="w-5 h-5" />
+                            {t('staffPosts.actions.view') || 'View Details'}
                           </button>
                         </div>
                       )}
 
                       {/* Approved/Rejected info */}
                       {!isPending && post.approvedAt && (
-                        <div className="text-sm text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700">
-                          {postStatus === 1 ? 'Đã duyệt' : 'Đã từ chối'} lúc: {formatDate(post.approvedAt)}
-                          {post.approvedBy && ` bởi ${post.approvedBy}`}
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                          {postStatus === 1 ? '✓ Approved' : '✗ Rejected'} on {formatDate(post.approvedAt)}
+                          {post.approvedBy && ` by ${post.approvedBy}`}
                         </div>
                       )}
                     </div>
@@ -461,21 +465,33 @@ export default function PostsReviewPage() {
 
       {/* Detail Modal */}
       {showDetailModal && selectedPost && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden border border-gray-200 dark:border-gray-700">
             {/* Modal Header */}
-            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between z-10">
+            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-900 dark:to-blue-900 p-6 flex items-center justify-between z-10">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                  <Eye className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                  <Eye className="w-7 h-7 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {t('staffPosts.modal.title') || 'Chi tiết bài đăng'}
-                </h2>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">
+                    {t('staffPosts.modal.title') || 'Chi tiết bài đăng'}
+                  </h2>
+                  <span className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-medium ${selectedPost.isApproved === 1 ? 'bg-green-100 text-green-800' :
+                    selectedPost.isApproved === 2 ? 'bg-red-100 text-red-800' :
+                      selectedPost.isApproved === 0 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                    }`}>
+                    {selectedPost.isApproved === 1 ? `✓ ${t('staffPosts.status.approved') || 'Đã duyệt'}` :
+                      selectedPost.isApproved === 2 ? `✗ ${t('staffPosts.status.rejected') || 'Đã từ chối'}` :
+                        selectedPost.isApproved === 0 ? `⏳ ${t('staffPosts.status.pending') || 'Chờ duyệt'}` :
+                          `🚫 ${t('staffPosts.status.inactive') || 'Không hoạt động'}`}
+                  </span>
+                </div>
               </div>
               <button
                 onClick={() => setShowDetailModal(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="text-white/80 hover:text-white hover:bg-white/20 transition-all rounded-lg p-2"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -483,7 +499,8 @@ export default function PostsReviewPage() {
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            {/* Content - Scrollable */}
+            <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
               {/* Loading State */}
               {selectedPost.loading ? (
                 <div className="flex flex-col items-center justify-center py-12">
@@ -491,229 +508,242 @@ export default function PostsReviewPage() {
                   <p className="text-gray-600 dark:text-gray-400">{t('staffPosts.modal.loading') || 'Đang tải chi tiết bài đăng...'}</p>
                 </div>
               ) : (
-                <>
-                  {/* Title */}
-                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl p-6">
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                      {t('staffPosts.modal.postTitle') || 'Tiêu đề'}
-                    </h3>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {selectedPost.title || 'Untitled'}
-                    </p>
+                <div className="p-6 space-y-6">
+                  {/* Title & Date */}
+                  <div className="bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-900/20 dark:via-blue-900/20 dark:to-indigo-900/20 rounded-xl p-6 border border-purple-200 dark:border-purple-800">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t('staffPosts.modal.postTitle') || 'Tiêu đề'}</p>
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">
+                          {selectedPost.title || 'Untitled'}
+                        </h3>
+                      </div>
+                      <div className="text-right text-sm text-gray-500 dark:text-gray-400 shrink-0">
+                        <div className="flex items-center gap-1">
+                          <span>📅</span>
+                          <span>{formatDate(selectedPost.createdAt)}</span>
+                        </div>
+                        {selectedPost.updatedAt && selectedPost.updatedAt !== selectedPost.createdAt && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <span>🔄</span>
+                            <span>{formatDate(selectedPost.updatedAt)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Images Gallery */}
-                  {selectedPost.imageUrls && selectedPost.imageUrls.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                        <span>🖼️</span>
-                        {t('staffPosts.modal.images') || 'Hình ảnh'}
-                        <span className="text-sm font-normal text-gray-500">({selectedPost.imageUrls.length})</span>
-                      </h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {selectedPost.imageUrls.map((url, index) => (
-                          <div key={index} className="relative aspect-video rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 shadow-md hover:shadow-xl transition-shadow">
-                            <img
-                              src={url}
-                              alt={`${selectedPost.title} - ${index + 1}`}
-                              className="w-full h-full object-cover hover:scale-110 transition-transform duration-300 cursor-pointer"
-                              onError={(e) => {
-                                e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
-                              }}
-                            />
-                            <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
-                              {index + 1}/{selectedPost.imageUrls.length}
+                  {/* Main Content Grid - 2 columns */}
+                  <div className="grid lg:grid-cols-3 gap-6">
+                    {/* Left Column - Images & Description (2/3 width) */}
+                    <div className="lg:col-span-2 space-y-6">
+                      {/* Images Gallery */}
+                      {selectedPost.imageUrls && selectedPost.imageUrls.length > 0 && (
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <span>🖼️</span>
+                            {t('staffPosts.modal.images') || 'Hình ảnh'}
+                            <span className="text-sm font-normal text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                              {selectedPost.imageUrls.length}
+                            </span>
+                          </h3>
+                          <div className="grid grid-cols-2 gap-3">
+                            {selectedPost.imageUrls.map((url, index) => (
+                              <div key={index} className="relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 group">
+                                <img
+                                  src={url}
+                                  alt={`${selectedPost.title} - ${index + 1}`}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
+                                  onError={(e) => {
+                                    e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md font-medium">
+                                  {index + 1}/{selectedPost.imageUrls.length}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Description */}
+                      {(selectedPost.content || selectedPost.description) &&
+                        (selectedPost.content?.trim() || selectedPost.description?.trim()) &&
+                        (selectedPost.content?.trim().toLowerCase() !== 'kk') && (
+                          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                              <span>📝</span>
+                              {t('staffPosts.modal.description') || 'Mô tả'}
+                            </h3>
+                            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                                {selectedPost.content || selectedPost.description}
+                              </p>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Description */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                      <span>📝</span>
-                      {t('staffPosts.modal.description') || 'Mô tả'}
-                    </h3>
-                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                      <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
-                        {selectedPost.content || selectedPost.description || (
-                          <span className="text-gray-400 italic">{t('staffPosts.modal.noDescription') || 'Không có mô tả'}</span>
                         )}
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* Status and Date */}
-                  <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
-                    <span className={`px-4 py-2 rounded-full text-sm font-medium ${selectedPost.isApproved === 1 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                      selectedPost.isApproved === 2 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                        selectedPost.isApproved === 0 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
-                      }`}>
-                      {selectedPost.isApproved === 1 ? `✓ ${t('staffPosts.status.approved') || 'Đã duyệt'}` :
-                        selectedPost.isApproved === 2 ? `✗ ${t('staffPosts.status.rejected') || 'Đã từ chối'}` :
-                          selectedPost.isApproved === 0 ? `⏳ ${t('staffPosts.status.pending') || 'Chờ duyệt'}` :
-                            `🚫 ${t('staffPosts.status.inactive') || 'Không hoạt động'}`}
-                    </span>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      <div>📅 {formatDate(selectedPost.createdAt)}</div>
-                      {selectedPost.updatedAt && selectedPost.updatedAt !== selectedPost.createdAt && (
-                        <div className="mt-1">🔄 {formatDate(selectedPost.updatedAt)}</div>
+                      {/* Amenities */}
+                      {selectedPost.room?.amenities && selectedPost.room.amenities.length > 0 && (
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <span>✨</span>
+                            {t('staffPosts.modal.amenities') || 'Tiện nghi'}
+                            <span className="text-sm font-normal text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                              {selectedPost.room.amenities.length}
+                            </span>
+                          </h3>
+                          <div className="grid grid-cols-2 gap-2">
+                            {selectedPost.room.amenities.map((amenity, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 border border-indigo-100 dark:border-indigo-800"
+                              >
+                                {amenity.imageUrl ? (
+                                  <img
+                                    src={amenity.imageUrl}
+                                    alt={amenity.amenityName || amenity.name}
+                                    className="w-8 h-8 object-cover rounded-md flex-shrink-0"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      e.target.nextElementSibling.style.display = 'flex';
+                                    }}
+                                  />
+                                ) : null}
+                                <span className={`text-xl flex-shrink-0 ${!amenity.imageUrl ? 'flex' : 'hidden'}`}>🏠</span>
+                                <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                  {amenity.amenityName || amenity.name}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
 
-                  {/* Information Grid */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                      <span>ℹ️</span>
-                      {t('staffPosts.modal.detailInfo') || 'Thông tin chi tiết'}
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Boarding House */}
-                      <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
-                        <div className="flex items-center text-purple-600 dark:text-purple-400 mb-2">
-                          <Building2 className="w-5 h-5 mr-2" />
-                          <span className="text-sm font-semibold">{t('staffPosts.modal.boardingHouse') || 'Nhà trọ'}</span>
-                        </div>
-                        <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
-                          {selectedPost.houseName || 'N/A'}
-                        </p>
-                      </div>
-
-                      {/* Room */}
-                      <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-lg p-4 border border-green-200 dark:border-green-700">
-                        <div className="flex items-center text-green-600 dark:text-green-400 mb-2">
-                          <Home className="w-5 h-5 mr-2" />
-                          <span className="text-sm font-semibold">{t('staffPosts.modal.room') || 'Phòng'}</span>
-                        </div>
-                        <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
-                          {selectedPost.room?.roomName || selectedPost.roomName || 'All rooms'}
-                        </p>
-                      </div>
-
-                      {/* Price */}
-                      <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/30 rounded-lg p-4 border border-emerald-200 dark:border-emerald-700">
-                        <div className="flex items-center text-emerald-600 dark:text-emerald-400 mb-2">
-                          <DollarSign className="w-5 h-5 mr-2" />
-                          <span className="text-sm font-semibold">{t('staffPosts.modal.price') || 'Giá thuê'}</span>
-                        </div>
-                        <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
-                          {selectedPost.room?.price ? `${selectedPost.room.price.toLocaleString('vi-VN')}đ` :
-                            selectedPost.price ? `${selectedPost.price.toLocaleString('vi-VN')}đ` : 'N/A'}
-                        </p>
-                      </div>
-
-                      {/* Area */}
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
-                        <div className="flex items-center text-blue-600 dark:text-blue-400 mb-2">
-                          <Maximize2 className="w-5 h-5 mr-2" />
-                          <span className="text-sm font-semibold">{t('staffPosts.modal.area') || 'Diện tích'}</span>
-                        </div>
-                        <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
-                          {selectedPost.room?.area ? `${selectedPost.room.area} m²` :
-                            selectedPost.area ? `${selectedPost.area} m²` : 'N/A'}
-                        </p>
-                      </div>
-
-                      {/* Author */}
-                      <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/30 dark:to-indigo-800/30 rounded-lg p-4 border border-indigo-200 dark:border-indigo-700">
-                        <div className="flex items-center text-indigo-600 dark:text-indigo-400 mb-2">
-                          <User className="w-5 h-5 mr-2" />
-                          <span className="text-sm font-semibold">{t('staffPosts.modal.author') || 'Tác giả'}</span>
-                        </div>
-                        <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
-                          {selectedPost.authorName || 'Unknown Author'}
-                        </p>
-                      </div>
-
-                      {/* Contact */}
-                      <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 rounded-lg p-4 border border-orange-200 dark:border-orange-700">
-                        <div className="flex items-center text-orange-600 dark:text-orange-400 mb-2">
-                          <Phone className="w-5 h-5 mr-2" />
-                          <span className="text-sm font-semibold">{t('staffPosts.modal.contact') || 'Liên hệ'}</span>
-                        </div>
-                        <p className="text-gray-900 dark:text-white font-semibold text-lg ml-7">
-                          {selectedPost.contactPhone || 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Amenities */}
-                  {selectedPost.room?.amenities && selectedPost.room.amenities.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                        <span>✨</span>
-                        {t('staffPosts.modal.amenities') || 'Tiện nghi'}
-                        <span className="text-sm font-normal text-gray-500">({selectedPost.room.amenities.length})</span>
-                      </h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {selectedPost.room.amenities.map((amenity, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center gap-3 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-lg p-3 border border-indigo-200 dark:border-indigo-700 hover:shadow-md transition-shadow"
-                          >
-                            {amenity.imageUrl ? (
-                              <img
-                                src={amenity.imageUrl}
-                                alt={amenity.amenityName || amenity.name}
-                                className="w-10 h-10 object-cover rounded-lg shadow-sm"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.nextElementSibling.style.display = 'block';
-                                }}
-                              />
-                            ) : null}
-                            <span className={`text-2xl ${!amenity.imageUrl ? '' : 'hidden'}`}>🏠</span>
-                            <span className="text-sm font-medium text-gray-900 dark:text-white flex-1">
-                              {amenity.amenityName || amenity.name}
-                            </span>
+                    {/* Right Column - Information (1/3 width) */}
+                    <div className="space-y-4">
+                      <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm sticky top-4">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                          <span>ℹ️</span>
+                          {t('staffPosts.modal.detailInfo') || 'Thông tin chi tiết'}
+                        </h3>
+                        <div className="space-y-3">
+                          {/* Boarding House */}
+                          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-100 dark:border-purple-800">
+                            <div className="flex items-center text-purple-600 dark:text-purple-400 mb-1 text-xs font-semibold">
+                              <Building2 className="w-3.5 h-3.5 mr-1.5" />
+                              {t('staffPosts.modal.boardingHouse') || 'Nhà trọ'}
+                            </div>
+                            <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
+                              {selectedPost.houseName || 'N/A'}
+                            </p>
                           </div>
-                        ))}
+
+                          {/* Room */}
+                          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-100 dark:border-green-800">
+                            <div className="flex items-center text-green-600 dark:text-green-400 mb-1 text-xs font-semibold">
+                              <Home className="w-3.5 h-3.5 mr-1.5" />
+                              {t('staffPosts.modal.room') || 'Phòng'}
+                            </div>
+                            <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
+                              {selectedPost.room?.roomName || selectedPost.roomName || 'All rooms'}
+                            </p>
+                          </div>
+
+                          {/* Price */}
+                          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-100 dark:border-emerald-800">
+                            <div className="flex items-center text-emerald-600 dark:text-emerald-400 mb-1 text-xs font-semibold">
+                              <DollarSign className="w-3.5 h-3.5 mr-1.5" />
+                              {t('staffPosts.modal.price') || 'Giá thuê'}
+                            </div>
+                            <p className="text-gray-900 dark:text-white font-bold text-base pl-5">
+                              {selectedPost.room?.price ? `${selectedPost.room.price.toLocaleString('vi-VN')}đ` :
+                                selectedPost.price ? `${selectedPost.price.toLocaleString('vi-VN')}đ` : 'N/A'}
+                            </p>
+                          </div>
+
+                          {/* Area */}
+                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
+                            <div className="flex items-center text-blue-600 dark:text-blue-400 mb-1 text-xs font-semibold">
+                              <Maximize2 className="w-3.5 h-3.5 mr-1.5" />
+                              {t('staffPosts.modal.area') || 'Diện tích'}
+                            </div>
+                            <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
+                              {selectedPost.room?.area ? `${selectedPost.room.area} m²` :
+                                selectedPost.area ? `${selectedPost.area} m²` : 'N/A'}
+                            </p>
+                          </div>
+
+                          {/* Author */}
+                          {selectedPost.authorName && selectedPost.authorName !== 'Unknown Author' && (
+                            <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 border border-indigo-100 dark:border-indigo-800">
+                              <div className="flex items-center text-indigo-600 dark:text-indigo-400 mb-1 text-xs font-semibold">
+                                <User className="w-3.5 h-3.5 mr-1.5" />
+                                {t('staffPosts.modal.author') || 'Tác giả'}
+                              </div>
+                              <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
+                                {selectedPost.authorName}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Contact */}
+                          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 border border-orange-100 dark:border-orange-800">
+                            <div className="flex items-center text-orange-600 dark:text-orange-400 mb-1 text-xs font-semibold">
+                              <Phone className="w-3.5 h-3.5 mr-1.5" />
+                              {t('staffPosts.modal.contact') || 'Liên hệ'}
+                            </div>
+                            <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
+                              {selectedPost.contactPhone || 'N/A'}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  )}
+                  </div>
+                </div>
+              )}
+            </div>
 
-                  {/* Modal Actions */}
-                  <div className="flex flex-wrap gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    {selectedPost.isApproved === null && (
-                      <>
-                        <button
-                          onClick={() => {
-                            handleApprove(selectedPost.id);
-                            setShowDetailModal(false);
-                          }}
-                          className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl"
-                        >
-                          <CheckCircle className="w-5 h-5" />
-                          {t('staffPosts.actions.approve') || 'Duyệt bài'}
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            handleReject(selectedPost.id);
-                            setShowDetailModal(false);
-                          }}
-                          className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl"
-                        >
-                          <XCircle className="w-5 h-5" />
-                          {t('staffPosts.actions.reject') || 'Từ chối'}
-                        </button>
-                      </>
-                    )}
+            {/* Footer - Action Buttons */}
+            <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex flex-wrap gap-3">
+                {selectedPost.isApproved === null && (
+                  <>
+                    <button
+                      onClick={() => {
+                        handleApprove(selectedPost.id);
+                        setShowDetailModal(false);
+                      }}
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg"
+                    >
+                      <CheckCircle className="w-5 h-5" />
+                      {t('staffPosts.actions.approve') || 'Duyệt bài'}
+                    </button>
 
                     <button
-                      onClick={() => setShowDetailModal(false)}
-                      className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold transition-colors"
+                      onClick={() => {
+                        handleReject(selectedPost.id);
+                        setShowDetailModal(false);
+                      }}
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg"
                     >
-                      {t('staffPosts.actions.close') || 'Đóng'}
+                      <XCircle className="w-5 h-5" />
+                      {t('staffPosts.actions.reject') || 'Từ chối'}
                     </button>
-                  </div>
-                </>
-              )}
+                  </>
+                )}
+
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="flex-1 inline-flex items-center justify-center px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold transition-all"
+                >
+                  {t('staffPosts.actions.close') || 'Đóng'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

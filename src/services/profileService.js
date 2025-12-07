@@ -177,6 +177,22 @@ class ProfileService {
         throw new Error('FullName is required');
       }
 
+      // Optional: Phone (can be updated via dedicated endpoint, but include here to preserve data)
+      if (profileData.phone) {
+        formData.append('Phone', profileData.phone);
+        console.log('✅ Phone added to FormData:', profileData.phone);
+      } else {
+        console.log('⚠️ Phone is missing from profileData');
+      }
+
+      // Optional: Email (can be updated via dedicated endpoint, but include here to preserve data)
+      if (profileData.email) {
+        formData.append('Email', profileData.email);
+        console.log('✅ Email added to FormData:', profileData.email);
+      } else {
+        console.log('⚠️ Email is missing from profileData');
+      }
+
       // Required: DetailAddress
       formData.append('DetailAddress', profileData.detailAddress || '');
 
