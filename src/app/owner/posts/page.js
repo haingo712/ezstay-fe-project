@@ -6,7 +6,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { rentalPostService } from '@/services/rentalPostService';
 import boardingHouseService from '@/services/boardingHouseService';
 import roomService from '@/services/roomService';
-import { FileText, Plus, Edit2, Trash2, Copy, X, Building, Home } from 'lucide-react';
+import { FileText, Plus, Edit2, Trash2, Copy, X, Building, Home, Eye } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 export default function PostsPage() {
@@ -17,7 +17,9 @@ export default function PostsPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [posts, setPosts] = useState([]);
   const [showPostModal, setShowPostModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
+  const [detailPost, setDetailPost] = useState(null);
   const [postData, setPostData] = useState({
     boardingHouseId: '',
     roomIds: [],
@@ -111,6 +113,10 @@ export default function PostsPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    console.log('🖼️ imagePreviews updated:', imagePreviews.length, imagePreviews);
+  }, [imagePreviews]);
 
   useEffect(() => {
     if (mounted && user) {
@@ -273,6 +279,20 @@ export default function PostsPage() {
     }
   };
 
+  const handleViewDetail = async (post) => {
+    try {
+      console.log('🔍 Fetching post detail by ID:', post.id);
+      // Call getById API to get fresh data
+      const detailData = await rentalPostService.getById(post.id);
+      console.log('✅ Post detail loaded:', detailData);
+      setDetailPost(detailData);
+      setShowDetailModal(true);
+    } catch (error) {
+      console.error('❌ Error loading post detail:', error);
+      toast.error('Không thể tải chi tiết bài đăng');
+    }
+  };
+
   const handleImageChange = (e) => {
     const newFiles = Array.from(e.target.files);
 
@@ -318,9 +338,30 @@ export default function PostsPage() {
     const updatedImages = [...postData.images, ...filesToAdd];
     setPostData({ ...postData, images: updatedImages });
 
-    // Create previews for new files
-    const newPreviews = filesToAdd.map(file => URL.createObjectURL(file));
-    setImagePreviews([...imagePreviews, ...newPreviews]);
+    // Create previews for new files using FileReader for better compatibility
+    const newPreviews = [];
+    const previewPromises = filesToAdd.map(file => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newPreviews.push(reader.result);
+          resolve();
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(previewPromises).then(() => {
+      const updatedPreviews = [...imagePreviews, ...newPreviews];
+
+      console.log('📸 Image previews created:', {
+        newPreviewsCount: newPreviews.length,
+        totalPreviews: updatedPreviews.length,
+        samplePreview: newPreviews[0]?.substring(0, 50) + '...'
+      });
+
+      setImagePreviews(updatedPreviews);
+    });
 
     // Reset input to allow selecting same file again if needed
     e.target.value = '';
@@ -519,13 +560,7 @@ export default function PostsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center">
             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('ownerPosts.emptyState.title')}</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">{t('ownerPosts.emptyState.description')}</p>
-            <button
-              onClick={handleNewPost}
-              className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors"
-            >
-              {t('ownerPosts.createPost')}
-            </button>
+            <p className="text-gray-600 dark:text-gray-400">{t('ownerPosts.emptyState.description')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -560,17 +595,24 @@ export default function PostsPage() {
                     </span>
                     <div className="flex space-x-2">
                       <button
+                        onClick={() => handleViewDetail(post)}
+                        className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
+                        title="View Details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => handleEditPost(post)}
                         className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button
+                      {/* <button
                         onClick={() => handleDuplicatePost(post)}
                         className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
                       >
-                        <Copy className="w-4 h-4" />
-                      </button>
+                        <Copy className="w-4 h-4" /> */}
+                      {/* </button> */}
                       <button
                         onClick={() => handleDeletePost(post.id)}
                         className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
@@ -589,8 +631,8 @@ export default function PostsPage() {
                     {/* Author */}
                     {post.authorName && (
                       <div className="flex items-center text-gray-600 dark:text-gray-400">
-                        <span className="mr-2">👤</span>
-                        <span className="font-medium">{post.authorName}</span>
+                        {/* <span className="mr-2">👤</span>
+                        <span className="font-medium">{post.authorName}</span> */}
                       </div>
                     )}
 
@@ -601,10 +643,10 @@ export default function PostsPage() {
                     </div>
 
                     {/* Rooms */}
-                    <div className="flex items-center text-gray-600 dark:text-gray-400">
+                    {/* <div className="flex items-center text-gray-600 dark:text-gray-400">
                       <Home className="w-4 h-4 mr-2 flex-shrink-0" />
                       <span className="truncate">{post.roomName || t('ownerPosts.card.allRooms')}</span>
-                    </div>
+                    </div> */}
 
                     {/* Contact Phone */}
                     {post.contactPhone && (
@@ -614,13 +656,13 @@ export default function PostsPage() {
                       </div>
                     )}
 
-                    {/* Images count */}
+                    {/* Images count
                     {post.imageUrls && post.imageUrls.length > 0 && (
                       <div className="flex items-center text-gray-600 dark:text-gray-400">
                         <span className="mr-2">🖼️</span>
                         <span>{post.imageUrls.length} image{post.imageUrls.length > 1 ? 's' : ''}</span>
                       </div>
-                    )}
+                    )} */}
 
                     {/* Created date */}
                     <div className="text-xs text-gray-500 dark:text-gray-500 mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
@@ -636,7 +678,7 @@ export default function PostsPage() {
 
       {/* Create/Edit Modal */}
       {showPostModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-white/70 dark:bg-gray-900/70 flex justify-center items-center z-50 backdrop-blur-md">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-gray-600">
               <div className="flex items-center">
@@ -804,9 +846,9 @@ export default function PostsPage() {
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  className={`relative border-2 border-dashed rounded-xl p-6 transition-all duration-200 ${isDragging
+                  className={`relative border-2 border-dashed rounded-lg p-2 transition-all duration-200 ${isDragging
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                    : 'border-gray-300 dark:border-gray-600 bg-white/70 dark:bg-gray-700/70'
+                    : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50'
                     }`}
                 >
                   <input
@@ -818,29 +860,29 @@ export default function PostsPage() {
                     className="hidden"
                   />
 
-                  <div className="text-center">
-                    <div className="text-4xl mb-2">
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="text-xl">
                       {isDragging ? '📥' : '🖼️'}
                     </div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {isDragging ? t('ownerPosts.form.dropHere') : t('ownerPosts.form.dragDrop')}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                      {t('ownerPosts.form.or')}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => document.getElementById('image-upload-input').click()}
-                      className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800 font-medium text-sm transition-colors"
-                    >
-                      {t('ownerPosts.form.browseFiles')}
-                    </button>
+                    <div className="text-left">
+                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                        {isDragging ? t('ownerPosts.form.dropHere') : t('ownerPosts.form.dragDrop')}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {t('ownerPosts.form.or')} <button
+                          type="button"
+                          onClick={() => document.getElementById('image-upload-input').click()}
+                          className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-semibold underline"
+                        >
+                          {t('ownerPosts.form.browseFiles')}
+                        </button>
+                      </p>
+                    </div>
                   </div>
                 </div>
                 <div className="mt-2 flex items-start justify-between gap-2">
                   <p className="text-xs text-gray-500 dark:text-gray-400 flex-1">
-                    💡 Drag & drop or click to select multiple images<br />
-                    Max: 10 images, 5MB each. Recommended: 1200x800px
+                    💡 Max: 10 images, 5MB each
                   </p>
                   {postData.images.length > 0 && (
                     <div className="flex flex-col items-end gap-1">
@@ -856,42 +898,21 @@ export default function PostsPage() {
 
                 {/* Image Previews */}
                 {imagePreviews.length > 0 && (
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {t('ownerPosts.form.selectedImages').replace('{{count}}', imagePreviews.length)}
-                      </p>
-                      <div className="flex gap-2">
-                        {imagePreviews.length < 10 && (
-                          <button
-                            type="button"
-                            onClick={() => document.getElementById('image-upload-input').click()}
-                            className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
-                          >
-                            {t('ownerPosts.form.addMore')}
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPostData({ ...postData, images: [] });
-                            imagePreviews.forEach(preview => URL.revokeObjectURL(preview));
-                            setImagePreviews([]);
-                          }}
-                          className="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          {t('ownerPosts.form.clearAll')}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <div className="mt-3">
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('ownerPosts.form.selectedImages').replace('{{count}}', imagePreviews.length)}
+                    </p>
+                    <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
                       {imagePreviews.map((preview, index) => (
                         <div key={index} className="relative group">
-                          <div className="relative aspect-square">
+                          <div className="relative aspect-square bg-white dark:bg-gray-800 rounded overflow-hidden border border-gray-300 dark:border-gray-600">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={preview}
                               alt={`Preview ${index + 1}`}
-                              className="w-full h-full object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600"
+                              className="w-full h-full object-cover"
+                              loading="eager"
+                              style={{ display: 'block' }}
                             />
                             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all rounded-lg flex items-center justify-center">
                               <button
@@ -951,6 +972,301 @@ export default function PostsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {showDetailModal && detailPost && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden border border-gray-200 dark:border-gray-700">
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-900 dark:to-blue-900 p-6 flex items-center justify-between z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                  <Eye className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">
+                    {t('ownerPosts.detailTitle')}
+                  </h2>
+                  <span className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(detailPost)}`}>
+                    {getStatusText(detailPost)}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  setDetailPost(null);
+                }}
+                className="text-white/80 hover:text-white hover:bg-white/20 transition-all rounded-lg p-2"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Content - Scrollable */}
+            <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-6 space-y-6">
+              {/* Title & Date */}
+              <div className="bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-900/20 dark:via-blue-900/20 dark:to-indigo-900/20 rounded-xl p-6 border border-purple-200 dark:border-purple-800">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t('ownerPosts.detail.title')}</p>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">
+                      {detailPost.title}
+                    </h3>
+                  </div>
+                  <div className="text-right text-sm text-gray-500 dark:text-gray-400 shrink-0">
+                    <div className="flex items-center gap-1">
+                      <span>📅</span>
+                      <span>{formatDate(detailPost.createdAt)}</span>
+                    </div>
+                    {detailPost.updatedAt && detailPost.updatedAt !== detailPost.createdAt && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <span>🔄</span>
+                        <span>{formatDate(detailPost.updatedAt)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Content Grid - 2 columns on large screens */}
+              <div className="grid lg:grid-cols-3 gap-6">
+                {/* Left Column - Images & Description (2/3 width) */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Images Gallery */}
+                  {detailPost.imageUrls && detailPost.imageUrls.length > 0 && (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <span>🖼️</span>
+                        {t('ownerPosts.detail.images')}
+                        <span className="text-sm font-normal text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                          {detailPost.imageUrls.length}
+                        </span>
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {detailPost.imageUrls.map((url, index) => (
+                          <div key={index} className="relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 group">
+                            <img
+                              src={url}
+                              alt={`${detailPost.title} - ${index + 1}`}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
+                              onError={(e) => {
+                                e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md font-medium">
+                              {index + 1}/{detailPost.imageUrls.length}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Description */}
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                      <span>📝</span>
+                      {t('ownerPosts.detail.description')}
+                    </h3>
+                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                        {detailPost.content || detailPost.description || (
+                          <span className="text-gray-400 italic">{t('ownerPosts.detail.noDescription')}</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Amenities - Full width in left column */}
+                  <div className="space-y-5">
+                    {/* Room Amenities */}
+                    {detailPost.room?.amenities && detailPost.room.amenities.length > 0 && (
+                      <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                          <span>✨</span>
+                          {t('ownerPosts.detail.roomAmenities')}
+                          <span className="text-sm font-normal text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                            {detailPost.room.amenities.length}
+                          </span>
+                        </h3>
+                        <div className="grid grid-cols-2 gap-2">
+                          {detailPost.room.amenities.map((amenity, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 border border-indigo-100 dark:border-indigo-800"
+                            >
+                              {amenity.imageUrl ? (
+                                <img
+                                  src={amenity.imageUrl}
+                                  alt={amenity.amenityName || amenity.name}
+                                  className="w-8 h-8 object-cover rounded-md flex-shrink-0"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextElementSibling.style.display = 'flex';
+                                  }}
+                                />
+                              ) : null}
+                              <span className={`text-xl flex-shrink-0 ${!amenity.imageUrl ? 'flex' : 'hidden'}`}>🏠</span>
+                              <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                {amenity.amenityName || amenity.name}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* House Amenities */}
+                    {detailPost.boardingHouse?.amenities && detailPost.boardingHouse.amenities.length > 0 && (
+                      <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                          <span>🏢</span>
+                          {t('ownerPosts.detail.houseAmenities')}
+                          <span className="text-sm font-normal text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                            {detailPost.boardingHouse.amenities.length}
+                          </span>
+                        </h3>
+                        <div className="grid grid-cols-2 gap-2">
+                          {detailPost.boardingHouse.amenities.map((amenity, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-2 bg-violet-50 dark:bg-violet-900/20 rounded-lg p-3 border border-violet-100 dark:border-violet-800"
+                            >
+                              {amenity.imageUrl ? (
+                                <img
+                                  src={amenity.imageUrl}
+                                  alt={amenity.amenityName || amenity.name}
+                                  className="w-8 h-8 object-cover rounded-md flex-shrink-0"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextElementSibling.style.display = 'flex';
+                                  }}
+                                />
+                              ) : null}
+                              <span className={`text-xl flex-shrink-0 ${!amenity.imageUrl ? 'flex' : 'hidden'}`}>🏢</span>
+                              <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                {amenity.amenityName || amenity.name}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Column - Information (1/3 width) */}
+                <div className="space-y-4">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm sticky top-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                      <span>ℹ️</span>
+                      {t('ownerPosts.detail.information')}
+                    </h3>
+                    <div className="space-y-3">
+                      {/* Author */}
+                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
+                        <div className="flex items-center text-blue-600 dark:text-blue-400 mb-1 text-xs font-semibold">
+                          <span className="mr-1.5">👤</span>
+                          {t('ownerPosts.detail.author')}
+                        </div>
+                        <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
+                          {detailPost.authorName}
+                        </p>
+                      </div>
+
+                      {/* Boarding House */}
+                      <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-100 dark:border-purple-800">
+                        <div className="flex items-center text-purple-600 dark:text-purple-400 mb-1 text-xs font-semibold">
+                          <Building className="w-3.5 h-3.5 mr-1.5" />
+                          {t('ownerPosts.detail.boardingHouse')}
+                        </div>
+                        <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
+                          {detailPost.houseName || t('ownerPosts.card.noHouse')}
+                        </p>
+                      </div>
+
+                      {/* Room */}
+                      <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-100 dark:border-green-800">
+                        <div className="flex items-center text-green-600 dark:text-green-400 mb-1 text-xs font-semibold">
+                          <Home className="w-3.5 h-3.5 mr-1.5" />
+                          {t('ownerPosts.detail.room')}
+                        </div>
+                        <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
+                          {detailPost.room?.roomName || detailPost.roomName || t('ownerPosts.card.allRooms')}
+                        </p>
+                      </div>
+
+                      {/* Price */}
+                      {detailPost.room?.price && (
+                        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-100 dark:border-emerald-800">
+                          <div className="flex items-center text-emerald-600 dark:text-emerald-400 mb-1 text-xs font-semibold">
+                            <span className="mr-1.5">💰</span>
+                            {t('ownerPosts.detail.price')}
+                          </div>
+                          <p className="text-gray-900 dark:text-white font-bold text-base pl-5">
+                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(detailPost.room.price)}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Area */}
+                      {detailPost.room?.area && (
+                        <div className="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-3 border border-cyan-100 dark:border-cyan-800">
+                          <div className="flex items-center text-cyan-600 dark:text-cyan-400 mb-1 text-xs font-semibold">
+                            <span className="mr-1.5">📏</span>
+                            {t('ownerPosts.detail.area')}
+                          </div>
+                          <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
+                            {detailPost.room.area} m²
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Contact */}
+                      <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 border border-orange-100 dark:border-orange-800">
+                        <div className="flex items-center text-orange-600 dark:text-orange-400 mb-1 text-xs font-semibold">
+                          <span className="mr-1.5">📞</span>
+                          {t('ownerPosts.detail.contact')}
+                        </div>
+                        <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
+                          {detailPost.contactPhone || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer - Action Buttons */}
+            <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    handleEditPost(detailPost);
+                  }}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all font-medium shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                >
+                  <Edit2 className="w-5 h-5" />
+                  {t('common.edit')}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setDetailPost(null);
+                  }}
+                  className="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all font-medium"
+                >
+                  {t('common.close')}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

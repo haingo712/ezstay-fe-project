@@ -188,9 +188,6 @@ export default function StaffNavbar() {
                     <p className="font-semibold truncate">{userEmail}</p>
                     <p className="text-xs text-orange-600 dark:text-orange-400">Staff</p>
                   </div>
-                  <Link href="/profile" className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => setIsUserMenuOpen(false)}>
-                    {t('nav.profile') || 'Hồ sơ'}
-                  </Link>
                   <Link href="/staff" className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => setIsUserMenuOpen(false)}>
                     Dashboard
                   </Link>

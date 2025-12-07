@@ -860,6 +860,7 @@
         "loading": "Đang tải bài đăng...",
         "createPost": "Tạo bài đăng",
         "editPost": "Chỉnh sửa bài đăng",
+        "detailTitle": "Chi tiết bài đăng",
         "stats": {
             "total": "Tổng",
             "active": "Hoạt động",
@@ -946,6 +947,21 @@
             "cancel": "Hủy",
             "create": "Tạo",
             "update": "Cập nhật"
+        },
+        "detail": {
+            "title": "Tiêu đề",
+            "images": "Hình ảnh",
+            "description": "Mô tả",
+            "information": "Thông tin",
+            "author": "Tác giả",
+            "boardingHouse": "Nhà trọ",
+            "room": "Phòng",
+            "price": "Giá",
+            "area": "Diện tích",
+            "contact": "Liên hệ",
+            "roomAmenities": "Tiện ích phòng",
+            "houseAmenities": "Tiện ích nhà trọ",
+            "noDescription": "Chưa có mô tả"
         }
     },
     "paymentManagement": {
@@ -1642,16 +1658,35 @@
         },
         "modal": {
             "title": "Chi Tiết Bài Đăng",
+            "loading": "Đang tải chi tiết bài đăng...",
             "images": "Hình Ảnh",
             "postTitle": "Tiêu Đề",
             "description": "Mô Tả",
+            "noDescription": "Không có mô tả",
+            "detailInfo": "Thông tin chi tiết",
+            "boardingHouse": "Nhà trọ",
             "house": "Nhà Trọ",
             "room": "Phòng",
+            "price": "Giá thuê",
+            "area": "Diện tích",
             "author": "Tác Giả",
             "contact": "Liên Hệ",
+            "amenities": "Tiện nghi",
             "createdAt": "Ngày Tạo",
             "postId": "Mã Bài Đăng"
         },
+        "status": {
+            "pending": "Chờ duyệt",
+            "approved": "Đã duyệt",
+            "rejected": "Đã từ chối",
+            "inactive": "Không hoạt động"
+        },
+        "confirmApprove": "Bạn có chắc muốn duyệt bài đăng này? Bài đăng sẽ hiển thị cho tất cả người dùng.",
+        "confirmReject": "Bạn có chắc muốn từ chối bài đăng này?",
+        "approveSuccess": "Bài đăng đã được duyệt thành công!",
+        "rejectSuccess": "Bài đăng đã bị từ chối.",
+        "approveError": "Không thể duyệt bài đăng. Vui lòng thử lại.",
+        "rejectError": "Không thể từ chối bài đăng. Vui lòng thử lại.",
         "toast": {
             "approveSuccess": "Phê duyệt bài đăng thành công!",
             "rejectSuccess": "Từ chối bài đăng thành công!",

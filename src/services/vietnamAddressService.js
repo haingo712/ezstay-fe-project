@@ -1,114 +1,90 @@
-// Vietnam Address Service - Using Local Data
-// Data source: vietnam_provinces package with local JSON file
+// Vietnam Address Service - Using API Gateway
+// Routes to external API via Gateway: production.cas.so
+
+const API_GATEWAY_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://localhost:7001';
 
 class VietnamAddressService {
   constructor() {
-    this.dataUrl = '/data/vietnam-provinces.json';
-    this.cachedData = null;
+    this.cachedProvinces = null;
+    this.cachedWards = {}; // Cache wards by province code
   }
 
   /**
-   * Load data from local JSON file
-   * @returns {Promise<Array>} Array of provinces with nested wards
-   */
-  async loadData() {
-    if (this.cachedData) {
-      return this.cachedData;
-    }
-
-    try {
-      const response = await fetch(this.dataUrl);
-      if (!response.ok) {
-        throw new Error('Failed to load Vietnam provinces data');
-      }
-      this.cachedData = await response.json();
-      return this.cachedData;
-    } catch (error) {
-      console.error('❌ Error loading Vietnam provinces data:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get all provinces
-   * @returns {Promise<Array>} Array of provinces
+   * Get all provinces from API
+   * @returns {Promise<Object>} Response with provinces array
    */
   async getAllProvinces() {
+    if (this.cachedProvinces) {
+      return this.cachedProvinces;
+    }
+
     try {
-      const data = await this.loadData();
-      return data.map(province => ({
-        code: province.code,
-        name: province.name,
-        codename: province.codename,
-        division_type: province.division_type,
-        phone_code: province.phone_code
-      }));
+      const response = await fetch(`${API_GATEWAY_URL}/api/provinces`);
+      if (!response.ok) {
+        throw new Error('Failed to load provinces from API');
+      }
+      const data = await response.json();
+      this.cachedProvinces = data;
+      return data;
     } catch (error) {
-      console.error('❌ Error fetching provinces:', error);
+      console.error('❌ Error loading provinces from API:', error);
       throw error;
     }
   }
 
   /**
-   * Search provinces by name
+   * Get wards/communes by province code from API
+   * @param {string|number} provinceCode - Province code (will be used as-is from API)
+   * @returns {Promise<Object>} Response with communes array
+   */
+  async getWardsByProvince(provinceCode) {
+    // Use the code as-is (don't convert) to match API format
+    const codeStr = String(provinceCode);
+
+    // Check cache first
+    if (this.cachedWards[codeStr]) {
+      return this.cachedWards[codeStr];
+    }
+
+    try {
+      console.log(`📡 Fetching communes for province code: "${codeStr}"`);
+      const response = await fetch(`${API_GATEWAY_URL}/api/provinces/${codeStr}/communes`);
+
+      console.log(`📊 API Response status: ${response.status}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ API Error (${response.status}):`, errorText);
+        throw new Error(`Failed to load communes for province ${codeStr}: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(`✅ Loaded communes data:`, data);
+      this.cachedWards[codeStr] = data;
+      return data;
+    } catch (error) {
+      console.error(`❌ Error loading communes for province ${codeStr}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Search provinces by name (using cached data from API)
    * @param {string} search - Search term
    * @returns {Promise<Array>} Array of provinces
    */
   async searchProvinces(search = '') {
     try {
-      const provinces = await this.getAllProvinces();
-      
+      const response = await this.getAllProvinces();
+      const provinces = response.provinces || response || [];
+
       if (!search) return provinces;
-      
-      return provinces.filter(province => 
-        province.name.toLowerCase().includes(search.toLowerCase()) ||
-        province.codename.toLowerCase().includes(search.toLowerCase())
+
+      return provinces.filter(province =>
+        province.name?.toLowerCase().includes(search.toLowerCase())
       );
     } catch (error) {
       console.error('❌ Error searching provinces:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get province by code with wards
-   * @param {number} code - Province code
-   * @returns {Promise<Object>} Province data with wards
-   */
-  async getProvinceByCode(code) {
-    try {
-      const data = await this.loadData();
-      const province = data.find(p => p.code === parseInt(code));
-      
-      if (!province) {
-        throw new Error(`Province with code ${code} not found`);
-      }
-      
-      return province;
-    } catch (error) {
-      console.error(`❌ Error fetching province ${code}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get wards by province code
-   * @param {number} provinceCode - Province code
-   * @returns {Promise<Array>} Array of wards
-   */
-  async getWardsByProvince(provinceCode) {
-    try {
-      const province = await this.getProvinceByCode(provinceCode);
-      
-      return (province.wards || []).map(ward => ({
-        code: ward.code,
-        name: ward.name,
-        codename: ward.codename,
-        division_type: ward.division_type,
-        short_codename: ward.short_codename
-      }));
-    } catch (error) {
-      console.error(`❌ Error fetching wards for province ${provinceCode}:`, error);
       throw error;
     }
   }
@@ -119,15 +95,15 @@ class VietnamAddressService {
    */
   async getAddressOptions() {
     try {
-      const provinces = await this.searchProvinces();
-      
+      const response = await this.getAllProvinces();
+      const provinces = response.provinces || response || [];
+
       return {
         provinces: provinces.map(p => ({
           value: p.code,
           label: p.name,
-          codename: p.codename,
-          division_type: p.division_type,
-          phone_code: p.phone_code
+          code: p.code,
+          name: p.name
         }))
       };
     } catch (error) {
@@ -137,43 +113,28 @@ class VietnamAddressService {
   }
 
   /**
-   * Search wards across all provinces
+   * Search wards/communes (using cached data from API)
    * @param {string} search - Search term
-   * @param {number} provinceCode - Optional province filter
+   * @param {string} provinceCode - Province code filter
    * @returns {Promise<Array>} Array of wards
    */
   async searchWards(search = '', provinceCode = null) {
     try {
-      const data = await this.loadData();
-      let allWards = [];
+      if (!provinceCode) {
+        return [];
+      }
 
-      // Filter by province if specified
-      const provincesToSearch = provinceCode 
-        ? data.filter(p => p.code === parseInt(provinceCode))
-        : data;
-
-      // Collect all wards
-      provincesToSearch.forEach(province => {
-        if (province.wards) {
-          province.wards.forEach(ward => {
-            allWards.push({
-              ...ward,
-              province_code: province.code,
-              province_name: province.name
-            });
-          });
-        }
-      });
+      const response = await this.getWardsByProvince(provinceCode);
+      let wards = response.communes || response || [];
 
       // Filter by search term if provided
       if (search) {
-        allWards = allWards.filter(ward =>
-          ward.name.toLowerCase().includes(search.toLowerCase()) ||
-          ward.codename.toLowerCase().includes(search.toLowerCase())
+        wards = wards.filter(ward =>
+          ward.name?.toLowerCase().includes(search.toLowerCase())
         );
       }
 
-      return allWards;
+      return wards;
     } catch (error) {
       console.error('❌ Error searching wards:', error);
       throw error;

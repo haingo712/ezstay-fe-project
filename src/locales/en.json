@@ -901,6 +901,7 @@
         "loading": "Loading posts...",
         "createPost": "Create Post",
         "editPost": "Edit Post",
+        "detailTitle": "Post Details",
         "stats": {
             "total": "Total",
             "active": "Active",
@@ -987,6 +988,21 @@
             "cancel": "Cancel",
             "create": "Create",
             "update": "Update"
+        },
+        "detail": {
+            "title": "Title",
+            "images": "Images",
+            "description": "Description",
+            "information": "Information",
+            "author": "Author",
+            "boardingHouse": "Boarding House",
+            "room": "Room",
+            "price": "Price",
+            "area": "Area",
+            "contact": "Contact",
+            "roomAmenities": "Room Amenities",
+            "houseAmenities": "House Amenities",
+            "noDescription": "No description available"
         }
     },
     "paymentManagement": {
@@ -1666,16 +1682,35 @@
         },
         "modal": {
             "title": "Post Details",
+            "loading": "Loading post details...",
             "images": "Images",
             "postTitle": "Title",
             "description": "Description",
+            "noDescription": "No description",
+            "detailInfo": "Detail Information",
+            "boardingHouse": "Boarding House",
             "house": "Boarding House",
             "room": "Room",
+            "price": "Rent Price",
+            "area": "Area",
             "author": "Author",
             "contact": "Contact",
+            "amenities": "Amenities",
             "createdAt": "Created At",
             "postId": "Post ID"
         },
+        "status": {
+            "pending": "Pending",
+            "approved": "Approved",
+            "rejected": "Rejected",
+            "inactive": "Inactive"
+        },
+        "confirmApprove": "Are you sure you want to approve this post? It will be visible to all users.",
+        "confirmReject": "Are you sure you want to reject this post?",
+        "approveSuccess": "Post approved successfully!",
+        "rejectSuccess": "Post rejected.",
+        "approveError": "Failed to approve post. Please try again.",
+        "rejectError": "Failed to reject post. Please try again.",
         "toast": {
             "approveSuccess": "Post approved successfully!",
             "rejectSuccess": "Post rejected successfully!",

@@ -110,11 +110,9 @@ export default function PaymentGatewaysPage() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             💳 Payment Gateway Management
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage bank payment gateway configuration
-          </p>
+
         </div>
-        <button
+        {/* <button
           onClick={handleSyncGateways}
           disabled={syncing}
           className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium disabled:bg-gray-400 flex items-center gap-2"
@@ -129,7 +127,7 @@ export default function PaymentGatewaysPage() {
               🔄 Refresh Bank List
             </>
           )}
-        </button>
+        </button> */}
       </div>
 
       {/* Summary Cards */}
@@ -233,9 +231,7 @@ export default function PaymentGatewaysPage() {
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
               No banks yet
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Click the "Refresh Bank List" button above to load the list of Vietnamese banks
-            </p>
+
           </div>
         </div>
       )}
