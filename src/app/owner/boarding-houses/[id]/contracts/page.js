@@ -2249,13 +2249,11 @@ export default function ContractsManagementPage() {
     try {
       console.log('📄 Preparing contract PDF with complete data...');
 
-      // Fetch signatures
-      let signatures = null;
-      try {
-        signatures = await contractService.getSignatures(contract.id);
-      } catch (error) {
-        console.log('No signatures found, will generate PDF without signatures');
-      }
+      // Extract signatures from contract (they're included in main contract response)
+      const signatures = {
+        ownerSignature: contract.ownerSignature || contract.OwnerSignature || null,
+        tenantSignature: contract.tenantSignature || contract.TenantSignature || null
+      };
 
       // Enrich contract with room details if not already present
       let enrichedContract = { ...contract };
@@ -2325,22 +2323,12 @@ export default function ContractsManagementPage() {
         console.log('👤 Added current user as owner:', enrichedContract.owner);
       }
 
-      // Fetch signatures
-      let signatures = null;
-      try {
-        signatures = await contractService.getSignatures(contract.id);
-        console.log('✅ Signatures fetched:', signatures);
-      } catch (error) {
-        console.log('No signatures found, will preview PDF without signatures');
-      }
-
-      // Also check if signatures are in the contract itself
-      if (!signatures || (!signatures.ownerSignature && !signatures.tenantSignature)) {
-        signatures = {
-          ownerSignature: enrichedContract.ownerSignature || enrichedContract.OwnerSignature || null,
-          tenantSignature: enrichedContract.tenantSignature || enrichedContract.TenantSignature || null
-        };
-      }
+      // Extract signatures from contract (they're included in main contract response)
+      const signatures = {
+        ownerSignature: enrichedContract.ownerSignature || enrichedContract.OwnerSignature || null,
+        tenantSignature: enrichedContract.tenantSignature || enrichedContract.TenantSignature || null
+      };
+      console.log('✅ Signatures extracted from contract:', signatures);
 
       // Enrich contract with room details if not already present
       if (enrichedContract.roomId && !enrichedContract.roomDetails) {

@@ -889,7 +889,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <p className="text-center text-gray-400 dark:text-gray-500 text-sm mt-6">
-            © 2024 Ezstay. All rights reserved.
+            © 2025 Ezstay. All rights reserved.
           </p>
         </div>
 
