@@ -98,28 +98,25 @@ export function useAuth() {
   const loadUserAvatar = useCallback(async () => {
     // Only load avatar if user is authenticated
     if (!isAuthenticated || !user) {
-      console.log("⚠️ Cannot load avatar: User not authenticated");
       return;
     }
 
-    if (user && !user.avatar) {
-      try {
-        console.log("🖼️ Fetching user profile for avatar...");
-        const profileData = await profileService.getProfile();
-        if (profileData) {
-          const updatedUser = { ...user, avatar: profileData.avata || profileData.avatar || null };
-          setUser(updatedUser);
-          console.log("✅ Updated user avatar:", updatedUser.avatar);
-        } else {
-          console.log("⚠️ No profile data returned");
-        }
-      } catch (err) {
-        console.log("⚠️ Could not load avatar for navbar:", err.message);
-      }
-    } else if (user?.avatar) {
-      console.log("ℹ️ Avatar already loaded:", user.avatar);
+    // If avatar already exists, don't fetch again
+    if (user?.avatar) {
+      return;
     }
-  }, [user, isAuthenticated]);
+
+    // Fetch avatar only once
+    try {
+      const profileData = await profileService.getProfile();
+      if (profileData && (profileData.avata || profileData.avatar)) {
+        const updatedUser = { ...user, avatar: profileData.avata || profileData.avatar };
+        setUser(updatedUser);
+      }
+    } catch (err) {
+      // Silent fail - avatar is not critical
+    }
+  }, [isAuthenticated]); // Remove 'user' from dependencies to prevent loop
 
   return {
     isAuthenticated,
