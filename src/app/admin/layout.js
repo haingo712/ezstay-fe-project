@@ -104,25 +104,25 @@ export default function AdminLayout({ children }) {
         </svg>
       ),
     },
-    {
-      name: t('adminNav.notifications'),
-      href: "/admin/notifications",
-      icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 17h5l-5 5v-5zM4.868 19.718c.64.64 1.536 1.032 2.524 1.032h8.236a3.5 3.5 0 003.5-3.5v-8.236c0-.988-.392-1.884-1.032-2.524L12.282 1.676a2.5 2.5 0 00-3.536 0L3.932 6.49c-.64.64-1.032 1.536-1.032 2.524v8.236a3.5 3.5 0 003.5 3.5z"
-          />
-        </svg>
-      ),
-    },
+    // {
+    //   name: t('adminNav.notifications'),
+    //   href: "/admin/notifications",
+    //   icon: (
+    //     <svg
+    //       className="w-5 h-5"
+    //       fill="none"
+    //       stroke="currentColor"
+    //       viewBox="0 0 24 24"
+    //     >
+    //       <path
+    //         strokeLinecap="round"
+    //         strokeLinejoin="round"
+    //         strokeWidth={2}
+    //         d="M15 17h5l-5 5v-5zM4.868 19.718c.64.64 1.536 1.032 2.524 1.032h8.236a3.5 3.5 0 003.5-3.5v-8.236c0-.988-.392-1.884-1.032-2.524L12.282 1.676a2.5 2.5 0 00-3.536 0L3.932 6.49c-.64.64-1.032 1.536-1.032 2.524v8.236a3.5 3.5 0 003.5 3.5z"
+    //       />
+    //     </svg>
+    //   ),
+    // },
   ];
 
   const isActive = (href) => {

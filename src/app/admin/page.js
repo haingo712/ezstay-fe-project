@@ -99,7 +99,7 @@ const UserDistributionChart = ({ users, owners, staff }) => {
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{total}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Tổng</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
             </div>
           </div>
         </div>
@@ -300,7 +300,7 @@ export default function AdminPage() {
             <div className="w-20 h-20 border-4 border-indigo-200 dark:border-indigo-800 rounded-full animate-pulse"></div>
             <div className="absolute top-0 left-0 w-20 h-20 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
-          <p className="mt-6 text-gray-600 dark:text-gray-400 font-medium">Đang tải dữ liệu...</p>
+          <p className="mt-6 text-gray-600 dark:text-gray-400 font-medium">Loading data...</p>
         </div>
       </div>
     );
@@ -316,10 +316,10 @@ export default function AdminPage() {
               Admin Dashboard 🎛️
             </h1>
             <p className="text-indigo-100 mt-2">
-              Quản lý toàn bộ hệ thống EZStay
+              {/* EZStay Management System */}
             </p>
           </div>
-          <div className="mt-4 md:mt-0 flex space-x-3">
+          {/* <div className="mt-4 md:mt-0 flex space-x-3">
             <Link
               href="/admin/users"
               className="px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium transition-all backdrop-blur-sm"
@@ -332,40 +332,40 @@ export default function AdminPage() {
             >
               Báo cáo tài chính
             </Link>
-          </div>
+          </div> */}
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Tổng người dùng"
+        {/* <StatCard
+          title="Total Users"
           value={stats.totalUsers}
-          subtitle="Người thuê trọ"
+          subtitle="Tenants"
           gradient="bg-gradient-to-br from-blue-500 to-blue-600"
           icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
-        />
-        <StatCard
-          title="Chủ trọ"
+        /> */}
+        {/* <StatCard
+          title="Owners"
           value={stats.totalOwners}
-          subtitle="Đã đăng ký"
+          subtitle="Registered"
           gradient="bg-gradient-to-br from-green-500 to-emerald-600"
           icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
-        />
+        /> */}
         <StatCard
-          title="Nhân viên"
+          title="Staff"
           value={stats.totalStaff}
-          subtitle="Đang hoạt động"
+          subtitle="Active"
           gradient="bg-gradient-to-br from-purple-500 to-purple-600"
           icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
         />
-        <StatCard
-          title="Bài đăng"
+        {/* <StatCard
+          title="Posts"
           value={stats.totalPosts}
-          subtitle={`${stats.pendingPosts} chờ duyệt`}
+          subtitle={`${stats.pendingPosts} pending`}
           gradient="bg-gradient-to-br from-orange-500 to-red-500"
           icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>}
-        />
+        /> */}
       </div>
 
       {/* Main Grid */}
@@ -373,70 +373,70 @@ export default function AdminPage() {
         {/* Left Column - 2/3 width */}
         <div className="lg:col-span-2 space-y-8">
           {/* Quick Actions */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Quản lý hệ thống</h2>
-            </div>
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <QuickActionCard
+          {/* <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700"> */}
+          {/* <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">System Management</h2>
+            </div> */}
+          {/* <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4"> */}
+          {/* <QuickActionCard
                 href="/admin/users"
                 emoji="👥"
-                title="Quản lý người dùng"
-                description="Xem và quản lý tài khoản"
+                title="User Management"
+                description="View and manage accounts"
                 color="blue"
-              />
-              <QuickActionCard
+              /> */}
+          {/* <QuickActionCard
                 href="/admin/staff-management"
                 emoji="👔"
-                title="Quản lý nhân viên"
-                description="Thêm, sửa nhân viên"
+                title="Staff Management"
+                description="Add, edit staff"
                 color="purple"
               />
-              
+
               <QuickActionCard
                 href="/admin/financial-reports"
                 emoji="💰"
-                title="Báo cáo tài chính"
-                description="Doanh thu và chi phí"
+                title="Financial Reports"
+                description="Revenue and expenses"
                 color="orange"
               />
               <QuickActionCard
                 href="/admin/payment-gateways"
                 emoji="🏦"
-                title="Cổng thanh toán"
-                description="Quản lý ngân hàng"
+                title="Payment Gateways"
+                description="Manage banks"
                 color="indigo"
-              />
-              <QuickActionCard
+              /> */}
+          {/* <QuickActionCard
                 href="/admin/notifications"
                 emoji="🔔"
-                title="Thông báo hệ thống"
-                description="Gửi thông báo"
+                title="System Notifications"
+                description="Send notifications"
                 color="red"
-              />
-            </div>
-          </div>
+              /> */}
+          {/* </div> */}
+          {/* </div> */}
 
           {/* Recent Users */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+          {/* <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Người dùng mới</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Đăng ký gần đây</p>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">New Users</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Recently registered</p>
                 </div>
                 <Link
                   href="/admin/users"
                   className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm font-medium"
                 >
-                  Xem tất cả →
+                  View all →
                 </Link>
               </div>
             </div>
             <div className="p-6">
               {recentUsers.length === 0 ? (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  Chưa có người dùng nào
+                  No users yet
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -446,39 +446,39 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
-          </div>
+          </div> */}
 
           {/* Activity Overview */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Hoạt động hệ thống</h2>
+          {/* <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">System Activity</h2>
             <div className="space-y-5">
               <ActivityProgressBar
-                label="Tài khoản hoạt động"
+                label="Active Accounts"
                 value={stats.activeUsers}
                 max={stats.activeUsers + stats.inactiveUsers}
                 color="green"
               />
               <ActivityProgressBar
-                label="Bài đăng đã duyệt"
+                label="Approved Posts"
                 value={stats.totalPosts - stats.pendingPosts}
                 max={stats.totalPosts}
                 color="blue"
               />
               <ActivityProgressBar
-                label="Chủ trọ đã xác minh"
+                label="Verified Owners"
                 value={stats.totalOwners}
                 max={stats.totalUsers + stats.totalOwners}
                 color="purple"
               />
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Right Column - 1/3 width */}
         <div className="space-y-8">
           {/* User Distribution */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Phân bố người dùng</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">User Distribution</h2>
             <UserDistributionChart
               users={stats.totalUsers}
               owners={stats.totalOwners}
@@ -488,7 +488,7 @@ export default function AdminPage() {
 
           {/* Account Status */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Trạng thái tài khoản</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Account Status</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/30 rounded-xl">
                 <div className="flex items-center space-x-3">
@@ -497,7 +497,7 @@ export default function AdminPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Đang hoạt động</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Active</span>
                 </div>
                 <span className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.activeUsers}</span>
               </div>
@@ -508,32 +508,32 @@ export default function AdminPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                     </svg>
                   </div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Bị khóa</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Locked</span>
                 </div>
                 <span className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.inactiveUsers}</span>
               </div>
             </div>
           </div>
 
-          
+
 
           {/* Notifications */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+          {/* <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Thông báo</h2>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Notifications</h2>
                 <Link
                   href="/admin/notifications"
                   className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm font-medium"
                 >
-                  Xem tất cả
+                  View all
                 </Link>
               </div>
             </div>
             <div className="p-4">
               {notifications.length === 0 ? (
                 <div className="text-center py-6 text-gray-500 dark:text-gray-400">
-                  Không có thông báo mới
+                  No new notifications
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -551,9 +551,9 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
-    </div>
+    </div >
   );
 }
