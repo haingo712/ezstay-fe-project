@@ -199,16 +199,22 @@ const contractService = {
 
   // Digital Signature Management
   // Sign contract with signature image URL
-  signContract: async (contractId, signatureBase64) => {
+  signContract: async (contractId, signatureBase64, role = 'user') => {
     try {
-      console.log("✍️ Signing contract:", contractId);
+      console.log("✍️ Signing contract:", contractId, "as", role);
       console.log("🖼️ Signature length:", signatureBase64?.length);
 
-      // Backend endpoint: PUT /api/Contract/{id}/sign-contract
+      // Backend endpoints:
+      // User: PUT /api/Contract/{id}/sign-contract/user
+      // Owner: PUT /api/Contract/{id}/sign-contract/owner
       // Backend expects raw string in body, NOT an object
-      // C# signature: [FromBody] string ownerSignature
+      // C# signature: [FromBody] string userSignature / [FromBody] string ownerSignature
+      const endpoint = role === 'owner'
+        ? `/api/Contract/${contractId}/sign-contract/owner`
+        : `/api/Contract/${contractId}/sign-contract/user`;
+
       const response = await api.put(
-        `/api/Contract/${contractId}/sign-contract`,
+        endpoint,
         JSON.stringify(signatureBase64) // Send as JSON string
       );
 
