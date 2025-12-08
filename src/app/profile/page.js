@@ -244,7 +244,11 @@ export default function ProfilePage() {
       }
     } catch (error) {
       console.error("❌ Error loading profile:", error);
-      setError("Failed to load profile data");
+      // 404 is NOT an error - it's already handled above
+      // Only show error for other types of errors
+      if (error.response?.status !== 404 && !error.message?.includes('404')) {
+        setError("Failed to load profile data. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }

@@ -220,16 +220,9 @@ const contractService = {
     }
   },
 
-  // Get signatures for a contract
-  getSignatures: async (contractId) => {
-    try {
-      const response = await api.get(`/api/Contract/${contractId}/signatures`);
-      return response.data || response;
-    } catch (error) {
-      console.error('Error fetching signatures:', error);
-      return null;
-    }
-  },
+  // Note: Signatures are included in main contract response
+  // (ownerSignature, tenantSignature, ownerSignedAt, tenantSignedAt)
+  // No separate signatures endpoint needed
 
   // ==================== RENTAL REQUEST ====================
   // Create rental request (User sends request to Owner)

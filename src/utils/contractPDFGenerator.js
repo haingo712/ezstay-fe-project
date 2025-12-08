@@ -81,77 +81,70 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
     console.warn('⚠️ Available contract keys:', Object.keys(contract));
   }
   
-  // Determine tenant (lessee - người thuê) and owner (lessor - người cho thuê) from identityProfiles
-  // LESSOR (Party A) = Owner = người cho thuê (chủ nhà)
-  // LESSEE (Party B) = Tenant = người thuê (user ký hợp đồng) = IsSigner = true
-  let tenant = {};  // Người thuê (Lessee/Party B) - the one who signs
-  let ownerFromProfiles = {};  // Người cho thuê (Lessor/Party A) - the owner
+  // IMPORTANT: identityProfiles contains TENANTS ONLY (all people renting/living in the room)
+  // CORRECT STRUCTURE FROM BACKEND:
+  // identityProfiles[0] = Owner (LESSOR/Party A - người cho thuê)
+  // identityProfiles[1] = Primary Tenant (LESSEE/Party B - người thuê chính/đại diện ký)
+  // identityProfiles[2...] = Other occupants (người ở cùng)
+  
+  let ownerInfo = {};
+  let primaryTenant = {};
+  let otherOccupants = [];
   
   if (identityProfiles.length > 0) {
-    // Find profiles based on IsSigner flag
-    // IsSigner = true means this is the tenant (person renting/signing the contract)
-    // IsSigner = false means this is the owner (person leasing out the property)
-    const signerProfile = identityProfiles.find(p => p.IsSigner === true || p.isSigner === true);
-    const nonSignerProfile = identityProfiles.find(p => p.IsSigner === false || p.isSigner === false);
+    // First profile is ALWAYS the owner (LESSOR)
+    ownerInfo = identityProfiles[0];
     
-    if (signerProfile && nonSignerProfile) {
-      // Both profiles found - signer is tenant, non-signer is owner
-      tenant = signerProfile;
-      ownerFromProfiles = nonSignerProfile;
-    } else if (signerProfile) {
-      // Only signer found - check if there are multiple profiles
-      if (identityProfiles.length >= 2) {
-        // If both are signers, use the SECOND one as tenant (the actual renter)
-        // and the FIRST one as owner (the property owner)
-        ownerFromProfiles = identityProfiles[0];
-        tenant = identityProfiles[1];
-      } else {
-        // Only one profile - this is the tenant
-        tenant = signerProfile;
-        ownerFromProfiles = {};
-      }
-    } else if (nonSignerProfile) {
-      // Only non-signer found - this is the owner
-      ownerFromProfiles = nonSignerProfile;
-      tenant = {};
-    } else {
-      // No IsSigner flag found - assume first is owner, second is tenant
-      ownerFromProfiles = identityProfiles[0] || {};
-      tenant = identityProfiles[1] || {};
+    // Second profile (if exists) is the primary tenant (LESSEE)
+    if (identityProfiles.length > 1) {
+      primaryTenant = identityProfiles[1];
+    }
+    
+    // Remaining profiles are other occupants
+    if (identityProfiles.length > 2) {
+      otherOccupants = identityProfiles.slice(2);
     }
   }
   
-  console.log('👤 Identified Tenant (Lessee/Party B - người thuê):', tenant);
-  console.log('👤 Identified Owner (Lessor/Party A - người cho thuê):', ownerFromProfiles);
+  console.log('👤 Owner (LESSOR/Party A - người cho thuê):', ownerInfo);
+  console.log('👤 Primary Tenant (LESSEE/Party B - người thuê chính):', primaryTenant);
+  console.log('👤 Other Occupants (người ở cùng):', otherOccupants);
   
-  // Try to get owner info from alternative sources if not in identityProfiles
-  const ownerInfo = contract.owner || contract.Owner || contract.ownerInfo || contract.OwnerInfo || ownerFromProfiles;
+  // Get room information first
+  const roomDetails = contract.roomDetails || contract.RoomDetails || {};
   
-  console.log('👤 Final Owner info:', ownerInfo);
+  // Fallback: If ownerInfo is empty from identityProfiles, try contract.owner or roomDetails.owner
+  if (Object.keys(ownerInfo).length === 0) {
+    ownerInfo = contract.owner || contract.Owner || contract.ownerInfo || contract.OwnerInfo || 
+                roomDetails.owner || roomDetails.Owner || {};
+  }
+  
+  console.log('👤 Final Owner info (Lessor/Party A):', ownerInfo);
   console.log('👤 Owner info keys:', Object.keys(ownerInfo || {}));
-  console.log('👤 Tenant keys:', Object.keys(tenant || {}));
+  console.log('👤 Primary Tenant keys:', Object.keys(primaryTenant || {}));
   
-  // Get owner information with fallbacks - check camelCase first (JSON from .NET uses camelCase)
+  // Get OWNER information (LESSOR/Party A - Người cho thuê/Chủ nhà)
   const ownerName = ownerInfo.fullName || ownerInfo.FullName || 
                     ownerInfo.name || ownerInfo.Name ||
-                    contract.ownerName || contract.OwnerName || '';
+                    contract.ownerName || contract.OwnerName || 
+                    roomDetails.ownerName || roomDetails.OwnerName || '[Owner Name Required]';
   const ownerPhone = ownerInfo.phone || ownerInfo.Phone || 
                      ownerInfo.phoneNumber || ownerInfo.PhoneNumber ||
                      contract.ownerPhone || contract.OwnerPhone || '';
-  const ownerEmail = ownerInfo.Email || ownerInfo.email ||
+  const ownerEmail = ownerInfo.email || ownerInfo.Email ||
                      contract.ownerEmail || contract.OwnerEmail || '';
-  const ownerAddress = ownerInfo.Address || ownerInfo.address ||
+  const ownerAddress = ownerInfo.address || ownerInfo.Address ||
                        contract.ownerAddress || contract.OwnerAddress || '';
-  const ownerCitizenId = ownerInfo.CitizenIdNumber || ownerInfo.citizenIdNumber ||
-                         ownerInfo.CitizenId || ownerInfo.citizenId || '';
-  const ownerProvinceName = ownerInfo.ProvinceName || ownerInfo.provinceName || '';
-  const ownerWardName = ownerInfo.WardName || ownerInfo.wardName || '';
+  const ownerCitizenId = ownerInfo.citizenIdNumber || ownerInfo.CitizenIdNumber ||
+                         ownerInfo.citizenId || ownerInfo.CitizenId || '';
+  const ownerProvinceName = ownerInfo.provinceName || ownerInfo.ProvinceName || '';
+  const ownerWardName = ownerInfo.wardName || ownerInfo.WardName || '';
   const ownerLocation = [ownerWardName, ownerProvinceName].filter(Boolean).join(', ');
   
-  console.log('📋 Final Owner Info - Name:', ownerName, 'Phone:', ownerPhone, 'Email:', ownerEmail);
+  console.log('📋 Final Owner Info (Lessor/Party A) - Name:', ownerName, 'Phone:', ownerPhone, 'Email:', ownerEmail);
   
-  if (Object.keys(tenant).length === 0) {
-    console.warn('⚠️ WARNING: Tenant object is empty! Party B will show placeholder values.');
+  if (Object.keys(primaryTenant).length === 0) {
+    console.warn('⚠️ WARNING: No tenant data found! Party B (Lessee) will show placeholder values.');
   }
   
   // Get dates with proper validation
@@ -173,8 +166,7 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   const updatedAt = parseDate(contract.updatedAt || contract.UpdatedAt);
   const canceledAt = parseDate(contract.canceledAt || contract.CanceledAt);
   
-  // Get room information
-  const roomDetails = contract.roomDetails || contract.RoomDetails || {};
+  // Get room details (already declared above)
   const roomName = contract.roomName || roomDetails.name || roomDetails.Name || '';
   const roomAddress = roomDetails.address || roomDetails.Address || '';
   const roomArea = roomDetails.area || roomDetails.Area || '';
@@ -241,9 +233,12 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   doc.text('THE CONTRACTING PARTIES:', 20, yPos);
   yPos += 10;
   
-  // Party A - Owner Information (apply Vietnamese diacritics removal for PDF)
+  // Party A - LESSOR (Owner/Landlord - Người cho thuê/Chủ nhà)
+  doc.setFont(undefined, 'bold');
+  doc.text('PARTY A (LESSOR - Owner/Landlord):', 20, yPos);
+  yPos += 7;
   doc.setFont(undefined, 'normal');
-  doc.text(`Party A (Lessee): ${removeVietnameseDiacritics(ownerName)}`, 20, yPos);
+  doc.text(`Name: ${removeVietnameseDiacritics(ownerName)}`, 20, yPos);
   yPos += 7;
   if (ownerAddress) {
     doc.text(`Address: ${removeVietnameseDiacritics(ownerAddress)}`, 20, yPos);
@@ -272,36 +267,29 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   }
   yPos += 3;
   
-  // Party B - Check if tenant data exists
-  const hasTenantData = Object.keys(tenant).length > 0;
+  // Party B - LESSEE (Tenant/Renter - Người thuê)
+  const hasTenantData = Object.keys(primaryTenant).length > 0;
   
-  // If no tenant data, show warning
-  if (!hasTenantData) {
-    doc.setFontSize(9);
-    doc.setTextColor(200, 0, 0);
-    doc.setFont(undefined, 'italic');
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'normal');
-    yPos += 7;
-  }
+  // Get PRIMARY TENANT information (LESSEE/Party B - Người thuê)
+  const tenantName = primaryTenant.fullName || primaryTenant.FullName || '[Tenant Name Required]';
+  const tenantAddress = primaryTenant.address || primaryTenant.Address || '';
+  const tenantPhone = primaryTenant.phone || primaryTenant.Phone || '';
+  const tenantEmail = primaryTenant.email || primaryTenant.Email || '';
+  const tenantCitizenId = primaryTenant.citizenIdNumber || primaryTenant.CitizenIdNumber || '';
   
-  // Use correct field names - check camelCase first (JSON from .NET uses camelCase)
-  const tenantName = tenant.fullName || tenant.FullName || (hasTenantData ? '' : '[To be determined]');
-  const tenantAddress = tenant.address || tenant.Address || (hasTenantData ? '' : '[To be provided]');
-  const tenantPhone = tenant.phone || tenant.Phone || tenant.phoneNumber || tenant.PhoneNumber || (hasTenantData ? '' : '[To be provided]');
-  const tenantEmail = tenant.email || tenant.Email || (hasTenantData ? '' : '[To be provided]');
-  const tenantCitizenId = tenant.citizenIdNumber || tenant.CitizenIdNumber || (hasTenantData ? '' : '[To be provided]');
-  
-  doc.text(`Party B (Lessee): ${removeVietnameseDiacritics(tenantName)}`, 20, yPos);
+  doc.setFont(undefined, 'bold');
+  doc.text('PARTY B (LESSEE - Tenant/Renter):', 20, yPos);
+  yPos += 7;
+  doc.setFont(undefined, 'normal');
+  doc.text(`Name: ${removeVietnameseDiacritics(tenantName)}`, 20, yPos);
   yPos += 7;
   if (tenantAddress) {
     doc.text(`Address: ${removeVietnameseDiacritics(tenantAddress)}`, 20, yPos);
     yPos += 7;
   }
   // Show province and ward if available
-  const provinceName = tenant.ProvinceName || tenant.provinceName;
-  const wardName = tenant.WardName || tenant.wardName;
+  const provinceName = primaryTenant.provinceName || primaryTenant.ProvinceName;
+  const wardName = primaryTenant.wardName || primaryTenant.WardName;
   if (provinceName || wardName) {
     const locationText = [wardName, provinceName].filter(Boolean).join(', ');
     doc.text(`Location: ${removeVietnameseDiacritics(locationText)}`, 20, yPos);
@@ -319,8 +307,8 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
     doc.text(`Citizen ID: ${tenantCitizenId}`, 20, yPos);
     yPos += 7;
   }
-  const citizenIdIssuedDate = tenant.CitizenIdIssuedDate || tenant.citizenIdIssuedDate;
-  const citizenIdIssuedPlace = tenant.CitizenIdIssuedPlace || tenant.citizenIdIssuedPlace;
+  const citizenIdIssuedDate = primaryTenant.citizenIdIssuedDate || primaryTenant.CitizenIdIssuedDate;
+  const citizenIdIssuedPlace = primaryTenant.citizenIdIssuedPlace || primaryTenant.CitizenIdIssuedPlace;
   if (citizenIdIssuedDate || citizenIdIssuedPlace) {
     const issuedDateStr = citizenIdIssuedDate ? new Date(citizenIdIssuedDate).toLocaleDateString('en-GB') : '';
     const issuedPlaceStr = citizenIdIssuedPlace ? removeVietnameseDiacritics(citizenIdIssuedPlace) : '';
@@ -333,17 +321,33 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
     }
     yPos += 7;
   }
-  const dobDate = tenant.DateOfBirth || tenant.dateOfBirth;
+  const dobDate = primaryTenant.dateOfBirth || primaryTenant.DateOfBirth;
   if (dobDate) {
     doc.text(`Date of Birth: ${new Date(dobDate).toLocaleDateString('en-GB')}`, 20, yPos);
     yPos += 7;
   }
-  const isSigner = tenant.isSigner || tenant.IsSigner;
-  if (isSigner) {
+  
+  // Show other occupants if any (người ở cùng) - from identityProfiles[2] onwards
+  if (otherOccupants.length > 0) {
+    yPos += 3;
     doc.setFont(undefined, 'bold');
-    doc.text('(Primary Signer)', 20, yPos);
-    doc.setFont(undefined, 'normal');
+    doc.text(`Other Occupants (${otherOccupants.length} person(s)):`, 20, yPos);
     yPos += 7;
+    doc.setFont(undefined, 'normal');
+    otherOccupants.forEach((occupant, index) => {
+      const occupantName = occupant.fullName || occupant.FullName || `Occupant ${index + 1}`;
+      const occupantCCCD = occupant.citizenIdNumber || occupant.CitizenIdNumber || '';
+      const occupantDOB = occupant.dateOfBirth || occupant.DateOfBirth;
+      let occupantText = `  ${index + 1}. ${removeVietnameseDiacritics(occupantName)}`;
+      if (occupantCCCD) {
+        occupantText += ` (CCCD: ${occupantCCCD})`;
+      }
+      if (occupantDOB) {
+        occupantText += ` - DOB: ${new Date(occupantDOB).toLocaleDateString('en-GB')}`;
+      }
+      doc.text(occupantText, 20, yPos);
+      yPos += 6;
+    });
   }
   yPos += 8;
   
@@ -352,6 +356,12 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   const introLines = doc.splitTextToSize(introText, 170);
   doc.text(introLines, 20, yPos);
   yPos += introLines.length * 7 + 10;
+  
+  // Check if we need a new page before Article 1
+  if (yPos > 240) {
+    doc.addPage();
+    yPos = 20;
+  }
   
   // Article 1: The House for Lease
   doc.setFont(undefined, 'bold');
@@ -364,6 +374,12 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   const article1Lines = doc.splitTextToSize(article1Text, 170);
   doc.text(article1Lines, 20, yPos);
   yPos += article1Lines.length * 7 + 10;
+  
+  // Check if we need a new page before Article 2
+  if (yPos > 240) {
+    doc.addPage();
+    yPos = 20;
+  }
   
   // Article 2: Duration of the Lease
   doc.setFont(undefined, 'bold');
@@ -1044,9 +1060,8 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   if (ownerName) {
     summaryData.push(['Owner (Party A)', removeVietnameseDiacritics(ownerName)]);
   }
-  const tenantFullName = tenant.FullName || tenant.fullName || tenantName;
-  if (tenantFullName) {
-    summaryData.push(['Tenant (Party B)', removeVietnameseDiacritics(tenantFullName)]);
+  if (tenantName) {
+    summaryData.push(['Tenant (Party B)', removeVietnameseDiacritics(tenantName)]);
   }
   if (roomName) {
     summaryData.push(['Room', removeVietnameseDiacritics(roomName)]);
@@ -1148,21 +1163,34 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   
   yPos += signatureBoxHeight + 10;
   
-  // Names under signature boxes
-  doc.setFont(undefined, 'normal');
-  doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
-  doc.text('___________________________', 55, yPos, { align: 'center' });
-  doc.text('___________________________', 155, yPos, { align: 'center' });
-  yPos += 7;
-  
-  // Display owner name (Party A - Lessor) and tenant name (Party B - Lessee) under signatures
-  const ownerFinalName = ownerName || '';
-  const tenantFinalName = tenant.fullName || tenant.FullName || tenantName || '';
-  console.log('📝 Signature names - Owner:', ownerFinalName, 'Tenant:', tenantFinalName);
+  // Display names under signatures
+  // PARTY A (LESSOR) = Owner name (người cho thuê)
+  // PARTY B (LESSEE) = Primary Tenant name (người thuê chính)
+  const ownerFinalName = ownerName || '[Owner Name]';
+  const tenantFinalName = tenantName || '[Tenant Name]';
+  console.log('📝 Signature names - Owner (Lessor/Party A):', ownerFinalName, '| Tenant (Lessee/Party B):', tenantFinalName);
   doc.text(removeVietnameseDiacritics(ownerFinalName), 55, yPos, { align: 'center' });
   doc.text(removeVietnameseDiacritics(tenantFinalName), 155, yPos, { align: 'center' });
-  yPos += 20;
+  yPos += 7;
+  
+  // Display signed dates under names
+  const ownerSignedAt = contract.ownerSignedAt || contract.OwnerSignedAt;
+  const tenantSignedAt = contract.tenantSignedAt || contract.TenantSignedAt;
+  
+  doc.setFont(undefined, 'italic');
+  doc.setFontSize(9);
+  if (ownerSignedAt) {
+    const ownerSignedDate = new Date(ownerSignedAt);
+    doc.text(`Signed: ${ownerSignedDate.toLocaleDateString('en-GB')} ${ownerSignedDate.toLocaleTimeString('en-GB')}`, 55, yPos, { align: 'center' });
+  }
+  if (tenantSignedAt) {
+    const tenantSignedDate = new Date(tenantSignedAt);
+    doc.text(`Signed: ${tenantSignedDate.toLocaleDateString('en-GB')} ${tenantSignedDate.toLocaleTimeString('en-GB')}`, 155, yPos, { align: 'center' });
+  }
+  
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(11);
+  yPos += 15;
   
   // Verification note
   if (ownerSignature && tenantSignature) {
