@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 export default function FinancialReportsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
-  
+
   const financialData = {
     totalRevenue: 250000000,
     totalExpenses: 75000000,
@@ -147,11 +147,10 @@ export default function FinancialReportsPage() {
                 </div>
                 <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
                   <div
-                    className={`h-full ${
-                      index === 0 ? 'bg-blue-500' :
+                    className={`h-full ${index === 0 ? 'bg-blue-500' :
                       index === 1 ? 'bg-green-500' :
-                      index === 2 ? 'bg-purple-500' : 'bg-orange-500'
-                    }`}
+                        index === 2 ? 'bg-purple-500' : 'bg-orange-500'
+                      }`}
                     style={{ width: `${item.percentage}%` }}
                   />
                 </div>
@@ -175,7 +174,7 @@ export default function FinancialReportsPage() {
               </div>
               <div className="text-3xl">📈</div>
             </div>
-            
+
             <div className="flex justify-between items-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Growth Rate</p>
@@ -183,7 +182,7 @@ export default function FinancialReportsPage() {
               </div>
               <div className="text-3xl">📊</div>
             </div>
-            
+
             <div className="flex justify-between items-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Expense Ratio</p>
