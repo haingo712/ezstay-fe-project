@@ -276,12 +276,12 @@ export const rentalPostService = {
       console.log('🌐 Fetching public rental posts (no auth)...');
       console.log('🔗 Base URL:', baseUrl);
       console.log('🔗 Full URL:', `${baseUrl}/api/RentalPosts`);
-      
+
       if (!baseUrl) {
         console.error('❌ NEXT_PUBLIC_API_GATEWAY_URL is not defined!');
         return [];
       }
-      
+
       // Use native fetch directly to avoid axios interceptors
       const response = await fetch(`${baseUrl}/api/RentalPosts`, {
         method: 'GET',
@@ -320,12 +320,12 @@ export const rentalPostService = {
       const baseUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL;
       console.log('🌐 Fetching public post detail (no auth)...');
       console.log('🔗 Full URL:', `${baseUrl}/api/RentalPosts/${postId}`);
-      
+
       if (!baseUrl) {
         console.error('❌ NEXT_PUBLIC_API_GATEWAY_URL is not defined!');
         return null;
       }
-      
+
       // Use native fetch directly to avoid axios interceptors
       const response = await fetch(`${baseUrl}/api/RentalPosts/${postId}`, {
         method: 'GET',
@@ -427,7 +427,7 @@ export const rentalPostService = {
   getPendingPosts: async () => {
     try {
       console.log('📋 Fetching pending posts for staff review...');
-      const response = await axiosInstance.get('/api/RentalPosts/pending');
+      const response = await axiosInstance.get('/api/RentalPosts/all');
       let posts = response.data;
 
       // Handle if response is wrapped in ApiResponse structure

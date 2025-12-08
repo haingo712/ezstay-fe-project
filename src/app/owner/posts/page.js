@@ -6,7 +6,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { rentalPostService } from '@/services/rentalPostService';
 import boardingHouseService from '@/services/boardingHouseService';
 import roomService from '@/services/roomService';
-import { FileText, Plus, Edit2, Trash2, Copy, X, Building, Home, Eye } from 'lucide-react';
+import { FileText, Plus, Edit2, Trash2, Copy, X, Building, Home, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 export default function PostsPage() {
@@ -143,31 +143,31 @@ export default function PostsPage() {
 
   const getStatusColor = (post) => {
     if (!post.isActive) return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
-    if (post.isApproved === null) return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300';
-    if (post.isApproved === 0) return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300';
+    if (post.isApproved === 0) return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300';
+    if (post.isApproved === 2) return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300';
     return 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300';
   };
 
   const getStatusText = (post) => {
     if (!post.isActive) return t('ownerPosts.status.inactive');
-    if (post.isApproved === null) return t('ownerPosts.status.pending');
-    if (post.isApproved === 0) return t('ownerPosts.status.rejected');
+    if (post.isApproved === 0) return t('ownerPosts.status.pending');
+    if (post.isApproved === 2) return t('ownerPosts.status.rejected');
     return t('ownerPosts.status.active');
   };
 
   const filteredPosts = posts.filter(post => {
     if (activeTab === 'all') return true;
     if (activeTab === 'active') return post.isActive && post.isApproved === 1;
-    if (activeTab === 'pending') return post.isActive && post.isApproved === null;
-    if (activeTab === 'inactive') return !post.isActive || post.isApproved === 0;
+    if (activeTab === 'pending') return post.isActive && post.isApproved === 0;
+    if (activeTab === 'inactive') return !post.isActive || post.isApproved === 2;
     return true;
   });
 
   const stats = {
     total: posts.length,
     active: posts.filter(p => p.isActive && p.isApproved === 1).length,
-    pending: posts.filter(p => p.isActive && p.isApproved === null).length,
-    inactive: posts.filter(p => !p.isActive || p.isApproved === 0).length,
+    pending: posts.filter(p => p.isActive && p.isApproved === 0).length,
+    inactive: posts.filter(p => !p.isActive || p.isApproved === 2).length,
   };
 
   const handleNewPost = () => {
@@ -223,12 +223,11 @@ export default function PostsPage() {
         toast.success(t('ownerPosts.messages.updateSuccess'));
       } else {
         const response = await rentalPostService.createPost(postData);
-        if (response.isSuccess) {
-          toast.success(response.message || t('ownerPosts.messages.createSuccess'));
-        } else {
+        if (!response.isSuccess) {
           toast.error(response.message || t('ownerPosts.messages.createFailed'));
           return;
         }
+        // Don't show success toast for create - let user see it in the list
       }
       await loadPosts();
       setShowPostModal(false);
@@ -252,7 +251,7 @@ export default function PostsPage() {
       try {
         await rentalPostService.deletePost(postId, user.id);
         await loadPosts();
-        toast.success(t('ownerPosts.messages.deleteSuccess'));
+        // Don't show success toast - let user see the result in the list
       } catch (error) {
         console.error('Error deleting post:', error);
         toast.error(error.response?.data?.message || t('ownerPosts.messages.deleteFailed'));
@@ -281,8 +280,17 @@ export default function PostsPage() {
 
   const handleViewDetail = async (post) => {
     try {
+      // For pending posts (isApproved === 0), use the data we already have
+      // since the API might not return complete data for pending posts
+      if (post.isApproved === 0) {
+        console.log('🔍 Showing pending post details from cached data:', post.id);
+        setDetailPost(post);
+        setShowDetailModal(true);
+        return;
+      }
+
+      // For active/approved posts, fetch fresh data from API
       console.log('🔍 Fetching post detail by ID:', post.id);
-      // Call getById API to get fresh data
       const detailData = await rentalPostService.getById(post.id);
       console.log('✅ Post detail loaded:', detailData);
       setDetailPost(detailData);
@@ -601,24 +609,32 @@ export default function PostsPage() {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button
-                        onClick={() => handleEditPost(post)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
+                      {/* Only show Edit button for Pending posts (isApproved === 0) */}
+                      {post.isApproved === 0 && (
+                        <button
+                          onClick={() => handleEditPost(post)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                          title="Edit Post"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                      )}
                       {/* <button
                         onClick={() => handleDuplicatePost(post)}
                         className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
                       >
                         <Copy className="w-4 h-4" /> */}
                       {/* </button> */}
-                      <button
-                        onClick={() => handleDeletePost(post.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {/* Only show Delete button for Active posts (isApproved === 1) */}
+                      {post.isApproved === 1 && (
+                        <button
+                          onClick={() => handleDeletePost(post.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                          title="Delete Post"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
