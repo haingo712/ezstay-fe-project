@@ -246,24 +246,28 @@ export default function ContractsManagementPage() {
           if (rentalRequestData.tenantProfile) {
             const tp = rentalRequestData.tenantProfile;
 
-            // Extract citizenIdNumber - handle both Array and String
-            let citizenIdNumber = '';
+            // Extract ALL citizenIdNumbers - handle both Array and String
+            let allCitizenIds = [];
             if (Array.isArray(tp.citizenIdNumber)) {
-              citizenIdNumber = tp.citizenIdNumber[0] || '';
-              console.log('⚠️ CitizenIdNumber is Array, extracting first element:', citizenIdNumber);
+              allCitizenIds = tp.citizenIdNumber;
+              console.log('✅ CitizenIdNumber is Array:', allCitizenIds);
             } else if (typeof tp.citizenIdNumber === 'string') {
-              citizenIdNumber = tp.citizenIdNumber;
+              allCitizenIds = [tp.citizenIdNumber];
             } else if (tp.CitizenIdNumber) {
               // Try PascalCase
               if (Array.isArray(tp.CitizenIdNumber)) {
-                citizenIdNumber = tp.CitizenIdNumber[0] || '';
+                allCitizenIds = tp.CitizenIdNumber;
               } else {
-                citizenIdNumber = tp.CitizenIdNumber;
+                allCitizenIds = [tp.CitizenIdNumber];
               }
             }
 
+            // Extract citizenIdNumber for main profile (first one)
+            const citizenIdNumber = allCitizenIds[0] || '';
+
             console.log('📋 Rental request data received:', tp);
-            console.log('📋 Extracted CitizenIdNumber:', citizenIdNumber);
+            console.log('📋 All Citizen IDs:', allCitizenIds);
+            console.log('📋 Representative Citizen ID:', citizenIdNumber);
 
             // Create tenant profile with data from rental request
             const tenantProfile = {
@@ -290,26 +294,54 @@ export default function ContractsManagementPage() {
               userId: rentalRequestData.tenantUserId || ''
             };
 
-            // Set profiles with tenant profile as first entry
-            setProfiles([tenantProfile]);
-            console.log('✅ Tenant profile pre-filled from rental request:', tenantProfile);
+            // Create profiles for all co-occupants (remaining Citizen IDs)
+            const allProfiles = [tenantProfile];
 
-            // ⚠️ IMPORTANT: If we have CCCD, automatically search to get complete data (especially images)
-            // This ensures all fields including images are populated from the database
-            if (citizenIdNumber && citizenIdNumber.length >= 9) {
-              console.log('🔄 Auto-searching profile by CCCD to get complete data including images...');
-              console.log('🔍 CCCD to search:', citizenIdNumber);
-              // Wait for modal to open, then search
-              setTimeout(() => {
-                searchIdentityProfileByCCCD(0, citizenIdNumber).then(() => {
-                  console.log('✅ Auto-search completed - profile should now have all data including images');
-                }).catch((err) => {
-                  console.error('❌ Auto-search failed:', err);
-                });
-              }, 500); // Small delay to ensure state is ready
-            } else {
-              console.log('⚠️ No valid CCCD found, skipping auto-search. CitizenIdNumber:', citizenIdNumber);
+            // Add empty profiles for co-occupants with their Citizen IDs pre-filled
+            for (let i = 1; i < allCitizenIds.length; i++) {
+              allProfiles.push({
+                userId: "",
+                gender: "Male",
+                fullName: "",
+                dateOfBirth: "",
+                phoneNumber: "",
+                email: "",
+                provinceId: "",
+                provinceName: "",
+                wardId: "",
+                wardName: "",
+                address: "",
+                temporaryResidence: "",
+                citizenIdNumber: allCitizenIds[i], // Pre-fill with Citizen ID from rental request
+                citizenIdIssuedDate: "",
+                citizenIdIssuedPlace: "",
+                notes: "",
+                frontImageUrl: "",
+                backImageUrl: ""
+              });
             }
+
+            // Set profiles with all occupants
+            setProfiles(allProfiles);
+            console.log(`✅ Created ${allProfiles.length} profiles from rental request (1 representative + ${allCitizenIds.length - 1} co-occupants)`);
+
+            // ⚠️ IMPORTANT: Auto-search profile for ALL Citizen IDs to get complete data
+            // Wait for modal to open, then search for each profile
+            setTimeout(async () => {
+              for (let i = 0; i < allCitizenIds.length; i++) {
+                const cccd = allCitizenIds[i];
+                if (cccd && cccd.length >= 9) {
+                  console.log(`🔄 Auto-searching profile ${i + 1}/${allCitizenIds.length} by CCCD: ${cccd}`);
+                  try {
+                    await searchIdentityProfileByCCCD(i, cccd);
+                    console.log(`✅ Auto-search completed for profile ${i + 1}`);
+                  } catch (err) {
+                    console.error(`❌ Auto-search failed for profile ${i + 1}:`, err);
+                  }
+                }
+              }
+              console.log('✅ All profiles auto-search completed');
+            }, 500); // Small delay to ensure state is ready
           } else if (rentalRequestData.tenantUserId) {
             // Fallback: If no profile data, store tenant ID for later use
             console.log('👤 Tenant user ID from rental request:', rentalRequestData.tenantUserId);
