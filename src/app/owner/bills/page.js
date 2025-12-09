@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import api from "@/utils/api";
 import { useBillNotifications } from "@/hooks/useSignalR";
-import { FileText, Clock, CheckCircle, AlertCircle, Search, Eye, Plus, X, Home, Zap, Droplets, Wrench, ChevronLeft, ChevronRight, Ban, RefreshCw, Calendar, Wifi, WifiOff, Trash2 } from "lucide-react";
+import { FileText, Clock, CheckCircle, AlertCircle, Search, Eye, Plus, X, Home, Zap, Droplets, Wrench, ChevronLeft, ChevronRight, Ban, RefreshCw, Calendar, Wifi, WifiOff } from "lucide-react";
 
 // Format currency
 const formatCurrency = (amount) => {
@@ -66,7 +66,7 @@ export default function OwnerBillsPage() {
     // Handle real-time bill notifications
     const handleBillNotification = useCallback((type, data) => {
         console.log(`📢 Bill notification: ${type}`, data);
-        
+
         if (type === 'payment_received') {
             // Show toast notification
             toast.success(
@@ -80,7 +80,7 @@ export default function OwnerBillsPage() {
             fetchBills();
         } else if (type === 'status_updated') {
             // Update specific bill in list
-            setBills(prev => prev.map(bill => 
+            setBills(prev => prev.map(bill =>
                 (bill.id === data.billId || bill.Id === data.billId)
                     ? { ...bill, status: data.status, Status: data.status, paymentDate: data.paymentDate }
                     : bill
@@ -226,11 +226,11 @@ export default function OwnerBillsPage() {
     const filteredBills = bills.filter(bill => {
         const status = getBillStatus(bill);
         const matchesStatus = filter === 'all' || status === filter;
-        
-        const matchesSearch = !searchTerm.trim() || 
+
+        const matchesSearch = !searchTerm.trim() ||
             (bill.roomName || bill.RoomName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (bill.id || bill.Id || '').toLowerCase().includes(searchTerm.toLowerCase());
-        
+
         return matchesStatus && matchesSearch;
     });
 
@@ -255,11 +255,11 @@ export default function OwnerBillsPage() {
     const getStatusBadge = (status) => {
         switch (status) {
             case 'Paid':
-                return { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle className="w-4 h-4" />, label: 'Đã thanh toán' };
+                return { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle className="w-4 h-4" />, label: 'Paid' };
             case 'Unpaid':
-                return { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <Clock className="w-4 h-4" />, label: 'Chưa thanh toán' };
+                return { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <Clock className="w-4 h-4" />, label: 'Unpaid' };
             case 'Cancelled':
-                return { bg: 'bg-gray-100', text: 'text-gray-800', icon: <Ban className="w-4 h-4" />, label: 'Đã hủy' };
+                return { bg: 'bg-gray-100', text: 'text-gray-800', icon: <Ban className="w-4 h-4" />, label: 'Cancelled' };
             default:
                 return { bg: 'bg-gray-100', text: 'text-gray-800', icon: null, label: status };
         }
@@ -269,9 +269,9 @@ export default function OwnerBillsPage() {
     const getTypeBadge = (type) => {
         switch (type) {
             case 'Monthly':
-                return { bg: 'bg-blue-100', text: 'text-blue-800', icon: <Calendar className="w-3 h-3" />, label: 'Hàng tháng' };
+                return { bg: 'bg-blue-100', text: 'text-blue-800', icon: <Calendar className="w-3 h-3" />, label: 'Monthly' };
             case 'Deposit':
-                return { bg: 'bg-purple-100', text: 'text-purple-800', icon: <Home className="w-3 h-3" />, label: 'Tiền cọc' };
+                return { bg: 'bg-purple-100', text: 'text-purple-800', icon: <Home className="w-3 h-3" />, label: 'Deposit' };
             default:
                 return { bg: 'bg-gray-100', text: 'text-gray-800', icon: null, label: type };
         }
@@ -293,23 +293,22 @@ export default function OwnerBillsPage() {
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                             <FileText className="w-7 h-7 text-blue-600" />
-                            Quản lý hóa đơn
+                            Bill Management
                             {/* Real-time connection indicator */}
-                            <span 
-                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                                    isConnected 
-                                        ? 'bg-green-100 text-green-700' 
+                            {/* <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${isConnected
+                                        ? 'bg-green-100 text-green-700'
                                         : 'bg-gray-100 text-gray-500'
-                                }`}
+                                    }`}
                                 title={isConnected ? 'Đang nhận cập nhật real-time' : 'Đang kết nối...'}
                             >
                                 {isConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
                                 {isConnected ? 'Live' : 'Offline'}
-                            </span>
+                            </span> */}
                         </h1>
-                        <p className="text-gray-500 dark:text-gray-400 mt-1">
+                        {/* <p className="text-gray-500 dark:text-gray-400 mt-1">
                             Quản lý hóa đơn tiền phòng, điện nước cho các phòng trọ
-                        </p>
+                        </p> */}
                     </div>
                 </div>
             </div>
@@ -319,7 +318,7 @@ export default function OwnerBillsPage() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tổng hóa đơn</p>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Bills</p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{summary.total}</p>
                         </div>
                         <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-xl">
@@ -331,7 +330,7 @@ export default function OwnerBillsPage() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-yellow-200 dark:border-yellow-700 p-5 bg-yellow-50 dark:bg-yellow-900/20">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Chưa thanh toán</p>
+                            <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Unpaid</p>
                             <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300 mt-1">{summary.unpaid}</p>
                             <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-1">{formatCurrency(summary.unpaidAmount)}</p>
                         </div>
@@ -344,7 +343,7 @@ export default function OwnerBillsPage() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-green-200 dark:border-green-700 p-5 bg-green-50 dark:bg-green-900/20">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-green-600 dark:text-green-400">Đã thanh toán</p>
+                            <p className="text-sm font-medium text-green-600 dark:text-green-400">Paid</p>
                             <p className="text-2xl font-bold text-green-700 dark:text-green-300 mt-1">{summary.paid}</p>
                         </div>
                         <div className="bg-green-100 dark:bg-green-900/40 p-3 rounded-xl">
@@ -356,7 +355,7 @@ export default function OwnerBillsPage() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Đã hủy</p>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Cancelled</p>
                             <p className="text-2xl font-bold text-gray-700 dark:text-gray-300 mt-1">{summary.cancelled}</p>
                         </div>
                         <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl">
@@ -371,10 +370,10 @@ export default function OwnerBillsPage() {
                 {/* Filter Tabs */}
                 <div className="flex flex-wrap items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700">
                     {[
-                        { value: 'all', label: 'Tất cả', count: bills.length },
-                        { value: 'Unpaid', label: 'Chưa thanh toán', count: summary.unpaid },
-                        { value: 'Paid', label: 'Đã thanh toán', count: summary.paid },
-                        { value: 'Cancelled', label: 'Đã hủy', count: summary.cancelled }
+                        { value: 'all', label: 'All', count: bills.length },
+                        { value: 'Unpaid', label: 'Unpaid', count: summary.unpaid },
+                        { value: 'Paid', label: 'Paid', count: summary.paid },
+                        { value: 'Cancelled', label: 'Cancelled', count: summary.cancelled }
                     ].map((tab) => (
                         <button
                             key={tab.value}
@@ -390,9 +389,9 @@ export default function OwnerBillsPage() {
                             {tab.label} ({tab.count})
                         </button>
                     ))}
-                    
+
                     <div className="flex-1" />
-                    
+
                     {/* Search */}
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -407,7 +406,7 @@ export default function OwnerBillsPage() {
                             className="pl-9 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 w-48"
                         />
                     </div>
-                    
+
                     <button
                         onClick={fetchBills}
                         className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -433,14 +432,14 @@ export default function OwnerBillsPage() {
                         <table className="w-full">
                             <thead>
                                 <tr className="bg-gray-50 dark:bg-gray-700/50">
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Mã HĐ</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Loại</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Phòng</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Kỳ</th>
-                                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Số tiền</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Trạng thái</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Ngày tạo</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Thao tác</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Bill ID</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Type</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Room</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Period</th>
+                                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Amount</th>
+                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Status</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Created</th>
+                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
@@ -498,25 +497,11 @@ export default function OwnerBillsPage() {
                                                     {status === 'Unpaid' && (
                                                         <>
                                                             <button
-                                                                onClick={() => handleMarkAsPaid(billId)}
-                                                                className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                                                                title="Đánh dấu đã thanh toán"
-                                                            >
-                                                                <CheckCircle className="w-4 h-4" />
-                                                            </button>
-                                                            <button
                                                                 onClick={() => handleCancelBill(billId)}
                                                                 className="p-1.5 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
-                                                                title="Hủy hóa đơn"
+                                                                title="Cancel bill"
                                                             >
                                                                 <X className="w-4 h-4" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDeleteBill(billId)}
-                                                                className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                                                title="Xóa hóa đơn"
-                                                            >
-                                                                <Trash2 className="w-4 h-4" />
                                                             </button>
                                                         </>
                                                     )}
@@ -640,7 +625,7 @@ export default function OwnerBillsPage() {
 
                             <div className="mt-6 pt-4 border-t dark:border-gray-700">
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    💡 <strong>Lưu ý:</strong> Để tạo hóa đơn, bạn cần nhập chỉ số điện nước cho hợp đồng trong tháng hiện tại. 
+                                    💡 <strong>Lưu ý:</strong> Để tạo hóa đơn, bạn cần nhập chỉ số điện nước cho hợp đồng trong tháng hiện tại.
                                     Vào trang <span className="text-blue-600">Hợp đồng → Quản lý điện nước</span> để thêm chỉ số.
                                 </p>
                             </div>
@@ -855,30 +840,16 @@ export default function OwnerBillsPage() {
                                             onClick={() => setShowDetailModal(false)}
                                             className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
                                         >
-                                            Đóng
+                                            Close
                                         </button>
                                         {getBillStatus(selectedBill) === 'Unpaid' && (
                                             <>
-                                                <button
-                                                    onClick={() => handleMarkAsPaid(selectedBill.id || selectedBill.Id)}
-                                                    className="flex-1 px-4 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 font-medium transition-colors flex items-center justify-center gap-2"
-                                                >
-                                                    <CheckCircle className="w-5 h-5" />
-                                                    Đánh dấu đã thanh toán
-                                                </button>
                                                 <button
                                                     onClick={() => handleCancelBill(selectedBill.id || selectedBill.Id)}
                                                     className="px-4 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 font-medium transition-colors flex items-center justify-center gap-2"
                                                 >
                                                     <X className="w-5 h-5" />
-                                                    Hủy
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteBill(selectedBill.id || selectedBill.Id)}
-                                                    className="px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 font-medium transition-colors flex items-center justify-center gap-2"
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                    Xóa
+                                                    Cancel
                                                 </button>
                                             </>
                                         )}

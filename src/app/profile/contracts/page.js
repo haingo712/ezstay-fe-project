@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 import contractService from '@/services/contractService';
 import {
     FileText,
@@ -16,7 +17,8 @@ import {
     Calendar,
     Banknote,
     Search,
-    Filter
+    Filter,
+    Star
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -24,6 +26,7 @@ import RoleBasedRedirect from '@/components/RoleBasedRedirect';
 
 export default function UserContractsPage() {
     const { user } = useAuth();
+    const { t } = useTranslation();
     const router = useRouter();
     const [contracts, setContracts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -43,25 +46,44 @@ export default function UserContractsPage() {
             setError(null);
             const response = await contractService.getByTenantId(user.id);
             console.log('User contracts:', response);
+            console.log('Contract status details:', response.map(c => ({
+                id: c.id,
+                status: c.contractStatus,
+                tenantSig: c.tenantSignature || c.TenantSignature,
+                ownerSig: c.ownerSignature || c.OwnerSignature
+            })));
             setContracts(response.data || response || []);
         } catch (error) {
             console.error('Error loading contracts:', error);
-            setError('Không thể tải danh sách hợp đồng');
+            setError(t('profileContracts.errors.loadFailed') || 'Failed to load contracts');
         } finally {
             setLoading(false);
         }
     };
 
     const getStatusConfig = (status) => {
-        // Backend enum: Pending=0, Active=1, Cancelled=2, Expired=3, Evicted=4
+        // Backend enum: Pending=0, Active=1, Cancelled=2, Expired=3, CancelledByOwner=4
+        // Handle both string and number status
+        let statusKey = status;
+        if (typeof status === 'string') {
+            const statusMap = {
+                'Pending': 0,
+                'Active': 1,
+                'Cancelled': 2,
+                'Expired': 3,
+                'CancelledByOwner': 4
+            };
+            statusKey = statusMap[status] ?? 0;
+        }
+
         const configs = {
-            0: { label: 'Chờ ký', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock },
-            1: { label: 'Đang hoạt động', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle },
-            2: { label: 'Đã hủy', color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400', icon: XCircle },
-            3: { label: 'Đã hết hạn', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: AlertCircle },
-            4: { label: 'Bị chấm dứt', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: XCircle },
+            0: { label: t('profileContracts.status.pending') || 'Pending', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock },
+            1: { label: t('profileContracts.status.active') || 'Active', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle },
+            2: { label: t('profileContracts.status.cancelled') || 'Cancelled', color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400', icon: XCircle },
+            3: { label: t('profileContracts.status.expired') || 'Expired', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: AlertCircle },
+            4: { label: t('profileContracts.status.cancelledByOwner') || 'Cancelled by Owner', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400', icon: XCircle },
         };
-        return configs[status] || configs[0];
+        return configs[statusKey] || configs[0];
     };
 
     const formatCurrency = (amount) => {
@@ -92,10 +114,17 @@ export default function UserContractsPage() {
 
     // Filter contracts
     const filteredContracts = contracts.filter(contract => {
+        // Normalize status to number for filtering
+        let statusNum = contract.contractStatus;
+        if (typeof statusNum === 'string') {
+            const statusMap = { 'Pending': 0, 'Active': 1, 'Cancelled': 2, 'Expired': 3, 'CancelledByOwner': 4 };
+            statusNum = statusMap[statusNum] ?? 0;
+        }
+
         // Filter by status
-        if (filter === 'pending' && contract.contractStatus !== 0) return false;
-        if (filter === 'active' && contract.contractStatus !== 1) return false;
-        if (filter === 'expired' && contract.contractStatus !== 3) return false;
+        if (filter === 'pending' && statusNum !== 0) return false;
+        if (filter === 'active' && statusNum !== 1) return false;
+        if (filter === 'expired' && statusNum !== 3) return false;
         if (filter === 'needs-sign' && !canUserSign(contract)) return false;
 
         // Filter by search
@@ -123,10 +152,10 @@ export default function UserContractsPage() {
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 <FileText className="h-7 w-7 text-blue-600" />
-                                Hợp đồng của tôi
+                                {t('profileContracts.title') || 'My Contracts'}
                             </h1>
                             <p className="text-gray-600 dark:text-gray-400 mt-1">
-                                Quản lý các hợp đồng thuê trọ
+                                {t('profileContracts.subtitle') || 'Manage your rental contracts'}
                             </p>
                         </div>
 
@@ -134,7 +163,7 @@ export default function UserContractsPage() {
                         {pendingSignatureCount > 0 && (
                             <div className="flex items-center gap-2 px-4 py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full">
                                 <PenLine className="h-5 w-5" />
-                                <span className="font-medium">{pendingSignatureCount} hợp đồng cần ký</span>
+                                <span className="font-medium">{pendingSignatureCount} {t('profileContracts.needsSign') || 'contracts need signature'}</span>
                             </div>
                         )}
                     </div>
@@ -149,7 +178,7 @@ export default function UserContractsPage() {
                                     type="text"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="Tìm kiếm theo tên phòng, nhà trọ..."
+                                    placeholder={t('profileContracts.searchPlaceholder') || 'Search by room, house...'}
                                     className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
@@ -157,22 +186,21 @@ export default function UserContractsPage() {
                             {/* Status Filter */}
                             <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
                                 {[
-                                    { value: 'all', label: 'Tất cả' },
-                                    { value: 'needs-sign', label: '⚠️ Cần ký', highlight: pendingSignatureCount > 0 },
-                                    { value: 'pending', label: 'Chờ xử lý' },
-                                    { value: 'active', label: 'Đang hoạt động' },
-                                    { value: 'expired', label: 'Đã hết hạn' },
+                                    { value: 'all', label: t('profileContracts.filter.all') || 'All' },
+                                    { value: 'needs-sign', label: `⚠️ ${t('profileContracts.filter.needsSign') || 'Needs Sign'}`, highlight: pendingSignatureCount > 0 },
+                                    { value: 'pending', label: t('profileContracts.filter.pending') || 'Pending' },
+                                    { value: 'active', label: t('profileContracts.filter.active') || 'Active' },
+                                    { value: 'expired', label: t('profileContracts.filter.expired') || 'Expired' },
                                 ].map(item => (
                                     <button
                                         key={item.value}
                                         onClick={() => setFilter(item.value)}
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                                            filter === item.value
-                                                ? 'bg-blue-600 text-white'
-                                                : item.highlight
-                                                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                                                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                        }`}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filter === item.value
+                                            ? 'bg-blue-600 text-white'
+                                            : item.highlight
+                                                ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                                                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                            }`}
                                     >
                                         {item.label}
                                     </button>
@@ -185,7 +213,7 @@ export default function UserContractsPage() {
                     {loading && (
                         <div className="text-center py-12">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                            <p className="mt-4 text-gray-600 dark:text-gray-400">Đang tải...</p>
+                            <p className="mt-4 text-gray-600 dark:text-gray-400">{t('common.loading') || 'Loading...'}</p>
                         </div>
                     )}
 
@@ -198,7 +226,7 @@ export default function UserContractsPage() {
                                 onClick={loadContracts}
                                 className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                             >
-                                Thử lại
+                                {t('common.retry') || 'Retry'}
                             </button>
                         </div>
                     )}
@@ -208,12 +236,14 @@ export default function UserContractsPage() {
                         <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl">
                             <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                {searchTerm || filter !== 'all' ? 'Không tìm thấy hợp đồng' : 'Chưa có hợp đồng nào'}
+                                {searchTerm || filter !== 'all'
+                                    ? (t('profileContracts.empty.noResults') || 'No contracts found')
+                                    : (t('profileContracts.empty.noContracts') || 'No contracts yet')}
                             </h3>
                             <p className="text-gray-600 dark:text-gray-400">
                                 {searchTerm || filter !== 'all'
-                                    ? 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm'
-                                    : 'Khi bạn thuê phòng, hợp đồng sẽ xuất hiện ở đây'}
+                                    ? (t('profileContracts.empty.tryFilter') || 'Try changing the filter or search term')
+                                    : (t('profileContracts.empty.description') || 'When you rent a room, contracts will appear here')}
                             </p>
                         </div>
                     )}
@@ -222,6 +252,7 @@ export default function UserContractsPage() {
                     {!loading && !error && filteredContracts.length > 0 && (
                         <div className="space-y-4">
                             {filteredContracts.map(contract => {
+                                console.log('Rendering contract:', contract.id, 'Status:', contract.contractStatus, 'Full contract:', contract);
                                 const statusConfig = getStatusConfig(contract.contractStatus);
                                 const StatusIcon = statusConfig.icon;
                                 const needsSign = canUserSign(contract);
@@ -229,15 +260,14 @@ export default function UserContractsPage() {
                                 return (
                                     <div
                                         key={contract.id}
-                                        className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden ${
-                                            needsSign ? 'ring-2 ring-orange-400 dark:ring-orange-500' : ''
-                                        }`}
+                                        className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden ${needsSign ? 'ring-2 ring-orange-400 dark:ring-orange-500' : ''
+                                            }`}
                                     >
                                         {/* Needs Signature Banner */}
                                         {needsSign && (
                                             <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-4 py-2 flex items-center gap-2">
                                                 <PenLine className="h-5 w-5" />
-                                                <span className="font-medium">Hợp đồng đang chờ chữ ký của bạn</span>
+                                                <span className="font-medium">{t('profileContracts.waitingSignature') || 'Contract is waiting for your signature'}</span>
                                             </div>
                                         )}
 
@@ -251,10 +281,10 @@ export default function UserContractsPage() {
                                                         </div>
                                                         <div>
                                                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                                                {contract.roomName || 'Phòng trọ'}
+                                                                {contract.roomName || t('profileContracts.room') || 'Room'}
                                                             </h3>
                                                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                                {contract.houseName || 'Nhà trọ'}
+                                                                {contract.houseName || t('profileContracts.house') || 'House'}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -273,6 +303,14 @@ export default function UserContractsPage() {
                                                                 {formatCurrency(contract.roomPrice)}/tháng
                                                             </span>
                                                         </div>
+                                                        {contract.depositAmount > 0 && (
+                                                            <div className="flex items-center gap-2 text-sm">
+                                                                <Banknote className="h-4 w-4 text-green-500" />
+                                                                <span className="text-gray-600 dark:text-gray-400">
+                                                                    {t('profileContracts.deposit') || 'Deposit'}: {formatCurrency(contract.depositAmount)}
+                                                                </span>
+                                                            </div>
+                                                        )}
                                                     </div>
 
                                                     {/* Signature Status */}
@@ -284,7 +322,7 @@ export default function UserContractsPage() {
                                                                 <Clock className="h-4 w-4 text-orange-500" />
                                                             )}
                                                             <span className="text-gray-600 dark:text-gray-400">
-                                                                Bạn: {getTenantSignature(contract) ? 'Đã ký' : 'Chưa ký'}
+                                                                {t('profileContracts.you') || 'You'}: {getTenantSignature(contract) ? (t('profileContracts.signed') || 'Signed') : (t('profileContracts.notSigned') || 'Not signed')}
                                                             </span>
                                                         </div>
                                                         <div className="flex items-center gap-1">
@@ -294,7 +332,7 @@ export default function UserContractsPage() {
                                                                 <Clock className="h-4 w-4 text-gray-400" />
                                                             )}
                                                             <span className="text-gray-600 dark:text-gray-400">
-                                                                Chủ trọ: {getOwnerSignature(contract) ? 'Đã ký' : 'Chưa ký'}
+                                                                {t('profileContracts.owner') || 'Owner'}: {getOwnerSignature(contract) ? (t('profileContracts.signed') || 'Signed') : (t('profileContracts.notSigned') || 'Not signed')}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -314,7 +352,7 @@ export default function UserContractsPage() {
                                                     className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                                                 >
                                                     <Eye className="h-4 w-4" />
-                                                    Xem chi tiết
+                                                    {t('profileContracts.viewDetails') || 'View Details'}
                                                 </button>
 
                                                 {/* Show sign button if user hasn't signed yet */}
@@ -324,7 +362,18 @@ export default function UserContractsPage() {
                                                         className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:from-orange-600 hover:to-amber-600 transition-colors shadow-lg"
                                                     >
                                                         <PenLine className="h-4 w-4" />
-                                                        Ký hợp đồng
+                                                        {t('profileContracts.signContract') || 'Sign Contract'}
+                                                    </button>
+                                                )}
+
+                                                {/* Show Add Review button only for Active contracts */}
+                                                {(contract.contractStatus === 1 || contract.contractStatus === 'Active') && (
+                                                    <button
+                                                        onClick={() => router.push(`/profile/contracts/${contract.id}/review`)}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-colors shadow-lg"
+                                                    >
+                                                        <Star className="h-4 w-4" />
+                                                        {t('profileContracts.addReview') || 'Add Review'}
                                                     </button>
                                                 )}
                                             </div>

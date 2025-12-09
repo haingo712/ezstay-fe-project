@@ -14,7 +14,11 @@ import {
     Clock,
     Building2,
     ArrowLeft,
-    Search
+    Search,
+    User,
+    Phone,
+    Mail,
+    CreditCard
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -52,17 +56,26 @@ export default function MyRentalRequestsPage() {
                                 ...request,
                                 roomName: roomData?.name || roomData?.roomName || 'N/A',
                                 roomPrice: roomData?.price || 0,
-                                boardingHouseName: roomData?.boardingHouseName || 'N/A'
+                                boardingHouseName: roomData?.boardingHouseName || 'N/A',
+                                // Normalize citizenIdNumber field
+                                citizenIdNumber: request.citizenIdNumber || request.CitizenIdNumber || []
                             };
                         }
-                        return request;
+                        return {
+                            ...request,
+                            citizenIdNumber: request.citizenIdNumber || request.CitizenIdNumber || []
+                        };
                     } catch (error) {
                         console.error('Error fetching room info:', error);
-                        return request;
+                        return {
+                            ...request,
+                            citizenIdNumber: request.citizenIdNumber || request.CitizenIdNumber || []
+                        };
                     }
                 })
             );
 
+            console.log('📋 Enriched requests with CCCD:', enrichedRequests);
             setRequests(enrichedRequests);
         } catch (error) {
             console.error('❌ Error fetching rental requests:', error);
@@ -231,8 +244,8 @@ export default function MyRentalRequestsPage() {
                                 key={request.id}
                                 className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow"
                             >
-                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                                    {/* Left: Room Info */}
+                                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                                    {/* Left: Room & User Info */}
                                     <div className="flex-1">
                                         <div className="flex items-start gap-4">
                                             <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -245,6 +258,31 @@ export default function MyRentalRequestsPage() {
                                                 <p className="text-sm text-gray-600 dark:text-gray-400">
                                                     {request.boardingHouseName || 'Nhà trọ'}
                                                 </p>
+
+                                                {/* User Info */}
+                                                <div className="flex items-center gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                                    <User className="h-4 w-4" />
+                                                    <span>{t('ownerRentalRequests.requestFrom') || 'Request from'}: </span>
+                                                    <span className="font-medium text-gray-900 dark:text-white">
+                                                        {request.fullName || request.userName || 'Người dùng'}
+                                                    </span>
+                                                </div>
+
+                                                {/* Phone & Email */}
+                                                <div className="flex flex-wrap gap-4 mt-2 text-sm">
+                                                    {request.phone && (
+                                                        <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                                                            <Phone className="h-4 w-4" />
+                                                            <span>{request.phone}</span>
+                                                        </div>
+                                                    )}
+                                                    {request.email && (
+                                                        <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                                                            <Mail className="h-4 w-4" />
+                                                            <span>{request.email}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
 
                                                 <div className="flex flex-wrap gap-4 mt-3 text-sm">
                                                     <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
@@ -260,12 +298,50 @@ export default function MyRentalRequestsPage() {
                                                         <span>{request.numberOfOccupants} {t('myRentalRequests.people')}</span>
                                                     </div>
                                                 </div>
+
+                                                {/* CCCD Numbers - Always visible */}
+                                                <div className="mt-3 space-y-2">
+                                                    <span className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-1">
+                                                        <CreditCard className="h-4 w-4" />
+                                                        {t('ownerRentalRequests.cccdNumber') || 'ID Card Number'}:
+                                                    </span>
+                                                    <div className="space-y-1.5">
+                                                        {(() => {
+                                                            const cccdArray = Array.isArray(request.citizenIdNumber)
+                                                                ? request.citizenIdNumber.filter(Boolean)
+                                                                : (request.citizenIdNumber ? [request.citizenIdNumber] : []);
+
+                                                            if (cccdArray.length === 0) {
+                                                                return (
+                                                                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                                                                        No ID card information provided
+                                                                    </div>
+                                                                );
+                                                            }
+
+                                                            return cccdArray.map((cccd, idx) => (
+                                                                <div key={idx} className="flex items-center gap-2">
+                                                                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${idx === 0
+                                                                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                                                                        }`}>
+                                                                        {idx === 0
+                                                                            ? (t('ownerRentalRequests.representative') || 'Representative')
+                                                                            : (t('ownerRentalRequests.coOccupant') || 'Co-occupant')
+                                                                        }
+                                                                    </span>
+                                                                    <span className="font-mono text-sm text-gray-900 dark:text-white">{cccd}</span>
+                                                                </div>
+                                                            ));
+                                                        })()}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Right: Status & Actions */}
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                    {/* Right: Price & Sent Date */}
+                                    <div className="flex flex-col gap-4">
                                         {/* Price */}
                                         {request.roomPrice > 0 && (
                                             <div className="text-right">
@@ -276,27 +352,13 @@ export default function MyRentalRequestsPage() {
                                             </div>
                                         )}
 
-                                        {/* Status Badge */}
+                                        {/* Sent Date */}
                                         <div className="flex flex-col items-end gap-2">
-                                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                                                <Clock className="h-4 w-4" />
-                                                {t('myRentalRequests.status.pending')}
-                                            </span>
-                                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                {getTimeAgo(request.createdAt)}
+                                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                                                {t('myRentalRequests.sentOn') || 'Sent on'}: {formatDate(request.createdAt)}
                                             </span>
                                         </div>
                                     </div>
-                                </div>
-
-                                {/* Request ID */}
-                                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                        ID: {request.id?.substring(0, 8)}...
-                                    </span>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                        {t('myRentalRequests.sentOn')}: {formatDate(request.createdAt)}
-                                    </span>
                                 </div>
                             </div>
                         ))}

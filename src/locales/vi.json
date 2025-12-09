@@ -51,6 +51,7 @@
         "filter": "Lọc",
         "clearFilter": "Xóa bộ lọc",
         "loading": "Đang tải...",
+        "retry": "Thử lại",
         "save": "Lưu",
         "cancel": "Hủy",
         "delete": "Xóa",
@@ -161,6 +162,46 @@
         "sending": "Đang gửi...",
         "faceRegistration": "Đăng ký khuôn mặt",
         "registerFace": "Đăng ký khuôn mặt"
+    },
+    "profileContracts": {
+        "title": "Hợp đồng của tôi",
+        "subtitle": "Quản lý các hợp đồng thuê trọ",
+        "needsSign": "hợp đồng cần ký",
+        "searchPlaceholder": "Tìm kiếm theo tên phòng, nhà trọ...",
+        "waitingSignature": "Hợp đồng đang chờ chữ ký của bạn",
+        "room": "Phòng trọ",
+        "house": "Nhà trọ",
+        "deposit": "Cọc",
+        "filter": {
+            "all": "Tất cả",
+            "needsSign": "Cần ký",
+            "pending": "Chờ xử lý",
+            "active": "Đang hoạt động",
+            "expired": "Đã hết hạn"
+        },
+        "status": {
+            "pending": "Chờ ký",
+            "active": "Đang hoạt động",
+            "cancelled": "Đã hủy",
+            "expired": "Đã hết hạn",
+            "cancelledByOwner": "Bị chủ trọ hủy"
+        },
+        "you": "Bạn",
+        "owner": "Chủ trọ",
+        "signed": "Đã ký",
+        "notSigned": "Chưa ký",
+        "viewDetails": "Xem chi tiết",
+        "signContract": "Ký hợp đồng",
+        "addReview": "Đánh giá",
+        "empty": {
+            "noResults": "Không tìm thấy hợp đồng",
+            "noContracts": "Chưa có hợp đồng nào",
+            "tryFilter": "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm",
+            "description": "Khi bạn thuê phòng, hợp đồng sẽ xuất hiện ở đây"
+        },
+        "errors": {
+            "loadFailed": "Không thể tải danh sách hợp đồng"
+        }
     },
     "payment": {
         "history": "Lịch sử thanh toán",
@@ -2205,6 +2246,8 @@
         "province": "Tỉnh/Thành phố",
         "temporaryResidence": "Tạm trú",
         "cccdNumber": "Số CCCD",
+        "representative": "Người đại diện",
+        "coOccupant": "Người ở cùng",
         "cccdIssuedDate": "Ngày cấp",
         "cccdIssuedPlace": "Nơi cấp",
         "cccdImages": "Ảnh CCCD",

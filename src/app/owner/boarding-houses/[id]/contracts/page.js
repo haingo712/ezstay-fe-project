@@ -271,11 +271,12 @@ export default function ContractsManagementPage() {
 
             // Create tenant profile with data from rental request
             const tenantProfile = {
+              userId: rentalRequestData.tenantUserId || '',
               fullName: tp.fullName || tp.FullName || '',
               gender: tp.gender ?? tp.Gender ?? 0,
               dateOfBirth: tp.dateOfBirth || tp.DateOfBirth ?
                 new Date(tp.dateOfBirth || tp.DateOfBirth).toISOString().split('T')[0] : '',
-              phone: tp.phone || tp.Phone || '',
+              phoneNumber: tp.phone || tp.Phone || tp.phoneNumber || tp.PhoneNumber || '',
               email: tp.email || tp.Email || '',
               provinceId: tp.provinceId || tp.ProvinceId || '',
               provinceName: tp.provinceName || tp.ProvinceName || '',
@@ -291,7 +292,7 @@ export default function ContractsManagementPage() {
               backImageUrl: tp.backImageUrl || tp.BackImageUrl || '',
               avatar: tp.avatar || tp.Avatar || '',
               isRepresentative: true,
-              userId: rentalRequestData.tenantUserId || ''
+              notes: ''
             };
 
             // Create profiles for all co-occupants (remaining Citizen IDs)
@@ -657,6 +658,33 @@ export default function ContractsManagementPage() {
       if (!response || response === '' || (typeof response === 'string' && response.trim() === '')) {
         console.log('❌ Empty response - likely 204 No Content or user not found');
         toast.warning(t('ownerContracts.toast.noUserFound') + ' ' + t('ownerContracts.toast.verifyId'));
+
+        // Clear all fields except Citizen ID Number
+        setProfiles(currentProfiles => {
+          const newProfiles = [...currentProfiles];
+          newProfiles[profileIndex] = {
+            userId: "",
+            fullName: "",
+            gender: "Male",
+            dateOfBirth: "",
+            phoneNumber: "",
+            email: "",
+            provinceId: "",
+            provinceName: "",
+            wardId: "",
+            wardName: "",
+            address: "",
+            temporaryResidence: "",
+            citizenIdNumber: citizenId, // Keep the searched CCCD
+            citizenIdIssuedDate: "",
+            citizenIdIssuedPlace: "",
+            notes: "",
+            frontImageUrl: "",
+            backImageUrl: ""
+          };
+          return newProfiles;
+        });
+
         return;
       }
 
@@ -695,6 +723,33 @@ export default function ContractsManagementPage() {
         console.log('❌ userData.Id value:', userData?.Id);
         console.log('❌ userData.id value:', userData?.id);
         toast.warning(t('ownerContracts.toast.noUserFound') + ' ' + t('ownerContracts.toast.verifyId'));
+
+        // Clear all fields except Citizen ID Number
+        setProfiles(currentProfiles => {
+          const newProfiles = [...currentProfiles];
+          newProfiles[profileIndex] = {
+            userId: "",
+            fullName: "",
+            gender: "Male",
+            dateOfBirth: "",
+            phoneNumber: "",
+            email: "",
+            provinceId: "",
+            provinceName: "",
+            wardId: "",
+            wardName: "",
+            address: "",
+            temporaryResidence: "",
+            citizenIdNumber: citizenId, // Keep the searched CCCD
+            citizenIdIssuedDate: "",
+            citizenIdIssuedPlace: "",
+            notes: "",
+            frontImageUrl: "",
+            backImageUrl: ""
+          };
+          return newProfiles;
+        });
+
         return;
       }
 
@@ -850,7 +905,7 @@ export default function ContractsManagementPage() {
         console.log('⚠️ No provinceCode to load wards');
       }
 
-      toast.success(t('ownerContracts.toast.profileAutoFilled', { name: userData.FullName || userData.fullName || 'User' }));
+      // toast.success(t('ownerContracts.toast.profileAutoFilled', { name: userData.FullName || userData.fullName || 'User' }));
 
     } catch (error) {
       console.error('❌ Error searching user:', error);
@@ -860,8 +915,60 @@ export default function ContractsManagementPage() {
 
       if (error.response?.status === 404) {
         toast.info(t('ownerContracts.toast.noUserFound'));
+
+        // Clear all fields except Citizen ID Number on 404
+        setProfiles(currentProfiles => {
+          const newProfiles = [...currentProfiles];
+          newProfiles[profileIndex] = {
+            userId: "",
+            fullName: "",
+            gender: "Male",
+            dateOfBirth: "",
+            phoneNumber: "",
+            email: "",
+            provinceId: "",
+            provinceName: "",
+            wardId: "",
+            wardName: "",
+            address: "",
+            temporaryResidence: "",
+            citizenIdNumber: citizenId, // Keep the searched CCCD
+            citizenIdIssuedDate: "",
+            citizenIdIssuedPlace: "",
+            notes: "",
+            frontImageUrl: "",
+            backImageUrl: ""
+          };
+          return newProfiles;
+        });
       } else if (error.response?.status === 204) {
         toast.warning(t('ownerContracts.toast.noUserFound') + ' ' + t('ownerContracts.toast.idNotInDb'));
+
+        // Clear all fields except Citizen ID Number on 204
+        setProfiles(currentProfiles => {
+          const newProfiles = [...currentProfiles];
+          newProfiles[profileIndex] = {
+            userId: "",
+            fullName: "",
+            gender: "Male",
+            dateOfBirth: "",
+            phoneNumber: "",
+            email: "",
+            provinceId: "",
+            provinceName: "",
+            wardId: "",
+            wardName: "",
+            address: "",
+            temporaryResidence: "",
+            citizenIdNumber: citizenId, // Keep the searched CCCD
+            citizenIdIssuedDate: "",
+            citizenIdIssuedPlace: "",
+            notes: "",
+            frontImageUrl: "",
+            backImageUrl: ""
+          };
+          return newProfiles;
+        });
       } else if (error.response?.status === 401) {
         toast.error(t('ownerContracts.toast.unauthorized'));
       } else {
@@ -1398,8 +1505,10 @@ export default function ContractsManagementPage() {
       if (!profile.frontImageUrl.trim()) errors[`profile${index}_frontImageUrl`] = "Front image of ID is required";
       if (!profile.backImageUrl.trim()) errors[`profile${index}_backImageUrl`] = "Back image of ID is required";
 
-      // Email validation
-      if (profile.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) {
+      // Email validation - now required
+      if (!profile.email || !profile.email.trim()) {
+        errors[`profile${index}_email`] = "Email is required";
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) {
         errors[`profile${index}_email`] = "Invalid email format";
       }
     });
@@ -2314,6 +2423,15 @@ export default function ContractsManagementPage() {
     setSelectedContract(null);
   };
 
+  // Format CCCD number with spaces for better readability
+  const formatCCCD = (cccd) => {
+    if (!cccd) return 'N/A';
+    const cccdStr = cccd.toString().replace(/\s/g, '');
+    // Format: 093 203 002 108 092 203 003 400 087 203 002 555
+    // Split every 3 digits
+    return cccdStr.replace(/(\d{3})(?=\d)/g, '$1 ');
+  };
+
   const generateManualSignature = () => {
     if (!signatureName.trim()) {
       toast.error(t('ownerContracts.toast.enterFullName'));
@@ -2718,8 +2836,8 @@ export default function ContractsManagementPage() {
                       </button>
                     )}
 
-                    {/* Extend Contract - Only for Active contracts */}
-                    {contract.contractStatus === 'Active' && (
+                    {/* Extend Contract - Disabled for Active contracts */}
+                    {contract.contractStatus !== 'Active' && (
                       <button
                         onClick={() => handleExtendContract(contract)}
                         className="px-3 py-1 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200 text-sm font-medium"
@@ -2760,8 +2878,8 @@ export default function ContractsManagementPage() {
                       </button>
                     )}
 
-                    {/* Upload Contract Images - For Pending and Active contracts */}
-                    {(contract.contractStatus === 'Pending' || contract.contractStatus === 'Active') && (
+                    {/* Upload Contract Images - Only for Pending contracts, hidden for Active */}
+                    {contract.contractStatus === 'Pending' && (
                       <button
                         onClick={() => handleUploadContractImages(contract)}
                         className="px-3 py-1 text-cyan-600 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-200 text-sm font-medium"
@@ -2918,7 +3036,7 @@ export default function ContractsManagementPage() {
                             </div>
                             <div>
                               <span className="font-medium text-gray-700 dark:text-gray-300">Citizen ID:</span>
-                              <span className="ml-2 text-gray-900 dark:text-white">{profile.citizenIdNumber || 'N/A'}</span>
+                              <span className="ml-2 text-gray-900 dark:text-white font-mono">{formatCCCD(profile.citizenIdNumber)}</span>
                             </div>
                             <div>
                               <span className="font-medium text-gray-700 dark:text-gray-300">ID Issued Date:</span>
@@ -3460,8 +3578,8 @@ export default function ContractsManagementPage() {
 
       {/* Create Contract Modal - 3 Steps */}
       {showCreateContractModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
             <div className="p-6">
               {/* Modal Header */}
               <div className="flex items-center justify-between mb-6">
@@ -3485,36 +3603,36 @@ export default function ContractsManagementPage() {
               </div>
 
               {/* Progress Steps */}
-              <div className="mb-6">
+              <div className="mb-8 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-800 p-5 rounded-xl">
                 <div className="flex items-center">
-                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${createStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold transition-all ${createStep >= 1 ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg scale-110' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
                     }`}>
                     1
                   </div>
-                  <div className={`flex-1 h-1 mx-2 ${createStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'
+                  <div className={`flex-1 h-2 mx-3 rounded-full transition-all ${createStep >= 2 ? 'bg-gradient-to-r from-blue-600 to-purple-600' : 'bg-gray-300 dark:bg-gray-600'
                     }`}></div>
-                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${createStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold transition-all ${createStep >= 2 ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg scale-110' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
                     }`}>
                     2
                   </div>
-                  <div className={`flex-1 h-1 mx-2 ${createStep >= 3 ? 'bg-blue-600' : 'bg-gray-300'
+                  <div className={`flex-1 h-2 mx-3 rounded-full transition-all ${createStep >= 3 ? 'bg-gradient-to-r from-blue-600 to-purple-600' : 'bg-gray-300 dark:bg-gray-600'
                     }`}></div>
-                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${createStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold transition-all ${createStep >= 3 ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg scale-110' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
                     }`}>
                     3
                   </div>
-                  <div className={`flex-1 h-1 mx-2 ${createStep >= 4 ? 'bg-blue-600' : 'bg-gray-300'
+                  <div className={`flex-1 h-2 mx-3 rounded-full transition-all ${createStep >= 4 ? 'bg-gradient-to-r from-blue-600 to-purple-600' : 'bg-gray-300 dark:bg-gray-600'
                     }`}></div>
-                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${createStep >= 4 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold transition-all ${createStep >= 4 ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg scale-110' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
                     }`}>
                     4
                   </div>
                 </div>
-                <div className="flex justify-between mt-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Contract Details</span>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Identity Profile</span>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Utility</span>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Services</span>
+                <div className="flex justify-between mt-3">
+                  <span className={`text-sm font-medium transition-all ${createStep >= 1 ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-500'}`}>Contract Details</span>
+                  <span className={`text-sm font-medium transition-all ${createStep >= 2 ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-500'}`}>Identity Profile</span>
+                  <span className={`text-sm font-medium transition-all ${createStep >= 3 ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-500'}`}>Utility</span>
+                  <span className={`text-sm font-medium transition-all ${createStep >= 4 ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-500'}`}>Services</span>
                 </div>
               </div>
 
@@ -3716,14 +3834,24 @@ export default function ContractsManagementPage() {
 
                   {/* Loop through all profiles */}
                   {profiles.map((profile, profileIndex) => (
-                    <div key={profileIndex} className="mb-8 p-6 border-2 border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800">
-                      <h5 className="text-md font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
-                        <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">
-                          {profileIndex + 1}
-                        </span>
-                        Profile {profileIndex + 1} of {profiles.length}
-                        {profileIndex === 0 && <span className="ml-2 text-sm text-blue-600 dark:text-blue-400">(Representative)</span>}
-                      </h5>
+                    <div key={profileIndex} className="mb-8 p-6 border-2 border-gray-200 dark:border-gray-600 rounded-lg bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+                      {/* Profile Header with Label */}
+                      <div className="flex items-center justify-between mb-4">
+                        <h5 className="text-md font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-3">
+                          <span className={`rounded-full w-10 h-10 flex items-center justify-center text-white font-bold ${profileIndex === 0 ? 'bg-blue-600' : 'bg-gray-500'}`}>
+                            {profileIndex + 1}
+                          </span>
+                          <div className="flex flex-col">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Profile {profileIndex + 1} of {profiles.length}</span>
+                            <span className={`text-xs font-medium px-3 py-1 rounded-full ${profileIndex === 0
+                              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                              }`}>
+                              {profileIndex === 0 ? '👤 Representative (Người đại diện)' : '👥 Co-occupant (Người ở cùng)'}
+                            </span>
+                          </div>
+                        </h5>
+                      </div>
 
                       {/* SEARCH CCCD - AT TOP OF FORM */}
                       <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -3735,16 +3863,27 @@ export default function ContractsManagementPage() {
                           <input
                             type="text"
                             value={profile.citizenIdNumber || ''}
-                            onChange={(e) => updateProfile(profileIndex, 'citizenIdNumber', e.target.value)}
+                            onChange={(e) => {
+                              // Only allow numbers and max 12 digits
+                              const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 12);
+                              updateProfile(profileIndex, 'citizenIdNumber', value);
+                            }}
                             onKeyPress={(e) => {
+                              // Prevent non-numeric input
+                              if (!/[0-9]/.test(e.key) && e.key !== 'Enter') {
+                                e.preventDefault();
+                                return;
+                              }
                               if (e.key === 'Enter') {
                                 e.preventDefault();
                                 searchIdentityProfileByCCCD(profileIndex, profile.citizenIdNumber);
                               }
                             }}
-                            className="flex-1 p-3 border border-blue-300 dark:border-blue-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700"
-                            placeholder="Enter Citizen ID (9-18 digits)"
-                            maxLength="18"
+                            className="flex-1 p-3 border border-blue-300 dark:border-blue-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 font-mono"
+                            placeholder="Enter 12-digit Citizen ID"
+                            maxLength="12"
+                            inputMode="numeric"
+                            pattern="[0-9]{12}"
                           />
                           <button
                             type="button"
@@ -3823,10 +3962,11 @@ export default function ContractsManagementPage() {
 
                         {/* Email */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email *</label>
                           <input type="email" value={profile.email} onChange={(e) => updateProfile(profileIndex, 'email', e.target.value)}
-                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700"
-                            placeholder="Enter email (optional)" />
+                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_email`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+                            placeholder="Enter email" />
+                          {profileErrors[`profile${profileIndex}_email`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_email`]}</p>}
                         </div>
 
                         {/* Province */}
@@ -3875,11 +4015,12 @@ export default function ContractsManagementPage() {
                           {profileErrors[`profile${profileIndex}_temporaryResidence`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_temporaryResidence`]}</p>}
                         </div>
 
-                        {/* Citizen ID Number */}
+                        {/* Citizen ID Number - Read Only */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Citizen ID Number *</label>
-                          <input type="text" value={profile.citizenIdNumber} onChange={(e) => updateProfile(profileIndex, 'citizenIdNumber', e.target.value)}
-                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_citizenIdNumber`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+                          <input type="text" value={profile.citizenIdNumber}
+                            readOnly
+                            className={`w-full p-3 border rounded-lg bg-gray-100 dark:bg-gray-800 cursor-not-allowed text-gray-600 dark:text-gray-400 ${profileErrors[`profile${profileIndex}_citizenIdNumber`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                             placeholder="Enter citizen ID" />
                           {profileErrors[`profile${profileIndex}_citizenIdNumber`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_citizenIdNumber`]}</p>}
                         </div>
@@ -3930,7 +4071,7 @@ export default function ContractsManagementPage() {
                         {/* Image Previews */}
                         {(profile.frontImageUrl || profile.backImageUrl) && (
                           <div className="md:col-span-2">
-                            <h6 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">📷 Image Previews</h6>
+                            {/* <h6 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">📷 Image Previews</h6> */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {/* Front ID Preview */}
                               {profile.frontImageUrl && (
