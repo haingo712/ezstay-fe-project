@@ -245,10 +245,10 @@ export default function TenantBillsPage() {
         return (
             <ProtectedRoute allowedRoles={['User']}>
                 <Navbar />
-                <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                        <p className="mt-4 text-gray-600">Đang tải hóa đơn...</p>
+                        <p className="mt-4 text-gray-600 dark:text-gray-400">Đang tải hóa đơn...</p>
                     </div>
                 </div>
                 <Footer />
@@ -259,13 +259,13 @@ export default function TenantBillsPage() {
     return (
         <ProtectedRoute allowedRoles={['User']}>
             <Navbar />
-            <div className="min-h-screen bg-gray-50 pt-20 pb-12">
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 pb-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     {/* Header */}
                     <div className="mb-8">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                                <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                                     <FileText className="w-8 h-8 text-blue-600" />
                                     Hóa đơn của tôi
                                     {/* Real-time connection indicator */}
@@ -281,7 +281,7 @@ export default function TenantBillsPage() {
                                         {isConnected ? 'Live' : 'Offline'}
                                     </span>
                                 </h1>
-                                <p className="mt-2 text-gray-600">Quản lý và thanh toán các hóa đơn tiền phòng, điện nước</p>
+                                <p className="mt-2 text-gray-600 dark:text-gray-400">Quản lý và thanh toán các hóa đơn tiền phòng, điện nước</p>
                             </div>
                             <button
                                 onClick={() => router.push('/payment/history')}
@@ -295,11 +295,11 @@ export default function TenantBillsPage() {
 
                     {/* Statistics Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">Tổng hóa đơn</p>
-                                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tổng hóa đơn</p>
+                                    <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.total}</p>
                                 </div>
                                 <div className="bg-blue-100 p-3 rounded-xl">
                                     <FileText className="w-6 h-6 text-blue-600" />
@@ -307,12 +307,12 @@ export default function TenantBillsPage() {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">Chưa thanh toán</p>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Chưa thanh toán</p>
                                     <p className="text-2xl font-bold text-yellow-600 mt-1">{stats.unpaid}</p>
-                                    <p className="text-xs text-gray-400 mt-1">{formatCurrency(stats.unpaidAmount)}</p>
+                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(stats.unpaidAmount)}</p>
                                 </div>
                                 <div className="bg-yellow-100 p-3 rounded-xl">
                                     <Clock className="w-6 h-6 text-yellow-600" />
@@ -320,10 +320,10 @@ export default function TenantBillsPage() {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">Đã thanh toán</p>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Đã thanh toán</p>
                                     <p className="text-2xl font-bold text-green-600 mt-1">{stats.paid}</p>
                                 </div>
                                 <div className="bg-green-100 p-3 rounded-xl">
@@ -332,10 +332,10 @@ export default function TenantBillsPage() {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">Quá hạn</p>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Quá hạn</p>
                                     <p className="text-2xl font-bold text-red-600 mt-1">{stats.overdue}</p>
                                 </div>
                                 <div className="bg-red-100 p-3 rounded-xl">
@@ -346,16 +346,16 @@ export default function TenantBillsPage() {
                     </div>
 
                     {/* Filters */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 mb-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Trạng thái
                                 </label>
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                 >
                                     <option value="all">Tất cả trạng thái</option>
                                     <option value="Unpaid">Chưa thanh toán</option>
@@ -366,7 +366,7 @@ export default function TenantBillsPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Tìm kiếm
                                 </label>
                                 <div className="relative">
@@ -376,7 +376,7 @@ export default function TenantBillsPage() {
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         placeholder="Tìm theo mã, phòng, số tiền..."
-                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
                                     />
                                 </div>
                             </div>
@@ -384,32 +384,32 @@ export default function TenantBillsPage() {
                     </div>
 
                     {/* Bills List */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                         {currentBills.length === 0 ? (
                             <div className="py-16 text-center">
-                                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <FileText className="w-10 h-10 text-gray-400" />
                                 </div>
-                                <p className="text-gray-500 font-medium text-lg">Không có hóa đơn nào</p>
-                                <p className="text-gray-400 text-sm mt-1">Hóa đơn sẽ xuất hiện khi chủ nhà tạo cho bạn</p>
+                                <p className="text-gray-500 dark:text-gray-400 font-medium text-lg">Không có hóa đơn nào</p>
+                                <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Hóa đơn sẽ xuất hiện khi chủ nhà tạo cho bạn</p>
                             </div>
                         ) : (
                             <>
                                 {/* Desktop Table */}
                                 <div className="hidden md:block overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
+                                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                        <thead className="bg-gray-50 dark:bg-gray-700">
                                             <tr>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mã HĐ</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Loại</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Phòng</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ngày tạo</th>
-                                                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Số tiền</th>
-                                                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Trạng thái</th>
-                                                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Thao tác</th>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Mã HĐ</th>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Loại</th>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Phòng</th>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Ngày tạo</th>
+                                                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Số tiền</th>
+                                                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Trạng thái</th>
+                                                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Thao tác</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="bg-white divide-y divide-gray-100">
+                                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
                                             {currentBills.map((bill) => {
                                                 const billId = bill.id || bill.Id || '';
                                                 const status = getBillStatus(bill);
@@ -421,9 +421,9 @@ export default function TenantBillsPage() {
                                                 const typeBadge = getTypeBadge(billType);
 
                                                 return (
-                                                    <tr key={billId} className="hover:bg-gray-50 transition-colors">
+                                                    <tr key={billId} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                                         <td className="px-6 py-4 whitespace-nowrap">
-                                                            <span className="text-sm font-mono font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                                                            <span className="text-sm font-mono font-medium text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
                                                                 #{billId.toString().substring(0, 8).toUpperCase()}
                                                             </span>
                                                         </td>
@@ -432,14 +432,14 @@ export default function TenantBillsPage() {
                                                                 {typeBadge.label}
                                                             </span>
                                                         </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                                                             {roomName}
                                                         </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                             {formatDate(createdAt)}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                            <span className="text-sm font-bold text-gray-900">
+                                                            <span className="text-sm font-bold text-gray-900 dark:text-white">
                                                                 {formatCurrency(amount)}
                                                             </span>
                                                         </td>
@@ -477,7 +477,7 @@ export default function TenantBillsPage() {
                                 </div>
 
                                 {/* Mobile Cards */}
-                                <div className="md:hidden divide-y divide-gray-100">
+                                <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
                                     {currentBills.map((bill) => {
                                         const billId = bill.id || bill.Id || '';
                                         const status = getBillStatus(bill);
@@ -489,11 +489,11 @@ export default function TenantBillsPage() {
                                         const typeBadge = getTypeBadge(billType);
 
                                         return (
-                                            <div key={billId} className="p-4 hover:bg-gray-50">
+                                            <div key={billId} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div>
-                                                        <span className="text-xs font-mono text-gray-500">#{billId.toString().substring(0, 8).toUpperCase()}</span>
-                                                        <p className="text-sm font-medium text-gray-900 mt-0.5">{roomName}</p>
+                                                        <span className="text-xs font-mono text-gray-500 dark:text-gray-400">#{billId.toString().substring(0, 8).toUpperCase()}</span>
+                                                        <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">{roomName}</p>
                                                     </div>
                                                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}>
                                                         {statusBadge.icon}
@@ -505,9 +505,9 @@ export default function TenantBillsPage() {
                                                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${typeBadge.bg} ${typeBadge.text}`}>
                                                             {typeBadge.label}
                                                         </span>
-                                                        <span className="text-xs text-gray-400 ml-2">{formatDate(createdAt)}</span>
+                                                        <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">{formatDate(createdAt)}</span>
                                                     </div>
-                                                    <p className="text-lg font-bold text-gray-900">{formatCurrency(amount)}</p>
+                                                    <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(amount)}</p>
                                                 </div>
                                                 <div className="flex items-center gap-2 mt-3">
                                                     <button
@@ -534,25 +534,25 @@ export default function TenantBillsPage() {
 
                         {/* Pagination */}
                         {totalPages > 1 && (
-                            <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
-                                <div className="text-sm text-gray-500">
+                            <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
+                                <div className="text-sm text-gray-500 dark:text-gray-400">
                                     Hiển thị {startIndex + 1} - {Math.min(endIndex, filteredBills.length)} / {filteredBills.length} hóa đơn
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                         disabled={currentPage === 1}
-                                        className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-300"
                                     >
                                         <ChevronLeft className="w-5 h-5" />
                                     </button>
-                                    <span className="px-3 py-1 text-sm font-medium text-gray-700">
+                                    <span className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300">
                                         {currentPage} / {totalPages}
                                     </span>
                                     <button
                                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                         disabled={currentPage === totalPages}
-                                        className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-300"
                                     >
                                         <ChevronRight className="w-5 h-5" />
                                     </button>
@@ -566,30 +566,30 @@ export default function TenantBillsPage() {
             {/* Detail Modal */}
             {showDetailModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="p-6">
                             {/* Modal Header */}
-                            <div className="flex justify-between items-center mb-6 pb-4 border-b">
+                            <div className="flex justify-between items-center mb-6 pb-4 border-b dark:border-gray-700">
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-900">Chi tiết hóa đơn</h2>
+                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Chi tiết hóa đơn</h2>
                                     {selectedBill && (
-                                        <p className="text-sm text-gray-500 mt-1 font-mono">
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-mono">
                                             #{(selectedBill.id || selectedBill.Id || '').toString().substring(0, 8).toUpperCase()}
                                         </p>
                                     )}
                                 </div>
                                 <button
                                     onClick={() => setShowDetailModal(false)}
-                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                                 >
-                                    <X className="w-5 h-5 text-gray-500" />
+                                    <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                                 </button>
                             </div>
 
                             {loadingDetail ? (
                                 <div className="flex items-center justify-center py-12">
                                     <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-                                    <span className="ml-3 text-gray-600">Đang tải chi tiết...</span>
+                                    <span className="ml-3 text-gray-600 dark:text-gray-400">Đang tải chi tiết...</span>
                                 </div>
                             ) : selectedBill ? (
                                 <div className="space-y-6">
@@ -613,21 +613,21 @@ export default function TenantBillsPage() {
 
                                     {/* Bill Info Grid */}
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-gray-50 rounded-xl p-4">
-                                            <div className="flex items-center gap-2 text-gray-500 mb-1">
+                                        <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                                            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1">
                                                 <Home className="w-4 h-4" />
                                                 <span className="text-xs uppercase tracking-wide">Nhà trọ</span>
                                             </div>
-                                            <p className="font-medium text-gray-900">
+                                            <p className="font-medium text-gray-900 dark:text-white">
                                                 {selectedBill.houseName || selectedBill.HouseName || '-'}
                                             </p>
                                         </div>
-                                        <div className="bg-gray-50 rounded-xl p-4">
-                                            <div className="flex items-center gap-2 text-gray-500 mb-1">
+                                        <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                                            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1">
                                                 <FileText className="w-4 h-4" />
                                                 <span className="text-xs uppercase tracking-wide">Phòng</span>
                                             </div>
-                                            <p className="font-medium text-gray-900">
+                                            <p className="font-medium text-gray-900 dark:text-white">
                                                 {selectedBill.roomName || selectedBill.RoomName || '-'}
                                             </p>
                                         </div>
@@ -651,7 +651,7 @@ export default function TenantBillsPage() {
                                     {/* Details */}
                                     {(selectedBill.details || selectedBill.Details)?.length > 0 && (
                                         <div className="space-y-3">
-                                            <p className="font-semibold text-gray-700">Chi tiết hóa đơn</p>
+                                            <p className="font-semibold text-gray-700 dark:text-gray-300">Chi tiết hóa đơn</p>
                                             {(selectedBill.details || selectedBill.Details).map((detail, index) => {
                                                 const detailType = (detail.type || detail.Type || '').toLowerCase();
                                                 const isElectric = detailType.includes('electric') || detailType.includes('điện');
@@ -735,9 +735,9 @@ export default function TenantBillsPage() {
                                                 }
 
                                                 return (
-                                                    <div key={index} className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-                                                        <span className="font-medium text-gray-800">{detail.type || detail.Type}</span>
-                                                        <span className="font-bold text-gray-900">{formatCurrency(detail.total || detail.Total)}</span>
+                                                    <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 flex items-center justify-between">
+                                                        <span className="font-medium text-gray-800 dark:text-gray-200">{detail.type || detail.Type}</span>
+                                                        <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(detail.total || detail.Total)}</span>
                                                     </div>
                                                 );
                                             })}
@@ -746,17 +746,17 @@ export default function TenantBillsPage() {
 
                                     {/* Note */}
                                     {(selectedBill.note || selectedBill.Note) && (
-                                        <div className="bg-gray-50 rounded-xl p-4">
-                                            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Ghi chú</p>
-                                            <p className="text-gray-900">{selectedBill.note || selectedBill.Note}</p>
+                                        <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Ghi chú</p>
+                                            <p className="text-gray-900 dark:text-white">{selectedBill.note || selectedBill.Note}</p>
                                         </div>
                                     )}
 
                                     {/* Actions */}
-                                    <div className="flex gap-3 pt-4 border-t">
+                                    <div className="flex gap-3 pt-4 border-t dark:border-gray-700">
                                         <button
                                             onClick={() => setShowDetailModal(false)}
-                                            className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                                            className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
                                         >
                                             Đóng
                                         </button>
@@ -775,7 +775,7 @@ export default function TenantBillsPage() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="text-center py-12 text-gray-500">
+                                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                                     Không thể tải chi tiết hóa đơn
                                 </div>
                             )}

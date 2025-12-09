@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import boardingHouseService from "@/services/boardingHouseService";
 import { FaStar, FaSmile, FaMeh, FaFrown, FaChartBar } from "react-icons/fa";
 
 export default function BoardingHouseStatistics({ boardingHouseId }) {
-  const [statistics, setStatistics] = useState({
-    rating: null,
-    sentiment: null,
-  });
+  const [ratingData, setRatingData] = useState(null);
+  const [sentimentData, setSentimentData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("rating"); // "rating" or "sentiment"
+  const fetchedRef = useRef(false);
 
   useEffect(() => {
-    if (boardingHouseId) {
+    if (boardingHouseId && !fetchedRef.current) {
+      fetchedRef.current = true;
       fetchStatistics();
     }
   }, [boardingHouseId]);
@@ -21,14 +21,17 @@ export default function BoardingHouseStatistics({ boardingHouseId }) {
   const fetchStatistics = async () => {
     try {
       setLoading(true);
-      const [ratingData, sentimentData] = await Promise.all([
+      const [ratingResponse, sentimentResponse] = await Promise.all([
         boardingHouseService.getRatingSummary(boardingHouseId).catch(() => null),
         boardingHouseService.getSentimentSummary(boardingHouseId).catch(() => null),
       ]);
-      setStatistics({
-        rating: ratingData?.data || ratingData,
-        sentiment: sentimentData?.data || sentimentData,
-      });
+      
+      // Extract data properly and set separately
+      const ratingResult = ratingResponse?.data || ratingResponse;
+      const sentimentResult = sentimentResponse?.data || sentimentResponse;
+      
+      setRatingData(ratingResult);
+      setSentimentData(sentimentResult);
     } catch (error) {
       console.error("Error fetching statistics:", error);
     } finally {
@@ -36,8 +39,38 @@ export default function BoardingHouseStatistics({ boardingHouseId }) {
     }
   };
 
+  // Memoize the rating stats to prevent recalculation
+  const rating = useMemo(() => {
+    if (!ratingData) return null;
+    return {
+      ...ratingData,
+      averageRating: Number(ratingData.averageRating) || 0,
+      totalReviews: Number(ratingData.totalReviews) || 0,
+      fiveStarCount: Number(ratingData.fiveStarCount) || 0,
+      fourStarCount: Number(ratingData.fourStarCount) || 0,
+      threeStarCount: Number(ratingData.threeStarCount) || 0,
+      twoStarCount: Number(ratingData.twoStarCount) || 0,
+      oneStarCount: Number(ratingData.oneStarCount) || 0,
+    };
+  }, [ratingData]);
+
+  // Memoize the sentiment stats to prevent recalculation
+  const sentiment = useMemo(() => {
+    if (!sentimentData) return null;
+    return {
+      ...sentimentData,
+      totalReviews: Number(sentimentData.totalReviews) || 0,
+      positiveCount: Number(sentimentData.positiveCount) || 0,
+      neutralCount: Number(sentimentData.neutralCount) || 0,
+      negativeCount: Number(sentimentData.negativeCount) || 0,
+    };
+  }, [sentimentData]);
+
   const renderStarBar = (count, total, starNumber) => {
-    const percentage = total > 0 ? (count / total) * 100 : 0;
+    // Ensure values are valid numbers and percentage doesn't exceed 100
+    const safeCount = Number(count) || 0;
+    const safeTotal = Number(total) || 0;
+    const percentage = safeTotal > 0 ? Math.min((safeCount / safeTotal) * 100, 100) : 0;
     return (
       <div className="flex items-center gap-3 mb-2">
         <div className="flex items-center gap-1 w-16">
@@ -48,19 +81,22 @@ export default function BoardingHouseStatistics({ boardingHouseId }) {
         </div>
         <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
           <div
-            className="bg-yellow-500 h-full transition-all duration-500"
+            className="bg-yellow-500 h-full"
             style={{ width: `${percentage}%` }}
           ></div>
         </div>
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-12 text-right">
-          {count}
+          {safeCount}
         </span>
       </div>
     );
   };
 
   const renderSentimentBar = (label, count, total, color) => {
-    const percentage = total > 0 ? (count / total) * 100 : 0;
+    // Ensure values are valid numbers and percentage doesn't exceed 100
+    const safeCount = Number(count) || 0;
+    const safeTotal = Number(total) || 0;
+    const percentage = safeTotal > 0 ? Math.min((safeCount / safeTotal) * 100, 100) : 0;
     const icons = {
       "Positive": <FaSmile className="text-green-500" />,
       "Neutral": <FaMeh className="text-yellow-500" />,
@@ -77,12 +113,12 @@ export default function BoardingHouseStatistics({ boardingHouseId }) {
         </div>
         <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
           <div
-            className={`h-full transition-all duration-500 ${color}`}
+            className={`h-full ${color}`}
             style={{ width: `${percentage}%` }}
           ></div>
         </div>
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-20 text-right">
-          {count} ({percentage.toFixed(0)}%)
+          {safeCount} ({percentage.toFixed(0)}%)
         </span>
       </div>
     );
@@ -102,8 +138,6 @@ export default function BoardingHouseStatistics({ boardingHouseId }) {
       </div>
     );
   }
-
-  const { rating, sentiment } = statistics;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
@@ -143,7 +177,7 @@ export default function BoardingHouseStatistics({ boardingHouseId }) {
 
       {/* Rating Tab */}
       {activeTab === "rating" && rating && (
-        <div>
+        <div key="rating-tab">
           {/* Overall Rating */}
           <div className="flex items-center justify-center gap-6 mb-8 p-6 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-gray-700 dark:to-gray-600 rounded-lg">
             <div className="text-center">
@@ -210,14 +244,14 @@ export default function BoardingHouseStatistics({ boardingHouseId }) {
 
       {/* Sentiment Tab */}
       {activeTab === "sentiment" && sentiment && (
-        <div>
+        <div key="sentiment-tab">
           {/* Overall Sentiment */}
           <div className="text-center mb-8 p-6 bg-gradient-to-r from-green-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 rounded-lg">
             <div className="flex items-center justify-center gap-4 mb-3">
               <FaSmile className="text-green-500 text-4xl" />
               <div className="text-5xl font-bold text-gray-900 dark:text-white">
                 {sentiment.totalReviews > 0
-                  ? ((sentiment.positiveCount / sentiment.totalReviews) * 100).toFixed(0)
+                  ? Math.min(((sentiment.positiveCount / sentiment.totalReviews) * 100), 100).toFixed(0)
                   : 0}
                 %
               </div>

@@ -8,7 +8,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { rentalPostService } from '@/services/rentalPostService';
 import favoritePostService from '@/services/favoritePostService';
-import { Building, Home, Calendar, Search, Filter, Heart, MapPin, Maximize2, DollarSign, User, Phone } from 'lucide-react';
+import { Building, Home, Calendar, Search, Filter, Heart, MapPin, Maximize2, DollarSign, User, Phone, Eye, Users, ChevronRight } from 'lucide-react';
 
 export default function RentalPostsPage() {
   const [posts, setPosts] = useState([]);
@@ -237,11 +237,25 @@ export default function RentalPostsPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredPosts.map((post) => {
                 const status = getStatusBadge(post);
                 const price = post.price || post.room?.price;
                 const area = post.area || post.room?.area;
+                
+                // Get location info
+                const location = post.boardingHouse?.location || post.location;
+                const fullAddress = location ? 
+                  [location.address, location.wardName, location.districtName, location.provinceName]
+                    .filter(Boolean).join(', ') : '';
+                
+                // View count
+                const viewCount = post.viewCount || 0;
+                
+                // Rental rate calculation (rented rooms / total rooms)
+                const totalRooms = post.boardingHouse?.totalRooms || post.totalRooms || 0;
+                const rentedRooms = post.boardingHouse?.rentedRooms || post.rentedRooms || 0;
+                const rentalRate = totalRooms > 0 ? Math.round((rentedRooms / totalRooms) * 100) : 0;
 
                 return (
                   <div
@@ -250,7 +264,7 @@ export default function RentalPostsPage() {
                     onClick={() => handleViewDetails(post.id)}
                   >
                     {/* Image */}
-                    <div className="relative h-52 overflow-hidden">
+                    <div className="relative h-56 overflow-hidden">
                       <img
                         src={post.imageUrls?.[0] || "/image.png"}
                         alt={post.title}
@@ -258,7 +272,7 @@ export default function RentalPostsPage() {
                       />
 
                       {/* Gradient overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
                       {/* Favorite button */}
                       <button
@@ -307,12 +321,12 @@ export default function RentalPostsPage() {
                       </h3>
 
                       {/* Description */}
-                      <p className="text-gray-500 dark:text-gray-400 text-sm mb-4 line-clamp-2">
+                      <p className="text-gray-500 dark:text-gray-400 text-sm mb-3 line-clamp-2">
                         {post.description}
                       </p>
 
                       {/* Property Info */}
-                      <div className="space-y-2 mb-4">
+                      <div className="space-y-2 mb-3">
                         <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
                           <Building className="w-4 h-4 mr-2 flex-shrink-0 text-purple-500" />
                           <span className="truncate font-medium">{post.houseName || t('rentalPosts.unknownHouse')}</span>
@@ -323,17 +337,50 @@ export default function RentalPostsPage() {
                         </div>
                       </div>
 
+                      {/* Full Address */}
+                      {fullAddress && (
+                        <div className="flex items-start text-gray-600 dark:text-gray-400 text-sm mb-3">
+                          <MapPin className="w-4 h-4 mr-2 flex-shrink-0 text-red-500 mt-0.5" />
+                          <span className="line-clamp-2">{fullAddress}</span>
+                        </div>
+                      )}
+
+                      {/* Stats: View Count & Rental Rate */}
+                      <div className="flex items-center gap-4 mb-4 py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        {/* View Count */}
+                        <div className="flex items-center gap-1.5 text-sm">
+                          <Eye className="w-4 h-4 text-blue-500" />
+                          <span className="text-gray-700 dark:text-gray-300 font-medium">{viewCount}</span>
+                          <span className="text-gray-500 dark:text-gray-400 text-xs">{t('rentalPosts.views') || 'lượt xem'}</span>
+                        </div>
+
+                        <div className="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
+
+                        {/* Rental Rate */}
+                        <div className="flex items-center gap-1.5 text-sm">
+                          <Users className="w-4 h-4 text-green-500" />
+                          <span className={`font-medium ${
+                            rentalRate >= 80 ? 'text-red-600 dark:text-red-400' : 
+                            rentalRate >= 50 ? 'text-orange-600 dark:text-orange-400' : 
+                            'text-green-600 dark:text-green-400'
+                          }`}>
+                            {rentalRate}%
+                          </span>
+                          <span className="text-gray-500 dark:text-gray-400 text-xs">{t('rentalPosts.rentalRate') || 'đã thuê'}</span>
+                        </div>
+                      </div>
+
                       {/* Divider */}
                       <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
                         {/* Author & Date */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md flex-shrink-0">
-                              {post.authorName ? post.authorName[0].toUpperCase() : 'U'}
+                              {post.authorName ? post.authorName[0].toUpperCase() : 'E'}
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                                {post.authorName || t('rentalPosts.unknownAuthor')}
+                                {post.authorName || 'Ezstay'}
                               </p>
                               <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />

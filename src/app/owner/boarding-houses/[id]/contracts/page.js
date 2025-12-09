@@ -2796,15 +2796,16 @@ export default function ContractsManagementPage() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2 ml-4">
-                    <button
+                    {/* View button - Hidden */}
+                    {/* <button
                       onClick={() => handleViewContract(contract)}
                       className="px-3 py-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 text-sm font-medium"
                     >
                       {t('common.view')}
-                    </button>
+                    </button> */}
 
-                    {/* Edit - Hidden for Active contracts */}
-                    {contract.contractStatus !== 'Active' && (
+                    {/* Edit - Hidden for Active and Cancelled contracts */}
+                    {contract.contractStatus !== 'Active' && contract.contractStatus !== 'Cancelled' && (
                       <button
                         onClick={() => handleEditContract(contract)}
                         className="px-3 py-1 text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-200 text-sm font-medium"
@@ -2836,8 +2837,8 @@ export default function ContractsManagementPage() {
                       </button>
                     )}
 
-                    {/* Extend Contract - Disabled for Active contracts */}
-                    {contract.contractStatus !== 'Active' && (
+                    {/* Extend Contract - Hidden for Active, Pending and Cancelled contracts */}
+                    {contract.contractStatus !== 'Active' && contract.contractStatus !== 'Pending' && contract.contractStatus !== 'Cancelled' && (
                       <button
                         onClick={() => handleExtendContract(contract)}
                         className="px-3 py-1 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200 text-sm font-medium"
@@ -2846,9 +2847,9 @@ export default function ContractsManagementPage() {
                       </button>
                     )}
 
-                    {/* Add Signature Button - Hidden for Active contracts */}
+                    {/* Add Signature Button - Hidden for Active and Cancelled contracts */}
                     {/* Owner can only sign AFTER tenant has signed (TenantSignature must not be null) */}
-                    {contract.contractStatus !== 'Active' &&
+                    {contract.contractStatus !== 'Active' && contract.contractStatus !== 'Cancelled' &&
                       (contract.tenantSignature || contract.TenantSignature) && (
                         <button
                           onClick={() => handleOpenSignatureModal(contract)}
@@ -2878,7 +2879,7 @@ export default function ContractsManagementPage() {
                       </button>
                     )}
 
-                    {/* Upload Contract Images - Only for Pending contracts, hidden for Active */}
+                    {/* Upload Contract Images - Only for Pending contracts, hidden for Active and Cancelled */}
                     {contract.contractStatus === 'Pending' && (
                       <button
                         onClick={() => handleUploadContractImages(contract)}
@@ -2888,8 +2889,8 @@ export default function ContractsManagementPage() {
                       </button>
                     )}
 
-                    {/* Delete - Hidden for Active contracts */}
-                    {contract.contractStatus !== 'Active' && (
+                    {/* Delete - Hidden for Active and Cancelled contracts */}
+                    {contract.contractStatus !== 'Active' && contract.contractStatus !== 'Cancelled' && (
                       <button
                         onClick={() => handleDeleteContract(contract)}
                         className="px-3 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-sm font-medium"

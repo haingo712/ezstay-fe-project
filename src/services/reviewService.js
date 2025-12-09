@@ -214,6 +214,23 @@ const reviewService = {
       throw error;
     }
   },
+
+  // Lấy reply của review theo ReviewId
+  getReplyByReviewId: async (reviewId) => {
+    try {
+      console.log('💬 Fetching reply for review:', reviewId);
+      const response = await axiosInstance.get(`/api/ReviewReply/review/${reviewId}`);
+      console.log('✅ Reply fetched:', response.data);
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        console.log('ℹ️ No reply found for review:', reviewId);
+        return null;
+      }
+      console.error('❌ Error fetching reply:', error);
+      throw error;
+    }
+  },
 };
 
 export default reviewService;

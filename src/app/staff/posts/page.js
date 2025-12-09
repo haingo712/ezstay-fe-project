@@ -709,6 +709,30 @@ export default function PostsReviewPage() {
                               {selectedPost.contactPhone || 'N/A'}
                             </p>
                           </div>
+
+                          {/* View Count */}
+                          <div className="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-3 border border-cyan-100 dark:border-cyan-800">
+                            <div className="flex items-center text-cyan-600 dark:text-cyan-400 mb-1 text-xs font-semibold">
+                              <Eye className="w-3.5 h-3.5 mr-1.5" />
+                              {t('staffPosts.modal.viewCount') || 'View Count'}
+                            </div>
+                            <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
+                              {selectedPost.viewCount || 0} views
+                            </p>
+                          </div>
+
+                          {/* Location */}
+                          {selectedPost.boardingHouse?.location?.fullAddress && (
+                            <div className="bg-pink-50 dark:bg-pink-900/20 rounded-lg p-3 border border-pink-100 dark:border-pink-800">
+                              <div className="flex items-center text-pink-600 dark:text-pink-400 mb-1 text-xs font-semibold">
+                                <MapPin className="w-3.5 h-3.5 mr-1.5" />
+                                {t('staffPosts.modal.location') || 'Location'}
+                              </div>
+                              <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5 line-clamp-3">
+                                {selectedPost.boardingHouse.location.fullAddress}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

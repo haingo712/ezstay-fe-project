@@ -764,12 +764,11 @@ export default function ProfilePage() {
 
           {/* Profile Form */}
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Avatar Section - HIDDEN */}
-            {false && (
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
-                <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
-                  {t('profile.avatar')}
-                </h2>
+            {/* Avatar Section */}
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
+              <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
+                {t('profile.avatar')}
+              </h2>
                 <div className="flex items-center space-x-6">
                   <div className="relative">
                     <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 border-4 border-white dark:border-gray-600 shadow-lg">
@@ -868,8 +867,7 @@ export default function ProfilePage() {
                     {t('profile.changePassword')}
                   </button>
                 </div>
-              </div>
-            )}
+            </div>
 
             {/* Basic Information */}
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
