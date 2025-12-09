@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { apiFetch, reviewAPI, supportAPI } from '@/utils/api';
 import { useTranslation } from '@/hooks/useTranslation';
 import userManagementService from '@/services/userManagementService';
-import rentalPostService from '@/services/rentalPostService';
+import { rentalPostService } from '@/services/rentalPostService';
 
 // Stat Card Component
 const StatCard = ({ title, value, icon, gradient, subtitle, badge }) => (

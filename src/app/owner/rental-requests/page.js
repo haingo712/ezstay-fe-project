@@ -6,6 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
 import contractService from '@/services/contractService';
 import roomService from '@/services/roomService';
+import userManagementService from '@/services/userManagementService';
+import profileService from '@/services/profileService';
 import { toast } from 'react-toastify';
 import {
     Home,
@@ -62,6 +64,11 @@ export default function OwnerRentalRequestsPage() {
             const enrichedRequests = await Promise.all(
                 (response || []).map(async (request) => {
                     try {
+                        let roomData = null;
+                        let userData = null;
+                        let userProfile = null;
+
+                        // Fetch room info
                         if (request.roomId) {
                             const roomData = await roomService.getById(request.roomId);
                             return {
@@ -369,16 +376,16 @@ export default function OwnerRentalRequestsPage() {
 
                                             {/* Phone & Email */}
                                             <div className="flex flex-wrap gap-4 mt-2 text-sm">
-                                                {request.phone && (
+                                                {(request.userPhone && request.userPhone !== 'N/A') && (
                                                     <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                                                         <Phone className="h-4 w-4" />
-                                                        <span>{request.phone}</span>
+                                                        <span>{request.userPhone}</span>
                                                     </div>
                                                 )}
-                                                {request.email && (
+                                                {(request.userEmail && request.userEmail !== 'N/A') && (
                                                     <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                                                         <Mail className="h-4 w-4" />
-                                                        <span>{request.email}</span>
+                                                        <span>{request.userEmail}</span>
                                                     </div>
                                                 )}
                                             </div>

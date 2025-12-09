@@ -710,8 +710,8 @@ export default function RentalHistoryPage() {
                         </button>
                       )}
 
-                      {/* Expired = 3: có thể đánh giá */}
-                      {contract.contractStatus === 3 && (
+                      {/* Active (1) hoặc Expired (3) trong 30 ngày: có thể đánh giá */}
+                      {canReview(contract) && (
                         <button
                           onClick={() => handleOpenReviewModal(contract)}
                           className="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"

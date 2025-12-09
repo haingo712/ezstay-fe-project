@@ -177,6 +177,33 @@ const enrichPostWithNames = async (post, verbose = false) => {
 };
 
 export const rentalPostService = {
+  // Get all posts (for staff/admin to review)
+  getAllPosts: async () => {
+    try {
+      const response = await axiosInstance.get('/api/RentalPosts/all');
+      let posts = response.data;
+
+      console.log('📋 Raw all posts from backend:', posts);
+
+      // Normalize posts data
+      if (Array.isArray(posts)) {
+        posts = posts.map(normalizePostData);
+
+        // Enrich posts with boarding house and room names
+        const enrichedPosts = await Promise.all(
+          posts.map(post => enrichPostWithNames(post, true))
+        );
+
+        return enrichedPosts;
+      }
+
+      return posts;
+    } catch (error) {
+      console.error('Error fetching all posts:', error);
+      throw error;
+    }
+  },
+
   // Get all posts for owner (using token authentication)
   getOwnerPosts: async () => {
     try {
@@ -427,7 +454,7 @@ export const rentalPostService = {
   // ==================== STAFF MANAGEMENT APIS ====================
 
   // Get pending posts for staff review
-  // Backend: GET /api/RentalPosts/pending
+  // Backend: GET /api/RentalPosts/all then filter
   getPendingPosts: async () => {
     try {
       console.log('📋 Fetching pending posts for staff review...');
@@ -442,6 +469,9 @@ export const rentalPostService = {
       // Normalize posts data
       if (Array.isArray(posts)) {
         posts = posts.map(normalizePostData);
+        
+        // Filter for pending posts only (not approved yet)
+        posts = posts.filter(post => !(post.isApproved || post.IsApproved));
 
         // Enrich posts with additional data
         const enrichedPosts = await Promise.all(
