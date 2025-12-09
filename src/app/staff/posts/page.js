@@ -119,11 +119,19 @@ export default function PostsReviewPage() {
   const handleViewDetail = async (post) => {
     try {
       setShowDetailModal(true);
-      setSelectedPost({ ...post, loading: true }); // Show modal with loading state
 
+      // For pending posts (isApproved === 0), use the data we already have
+      // since the API might not return complete data for pending posts
+      if (post.isApproved === 0) {
+        console.log('👁️ Showing pending post details from cached data:', post.id);
+        setSelectedPost({ ...post, loading: false });
+        return;
+      }
+
+      // For approved/rejected posts, fetch fresh data from API
+      setSelectedPost({ ...post, loading: true });
       console.log('👁️ Fetching full post details for ID:', post.id);
 
-      // Fetch full post details from API
       const fullPost = await rentalPostService.getPostById(post.id);
       console.log('✅ Full post data received:', fullPost);
       console.log('Full post structure:', {
@@ -149,7 +157,7 @@ export default function PostsReviewPage() {
       setSelectedPost(fullPost);
     } catch (error) {
       console.error('❌ Error fetching post details:', error);
-      toast.error('Không thể tải chi tiết bài đăng. Vui lòng thử lại.');
+      toast.error('Failed to load post details. Please try again.');
       setShowDetailModal(false);
     }
   };
@@ -167,6 +175,7 @@ export default function PostsReviewPage() {
 
   const getStatusBadge = (post) => {
     const status = post.isApproved ?? post.IsApproved;
+    console.log('🔍 Post status debug:', { postId: post.id, isApproved: post.isApproved, IsApproved: post.IsApproved, status, statusType: typeof status });
 
     if (status === 0) {
       return {
@@ -229,9 +238,9 @@ export default function PostsReviewPage() {
     );
   }
 
-  const pendingCount = posts.filter(p => p.isApproved === null || p.isApproved === undefined).length;
-  const approvedCount = posts.filter(p => p.isApproved === 1 || p.isApproved === true).length;
-  const rejectedCount = posts.filter(p => p.isApproved === 0 || p.isApproved === false).length;
+  const pendingCount = posts.filter(p => p.isApproved === 0).length;
+  const approvedCount = posts.filter(p => p.isApproved === 1).length;
+  const rejectedCount = posts.filter(p => p.isApproved === 2).length;
 
   return (
     <div className="space-y-6">
@@ -331,7 +340,7 @@ export default function PostsReviewPage() {
                       {/* Image count badge */}
                       {post.imageUrls && post.imageUrls.length > 1 && (
                         <div className="absolute bottom-2 right-2 bg-black/60 text-white px-2 py-1 rounded-md text-xs font-medium">
-                          +{post.imageUrls.length - 1} ảnh
+                          +{post.imageUrls.length - 1} photos
                         </div>
                       )}
                     </div>
@@ -475,17 +484,17 @@ export default function PostsReviewPage() {
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-white">
-                    {t('staffPosts.modal.title') || 'Chi tiết bài đăng'}
+                    {t('staffPosts.modal.title') || 'Post Details'}
                   </h2>
                   <span className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-medium ${selectedPost.isApproved === 1 ? 'bg-green-100 text-green-800' :
                     selectedPost.isApproved === 2 ? 'bg-red-100 text-red-800' :
                       selectedPost.isApproved === 0 ? 'bg-yellow-100 text-yellow-800' :
                         'bg-gray-100 text-gray-800'
                     }`}>
-                    {selectedPost.isApproved === 1 ? `✓ ${t('staffPosts.status.approved') || 'Đã duyệt'}` :
-                      selectedPost.isApproved === 2 ? `✗ ${t('staffPosts.status.rejected') || 'Đã từ chối'}` :
-                        selectedPost.isApproved === 0 ? `⏳ ${t('staffPosts.status.pending') || 'Chờ duyệt'}` :
-                          `🚫 ${t('staffPosts.status.inactive') || 'Không hoạt động'}`}
+                    {selectedPost.isApproved === 1 ? `✓ ${t('staffPosts.status.approved') || 'Approved'}` :
+                      selectedPost.isApproved === 2 ? `✗ ${t('staffPosts.status.rejected') || 'Rejected'}` :
+                        selectedPost.isApproved === 0 ? `⏳ ${t('staffPosts.status.pending') || 'Pending'}` :
+                          `🚫 ${t('staffPosts.status.inactive') || 'Inactive'}`}
                   </span>
                 </div>
               </div>
@@ -505,7 +514,7 @@ export default function PostsReviewPage() {
               {selectedPost.loading ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
-                  <p className="text-gray-600 dark:text-gray-400">{t('staffPosts.modal.loading') || 'Đang tải chi tiết bài đăng...'}</p>
+                  <p className="text-gray-600 dark:text-gray-400">{t('staffPosts.modal.loading') || 'Loading post details...'}</p>
                 </div>
               ) : (
                 <div className="p-6 space-y-6">
@@ -513,7 +522,7 @@ export default function PostsReviewPage() {
                   <div className="bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-900/20 dark:via-blue-900/20 dark:to-indigo-900/20 rounded-xl p-6 border border-purple-200 dark:border-purple-800">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t('staffPosts.modal.postTitle') || 'Tiêu đề'}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t('staffPosts.modal.postTitle') || 'Title'}</p>
                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">
                           {selectedPost.title || 'Untitled'}
                         </h3>
@@ -542,7 +551,7 @@ export default function PostsReviewPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <span>🖼️</span>
-                            {t('staffPosts.modal.images') || 'Hình ảnh'}
+                            {t('staffPosts.modal.images') || 'Images'}
                             <span className="text-sm font-normal text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
                               {selectedPost.imageUrls.length}
                             </span>
@@ -575,7 +584,7 @@ export default function PostsReviewPage() {
                           <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                               <span>📝</span>
-                              {t('staffPosts.modal.description') || 'Mô tả'}
+                              {t('staffPosts.modal.description') || 'Description'}
                             </h3>
                             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                               <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
@@ -590,7 +599,7 @@ export default function PostsReviewPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <span>✨</span>
-                            {t('staffPosts.modal.amenities') || 'Tiện nghi'}
+                            {t('staffPosts.modal.amenities') || 'Amenities'}
                             <span className="text-sm font-normal text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
                               {selectedPost.room.amenities.length}
                             </span>
@@ -628,14 +637,14 @@ export default function PostsReviewPage() {
                       <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm sticky top-4">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                           <span>ℹ️</span>
-                          {t('staffPosts.modal.detailInfo') || 'Thông tin chi tiết'}
+                          {t('staffPosts.modal.detailInfo') || 'Detail Information'}
                         </h3>
                         <div className="space-y-3">
                           {/* Boarding House */}
                           <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-100 dark:border-purple-800">
                             <div className="flex items-center text-purple-600 dark:text-purple-400 mb-1 text-xs font-semibold">
                               <Building2 className="w-3.5 h-3.5 mr-1.5" />
-                              {t('staffPosts.modal.boardingHouse') || 'Nhà trọ'}
+                              {t('staffPosts.modal.boardingHouse') || 'Boarding House'}
                             </div>
                             <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
                               {selectedPost.houseName || 'N/A'}
@@ -646,7 +655,7 @@ export default function PostsReviewPage() {
                           <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-100 dark:border-green-800">
                             <div className="flex items-center text-green-600 dark:text-green-400 mb-1 text-xs font-semibold">
                               <Home className="w-3.5 h-3.5 mr-1.5" />
-                              {t('staffPosts.modal.room') || 'Phòng'}
+                              {t('staffPosts.modal.room') || 'Room'}
                             </div>
                             <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
                               {selectedPost.room?.roomName || selectedPost.roomName || 'All rooms'}
@@ -657,7 +666,7 @@ export default function PostsReviewPage() {
                           <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-100 dark:border-emerald-800">
                             <div className="flex items-center text-emerald-600 dark:text-emerald-400 mb-1 text-xs font-semibold">
                               <DollarSign className="w-3.5 h-3.5 mr-1.5" />
-                              {t('staffPosts.modal.price') || 'Giá thuê'}
+                              {t('staffPosts.modal.price') || 'Rent Price'}
                             </div>
                             <p className="text-gray-900 dark:text-white font-bold text-base pl-5">
                               {selectedPost.room?.price ? `${selectedPost.room.price.toLocaleString('vi-VN')}đ` :
@@ -669,7 +678,7 @@ export default function PostsReviewPage() {
                           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
                             <div className="flex items-center text-blue-600 dark:text-blue-400 mb-1 text-xs font-semibold">
                               <Maximize2 className="w-3.5 h-3.5 mr-1.5" />
-                              {t('staffPosts.modal.area') || 'Diện tích'}
+                              {t('staffPosts.modal.area') || 'Area'}
                             </div>
                             <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
                               {selectedPost.room?.area ? `${selectedPost.room.area} m²` :
@@ -682,7 +691,7 @@ export default function PostsReviewPage() {
                             <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 border border-indigo-100 dark:border-indigo-800">
                               <div className="flex items-center text-indigo-600 dark:text-indigo-400 mb-1 text-xs font-semibold">
                                 <User className="w-3.5 h-3.5 mr-1.5" />
-                                {t('staffPosts.modal.author') || 'Tác giả'}
+                                {t('staffPosts.modal.author') || 'Author'}
                               </div>
                               <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
                                 {selectedPost.authorName}
@@ -694,7 +703,7 @@ export default function PostsReviewPage() {
                           <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 border border-orange-100 dark:border-orange-800">
                             <div className="flex items-center text-orange-600 dark:text-orange-400 mb-1 text-xs font-semibold">
                               <Phone className="w-3.5 h-3.5 mr-1.5" />
-                              {t('staffPosts.modal.contact') || 'Liên hệ'}
+                              {t('staffPosts.modal.contact') || 'Contact'}
                             </div>
                             <p className="text-gray-900 dark:text-white font-semibold text-sm pl-5">
                               {selectedPost.contactPhone || 'N/A'}
@@ -721,7 +730,7 @@ export default function PostsReviewPage() {
                       className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg"
                     >
                       <CheckCircle className="w-5 h-5" />
-                      {t('staffPosts.actions.approve') || 'Duyệt bài'}
+                      {t('staffPosts.actions.approve') || 'Approve'}
                     </button>
 
                     <button
@@ -732,7 +741,7 @@ export default function PostsReviewPage() {
                       className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg"
                     >
                       <XCircle className="w-5 h-5" />
-                      {t('staffPosts.actions.reject') || 'Từ chối'}
+                      {t('staffPosts.actions.reject') || 'Reject'}
                     </button>
                   </>
                 )}
@@ -741,7 +750,7 @@ export default function PostsReviewPage() {
                   onClick={() => setShowDetailModal(false)}
                   className="flex-1 inline-flex items-center justify-center px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold transition-all"
                 >
-                  {t('staffPosts.actions.close') || 'Đóng'}
+                  {t('staffPosts.actions.close') || 'Close'}
                 </button>
               </div>
             </div>

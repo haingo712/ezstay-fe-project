@@ -203,46 +203,145 @@ export default function ContractsManagementPage() {
           console.log('📋 Rental request data loaded:', rentalRequestData);
 
           // Pre-fill contract form with rental request data
+          // Handle date formatting properly for datetime-local input
+          const formatDateTimeLocal = (dateString) => {
+            if (!dateString) return '';
+            try {
+              const date = new Date(dateString);
+              // Format as YYYY-MM-DDTHH:MM for input[type="datetime-local"]
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              const hours = String(date.getHours()).padStart(2, '0');
+              const minutes = String(date.getMinutes()).padStart(2, '0');
+              return `${year}-${month}-${day}T${hours}:${minutes}`;
+            } catch (e) {
+              console.error('Error formatting datetime:', dateString, e);
+              return '';
+            }
+          };
+
+          const checkinFormatted = formatDateTimeLocal(rentalRequestData.checkinDate || rentalRequestData.CheckinDate);
+          const checkoutFormatted = formatDateTimeLocal(rentalRequestData.checkoutDate || rentalRequestData.CheckoutDate);
+
+          console.log('📅 Formatting dates for contract:');
+          console.log('  Raw checkinDate:', rentalRequestData.checkinDate || rentalRequestData.CheckinDate);
+          console.log('  Formatted checkinDate:', checkinFormatted);
+          console.log('  Raw checkoutDate:', rentalRequestData.checkoutDate || rentalRequestData.CheckoutDate);
+          console.log('  Formatted checkoutDate:', checkoutFormatted);
+
           setContractData(prev => ({
             ...prev,
             roomId: rentalRequestData.roomId || '',
             roomPrice: rentalRequestData.roomPrice || 0,
-            checkinDate: rentalRequestData.checkinDate ? rentalRequestData.checkinDate.split('T')[0] : '',
-            checkoutDate: rentalRequestData.checkoutDate ? rentalRequestData.checkoutDate.split('T')[0] : '',
-            numberOfOccupants: rentalRequestData.numberOfOccupants || 1,
+            checkinDate: checkinFormatted,
+            checkoutDate: checkoutFormatted,
+            numberOfOccupants: rentalRequestData.numberOfOccupants || rentalRequestData.NumberOfOccupants || 1,
             notes: ''
           }));
+
+          console.log('✅ Contract data filled with formatted dates');
 
           // If there's tenant profile data from rental request, pre-fill the first profile
           if (rentalRequestData.tenantProfile) {
             const tp = rentalRequestData.tenantProfile;
 
+            // Extract ALL citizenIdNumbers - handle both Array and String
+            let allCitizenIds = [];
+            if (Array.isArray(tp.citizenIdNumber)) {
+              allCitizenIds = tp.citizenIdNumber;
+              console.log('✅ CitizenIdNumber is Array:', allCitizenIds);
+            } else if (typeof tp.citizenIdNumber === 'string') {
+              allCitizenIds = [tp.citizenIdNumber];
+            } else if (tp.CitizenIdNumber) {
+              // Try PascalCase
+              if (Array.isArray(tp.CitizenIdNumber)) {
+                allCitizenIds = tp.CitizenIdNumber;
+              } else {
+                allCitizenIds = [tp.CitizenIdNumber];
+              }
+            }
+
+            // Extract citizenIdNumber for main profile (first one)
+            const citizenIdNumber = allCitizenIds[0] || '';
+
+            console.log('📋 Rental request data received:', tp);
+            console.log('📋 All Citizen IDs:', allCitizenIds);
+            console.log('📋 Representative Citizen ID:', citizenIdNumber);
+
             // Create tenant profile with data from rental request
             const tenantProfile = {
-              fullName: tp.fullName || '',
-              gender: tp.gender ?? 0,
-              dateOfBirth: tp.dateOfBirth ? new Date(tp.dateOfBirth).toISOString().split('T')[0] : '',
-              phone: tp.phone || '',
-              email: tp.email || '',
-              provinceId: tp.provinceId || '',
-              provinceName: tp.provinceName || '',
-              wardId: tp.wardId || '',
-              wardName: tp.wardName || '',
-              address: tp.address || '',
-              temporaryResidence: tp.temporaryResidence || '',
-              citizenIdNumber: tp.citizenIdNumber || '',
-              citizenIdIssuedDate: tp.citizenIdIssuedDate ? new Date(tp.citizenIdIssuedDate).toISOString().split('T')[0] : '',
-              citizenIdIssuedPlace: tp.citizenIdIssuedPlace || '',
-              frontImageUrl: tp.frontImageUrl || '',
-              backImageUrl: tp.backImageUrl || '',
-              avatar: tp.avatar || '',
+              fullName: tp.fullName || tp.FullName || '',
+              gender: tp.gender ?? tp.Gender ?? 0,
+              dateOfBirth: tp.dateOfBirth || tp.DateOfBirth ?
+                new Date(tp.dateOfBirth || tp.DateOfBirth).toISOString().split('T')[0] : '',
+              phone: tp.phone || tp.Phone || '',
+              email: tp.email || tp.Email || '',
+              provinceId: tp.provinceId || tp.ProvinceId || '',
+              provinceName: tp.provinceName || tp.ProvinceName || '',
+              wardId: tp.wardId || tp.WardId || '',
+              wardName: tp.wardName || tp.WardName || '',
+              address: tp.address || tp.Address || tp.detailAddress || tp.DetailAddress || '',
+              temporaryResidence: tp.temporaryResidence || tp.TemporaryResidence || '',
+              citizenIdNumber: citizenIdNumber,
+              citizenIdIssuedDate: tp.citizenIdIssuedDate || tp.CitizenIdIssuedDate ?
+                new Date(tp.citizenIdIssuedDate || tp.CitizenIdIssuedDate).toISOString().split('T')[0] : '',
+              citizenIdIssuedPlace: tp.citizenIdIssuedPlace || tp.CitizenIdIssuedPlace || '',
+              frontImageUrl: tp.frontImageUrl || tp.FrontImageUrl || '',
+              backImageUrl: tp.backImageUrl || tp.BackImageUrl || '',
+              avatar: tp.avatar || tp.Avatar || '',
               isRepresentative: true,
               userId: rentalRequestData.tenantUserId || ''
             };
 
-            // Set profiles with tenant profile as first entry
-            setProfiles([tenantProfile]);
-            console.log('✅ Tenant profile pre-filled from rental request');
+            // Create profiles for all co-occupants (remaining Citizen IDs)
+            const allProfiles = [tenantProfile];
+
+            // Add empty profiles for co-occupants with their Citizen IDs pre-filled
+            for (let i = 1; i < allCitizenIds.length; i++) {
+              allProfiles.push({
+                userId: "",
+                gender: "Male",
+                fullName: "",
+                dateOfBirth: "",
+                phoneNumber: "",
+                email: "",
+                provinceId: "",
+                provinceName: "",
+                wardId: "",
+                wardName: "",
+                address: "",
+                temporaryResidence: "",
+                citizenIdNumber: allCitizenIds[i], // Pre-fill with Citizen ID from rental request
+                citizenIdIssuedDate: "",
+                citizenIdIssuedPlace: "",
+                notes: "",
+                frontImageUrl: "",
+                backImageUrl: ""
+              });
+            }
+
+            // Set profiles with all occupants
+            setProfiles(allProfiles);
+            console.log(`✅ Created ${allProfiles.length} profiles from rental request (1 representative + ${allCitizenIds.length - 1} co-occupants)`);
+
+            // ⚠️ IMPORTANT: Auto-search profile for ALL Citizen IDs to get complete data
+            // Wait for modal to open, then search for each profile
+            setTimeout(async () => {
+              for (let i = 0; i < allCitizenIds.length; i++) {
+                const cccd = allCitizenIds[i];
+                if (cccd && cccd.length >= 9) {
+                  console.log(`🔄 Auto-searching profile ${i + 1}/${allCitizenIds.length} by CCCD: ${cccd}`);
+                  try {
+                    await searchIdentityProfileByCCCD(i, cccd);
+                    console.log(`✅ Auto-search completed for profile ${i + 1}`);
+                  } catch (err) {
+                    console.error(`❌ Auto-search failed for profile ${i + 1}:`, err);
+                  }
+                }
+              }
+              console.log('✅ All profiles auto-search completed');
+            }, 500); // Small delay to ensure state is ready
           } else if (rentalRequestData.tenantUserId) {
             // Fallback: If no profile data, store tenant ID for later use
             console.log('👤 Tenant user ID from rental request:', rentalRequestData.tenantUserId);
@@ -257,7 +356,7 @@ export default function ContractsManagementPage() {
           // Clear rental request data from sessionStorage after loading
           sessionStorage.removeItem('rentalRequestData');
 
-          toast.info(t('ownerContracts.toast.rentalRequestLoaded'));
+          // toast.info(t('ownerContracts.toast.rentalRequestLoaded')); // Removed notification
         }
       } catch (error) {
         console.error('❌ Error loading rental request data:', error);
@@ -581,15 +680,19 @@ export default function ContractsManagementPage() {
 
       console.log('📦 userData type:', typeof userData);
       console.log('📦 userData.id:', userData?.id);
+      console.log('📦 userData.Id:', userData?.Id);
       console.log('📦 userData.userId:', userData?.userId);
-      console.log('� userData.fullName:', userData?.fullName);
+      console.log('📦 userData.fullName:', userData?.fullName);
+      console.log('📦 userData.FullName:', userData?.FullName);
 
       console.log('🔍 userData assigned:', userData);
-      console.log('🔍 Check condition:', !userData, !userData?.id);
+      console.log('🔍 Check condition:', !userData, !userData?.Id, !userData?.id);
 
-      if (!userData || !userData.id) {
-        console.log('❌ No user found - userData is null or missing id');
+      // Check both Id (PascalCase from C#) and id (camelCase)
+      if (!userData || (!userData.Id && !userData.id)) {
+        console.log('❌ No user found - userData is null or missing Id/id');
         console.log('❌ userData value:', userData);
+        console.log('❌ userData.Id value:', userData?.Id);
         console.log('❌ userData.id value:', userData?.id);
         toast.warning(t('ownerContracts.toast.noUserFound') + ' ' + t('ownerContracts.toast.verifyId'));
         return;
@@ -597,62 +700,130 @@ export default function ContractsManagementPage() {
 
       console.log('✅ Found User:', userData);
       console.log('✅ Full user data:', JSON.stringify(userData, null, 2));
-      console.log('📋 User data fields check:');
-      console.log('  - phone:', userData.phone);
-      console.log('  - Phone:', userData.Phone);
-      console.log('  - phoneNumber:', userData.phoneNumber);
-      console.log('  - PhoneNumber:', userData.PhoneNumber);
-      console.log('  - email:', userData.email);
-      console.log('  - Email:', userData.Email);
-      console.log('  - provinceId:', userData.provinceId);
-      console.log('  - ProvinceId:', userData.ProvinceId);
-      console.log('  - wardId:', userData.wardId);
-      console.log('  - WardId:', userData.WardId);
+
+      // ===== CRITICAL DEBUG: Log ALL possible field variations =====
+      console.log('🔍 ===== DETAILED FIELD CHECK =====');
+      console.log('📋 ALL keys in userData:', Object.keys(userData));
+      console.log('📋 Field variations check:');
+
+      // ID variations
+      console.log('  ID: id=', userData.id, ', Id=', userData.Id, ', userId=', userData.userId, ', UserId=', userData.UserId);
+
+      // Name variations
+      console.log('  NAME: fullName=', userData.fullName, ', FullName=', userData.FullName);
+
+      // Phone variations  
+      console.log('  PHONE: phone=', userData.phone, ', Phone=', userData.Phone, ', phoneNumber=', userData.phoneNumber, ', PhoneNumber=', userData.PhoneNumber);
+
+      // Email variations
+      console.log('  EMAIL: email=', userData.email, ', Email=', userData.Email);
+
+      // Province variations
+      console.log('  PROVINCE: provinceId=', userData.provinceId, ', ProvinceId=', userData.ProvinceId);
+      console.log('  PROVINCE NAME: provinceName=', userData.provinceName, ', ProvinceName=', userData.ProvinceName);
+
+      // Ward variations
+      console.log('  WARD: wardId=', userData.wardId, ', WardId=', userData.WardId);
+      console.log('  WARD NAME: wardName=', userData.wardName, ', WardName=', userData.WardName);
+
+      // Address variations
+      console.log('  ADDRESS: address=', userData.address, ', Address=', userData.Address, ', detailAddress=', userData.detailAddress, ', DetailAddress=', userData.DetailAddress);
+
+      // Image variations
+      console.log('  AVATAR: avatar=', userData.avatar, ', Avatar=', userData.Avatar, ', avatarUrl=', userData.avatarUrl, ', AvatarUrl=', userData.AvatarUrl);
+      console.log('  FRONT: frontImageUrl=', userData.frontImageUrl, ', FrontImageUrl=', userData.FrontImageUrl);
+      console.log('  BACK: backImageUrl=', userData.backImageUrl, ', BackImageUrl=', userData.BackImageUrl);
+
+      // Gender variations
+      console.log('  GENDER: gender=', userData.gender, ', Gender=', userData.Gender, ', type:', typeof userData.Gender);
+
+      // Other fields
+      console.log('  BIO: bio=', userData.bio, ', Bio=', userData.Bio);
+      console.log('  TEMP RESIDENCE: temporaryResidence=', userData.temporaryResidence, ', TemporaryResidence=', userData.TemporaryResidence);
+      console.log('🔍 ===== END FIELD CHECK =====');
 
       // Map backend fields to form fields and auto-fill
+      // Backend returns UserResponseDTO with PascalCase fields from C# API
       setProfiles(currentProfiles => {
         const newProfiles = [...currentProfiles];
+
         newProfiles[profileIndex] = {
           ...newProfiles[profileIndex],
-          // User ID - Backend returns "id" field, prioritize it
-          userId: userData.id || userData.Id || userData.userId || userData.UserId || null,
-          // Personal info
-          fullName: userData.fullName || userData.FullName || '',
-          dateOfBirth: (userData.dateOfBirth || userData.DateOfBirth) ? (userData.dateOfBirth || userData.DateOfBirth).split('T')[0] : '',
-          phoneNumber: userData.phone || userData.Phone || userData.phoneNumber || userData.PhoneNumber || '',
-          email: userData.email || userData.Email || '',
-          gender: userData.gender || userData.Gender || 'Male',
-          // Address with names from backend - support multiple field names
-          provinceId: userData.provinceId || userData.ProvinceId || '',
-          provinceName: userData.provinceName || userData.ProvinceName || '',
-          wardId: userData.wardId || userData.WardId || '',
-          wardName: userData.wardName || userData.WardName || '',
-          address: userData.detailAddress || userData.DetailAddress || userData.address || userData.Address || '',
-          temporaryResidence: userData.temporaryResidence || userData.TemporaryResidence || '',
-          // Citizen ID - keep the searched value
-          citizenIdNumber: userData.citizenIdNumber || userData.CitizenIdNumber || citizenId,
-          citizenIdIssuedDate: (userData.citizenIdIssuedDate || userData.CitizenIdIssuedDate) ? (userData.citizenIdIssuedDate || userData.CitizenIdIssuedDate).split('T')[0] : '',
-          citizenIdIssuedPlace: userData.citizenIdIssuedPlace || userData.CitizenIdIssuedPlace || '',
-          // Images and notes
-          avatarUrl: userData.avatar || userData.Avatar || '',
-          frontImageUrl: userData.frontImageUrl || userData.FrontImageUrl || '',
-          backImageUrl: userData.backImageUrl || userData.BackImageUrl || '',
-          notes: userData.bio || userData.Bio || ''
+          // User ID - Try all variations
+          userId: userData.Id || userData.id || userData.userId || userData.UserId || null,
+
+          // Personal info - Try PascalCase first (C# convention), then camelCase
+          fullName: userData.FullName || userData.fullName || '',
+
+          dateOfBirth: (userData.DateOfBirth || userData.dateOfBirth) ?
+            (userData.DateOfBirth || userData.dateOfBirth).split('T')[0] : '',
+
+          phoneNumber: userData.Phone || userData.phone || userData.phoneNumber || userData.PhoneNumber || '',
+
+          email: userData.Email || userData.email || '',
+
+          // Gender: Backend may return enum (1=Male, 2=Female, 3=Other), convert to string
+          gender: (() => {
+            const genderValue = userData.Gender ?? userData.gender;
+            console.log('🔄 Converting gender value:', genderValue, 'type:', typeof genderValue);
+            if (genderValue === 1 || genderValue === "1" || genderValue === "Male") return "Male";
+            if (genderValue === 2 || genderValue === "2" || genderValue === "Female") return "Female";
+            if (genderValue === 3 || genderValue === "3" || genderValue === "Other") return "Other";
+            if (typeof genderValue === 'string' && genderValue) return genderValue;
+            return 'Male'; // default
+          })(),
+
+          // Address - Try all variations
+          provinceId: String(userData.ProvinceId || userData.provinceId || ''),
+          provinceName: userData.ProvinceName || userData.provinceName || '',
+          wardId: String(userData.WardId || userData.wardId || ''),
+          wardName: userData.WardName || userData.wardName || '',
+          address: userData.DetailAddress || userData.detailAddress || userData.Address || userData.address || '',
+          temporaryResidence: userData.TemporaryResidence || userData.temporaryResidence || '',
+
+          // Citizen ID - Keep searched value as fallback
+          citizenIdNumber: userData.CitizenIdNumber || userData.citizenIdNumber || citizenId,
+          citizenIdIssuedDate: (userData.CitizenIdIssuedDate || userData.citizenIdIssuedDate) ?
+            (userData.CitizenIdIssuedDate || userData.citizenIdIssuedDate).split('T')[0] : '',
+          citizenIdIssuedPlace: userData.CitizenIdIssuedPlace || userData.citizenIdIssuedPlace || '',
+
+          // Images - Try all variations
+          avatarUrl: userData.Avatar || userData.avatar || userData.AvatarUrl || userData.avatarUrl || '',
+          frontImageUrl: userData.FrontImageUrl || userData.frontImageUrl || '',
+          backImageUrl: userData.BackImageUrl || userData.backImageUrl || '',
+
+          // Notes
+          notes: userData.Bio || userData.bio || userData.Notes || userData.notes || ''
         };
 
-        console.log('✅ Profile auto-filled:', newProfiles[profileIndex]);
-        console.log('✅ Mapped values:');
-        console.log('  - phoneNumber:', newProfiles[profileIndex].phoneNumber);
-        console.log('  - email:', newProfiles[profileIndex].email);
-        console.log('  - provinceId:', newProfiles[profileIndex].provinceId);
-        console.log('  - provinceName:', newProfiles[profileIndex].provinceName);
-        console.log('  - wardId:', newProfiles[profileIndex].wardId);
-        console.log('  - wardName:', newProfiles[profileIndex].wardName);
+        console.log('✅ Profile auto-filled successfully!');
+        console.log('✅ Final mapped values:');
+        console.log('  ✓ userId:', newProfiles[profileIndex].userId);
+        console.log('  ✓ fullName:', newProfiles[profileIndex].fullName);
+        console.log('  ✓ dateOfBirth:', newProfiles[profileIndex].dateOfBirth);
+        console.log('  ✓ phoneNumber:', newProfiles[profileIndex].phoneNumber);
+        console.log('  ✓ email:', newProfiles[profileIndex].email);
+        console.log('  ✓ gender:', newProfiles[profileIndex].gender);
+        console.log('  ✓ provinceId:', newProfiles[profileIndex].provinceId);
+        console.log('  ✓ provinceName:', newProfiles[profileIndex].provinceName);
+        console.log('  ✓ wardId:', newProfiles[profileIndex].wardId);
+        console.log('  ✓ wardName:', newProfiles[profileIndex].wardName);
+        console.log('  ✓ address:', newProfiles[profileIndex].address);
+        console.log('  ✓ temporaryResidence:', newProfiles[profileIndex].temporaryResidence);
+        console.log('  ✓ citizenIdNumber:', newProfiles[profileIndex].citizenIdNumber);
+        console.log('  ✓ citizenIdIssuedDate:', newProfiles[profileIndex].citizenIdIssuedDate);
+        console.log('  ✓ citizenIdIssuedPlace:', newProfiles[profileIndex].citizenIdIssuedPlace);
+        console.log('  ✓ avatarUrl:', newProfiles[profileIndex].avatarUrl);
+        console.log('  ✓ frontImageUrl:', newProfiles[profileIndex].frontImageUrl);
+        console.log('  ✓ backImageUrl:', newProfiles[profileIndex].backImageUrl);
+        console.log('  ✓ notes:', newProfiles[profileIndex].notes);
+
         return newProfiles;
       });
 
       // Load wards from API for the province that was auto-filled
-      const provinceCode = userData.provinceId || userData.ProvinceId;
+      // Backend returns ProvinceId in PascalCase
+      const provinceCode = userData.ProvinceId || userData.provinceId;
       if (provinceCode) {
         console.log('🏘️ Auto-loading wards from API for province:', provinceCode);
 
@@ -679,7 +850,7 @@ export default function ContractsManagementPage() {
         console.log('⚠️ No provinceCode to load wards');
       }
 
-      toast.success(t('ownerContracts.toast.profileAutoFilled', { name: userData.fullName }));
+      toast.success(t('ownerContracts.toast.profileAutoFilled', { name: userData.FullName || userData.fullName || 'User' }));
 
     } catch (error) {
       console.error('❌ Error searching user:', error);
@@ -1892,8 +2063,8 @@ export default function ContractsManagementPage() {
         return;
       }
 
-      // Get owner info from contract position [1] (owner profile)
-      const ownerProfile = fullContract.identityProfiles?.[1];
+      // Get owner info from contract position [0] (owner profile), NOT [1] (tenant)
+      const ownerProfile = fullContract.identityProfiles?.[0];
       const ownerName = ownerProfile?.fullName || ownerProfile?.FullName || user?.fullName || user?.name || '';
       const ownerPhone = ownerProfile?.phone || ownerProfile?.Phone || ownerProfile?.phoneNumber || user?.phone || user?.phoneNumber || '';
       const ownerEmail = ownerProfile?.email || ownerProfile?.Email || user?.email || user?.Email || '';
@@ -1903,13 +2074,13 @@ export default function ContractsManagementPage() {
       setSignatureStep(1); // Reset to step 1
       setSignatureName(ownerName);
       setSignaturePhone(ownerPhone);
-      setSignatureEmail(ownerEmail); // Set OWNER email from contract position [1]
+      setSignatureEmail(ownerEmail); // Set OWNER email from contract position [0]
       setSignaturePreview('');
       setOtpCode('');
       setOtpTimer(300);
       setCanResendOtp(false);
 
-      console.log('👤 Owner info set for signature (from contract position [1]):');
+      console.log('👤 Owner info set for signature (from contract position [0]):');
       console.log('  - Name:', ownerName);
       console.log('  - Phone:', ownerPhone);
       console.log('  - Email:', ownerEmail);
@@ -1945,9 +2116,9 @@ export default function ContractsManagementPage() {
       setSendingOtp(true);
       console.log('📝 Sending OTP...');
 
-      // Get OWNER email from contract at position [1] (owner profile), NOT [0] (tenant)
-      const ownerEmail = selectedContract?.identityProfiles?.[1]?.email ||
-        selectedContract?.identityProfiles?.[1]?.Email ||
+      // Get OWNER email from contract at position [0] (owner profile), NOT [1] (tenant)
+      const ownerEmail = selectedContract?.identityProfiles?.[0]?.email ||
+        selectedContract?.identityProfiles?.[0]?.Email ||
         user?.email ||
         user?.Email;
 
@@ -1957,7 +2128,7 @@ export default function ContractsManagementPage() {
         return;
       }
 
-      console.log('📧 Sending OTP to OWNER email (from contract position [1]):', ownerEmail);
+      console.log('📧 Sending OTP to OWNER email (from contract position [0]):', ownerEmail);
 
       // Get contract ID
       const contractId = selectedContract?.id || selectedContract?.Id;
@@ -1992,7 +2163,7 @@ export default function ContractsManagementPage() {
       setCurrentOtpId(otpId);
       setSignatureEmail(ownerEmail);
 
-      toast.success(t('ownerContracts.toast.otpSent', { email: ownerEmail }));
+      // toast.success(t('ownerContracts.toast.otpSent', { email: ownerEmail })); // Removed notification
 
       // Move to OTP verification step
       setSignatureStep(2);
@@ -2099,10 +2270,10 @@ export default function ContractsManagementPage() {
       }
 
       // Step 3: Sign contract with base64 signature (saves to OwnerSignature or TenantSignature)
-      console.log('3️⃣ Signing contract...');
+      console.log('3️⃣ Signing contract as owner...');
       console.log('📝 Contract ID:', contractId);
       console.log('🖼️ Signature (base64):', signaturePreview.substring(0, 50) + '...');
-      const result = await contractService.signContract(contractId, signaturePreview);
+      const result = await contractService.signContract(contractId, signaturePreview, 'owner');
       console.log('✅ Contract signed:', result);
 
       toast.success(t('ownerContracts.toast.contractSigned'));
@@ -2558,15 +2729,17 @@ export default function ContractsManagementPage() {
                     )}
 
                     {/* Add Signature Button - Hidden for Active contracts */}
-                    {contract.contractStatus !== 'Active' && (
-                      <button
-                        onClick={() => handleOpenSignatureModal(contract)}
-                        className="px-3 py-1 text-pink-600 hover:text-pink-800 dark:text-pink-400 dark:hover:text-pink-200 text-sm font-medium"
-                        title="Add electronic signature"
-                      >
-                        ✍️ Signature
-                      </button>
-                    )}
+                    {/* Owner can only sign AFTER tenant has signed (TenantSignature must not be null) */}
+                    {contract.contractStatus !== 'Active' &&
+                      (contract.tenantSignature || contract.TenantSignature) && (
+                        <button
+                          onClick={() => handleOpenSignatureModal(contract)}
+                          className="px-3 py-1 text-pink-600 hover:text-pink-800 dark:text-pink-400 dark:hover:text-pink-200 text-sm font-medium"
+                          title="Add electronic signature (Tenant must sign first)"
+                        >
+                          ✍️ Signature
+                        </button>
+                      )}
 
                     {/* Utility Reading Management - Only for Active contracts */}
                     {contract.contractStatus === 'Active' && (
@@ -3729,22 +3902,22 @@ export default function ContractsManagementPage() {
                         </div>
 
                         {/* Front Image URL */}
-                        <div>
+                        {/* <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Front ID Image URL *</label>
                           <input type="url" value={profile.frontImageUrl} onChange={(e) => updateProfile(profileIndex, 'frontImageUrl', e.target.value)}
                             className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_frontImageUrl`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                             placeholder="https://..." />
                           {profileErrors[`profile${profileIndex}_frontImageUrl`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_frontImageUrl`]}</p>}
-                        </div>
+                        </div> */}
 
                         {/* Back Image URL */}
-                        <div>
+                        {/* <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Back ID Image URL *</label>
                           <input type="url" value={profile.backImageUrl} onChange={(e) => updateProfile(profileIndex, 'backImageUrl', e.target.value)}
                             className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-800 dark:text-gray-200 dark:bg-gray-700 ${profileErrors[`profile${profileIndex}_backImageUrl`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                             placeholder="https://..." />
                           {profileErrors[`profile${profileIndex}_backImageUrl`] && <p className="text-red-500 text-xs mt-1">{profileErrors[`profile${profileIndex}_backImageUrl`]}</p>}
-                        </div>
+                        </div> */}
 
                         {/* Notes */}
                         <div className="md:col-span-2">
@@ -4208,6 +4381,23 @@ export default function ContractsManagementPage() {
                 {/* STEP 1: Create Signature */}
                 {signatureStep === 1 && (
                   <>
+                    {/* Signer Role Information */}
+                    <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <div className="flex items-center">
+                        <svg className="w-6 h-6 text-blue-600 dark:text-blue-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <div>
+                          <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                            {t('ownerContracts.signingAs') || 'Signing as'}: <span className="text-blue-600 dark:text-blue-400">{t('ownerContracts.owner') || 'Owner'}</span>
+                          </p>
+                          <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                            {user?.fullName || user?.username || 'EZStay Owner'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Full Name Input */}
                     <div className="mb-6">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

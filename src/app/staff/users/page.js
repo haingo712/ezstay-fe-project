@@ -45,6 +45,15 @@ export default function UserManagementPage() {
   const loadOwnerRequests = async () => {
     try {
       const data = await userManagementService.getOwnerRequests();
+      console.log('🔍 Owner Requests Data:', data);
+      console.log('🔍 First Request:', data?.[0]);
+      console.log('🔍 Image fields:', {
+        imageasset: data?.[0]?.imageasset,
+        Imageasset: data?.[0]?.Imageasset,
+        imageAsset: data?.[0]?.imageAsset,
+        ImageAsset: data?.[0]?.ImageAsset,
+        allKeys: data?.[0] ? Object.keys(data[0]) : []
+      });
       setOwnerRequests(data || []);
     } catch (error) {
       console.error('Error loading owner requests:', error);
@@ -262,10 +271,10 @@ export default function UserManagementPage() {
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('staffUsers.table.accountId') || 'ACCOUNT ID'}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('staffUsers.table.reason') || 'REASON'}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">SUBMITTED AT</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">REASON</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">IMAGE</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">STATUS</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">SUBMITTED AT</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ACTIONS</th>
                 </tr>
               </thead>
@@ -277,39 +286,92 @@ export default function UserManagementPage() {
                     </td>
                   </tr>
                 ) : (
-                  ownerRequests.map(request => (
-                    <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{request.accountId || request.AccountId || 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{request.reason || request.Reason || 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(request.submittedAt || request.SubmittedAt).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${(request.status || request.Status) === 'Pending'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : (request.status || request.Status) === 'Approved'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                          }`}>
-                          {request.status || request.Status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium space-x-2">
-                        <button
-                          onClick={() => handleApproveRequest(request.id)}
-                          className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => openRejectionModal(request)}
-                          className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700"
-                        >
-                          Reject
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                  ownerRequests.map(request => {
+                    // Map status enum: 0 = Pending, 1 = Approved, 2 = Rejected
+                    const status = request.status ?? request.Status;
+                    const getStatusInfo = () => {
+                      if (status === 0 || status === 'Pending') {
+                        return { text: 'Pending', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' };
+                      } else if (status === 1 || status === 'Approved') {
+                        return { text: 'Approved', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' };
+                      } else if (status === 2 || status === 'Rejected') {
+                        return { text: 'Rejected', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' };
+                      }
+                      return { text: 'Unknown', color: 'bg-gray-100 text-gray-800' };
+                    };
+                    const statusInfo = getStatusInfo();
+
+                    return (
+                      <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{request.reason || request.Reason || 'N/A'}</td>
+                        <td className="px-6 py-4">
+                          {(request.imageasset || request.Imageasset) ? (
+                            <a
+                              href={request.imageasset || request.Imageasset}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-block"
+                            >
+                              <img
+                                src={request.imageasset || request.Imageasset}
+                                alt="Owner request"
+                                className="w-16 h-16 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:scale-110 transition-transform cursor-pointer shadow-sm"
+                                onError={(e) => {
+                                  e.target.src = 'https://via.placeholder.com/64?text=No+Image';
+                                }}
+                              />
+                            </a>
+                          ) : (
+                            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center border-2 border-gray-200 dark:border-gray-600">
+                              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${statusInfo.color}`}>
+                            {statusInfo.text === 'Pending' && '⏳ '}
+                            {statusInfo.text === 'Approved' && '✓ '}
+                            {statusInfo.text === 'Rejected' && '✗ '}
+                            {statusInfo.text}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                          {new Date(request.submittedAt || request.SubmittedAt).toLocaleString('en-US', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+                          })}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium">
+                          {(status === 1 || status === 'Approved' || status === 2 || status === 'Rejected') ? (
+                            <div className="text-gray-400 italic text-sm">
+                              {status === 1 || status === 'Approved' ? '✓ Already processed' : '✗ Already rejected'}
+                            </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleApproveRequest(request.id)}
+                                className="px-4 py-2 rounded-lg font-medium transition-colors bg-green-600 text-white hover:bg-green-700"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => openRejectionModal(request)}
+                                className="px-4 py-2 rounded-lg font-medium transition-colors bg-red-600 text-white hover:bg-red-700"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

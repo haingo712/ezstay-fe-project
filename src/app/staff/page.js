@@ -252,10 +252,10 @@ export default function StaffDashboard() {
       try {
         const reportsData = await reviewAPI.getAllReviewReports({ $orderby: 'createdAt desc' });
         const reportsArray = Array.isArray(reportsData) ? reportsData : (reportsData?.value || []);
-        
+
         // Filter pending reports (status = 0)
         const pendingReports = reportsArray.filter(r => (r.status || r.Status) === 0);
-        
+
         // Group reports by reason/type for display
         const reportGroups = {};
         pendingReports.forEach(report => {
@@ -266,7 +266,7 @@ export default function StaffDashboard() {
           reportGroups[reason].count++;
           reportGroups[reason].reports.push(report);
         });
-        
+
         // Convert to array format for display
         const formattedReports = Object.entries(reportGroups).map(([type, data]) => ({
           type: type,
@@ -274,7 +274,7 @@ export default function StaffDashboard() {
           count: data.count,
           severity: data.count > 5 ? 'high' : data.count > 2 ? 'medium' : 'low'
         })).slice(0, 3);
-        
+
         setReports(formattedReports);
         setStats(prev => ({
           ...prev,
@@ -290,13 +290,13 @@ export default function StaffDashboard() {
       try {
         const supportData = await supportAPI.getAll();
         const supportArray = Array.isArray(supportData) ? supportData : (supportData?.value || []);
-        
+
         // Filter pending support tickets (status = 0 or 'Pending')
-        const pendingTickets = supportArray.filter(t => 
-          (t.status || t.Status) === 0 || 
+        const pendingTickets = supportArray.filter(t =>
+          (t.status || t.Status) === 0 ||
           (t.status || t.Status) === 'Pending'
         );
-        
+
         setSupportTickets(pendingTickets.slice(0, 5));
         setStats(prev => ({
           ...prev,
@@ -361,7 +361,7 @@ export default function StaffDashboard() {
                 Quản lý và duyệt nội dung hệ thống EZStay
               </p>
             </div>
-            <div className="flex space-x-3">
+            {/* <div className="flex space-x-3">
               <Link
                 href="/staff/posts"
                 className="px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium transition-all backdrop-blur-sm"
@@ -374,7 +374,7 @@ export default function StaffDashboard() {
               >
                 Xem báo cáo
               </Link>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
@@ -422,22 +422,22 @@ export default function StaffDashboard() {
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">Thao tác nhanh</h2>
               </div>
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <QuickActionCard
+                {/* <QuickActionCard
                   href="/staff/posts"
                   icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                   title="Duyệt bài đăng"
                   description={`${stats.pendingPosts} bài chờ duyệt`}
                   color="purple"
                   badge={stats.pendingPosts > 0 ? stats.pendingPosts : null}
-                />
-                <QuickActionCard
+                /> */}
+                {/* <QuickActionCard
                   href="/staff/reports"
                   icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
                   title="Xem báo cáo vi phạm"
                   description={`${stats.pendingReports} báo cáo chờ xử lý`}
                   color="red"
                   badge={stats.pendingReports > 0 ? stats.pendingReports : null}
-                />
+                /> */}
                 <QuickActionCard
                   href="/staff/users"
                   icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" /></svg>}
@@ -464,7 +464,7 @@ export default function StaffDashboard() {
             </div>
 
             {/* Pending Posts */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+            {/* <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
                   <div>
@@ -498,13 +498,13 @@ export default function StaffDashboard() {
                         onReview={handleReviewPost}
                       />
                     ))}
-                  </div>
-                )}
+                  </div> */}
+            {/* )}
               </div>
-            </div>
+            </div> */}
 
             {/* Reports Overview */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+            {/* <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
                   <div>
@@ -536,30 +536,30 @@ export default function StaffDashboard() {
                 )}
               </div>
             </div>
-          </div>
+          </div> */}
 
-          {/* Right Column - 1/3 width */}
-          <div className="space-y-8">
-            {/* Mini Stats */}
-            <div className="grid grid-cols-2 gap-4">
-              <MiniStatCard
-                title="Duyệt hôm nay"
-                value={stats.approvedToday}
-                color="green"
-                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
-              />
-              <MiniStatCard
-                title="Từ chối hôm nay"
-                value={stats.rejectedToday}
-                color="red"
-                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>}
-              />
-            </div>
 
-            
+            {/* <div className="space-y-8">
+        
+              <div className="grid grid-cols-2 gap-4">
+                <MiniStatCard
+                  title="Duyệt hôm nay"
+                  value={stats.approvedToday}
+                  color="green"
+                  icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
+                />
+                <MiniStatCard
+                  title="Từ chối hôm nay"
+                  value={stats.rejectedToday}
+                  color="red"
+                  icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>}
+                />
+              </div> */}
+
+
 
             {/* Notifications */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+            {/* <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-bold text-gray-900 dark:text-white">Thông báo</h2>
@@ -588,7 +588,7 @@ export default function StaffDashboard() {
                   </div>
                 )}
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

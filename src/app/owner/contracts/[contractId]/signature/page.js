@@ -80,14 +80,14 @@ export default function ContractSignaturePage() {
             // Backend will generate new OTP and send email
             const otpResult = await otpService.sendContractOtp(contractId, email);
             console.log('✅ New OTP sent, result:', otpResult);
-            
+
             // Get new otpId
             const newOtpId = otpResult?.otpId || otpResult?.id || otpResult?.Id || otpResult?.data?.id;
-            
+
             if (newOtpId) {
                 // Update URL with new otpId
                 router.push(`/owner/contracts/${contractId}/signature?email=${encodeURIComponent(email)}&boardingHouseId=${boardingHouseId}&otpId=${newOtpId}`, undefined, { shallow: true });
-                
+
                 // Update sessionStorage
                 const pendingSignature = sessionStorage.getItem('pendingSignature');
                 if (pendingSignature) {
@@ -129,7 +129,7 @@ export default function ContractSignaturePage() {
             // Step 1: Verify OTP with backend
             const result = await otpService.verifyContractOtp(otpId, otpCode);
             console.log('✅ OTP verified:', result);
-            
+
             toast.success(t('signaturePage.messages.otpVerified'));
 
             // Step 2: Get signature data and upload
@@ -145,7 +145,7 @@ export default function ContractSignaturePage() {
 
             // Step 3: Upload signature image to get URL
             let signatureUrl;
-            
+
             if (sigData.signatureTab === 'draw' || sigData.signatureTab === 'file') {
                 // Upload from data URL (canvas or uploaded file)
                 const imageService = (await import('@/services/imageService')).default;
@@ -167,18 +167,18 @@ export default function ContractSignaturePage() {
 
             toast.success(t('signaturePage.messages.signatureUploaded'));
 
-            // Step 4: Sign contract with signature URL
-            await contractService.signContract(contractId, signatureUrl);
-            console.log('✅ Contract signed successfully');
+            // Step 4: Sign contract with signature URL as owner
+            await contractService.signContract(contractId, signatureUrl, 'owner');
+            console.log('✅ Contract signed successfully as owner');
 
             // Step 5: Generate and upload signed PDF with embedded signature
             toast.info(t('signaturePage.messages.generatingPdf'));
             const contractPdfService = (await import('@/services/contractPdfService')).default;
-            
+
             try {
                 // Generate PDF with tenant signature embedded
                 const pdfResult = await contractPdfService.signContractWithPdf(
-                    contract, 
+                    contract,
                     sigData.signaturePreview, // tenant signature
                     null // owner signature (if you have it, pass it here)
                 );
@@ -193,7 +193,7 @@ export default function ContractSignaturePage() {
 
             // Step 6: Clean up
             sessionStorage.removeItem('pendingSignature');
-            
+
             toast.success(t('signaturePage.messages.signSuccess'));
 
             // Navigate back to contracts page
@@ -208,7 +208,7 @@ export default function ContractSignaturePage() {
         } catch (error) {
             console.error('Error in signature process:', error);
             console.error('Error details:', error.response?.data);
-            
+
             if (error.response?.status === 400) {
                 toast.error(t('signaturePage.errors.otpInvalidExpired'));
             } else if (error.response?.status === 404) {

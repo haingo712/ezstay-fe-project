@@ -98,7 +98,6 @@ export function useAuth() {
   const loadUserAvatar = useCallback(async () => {
     // Only load avatar if user is authenticated
     if (!isAuthenticated || !user) {
-      console.log("⚠️ Cannot load avatar: User not authenticated");
       return;
     }
 
@@ -116,10 +115,10 @@ export function useAuth() {
       } catch (err) {
         console.log("⚠️ Could not load avatar for navbar:", err.message);
       }
-    } else if (user?.avatar) {
-      console.log("ℹ️ Avatar already loaded:", user.avatar);
+    } catch (err) {
+      // Silent fail - avatar is not critical
     }
-  }, [user, isAuthenticated]);
+  }, [isAuthenticated]); // Remove 'user' from dependencies to prevent loop
 
   return {
     isAuthenticated,

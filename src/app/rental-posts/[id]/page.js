@@ -8,6 +8,7 @@ import rentalPostService from '@/services/rentalPostService';
 import reviewService from '@/services/reviewService';
 import boardingHouseService from '@/services/boardingHouseService';
 import contractService from '@/services/contractService';
+import profileService from '@/services/profileService';
 import { toast } from 'react-toastify';
 import {
   Building2,
@@ -226,10 +227,27 @@ export default function RentalPostDetailPage() {
     const nextMonth = new Date(today);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
 
+    // Get user's Citizen ID from profile API
+    let citizenIdNumbers = [''];
+    try {
+      const profileData = await profileService.getProfile();
+      console.log('👤 User profile loaded:', profileData);
+
+      if (profileData && profileData.citizenIdNumber) {
+        citizenIdNumbers = [profileData.citizenIdNumber];
+        console.log('✅ Auto-filled Citizen ID:', profileData.citizenIdNumber);
+      } else {
+        console.log('⚠️ No Citizen ID found in profile');
+      }
+    } catch (error) {
+      console.error('❌ Error loading profile for Citizen ID:', error);
+      // Continue with empty field if profile fetch fails
+    }
+
     setRentalRequestData({
       checkinDate: today.toISOString().split('T')[0],
       checkoutDate: nextMonth.toISOString().split('T')[0],
-      citizenIdNumbers: [''] // Array of CCCD, start with one empty field
+      citizenIdNumbers: citizenIdNumbers // Auto-fill with user's Citizen ID if available
     });
     setRentalRequestErrors({});
     setShowRentalRequestModal(true);
@@ -950,26 +968,41 @@ export default function RentalPostDetailPage() {
 
                   <div className="space-y-3">
                     {rentalRequestData.citizenIdNumbers.map((cccd, index) => (
-                      <div key={index} className="flex gap-2">
-                        <input
-                          type="text"
-                          value={cccd}
-                          onChange={(e) => handleChangeCCCD(index, e.target.value)}
-                          placeholder={`${t('rentalPostDetail.rentalRequest.cccdNumber') || 'Số CCCD'} ${index + 1}`}
-                          className={`flex-1 px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${rentalRequestErrors.citizenIdNumbers ? 'border-red-500' : 'border-gray-300'}`}
-                        />
-                        {rentalRequestData.citizenIdNumbers.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveCCCD(index)}
-                            className="px-3 py-2.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                            title={t('rentalPostDetail.rentalRequest.removeCCCD') || 'Xóa CCCD'}
-                          >
-                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        )}
+                      <div key={index} className="space-y-2">
+                        {/* Label: Người đại diện (index 0) or Người ở cùng (index > 0) */}
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-medium px-2 py-1 rounded ${index === 0
+                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                            }`}>
+                            {index === 0
+                              ? (t('rentalPostDetail.rentalRequest.representative') || 'Người đại diện')
+                              : (t('rentalPostDetail.rentalRequest.coOccupant') || 'Người ở cùng')
+                            }
+                          </span>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={cccd}
+                            onChange={(e) => handleChangeCCCD(index, e.target.value)}
+                            placeholder={`${t('rentalPostDetail.rentalRequest.cccdNumber') || 'Số CCCD'} ${index + 1}`}
+                            className={`flex-1 px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${rentalRequestErrors.citizenIdNumbers ? 'border-red-500' : 'border-gray-300'}`}
+                          />
+                          {rentalRequestData.citizenIdNumbers.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveCCCD(index)}
+                              className="px-3 py-2.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                              title={t('rentalPostDetail.rentalRequest.removeCCCD') || 'Xóa CCCD'}
+                            >
+                              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
 
