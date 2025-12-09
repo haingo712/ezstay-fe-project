@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/utils/api";
-import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from 'react-toastify';
 
 // Function to mark notification as read
@@ -91,7 +90,6 @@ async function createScheduledNotification(data) {
 }
 
 export default function AdminNotificationsPage() {
-    const { t } = useTranslation();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -142,12 +140,12 @@ export default function AdminNotificationsPage() {
         try {
             setLoading(true);
             setError("");
-            // Admin uses /all endpoint to get ALL notifications in system
-            const data = await apiFetch("/api/Notification/all");
+            // Admin uses /by-role endpoint to get notifications
+            const data = await apiFetch("/api/Notification/by-role");
             setNotifications(data || []);
         } catch (err) {
             console.error("Error loading notifications:", err);
-            setError(t('adminNotifications.error') || "Unable to load notification list.");
+            setError("Unable to load notification list.");
         } finally {
             setLoading(false);
         }
@@ -166,7 +164,7 @@ export default function AdminNotificationsPage() {
             );
         } catch (err) {
             console.error("Error marking as read:", err);
-            toast.error(t('adminNotifications.toast.markReadFailed') || "Unable to mark as read.");
+            toast.error("Unable to mark as read.");
         }
     };
 
@@ -185,7 +183,7 @@ export default function AdminNotificationsPage() {
             });
             setShowCreateForm(false);
             await fetchNotifications();
-            toast.success(t('adminNotifications.toast.createSuccess') || "Notification created successfully!");
+            toast.success("Notification created successfully!");
         } catch (err) {
             console.error("Error creating notification:", err);
             setCreateError(err.message || "Unable to create notification.");
@@ -201,7 +199,7 @@ export default function AdminNotificationsPage() {
         setCreateError("");
 
         if (roleFormData.targetRoles.length === 0) {
-            setCreateError(t('adminNotifications.selectRoleError') || "Please select at least one role.");
+            setCreateError("Please select at least one role.");
             setCreateLoading(false);
             return;
         }
@@ -216,7 +214,7 @@ export default function AdminNotificationsPage() {
             });
             setShowCreateForm(false);
             await fetchNotifications();
-            toast.success(t('adminNotifications.toast.createByRoleSuccess') || "Notification by role created successfully!");
+            toast.success("Notification by role created successfully!");
         } catch (err) {
             console.error("Error creating notification by role:", err);
             setCreateError(err.message || "Unable to create notification.");
@@ -252,13 +250,13 @@ export default function AdminNotificationsPage() {
         setScheduleError("");
 
         if (scheduleFormData.targetRoles.length === 0) {
-            setScheduleError(t('adminNotifications.selectRoleError') || "Please select at least one role.");
+            setScheduleError("Please select at least one role.");
             setScheduleLoading(false);
             return;
         }
 
         if (!scheduleFormData.scheduledTime) {
-            setScheduleError(t('adminNotifications.selectTimeError') || "Please select scheduled time.");
+            setScheduleError("Please select scheduled time.");
             setScheduleLoading(false);
             return;
         }
@@ -279,7 +277,7 @@ export default function AdminNotificationsPage() {
                 scheduledTime: ""
             });
             setShowScheduleForm(false);
-            toast.success(t('adminNotifications.toast.scheduleSuccess') || "Scheduled notification created successfully!");
+            toast.success("Scheduled notification created successfully!");
         } catch (err) {
             console.error("Error scheduling notification:", err);
             setScheduleError(err.message || "Unable to schedule notification.");
@@ -316,7 +314,7 @@ export default function AdminNotificationsPage() {
             setShowEditForm(false);
             setEditingNotification(null);
             await fetchNotifications();
-            toast.success(t('adminNotifications.toast.updateSuccess') || "Notification updated successfully!");
+            toast.success("Notification updated successfully!");
         } catch (err) {
             console.error("Error updating notification:", err);
             setEditError(err.message || "Unable to update notification.");
@@ -328,7 +326,7 @@ export default function AdminNotificationsPage() {
     // Handle delete notification
     const handleDeleteNotification = async (id, title) => {
         const confirmDelete = window.confirm(
-            `${t('adminNotifications.confirmDelete') || 'Are you sure you want to delete notification'}:\n"${title}"?`
+            `Are you sure you want to delete notification:\n"${title}"?`
         );
 
         if (!confirmDelete) return;
@@ -336,10 +334,10 @@ export default function AdminNotificationsPage() {
         try {
             await deleteNotification(id);
             await fetchNotifications();
-            toast.success(t('adminNotifications.toast.deleteSuccess') || "Notification deleted successfully!");
+            toast.success("Notification deleted successfully!");
         } catch (err) {
             console.error("Error deleting notification:", err);
-            toast.error(err.message || t('adminNotifications.toast.deleteFailed') || "Unable to delete notification.");
+            toast.error(err.message || "Unable to delete notification.");
         }
     };
 
@@ -366,10 +364,10 @@ export default function AdminNotificationsPage() {
     // Map notification type
     const getNotificationType = (type) => {
         const types = {
-            0: t('adminNotifications.types.general') || "General",
-            1: t('adminNotifications.types.system') || "System",
-            2: t('adminNotifications.types.warning') || "Warning",
-            3: t('adminNotifications.types.promotion') || "Promotion"
+            0: "General",
+            1: "System",
+            2: "Warning",
+            3: "Promotion"
         };
         return types[type] || "Unknown";
     };
@@ -380,10 +378,10 @@ export default function AdminNotificationsPage() {
                 {/* Header */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
-                        {t('adminNotifications.title') || 'Admin Notifications'}
+                        Admin Notifications
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400">
-                        {t('adminNotifications.subtitle') || 'Manage and send system notifications'}
+                        Manage and send system notifications
                     </p>
                 </div>
 
@@ -397,7 +395,7 @@ export default function AdminNotificationsPage() {
                                 : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                                 }`}
                         >
-                            {t('adminNotifications.filter.all') || 'All'} ({notifications.length})
+                            All ({notifications.length})
                         </button>
                         <button
                             onClick={() => setFilter("unread")}
@@ -406,7 +404,7 @@ export default function AdminNotificationsPage() {
                                 : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                                 }`}
                         >
-                            {t('adminNotifications.filter.unread') || 'Unread'} ({notifications.filter((n) => !n.isRead).length})
+                            Unread ({notifications.filter((n) => !n.isRead).length})
                         </button>
                         <button
                             onClick={() => setFilter("read")}
@@ -415,7 +413,7 @@ export default function AdminNotificationsPage() {
                                 : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                                 }`}
                         >
-                            {t('adminNotifications.filter.read') || 'Read'} ({notifications.filter((n) => n.isRead).length})
+                            Read ({notifications.filter((n) => n.isRead).length})
                         </button>
                         <button
                             onClick={() => {
@@ -424,7 +422,7 @@ export default function AdminNotificationsPage() {
                             }}
                             className="ml-auto px-4 py-2 rounded-lg font-medium bg-purple-600 text-white hover:bg-purple-700 transition-colors"
                         >
-                            + {t('adminNotifications.createButton') || 'Create Notification'}
+                            + Create Notification
                         </button>
                         <button
                             onClick={() => {
@@ -433,13 +431,13 @@ export default function AdminNotificationsPage() {
                             }}
                             className="px-4 py-2 rounded-lg font-medium bg-orange-600 text-white hover:bg-orange-700 transition-colors"
                         >
-                            {t('adminNotifications.scheduleButton') || 'Schedule'}
+                            Schedule
                         </button>
                         <button
                             onClick={fetchNotifications}
                             className="px-4 py-2 rounded-lg font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
                         >
-                            {t('adminNotifications.refreshButton') || 'Refresh'}
+                            Refresh
                         </button>
                     </div>
                 </div>
@@ -448,7 +446,7 @@ export default function AdminNotificationsPage() {
                 {showCreateForm && (
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
                         <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
-                            {t('adminNotifications.createTitle') || 'Create New Notification'}
+                            Create New Notification
                         </h2>
 
                         {/* Toggle between Single and By Role */}
@@ -461,7 +459,7 @@ export default function AdminNotificationsPage() {
                                     : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                                     }`}
                             >
-                                {t('adminNotifications.personalNotification') || 'Personal Notification'}
+                                Personal Notification
                             </button>
                             <button
                                 type="button"
@@ -471,7 +469,7 @@ export default function AdminNotificationsPage() {
                                     : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                                     }`}
                             >
-                                {t('adminNotifications.byRoleNotification') || 'Notification by Role'}
+                                Notification by Role
                             </button>
                         </div>
 
@@ -486,45 +484,45 @@ export default function AdminNotificationsPage() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {t('adminNotifications.form.title') || 'Title'} <span className="text-red-500">*</span>
+                                        Title <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="text"
                                         value={formData.title}
                                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                        placeholder={t('adminNotifications.form.titlePlaceholder') || 'Enter notification title'}
+                                        placeholder="Enter notification title"
                                         required
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {t('adminNotifications.form.content') || 'Content'} <span className="text-red-500">*</span>
+                                        Content <span className="text-red-500">*</span>
                                     </label>
                                     <textarea
                                         value={formData.message}
                                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                                         rows="4"
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                        placeholder={t('adminNotifications.form.contentPlaceholder') || 'Enter notification content'}
+                                        placeholder="Enter notification content"
                                         required
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {t('adminNotifications.form.type') || 'Notification Type'}
+                                        Notification Type
                                     </label>
                                     <select
                                         value={formData.notificationType}
                                         onChange={(e) => setFormData({ ...formData, notificationType: parseInt(e.target.value) })}
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                                     >
-                                        <option value={0}>{t('adminNotifications.types.general') || 'General'}</option>
-                                        <option value={1}>{t('adminNotifications.types.system') || 'System'}</option>
-                                        <option value={2}>{t('adminNotifications.types.warning') || 'Warning'}</option>
-                                        <option value={3}>{t('adminNotifications.types.promotion') || 'Promotion'}</option>
+                                        <option value={0}>General</option>
+                                        <option value={1}>System</option>
+                                        <option value={2}>Warning</option>
+                                        <option value={3}>Promotion</option>
                                     </select>
                                 </div>
 
@@ -534,7 +532,7 @@ export default function AdminNotificationsPage() {
                                         disabled={createLoading}
                                         className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {createLoading ? (t('common.creating') || 'Creating...') : (t('adminNotifications.createButton') || 'Create Notification')}
+                                        {createLoading ? 'Creating...' : 'Create Notification'}
                                     </button>
                                     <button
                                         type="button"
@@ -545,7 +543,7 @@ export default function AdminNotificationsPage() {
                                         }}
                                         className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                                     >
-                                        {t('common.cancel') || 'Cancel'}
+                                        Cancel
                                     </button>
                                 </div>
                             </form>
@@ -562,7 +560,7 @@ export default function AdminNotificationsPage() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {t('adminNotifications.form.selectRoles') || 'Select Target Roles'} <span className="text-red-500">*</span>
+                                        Select Target Roles <span className="text-red-500">*</span>
                                     </label>
                                     <div className="grid grid-cols-2 gap-3">
                                         {[
@@ -594,45 +592,45 @@ export default function AdminNotificationsPage() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {t('adminNotifications.form.title') || 'Title'} <span className="text-red-500">*</span>
+                                        Title <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="text"
                                         value={roleFormData.title}
                                         onChange={(e) => setRoleFormData({ ...roleFormData, title: e.target.value })}
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                        placeholder={t('adminNotifications.form.titlePlaceholder') || 'Enter notification title'}
+                                        placeholder="Enter notification title"
                                         required
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {t('adminNotifications.form.content') || 'Content'} <span className="text-red-500">*</span>
+                                        Content <span className="text-red-500">*</span>
                                     </label>
                                     <textarea
                                         value={roleFormData.message}
                                         onChange={(e) => setRoleFormData({ ...roleFormData, message: e.target.value })}
                                         rows="4"
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                        placeholder={t('adminNotifications.form.contentPlaceholder') || 'Enter notification content'}
+                                        placeholder="Enter notification content"
                                         required
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {t('adminNotifications.form.type') || 'Notification Type'}
+                                        Notification Type
                                     </label>
                                     <select
                                         value={roleFormData.notificationType}
                                         onChange={(e) => setRoleFormData({ ...roleFormData, notificationType: parseInt(e.target.value) })}
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                                     >
-                                        <option value={0}>{t('adminNotifications.types.general') || 'General'}</option>
-                                        <option value={1}>{t('adminNotifications.types.system') || 'System'}</option>
-                                        <option value={2}>{t('adminNotifications.types.warning') || 'Warning'}</option>
-                                        <option value={3}>{t('adminNotifications.types.promotion') || 'Promotion'}</option>
+                                        <option value={0}>General</option>
+                                        <option value={1}>System</option>
+                                        <option value={2}>Warning</option>
+                                        <option value={3}>Promotion</option>
                                     </select>
                                 </div>
 
@@ -642,7 +640,7 @@ export default function AdminNotificationsPage() {
                                         disabled={createLoading}
                                         className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {createLoading ? (t('common.sending') || 'Sending...') : (t('adminNotifications.sendButton') || 'Send Notification')}
+                                        {createLoading ? 'Sending...' : 'Send Notification'}
                                     </button>
                                     <button
                                         type="button"
@@ -653,7 +651,7 @@ export default function AdminNotificationsPage() {
                                         }}
                                         className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                                     >
-                                        {t('common.cancel') || 'Cancel'}
+                                        Cancel
                                     </button>
                                 </div>
                             </form>
@@ -665,7 +663,7 @@ export default function AdminNotificationsPage() {
                 {showScheduleForm && (
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
                         <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
-                            {t('adminNotifications.scheduleTitle') || 'Schedule Notification'}
+                            Schedule Notification
                         </h2>
 
                         <form onSubmit={handleCreateSchedule} className="space-y-4">
@@ -677,7 +675,7 @@ export default function AdminNotificationsPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    {t('adminNotifications.form.selectRoles') || 'Select Target Roles'} <span className="text-red-500">*</span>
+                                    Select Target Roles <span className="text-red-500">*</span>
                                 </label>
                                 <div className="grid grid-cols-2 gap-3">
                                     {[
@@ -709,51 +707,51 @@ export default function AdminNotificationsPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    {t('adminNotifications.form.title') || 'Title'} <span className="text-red-500">*</span>
+                                    Title <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={scheduleFormData.title}
                                     onChange={(e) => setScheduleFormData({ ...scheduleFormData, title: e.target.value })}
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                    placeholder={t('adminNotifications.form.titlePlaceholder') || 'Enter notification title'}
+                                    placeholder="Enter notification title"
                                     required
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    {t('adminNotifications.form.content') || 'Content'} <span className="text-red-500">*</span>
+                                    Content <span className="text-red-500">*</span>
                                 </label>
                                 <textarea
                                     value={scheduleFormData.message}
                                     onChange={(e) => setScheduleFormData({ ...scheduleFormData, message: e.target.value })}
                                     rows="4"
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                    placeholder={t('adminNotifications.form.contentPlaceholder') || 'Enter notification content'}
+                                    placeholder="Enter notification content"
                                     required
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    {t('adminNotifications.form.type') || 'Notification Type'}
+                                    Notification Type
                                 </label>
                                 <select
                                     value={scheduleFormData.notificationType}
                                     onChange={(e) => setScheduleFormData({ ...scheduleFormData, notificationType: parseInt(e.target.value) })}
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                                 >
-                                    <option value={0}>{t('adminNotifications.types.general') || 'General'}</option>
-                                    <option value={1}>{t('adminNotifications.types.system') || 'System'}</option>
-                                    <option value={2}>{t('adminNotifications.types.warning') || 'Warning'}</option>
-                                    <option value={3}>{t('adminNotifications.types.promotion') || 'Promotion'}</option>
+                                    <option value={0}>General</option>
+                                    <option value={1}>System</option>
+                                    <option value={2}>Warning</option>
+                                    <option value={3}>Promotion</option>
                                 </select>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    {t('adminNotifications.form.scheduledTime') || 'Scheduled Time'} <span className="text-red-500">*</span>
+                                    Scheduled Time <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="datetime-local"
@@ -763,7 +761,7 @@ export default function AdminNotificationsPage() {
                                     required
                                 />
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    {t('adminNotifications.form.scheduledTimeHint') || 'Notification will be sent automatically at the selected time'}
+                                    Notification will be sent automatically at the selected time
                                 </p>
                             </div>
 
@@ -773,7 +771,7 @@ export default function AdminNotificationsPage() {
                                     disabled={scheduleLoading}
                                     className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {scheduleLoading ? (t('common.saving') || 'Saving...') : (t('adminNotifications.scheduleButton') || 'Schedule')}
+                                    {scheduleLoading ? 'Saving...' : 'Schedule'}
                                 </button>
                                 <button
                                     type="button"
@@ -784,7 +782,7 @@ export default function AdminNotificationsPage() {
                                     }}
                                     className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                                 >
-                                    {t('common.cancel') || 'Cancel'}
+                                    Cancel
                                 </button>
                             </div>
                         </form>
@@ -795,7 +793,7 @@ export default function AdminNotificationsPage() {
                 {showEditForm && editingNotification && (
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
                         <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
-                            {t('adminNotifications.editTitle') || 'Edit Notification'}
+                            Edit Notification
                         </h2>
                         <form onSubmit={handleUpdateNotification} className="space-y-4">
                             {editError && (
@@ -806,43 +804,43 @@ export default function AdminNotificationsPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    {t('adminNotifications.form.title') || 'Title'}
+                                    Title
                                 </label>
                                 <input
                                     type="text"
                                     value={editFormData.title}
                                     onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                    placeholder={t('adminNotifications.form.titlePlaceholder') || 'Enter notification title'}
+                                    placeholder="Enter notification title"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    {t('adminNotifications.form.content') || 'Content'}
+                                    Content
                                 </label>
                                 <textarea
                                     value={editFormData.message}
                                     onChange={(e) => setEditFormData({ ...editFormData, message: e.target.value })}
                                     rows="4"
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                    placeholder={t('adminNotifications.form.contentPlaceholder') || 'Enter notification content'}
+                                    placeholder="Enter notification content"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    {t('adminNotifications.form.type') || 'Notification Type'}
+                                    Notification Type
                                 </label>
                                 <select
                                     value={editFormData.notificationType}
                                     onChange={(e) => setEditFormData({ ...editFormData, notificationType: parseInt(e.target.value) })}
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                                 >
-                                    <option value={0}>{t('adminNotifications.types.general') || 'General'}</option>
-                                    <option value={1}>{t('adminNotifications.types.system') || 'System'}</option>
-                                    <option value={2}>{t('adminNotifications.types.warning') || 'Warning'}</option>
-                                    <option value={3}>{t('adminNotifications.types.promotion') || 'Promotion'}</option>
+                                    <option value={0}>General</option>
+                                    <option value={1}>System</option>
+                                    <option value={2}>Warning</option>
+                                    <option value={3}>Promotion</option>
                                 </select>
                             </div>
 
@@ -852,7 +850,7 @@ export default function AdminNotificationsPage() {
                                     disabled={editLoading}
                                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {editLoading ? (t('common.updating') || 'Updating...') : (t('adminNotifications.updateButton') || 'Update Notification')}
+                                    {editLoading ? 'Updating...' : 'Update Notification'}
                                 </button>
                                 <button
                                     type="button"
@@ -864,7 +862,7 @@ export default function AdminNotificationsPage() {
                                     }}
                                     className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                                 >
-                                    {t('common.cancel') || 'Cancel'}
+                                    Cancel
                                 </button>
                             </div>
                         </form>
@@ -876,7 +874,7 @@ export default function AdminNotificationsPage() {
                     {loading ? (
                         <div className="p-8 text-center">
                             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
-                            <p className="mt-4 text-gray-600 dark:text-gray-400">{t('adminNotifications.loading') || 'Loading notifications...'}</p>
+                            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading notifications...</p>
                         </div>
                     ) : error ? (
                         <div className="p-8 text-center">
@@ -885,13 +883,13 @@ export default function AdminNotificationsPage() {
                                 onClick={fetchNotifications}
                                 className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                             >
-                                {t('common.retry') || 'Retry'}
+                                Retry
                             </button>
                         </div>
                     ) : filteredNotifications.length === 0 ? (
                         <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                            <p className="text-xl">{t('adminNotifications.noNotifications') || 'No notifications'}</p>
-                            <p className="mt-2">{t('adminNotifications.noNotificationsDesc') || 'No notifications found'}</p>
+                            <p className="text-xl">No notifications</p>
+                            <p className="mt-2">No notifications found</p>
                         </div>
                     ) : (
                         <div className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -909,7 +907,7 @@ export default function AdminNotificationsPage() {
                                                 </h3>
                                                 {!notification.isRead && (
                                                     <span className="px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded-full">
-                                                        {t('adminNotifications.new') || 'New'}
+                                                        New
                                                     </span>
                                                 )}
                                                 <span className="px-2 py-1 text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">
@@ -924,10 +922,10 @@ export default function AdminNotificationsPage() {
 
                                             {/* Footer info */}
                                             <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-500">
-                                                <span>{t('adminNotifications.created') || 'Created'}: {formatDate(notification.createdAt)}</span>
+                                                <span>Created: {formatDate(notification.createdAt)}</span>
                                                 {notification.scheduledTime && (
                                                     <span>
-                                                        {t('adminNotifications.scheduled') || 'Scheduled'}: {formatDate(notification.scheduledTime)}
+                                                        Scheduled: {formatDate(notification.scheduledTime)}
                                                     </span>
                                                 )}
                                             </div>
@@ -938,29 +936,29 @@ export default function AdminNotificationsPage() {
                                             <button
                                                 onClick={() => handleOpenEdit(notification)}
                                                 className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
-                                                title={t('common.edit') || 'Edit'}
+                                                title="Edit"
                                             >
-                                                {t('common.edit') || 'Edit'}
+                                                Edit
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteNotification(notification.id, notification.title)}
                                                 className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
-                                                title={t('common.delete') || 'Delete'}
+                                                title="Delete"
                                             >
-                                                {t('common.delete') || 'Delete'}
+                                                Delete
                                             </button>
                                             {!notification.isRead && (
                                                 <button
                                                     onClick={() => handleMarkAsRead(notification.id)}
                                                     className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
-                                                    title={t('adminNotifications.markRead') || 'Mark as read'}
+                                                    title="Mark as read"
                                                 >
-                                                    {t('adminNotifications.markRead') || 'Mark Read'}
+                                                    Mark Read
                                                 </button>
                                             )}
                                             {notification.isRead && (
                                                 <span className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-sm rounded-lg whitespace-nowrap text-center">
-                                                    {t('adminNotifications.read') || 'Read'}
+                                                    Read
                                                 </span>
                                             )}
                                         </div>
@@ -976,16 +974,16 @@ export default function AdminNotificationsPage() {
                     <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
                         <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
                             <span>
-                                {t('adminNotifications.totalNotifications') || 'Total notifications'}: <strong className="text-gray-900 dark:text-white">{notifications.length}</strong>
+                                Total notifications: <strong className="text-gray-900 dark:text-white">{notifications.length}</strong>
                             </span>
                             <span>
-                                {t('adminNotifications.filter.unread') || 'Unread'}:{" "}
+                                Unread:{" "}
                                 <strong className="text-blue-600 dark:text-blue-400">
                                     {notifications.filter((n) => !n.isRead).length}
                                 </strong>
                             </span>
                             <span>
-                                {t('adminNotifications.filter.read') || 'Read'}:{" "}
+                                Read:{" "}
                                 <strong className="text-green-600 dark:text-green-400">
                                     {notifications.filter((n) => n.isRead).length}
                                 </strong>

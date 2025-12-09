@@ -43,6 +43,39 @@ function removeVietnameseDiacritics(str) {
 }
 
 /**
+ * Detect image format from base64 string
+ * @param {string} base64String - Base64 encoded image
+ * @returns {string} Image format (JPEG, PNG, WEBP, etc.)
+ */
+function detectImageFormat(base64String) {
+  if (!base64String) return 'PNG';
+  
+  // Check for data URL prefix
+  if (base64String.startsWith('data:image/')) {
+    if (base64String.includes('data:image/jpeg') || base64String.includes('data:image/jpg')) {
+      return 'JPEG';
+    } else if (base64String.includes('data:image/png')) {
+      return 'PNG';
+    } else if (base64String.includes('data:image/webp')) {
+      return 'WEBP';
+    } else if (base64String.includes('data:image/gif')) {
+      return 'GIF';
+    }
+  }
+  
+  // Check base64 header bytes (first few characters after base64 prefix)
+  const base64Data = base64String.replace(/^data:image\/[a-z]+;base64,/, '');
+  
+  // JPEG starts with /9j/ in base64
+  if (base64Data.startsWith('/9j/') || base64Data.startsWith('iVBOR')) {
+    return base64Data.startsWith('/9j/') ? 'JPEG' : 'PNG';
+  }
+  
+  // Default to PNG for safety (most canvas exports are PNG)
+  return 'PNG';
+}
+
+/**
  * Generate a complete contract PDF with all terms, conditions, and digital signatures
  * @param {Object} contract - Contract data
  * @param {string} ownerSignature - Owner's digital signature (base64)
@@ -1232,7 +1265,9 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   doc.rect(25, yPos, signatureBoxWidth, signatureBoxHeight);
   if (ownerSignature) {
     try {
-      doc.addImage(ownerSignature, 'PNG', 27, yPos + 2, signatureBoxWidth - 4, signatureBoxHeight - 4);
+      // Detect image format from base64 string or use auto-detection
+      const ownerFormat = detectImageFormat(ownerSignature);
+      doc.addImage(ownerSignature, ownerFormat, 27, yPos + 2, signatureBoxWidth - 4, signatureBoxHeight - 4);
     } catch (error) {
       console.error('Error adding owner signature to PDF:', error);
     }
@@ -1242,7 +1277,9 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   doc.rect(125, yPos, signatureBoxWidth, signatureBoxHeight);
   if (tenantSignature) {
     try {
-      doc.addImage(tenantSignature, 'PNG', 127, yPos + 2, signatureBoxWidth - 4, signatureBoxHeight - 4);
+      // Detect image format from base64 string or use auto-detection
+      const tenantFormat = detectImageFormat(tenantSignature);
+      doc.addImage(tenantSignature, tenantFormat, 127, yPos + 2, signatureBoxWidth - 4, signatureBoxHeight - 4);
     } catch (error) {
       console.error('Error adding tenant signature to PDF:', error);
     }

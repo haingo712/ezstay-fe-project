@@ -1,33 +1,67 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from '@/utils/api';
 
 export default function FinancialReportsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
+  const [loading, setLoading] = useState(true);
+  const [contracts, setContracts] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [owners, setOwners] = useState([]);
+  
+  const [financialData, setFinancialData] = useState({
+    totalRevenue: 0,
+    totalExpenses: 0,
+    netProfit: 0,
+    transactions: 0,
+    averageTransaction: 0,
+    activeContracts: 0,
+    completedPayments: 0,
+    pendingPayments: 0
+  });
 
-  const financialData = {
-    totalRevenue: 250000000,
-    totalExpenses: 75000000,
-    netProfit: 175000000,
-    transactions: 2345,
-    averageTransaction: 106609
-  };
+  // Load financial data from APIs
+  const loadFinancialData = useCallback(async () => {
+    try {
+      setLoading(true);
 
-  const monthlyData = [
-    { month: 'Jan', revenue: 18000000, expenses: 6000000 },
-    { month: 'Feb', revenue: 22000000, expenses: 7000000 },
-    { month: 'Mar', revenue: 25000000, expenses: 8000000 },
-    { month: 'Apr', revenue: 28000000, expenses: 7500000 },
-    { month: 'May', revenue: 30000000, expenses: 9000000 },
-    { month: 'Jun', revenue: 27000000, expenses: 8000000 },
-  ];
+      // Load all contracts from all owners
+      const contractsData = await apiFetch('/api/Contract/all/owner');
+      const contractsArray = Array.isArray(contractsData) ? contractsData : [];
+      setContracts(contractsArray);
 
-  const revenueByCategory = [
-    { category: 'Room Rentals', amount: 150000000, percentage: 60 },
-    { category: 'Service Fees', amount: 50000000, percentage: 20 },
-    { category: 'Commission', amount: 37500000, percentage: 15 },
-    { category: 'Other', amount: 12500000, percentage: 5 }
-  ];
+      // Calculate financial metrics from contracts
+      const activeContracts = contractsArray.filter(c => c.status === 'Active' || c.status === 1);
+      const totalRevenue = contractsArray.reduce((sum, contract) => {
+        return sum + (contract.totalAmount || contract.rentAmount || 0);
+      }, 0);
+
+      // System takes 5% commission
+      const systemCommission = totalRevenue * 0.05;
+      const ownerRevenue = totalRevenue * 0.95;
+
+      setFinancialData({
+        totalRevenue: systemCommission, // Admin only sees platform commission
+        totalExpenses: 0, // No expense data yet
+        netProfit: systemCommission,
+        transactions: contractsArray.length,
+        averageTransaction: contractsArray.length > 0 ? systemCommission / contractsArray.length : 0,
+        activeContracts: activeContracts.length,
+        completedPayments: contractsArray.filter(c => c.status === 'Completed' || c.status === 3).length,
+        pendingPayments: contractsArray.filter(c => c.status === 'Pending' || c.status === 0).length
+      });
+
+    } catch (error) {
+      console.error('Error loading financial data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFinancialData();
+  }, [loadFinancialData]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -35,6 +69,67 @@ export default function FinancialReportsPage() {
       currency: 'VND'
     }).format(amount);
   };
+
+  // Calculate revenue by owner
+  const revenueByOwner = contracts.reduce((acc, contract) => {
+    const ownerId = contract.ownerId || contract.boardingHouseOwnerId;
+    if (!ownerId) return acc;
+    
+    const existing = acc.find(item => item.ownerId === ownerId);
+    const revenue = (contract.totalAmount || contract.rentAmount || 0) * 0.05; // 5% commission
+    
+    if (existing) {
+      existing.revenue += revenue;
+      existing.contracts += 1;
+    } else {
+      acc.push({
+        ownerId,
+        ownerName: contract.ownerName || `Owner ${ownerId.substring(0, 8)}`,
+        revenue,
+        contracts: 1
+      });
+    }
+    return acc;
+  }, []).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
+
+  // Calculate monthly revenue (last 6 months)
+  const monthlyData = (() => {
+    const months = [];
+    const now = new Date();
+    
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+      
+      const monthContracts = contracts.filter(c => {
+        const createdDate = new Date(c.createdAt || c.startDate);
+        return createdDate.getMonth() === date.getMonth() && 
+               createdDate.getFullYear() === date.getFullYear();
+      });
+      
+      const revenue = monthContracts.reduce((sum, c) => sum + ((c.totalAmount || c.rentAmount || 0) * 0.05), 0);
+      
+      months.push({
+        month: monthName,
+        revenue,
+        expenses: 0,
+        contracts: monthContracts.length
+      });
+    }
+    
+    return months;
+  })();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="inline-block w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading financial data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -60,102 +155,221 @@ export default function FinancialReportsPage() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-green-100 text-sm">Total Revenue</p>
-          <p className="text-2xl font-bold mt-2">
-            {formatCurrency(financialData.totalRevenue)}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-100 text-sm">Platform Commission</p>
+              <p className="text-2xl font-bold mt-2">
+                {formatCurrency(financialData.totalRevenue)}
+              </p>
+              <p className="text-green-100 text-xs mt-1">5% from contracts</p>
+            </div>
+            <svg className="w-8 h-8 text-green-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
         </div>
-        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-red-100 text-sm">Total Expenses</p>
-          <p className="text-2xl font-bold mt-2">
-            {formatCurrency(financialData.totalExpenses)}
-          </p>
-        </div>
+        
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-blue-100 text-sm">Net Profit</p>
-          <p className="text-2xl font-bold mt-2">
-            {formatCurrency(financialData.netProfit)}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-blue-100 text-sm">Total Contracts</p>
+              <p className="text-2xl font-bold mt-2">
+                {financialData.transactions.toLocaleString()}
+              </p>
+              <p className="text-blue-100 text-xs mt-1">All time</p>
+            </div>
+            <svg className="w-8 h-8 text-blue-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
         </div>
+        
         <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-purple-100 text-sm">Transactions</p>
-          <p className="text-2xl font-bold mt-2">
-            {financialData.transactions.toLocaleString()}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-100 text-sm">Active Contracts</p>
+              <p className="text-2xl font-bold mt-2">
+                {financialData.activeContracts.toLocaleString()}
+              </p>
+              <p className="text-purple-100 text-xs mt-1">Currently active</p>
+            </div>
+            <svg className="w-8 h-8 text-purple-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          </div>
         </div>
+        
         <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
-          <p className="text-orange-100 text-sm">Avg Transaction</p>
-          <p className="text-2xl font-bold mt-2">
-            {formatCurrency(financialData.averageTransaction)}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-orange-100 text-sm">Avg Commission</p>
+              <p className="text-2xl font-bold mt-2">
+                {formatCurrency(financialData.averageTransaction)}
+              </p>
+              <p className="text-orange-100 text-xs mt-1">Per contract</p>
+            </div>
+            <svg className="w-8 h-8 text-orange-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+            </svg>
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-emerald-100 text-sm">Completed</p>
+              <p className="text-2xl font-bold mt-2">
+                {financialData.completedPayments.toLocaleString()}
+              </p>
+              <p className="text-emerald-100 text-xs mt-1">Finished contracts</p>
+            </div>
+            <svg className="w-8 h-8 text-emerald-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-yellow-100 text-sm">Pending</p>
+              <p className="text-2xl font-bold mt-2">
+                {financialData.pendingPayments.toLocaleString()}
+              </p>
+              <p className="text-yellow-100 text-xs mt-1">Awaiting payment</p>
+            </div>
+            <svg className="w-8 h-8 text-yellow-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
         </div>
       </div>
 
       {/* Monthly Chart */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-          Monthly Revenue vs Expenses
+          Monthly Commission Revenue (Last 6 Months)
         </h2>
         <div className="space-y-4">
-          {monthlyData.map((data) => (
-            <div key={data.month}>
-              <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-                <span className="font-medium">{data.month}</span>
-                <span>Revenue: {formatCurrency(data.revenue)} | Expenses: {formatCurrency(data.expenses)}</span>
-              </div>
-              <div className="flex gap-2">
-                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-6 overflow-hidden">
-                  <div
-                    className="bg-gradient-to-r from-green-500 to-green-600 h-full flex items-center justify-end pr-2 text-white text-xs font-medium"
-                    style={{ width: `${(data.revenue / 30000000) * 100}%` }}
-                  >
-                    {((data.revenue / 30000000) * 100).toFixed(0)}%
-                  </div>
+          {monthlyData.map((data) => {
+            const maxRevenue = Math.max(...monthlyData.map(d => d.revenue), 1);
+            return (
+              <div key={data.month}>
+                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  <span className="font-medium">{data.month}</span>
+                  <span className="flex items-center gap-3">
+                    <span>Commission: {formatCurrency(data.revenue)}</span>
+                    <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
+                      {data.contracts} contracts
+                    </span>
+                  </span>
                 </div>
-                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-6 overflow-hidden">
+                <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-8 overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-red-500 to-red-600 h-full flex items-center justify-end pr-2 text-white text-xs font-medium"
-                    style={{ width: `${(data.expenses / 9000000) * 100}%` }}
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 h-full flex items-center justify-end pr-3 text-white text-sm font-medium transition-all duration-500"
+                    style={{ width: `${data.revenue > 0 ? Math.max((data.revenue / maxRevenue) * 100, 5) : 0}%` }}
                   >
-                    {((data.expenses / 9000000) * 100).toFixed(0)}%
+                    {data.revenue > 0 && formatCurrency(data.revenue)}
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
+        </div>
+        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Total (6 months):</span>
+            <span className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {formatCurrency(monthlyData.reduce((sum, d) => sum + d.revenue, 0))}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Revenue by Category */}
+      {/* Top Owners and Recent Contracts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Top Revenue Owners */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-            Revenue by Category
+            Top Revenue Owners
           </h2>
-          <div className="space-y-4">
-            {revenueByCategory.map((item, index) => (
-              <div key={item.category}>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-700 dark:text-gray-300 font-medium">
-                    {item.category}
-                  </span>
-                  <span className="text-gray-600 dark:text-gray-400">
-                    {formatCurrency(item.amount)} ({item.percentage}%)
-                  </span>
+          <div className="space-y-3">
+            {revenueByOwner.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                No owner data available
+              </div>
+            ) : (
+              revenueByOwner.map((owner, index) => (
+                <div key={owner.ownerId} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
+                      index === 0 ? 'bg-yellow-500' : 
+                      index === 1 ? 'bg-gray-400' : 
+                      index === 2 ? 'bg-orange-500' : 'bg-indigo-500'
+                    }`}>
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {owner.ownerName}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {owner.contracts} contracts
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-green-600 dark:text-green-400">
+                      {formatCurrency(owner.revenue)}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Commission
+                    </p>
+                  </div>
                 </div>
-                <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
-                  <div
-                    className={`h-full ${index === 0 ? 'bg-blue-500' :
-                      index === 1 ? 'bg-green-500' :
-                        index === 2 ? 'bg-purple-500' : 'bg-orange-500'
-                      }`}
-                    style={{ width: `${item.percentage}%` }}
-                  />
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Recent Contracts */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+            Recent Contracts
+          </h2>
+          <div className="space-y-3">
+            {contracts.slice(0, 8).map((contract) => (
+              <div key={contract.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900 dark:text-white text-sm">
+                    {contract.tenantName || 'Tenant'} → {contract.ownerName || 'Owner'}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(contract.createdAt || contract.startDate).toLocaleDateString('vi-VN')}
+                  </p>
+                </div>
+                <div className="text-right ml-3">
+                  <p className="font-bold text-sm text-gray-900 dark:text-white">
+                    {formatCurrency((contract.totalAmount || contract.rentAmount || 0) * 0.05)}
+                  </p>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    contract.status === 'Active' || contract.status === 1 ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' :
+                    contract.status === 'Completed' || contract.status === 3 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' :
+                    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300'
+                  }`}>
+                    {contract.status === 1 || contract.status === 'Active' ? 'Active' :
+                     contract.status === 3 || contract.status === 'Completed' ? 'Completed' : 'Pending'}
+                  </span>
                 </div>
               </div>
             ))}
+            {contracts.length === 0 && (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                No contracts yet
+              </div>
+            )}
           </div>
         </div>
 
