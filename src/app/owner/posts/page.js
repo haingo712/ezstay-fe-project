@@ -51,23 +51,38 @@ export default function PostsPage() {
     }
   }, [user]);
 
-  const loadRoomsForHouse = useCallback(async (houseId) => {
+  const loadRoomsForHouse = useCallback(async (houseId, currentRoomId = null) => {
     if (!houseId) {
       setAvailableRooms([]);
       return;
     }
     try {
       setLoadingRooms(true);
-      console.log('🚪 Loading rooms for house:', houseId);
+      console.log('🚪 Loading rooms for house:', houseId, 'currentRoomId:', currentRoomId);
       const rooms = await roomService.getByBoardingHouseId(houseId);
-      // Filter only available rooms (roomStatus = 0 or "Available")
-      const availableRooms = rooms.filter(room =>
-        room.roomStatus === 0 ||
-        room.roomStatus === "Available" ||
-        room.roomStatus?.toLowerCase() === "available"
-      );
-      console.log('✅ Loaded available rooms:', availableRooms.length, 'rooms');
-      setAvailableRooms(availableRooms);
+
+      if (currentRoomId) {
+        // When editing, include all rooms (so current room is visible)
+        // but prioritize available rooms + current room
+        const currentRoom = rooms.find(r => r.id === currentRoomId);
+        const availableRooms = rooms.filter(room =>
+          room.id === currentRoomId || // Include current room
+          room.roomStatus === 0 ||
+          room.roomStatus === "Available" ||
+          room.roomStatus?.toLowerCase() === "available"
+        );
+        console.log('✅ Loaded rooms for edit (including current):', availableRooms.length, 'rooms');
+        setAvailableRooms(availableRooms);
+      } else {
+        // When creating new post, filter only available rooms (roomStatus = 0 or "Available")
+        const availableRooms = rooms.filter(room =>
+          room.roomStatus === 0 ||
+          room.roomStatus === "Available" ||
+          room.roomStatus?.toLowerCase() === "available"
+        );
+        console.log('✅ Loaded available rooms:', availableRooms.length, 'rooms');
+        setAvailableRooms(availableRooms);
+      }
     } catch (error) {
       console.error('Error loading rooms:', error);
       setAvailableRooms([]);
@@ -187,19 +202,27 @@ export default function PostsPage() {
   };
 
   const handleEditPost = (post) => {
+    console.log('🔧 Editing post:', post);
+    console.log('📷 Post imageUrls:', post.imageUrls);
+    console.log('📷 imageUrls type:', typeof post.imageUrls, Array.isArray(post.imageUrls));
+
     setEditingPost(post);
     setPostData({
       boardingHouseId: post.boardingHouseId || '',
-      roomIds: post.roomId || [],
+      roomIds: post.roomId ? [post.roomId] : [],
       title: post.title,
       description: post.content || post.description,
       contactPhone: post.contactPhone,
       images: []
     });
     setFormErrors({});
-    setImagePreviews(post.imageUrls || []);
+
+    const imageUrls = post.imageUrls || [];
+    console.log('📷 Setting imagePreviews to:', imageUrls);
+    setImagePreviews(imageUrls);
+
     if (post.boardingHouseId) {
-      loadRoomsForHouse(post.boardingHouseId);
+      loadRoomsForHouse(post.boardingHouseId, post.roomId);
     }
     setShowPostModal(true);
   };
@@ -219,7 +242,12 @@ export default function PostsPage() {
 
     try {
       if (editingPost) {
-        await rentalPostService.updatePost(editingPost.id, postData);
+        // When editing, include existing imageUrls from imagePreviews
+        const updateData = {
+          ...postData,
+          imageUrls: imagePreviews
+        };
+        await rentalPostService.updatePost(editingPost.id, updateData);
         toast.success(t('ownerPosts.messages.updateSuccess'));
       } else {
         const response = await rentalPostService.createPost(postData);
@@ -280,19 +308,16 @@ export default function PostsPage() {
 
   const handleViewDetail = async (post) => {
     try {
-      // For pending posts (isApproved === 0), use the data we already have
-      // since the API might not return complete data for pending posts
-      if (post.isApproved === 0) {
-        console.log('🔍 Showing pending post details from cached data:', post.id);
-        setDetailPost(post);
-        setShowDetailModal(true);
-        return;
-      }
-
-      // For active/approved posts, fetch fresh data from API
+      // Always fetch fresh data from API to get complete information
       console.log('🔍 Fetching post detail by ID:', post.id);
       const detailData = await rentalPostService.getById(post.id);
       console.log('✅ Post detail loaded:', detailData);
+
+      if (!detailData) {
+        toast.error('Không tìm thấy bài đăng');
+        return;
+      }
+
       setDetailPost(detailData);
       setShowDetailModal(true);
     } catch (error) {
@@ -346,30 +371,17 @@ export default function PostsPage() {
     const updatedImages = [...postData.images, ...filesToAdd];
     setPostData({ ...postData, images: updatedImages });
 
-    // Create previews for new files using FileReader for better compatibility
-    const newPreviews = [];
-    const previewPromises = filesToAdd.map(file => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          newPreviews.push(reader.result);
-          resolve();
-        };
-        reader.readAsDataURL(file);
-      });
+    // Create previews for new files using URL.createObjectURL for instant display
+    const newPreviews = filesToAdd.map(file => URL.createObjectURL(file));
+    const updatedPreviews = [...imagePreviews, ...newPreviews];
+
+    console.log('📸 Image previews created:', {
+      newPreviewsCount: newPreviews.length,
+      totalPreviews: updatedPreviews.length,
+      samplePreview: newPreviews[0]?.substring(0, 50) + '...'
     });
 
-    Promise.all(previewPromises).then(() => {
-      const updatedPreviews = [...imagePreviews, ...newPreviews];
-
-      console.log('📸 Image previews created:', {
-        newPreviewsCount: newPreviews.length,
-        totalPreviews: updatedPreviews.length,
-        samplePreview: newPreviews[0]?.substring(0, 50) + '...'
-      });
-
-      setImagePreviews(updatedPreviews);
-    });
+    setImagePreviews(updatedPreviews);
 
     // Reset input to allow selecting same file again if needed
     e.target.value = '';
@@ -381,7 +393,10 @@ export default function PostsPage() {
     setPostData({ ...postData, images: newImages });
 
     const newPreviews = [...imagePreviews];
-    URL.revokeObjectURL(newPreviews[index]);
+    // Only revoke blob URLs (data: or blob:), not HTTP URLs from server
+    if (newPreviews[index] && newPreviews[index].startsWith('blob:')) {
+      URL.revokeObjectURL(newPreviews[index]);
+    }
     newPreviews.splice(index, 1);
     setImagePreviews(newPreviews);
   };
@@ -862,10 +877,11 @@ export default function PostsPage() {
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  className={`relative border-2 border-dashed rounded-lg p-2 transition-all duration-200 ${isDragging
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                    : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50'
+                  className={`relative border-2 border-dashed rounded-xl p-8 transition-all duration-300 cursor-pointer ${isDragging
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 scale-[1.02]'
+                    : 'border-gray-300 dark:border-gray-600 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10'
                     }`}
+                  onClick={() => document.getElementById('image-upload-input').click()}
                 >
                   <input
                     id="image-upload-input"
@@ -876,30 +892,30 @@ export default function PostsPage() {
                     className="hidden"
                   />
 
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="text-xl">
-                      {isDragging ? '📥' : '🖼️'}
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 ${isDragging
+                      ? 'bg-blue-500 scale-110'
+                      : 'bg-gradient-to-br from-blue-500 to-purple-500'
+                      }`}>
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
                     </div>
-                    <div className="text-left">
-                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                        {isDragging ? t('ownerPosts.form.dropHere') : t('ownerPosts.form.dragDrop')}
+                    <div className="text-center">
+                      {/* <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">
+                        {isDragging ? '📥 Drop your images here' : '📷 Upload Images'}
+                      </p> */}
+                      {/* <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Drag & drop or click to browse
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {t('ownerPosts.form.or')} <button
-                          type="button"
-                          onClick={() => document.getElementById('image-upload-input').click()}
-                          className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-semibold underline"
-                        >
-                          {t('ownerPosts.form.browseFiles')}
-                        </button>
-                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                        💡 Max: 10 images, 5MB each
+                      </p> */}
                     </div>
                   </div>
                 </div>
-                <div className="mt-2 flex items-start justify-between gap-2">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 flex-1">
-                    💡 Max: 10 images, 5MB each
-                  </p>
+                {/* <div className="mt-2 flex items-start justify-between gap-2">
+
                   {postData.images.length > 0 && (
                     <div className="flex flex-col items-end gap-1">
                       <span className="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded whitespace-nowrap">
@@ -910,39 +926,53 @@ export default function PostsPage() {
                       </span>
                     </div>
                   )}
-                </div>
+                </div> */}
 
                 {/* Image Previews */}
                 {imagePreviews.length > 0 && (
                   <div className="mt-3">
                     <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {t('ownerPosts.form.selectedImages').replace('{{count}}', imagePreviews.length)}
+                      📸 {t('ownerPosts.form.selectedImages').replace('{{count}}', imagePreviews.length)}
                     </p>
                     <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
                       {imagePreviews.map((preview, index) => (
                         <div key={index} className="relative group">
-                          <div className="relative aspect-square bg-white dark:bg-gray-800 rounded overflow-hidden border border-gray-300 dark:border-gray-600">
+                          <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-300 dark:border-gray-600 shadow-md hover:shadow-lg transition-shadow">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={preview}
                               alt={`Preview ${index + 1}`}
                               className="w-full h-full object-cover"
                               loading="eager"
-                              style={{ display: 'block' }}
+                              onError={(e) => {
+                                console.error('❌ Image failed to load:', preview);
+                                e.target.src = 'https://via.placeholder.com/200x200?text=Error';
+                              }}
                             />
-                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all rounded-lg flex items-center justify-center">
+
+                            {/* Delete button - always visible on mobile, hover on desktop */}
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all rounded-lg flex items-center justify-center z-30">
                               <button
                                 type="button"
-                                onClick={() => handleRemoveImage(index)}
-                                className="opacity-0 group-hover:opacity-100 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-all transform scale-90 group-hover:scale-100 shadow-lg"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveImage(index);
+                                }}
+                                className="md:opacity-0 md:group-hover:opacity-100 bg-red-500 text-white p-2.5 rounded-full hover:bg-red-600 transition-all transform md:scale-90 md:group-hover:scale-100 shadow-lg hover:shadow-xl"
                                 title="Remove image"
                               >
                                 <X className="w-4 h-4" />
                               </button>
                             </div>
-                            {/* File size badge */}
-                            {postData.images[index] && (
-                              <div className="absolute bottom-1 left-1 bg-black bg-opacity-70 text-white text-xs px-2 py-0.5 rounded">
+
+                            {/* Image number badge */}
+                            <div className="absolute top-1 right-1 bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-full font-medium z-30">
+                              {index + 1}
+                            </div>
+
+                            {/* File size badge - only show for new uploaded files, not existing URLs */}
+                            {postData.images[index] && postData.images[index].size && (
+                              <div className="absolute bottom-1 left-1 bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded z-30">
                                 {formatFileSize(postData.images[index].size)}
                               </div>
                             )}
@@ -1267,9 +1297,9 @@ export default function PostsPage() {
                     setShowDetailModal(false);
                     handleEditPost(detailPost);
                   }}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all font-medium shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition-all font-medium shadow-md hover:shadow-lg flex items-center justify-center gap-2 text-sm"
                 >
-                  <Edit2 className="w-5 h-5" />
+                  <Edit2 className="w-4 h-4" />
                   {t('common.edit')}
                 </button>
                 <button
@@ -1277,7 +1307,7 @@ export default function PostsPage() {
                     setShowDetailModal(false);
                     setDetailPost(null);
                   }}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all font-medium"
+                  className="flex-1 px-4 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all font-medium text-sm"
                 >
                   {t('common.close')}
                 </button>

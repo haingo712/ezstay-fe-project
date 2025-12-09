@@ -249,8 +249,12 @@ export const rentalPostService = {
     try {
       const payload = {
         title: postData.title,
-        content: postData.description // Backend uses 'content'
+        content: postData.description, // Backend uses 'content'
+        contactPhone: postData.contactPhone,
+        imageUrls: postData.imageUrls || [],
+        roomId: postData.roomIds && postData.roomIds.length > 0 ? postData.roomIds[0] : null
       };
+      console.log('📤 Updating post with payload:', payload);
       const response = await axiosInstance.put(`/api/RentalPosts/${postId}`, payload);
       return normalizePostData(response.data);
     } catch (error) {
