@@ -138,14 +138,37 @@ export default function RentalPostDetailPage() {
         fetchHouseLocation(postData.boardingHouseId);
       }
 
-      // BE RentalPostsAPI returns reviews in post.Reviews (already normalized to camelCase)
-      const reviewsData = postData.reviews || [];
-      console.log('📝 Reviews from BE:', reviewsData);
-      setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+      // Fetch reviews by RoomId using ReviewAPI endpoint: GET /api/Review/all/{roomId}
+      const roomId = postData.roomId || postData.RoomId;
+      if (roomId) {
+        try {
+          console.log('📝 Fetching reviews for roomId:', roomId);
+          const reviewsData = await reviewService.getAllReviewsByRoomId(roomId);
+          console.log('✅ Reviews loaded from ReviewAPI:', reviewsData);
+          setReviews(Array.isArray(reviewsData) ? reviewsData : []);
 
-      // Fetch userNames for all reviews
-      if (Array.isArray(reviewsData) && reviewsData.length > 0) {
-        fetchUserNames(reviewsData);
+          // Fetch userNames for all reviews
+          if (Array.isArray(reviewsData) && reviewsData.length > 0) {
+            fetchUserNames(reviewsData);
+          }
+        } catch (reviewError) {
+          console.error('❌ Error loading reviews:', reviewError);
+          // Fallback: use reviews from post if ReviewAPI fails
+          const reviewsData = postData.reviews || [];
+          console.log('⚠️ Using fallback reviews from post:', reviewsData);
+          setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+          if (Array.isArray(reviewsData) && reviewsData.length > 0) {
+            fetchUserNames(reviewsData);
+          }
+        }
+      } else {
+        // No roomId, use reviews from post as fallback
+        const reviewsData = postData.reviews || [];
+        console.log('📝 Reviews from post (no roomId):', reviewsData);
+        setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+        if (Array.isArray(reviewsData) && reviewsData.length > 0) {
+          fetchUserNames(reviewsData);
+        }
       }
     } catch (error) {
       console.error('❌ Error loading post:', error);

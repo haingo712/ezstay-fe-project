@@ -43,12 +43,68 @@ const contractService = {
       console.log('📊 OData Response:', response);
 
       // OData returns data in { value: [...] } format
-      if (response && response.value) {
-        return response.value;
+      const contracts = response?.value || response?.data || response || [];
+
+      // Enrich contracts with room and house data
+      if (Array.isArray(contracts)) {
+        const enrichedContracts = await Promise.all(
+          contracts.map(async (contract) => {
+            try {
+              // Fetch room details
+              const roomResponse = await api.get(`/api/Rooms/${contract.roomId}`);
+              const room = roomResponse.data || roomResponse;
+
+              // Fetch house details if we have houseId
+              let houseName = 'House';
+              if (room && room.houseId) {
+                try {
+                  const houseResponse = await api.get(`/api/BoardingHouses/${room.houseId}`);
+                  const house = houseResponse.data || houseResponse;
+                  houseName = house.houseName || house.HouseName || 'House';
+                } catch (houseError) {
+                  console.warn('Could not fetch house details:', houseError);
+                }
+              }
+
+              // Return enriched contract with proper field mappings
+              const mappedContract = {
+                ...contract,
+                roomName: room?.roomName || room?.RoomName || 'Room',
+                houseName: houseName,
+                houseId: room?.houseId || room?.HouseId,
+                startDate: contract.checkinDate || contract.CheckinDate,
+                endDate: contract.checkoutDate || contract.CheckoutDate,
+                depositAmount: contract.depositAmount || contract.DepositAmount || 0,
+                contractStatus: contract.ContractStatus ?? contract.contractStatus ?? 0
+              };
+              delete mappedContract.ContractStatus;
+              delete mappedContract.CheckinDate;
+              delete mappedContract.CheckoutDate;
+              delete mappedContract.DepositAmount;
+              return mappedContract;
+            } catch (enrichError) {
+              console.warn('Could not enrich contract:', enrichError);
+              const fallbackContract = {
+                ...contract,
+                roomName: 'Room',
+                houseName: 'House',
+                startDate: contract.checkinDate || contract.CheckinDate,
+                endDate: contract.checkoutDate || contract.CheckoutDate,
+                depositAmount: contract.depositAmount || contract.DepositAmount || 0,
+                contractStatus: contract.ContractStatus ?? contract.contractStatus ?? 0
+              };
+              delete fallbackContract.ContractStatus;
+              delete fallbackContract.CheckinDate;
+              delete fallbackContract.CheckoutDate;
+              delete fallbackContract.DepositAmount;
+              return fallbackContract;
+            }
+          })
+        );
+        return enrichedContracts;
       }
 
-      // Fallback to regular response
-      return response.data || response || [];
+      return contracts;
     } catch (error) {
       console.error('❌ Error fetching contracts by owner:', error);
       console.error('❌ Error response:', error.response);
@@ -60,10 +116,65 @@ const contractService = {
         try {
           console.log('⚠️ Trying MyContract endpoint instead...');
           const retryResponse = await api.get('/api/Contract/my-contract?$count=false');
-          if (retryResponse && retryResponse.value) {
-            return retryResponse.value;
+          const retryContracts = retryResponse?.value || retryResponse?.data || retryResponse || [];
+
+          // Enrich retry contracts too
+          if (Array.isArray(retryContracts)) {
+            const enrichedRetryContracts = await Promise.all(
+              retryContracts.map(async (contract) => {
+                try {
+                  const roomResponse = await api.get(`/api/Rooms/${contract.roomId}`);
+                  const room = roomResponse.data || roomResponse;
+
+                  let houseName = 'House';
+                  if (room?.houseId) {
+                    try {
+                      const houseResponse = await api.get(`/api/BoardingHouses/${room.houseId}`);
+                      const house = houseResponse.data || houseResponse;
+                      houseName = house.houseName || house.HouseName || 'House';
+                    } catch (houseError) {
+                      console.warn('Could not fetch house details:', houseError);
+                    }
+                  }
+
+                  const retryMapped = {
+                    ...contract,
+                    roomName: room?.roomName || room?.RoomName || 'Room',
+                    houseName: houseName,
+                    houseId: room?.houseId || room?.HouseId,
+                    startDate: contract.checkinDate || contract.CheckinDate,
+                    endDate: contract.checkoutDate || contract.CheckoutDate,
+                    depositAmount: contract.depositAmount || contract.DepositAmount || 0,
+                    contractStatus: contract.ContractStatus ?? contract.contractStatus ?? 0
+                  };
+                  delete retryMapped.ContractStatus;
+                  delete retryMapped.CheckinDate;
+                  delete retryMapped.CheckoutDate;
+                  delete retryMapped.DepositAmount;
+                  return retryMapped;
+                } catch (enrichError) {
+                  console.warn('Could not enrich retry contract:', enrichError);
+                  const retryFallback = {
+                    ...contract,
+                    roomName: 'Room',
+                    houseName: 'House',
+                    startDate: contract.checkinDate || contract.CheckinDate,
+                    endDate: contract.checkoutDate || contract.CheckoutDate,
+                    depositAmount: contract.depositAmount || contract.DepositAmount || 0,
+                    contractStatus: contract.ContractStatus ?? contract.contractStatus ?? 0
+                  };
+                  delete retryFallback.ContractStatus;
+                  delete retryFallback.CheckinDate;
+                  delete retryFallback.CheckoutDate;
+                  delete retryFallback.DepositAmount;
+                  return retryFallback;
+                }
+              })
+            );
+            return enrichedRetryContracts;
           }
-          return retryResponse.data || retryResponse || [];
+
+          return retryContracts;
         } catch (retryError) {
           console.error('❌ MyContract also failed:', retryError);
         }
@@ -99,7 +210,71 @@ const contractService = {
   getByTenantId: async (tenantId) => {
     try {
       const response = await api.get(`/api/Contract/my-contract`);
-      return response.data || response;
+      const contracts = response.data || response.value || response;
+
+      // Enrich contracts with room and house data
+      if (Array.isArray(contracts)) {
+        const enrichedContracts = await Promise.all(
+          contracts.map(async (contract) => {
+            try {
+              // Fetch room details
+              const roomResponse = await api.get(`/api/Rooms/${contract.roomId}`);
+              const room = roomResponse.data || roomResponse;
+
+              // Fetch house details if we have houseId
+              let houseName = 'House';
+              if (room && room.houseId) {
+                try {
+                  const houseResponse = await api.get(`/api/BoardingHouses/${room.houseId}`);
+                  const house = houseResponse.data || houseResponse;
+                  houseName = house.houseName || house.HouseName || 'House';
+                } catch (houseError) {
+                  console.warn('Could not fetch house details:', houseError);
+                }
+              }
+
+              // Return enriched contract with proper field mappings
+              const mappedContract = {
+                ...contract,
+                roomName: room?.roomName || room?.RoomName || 'Room',
+                houseName: houseName,
+                houseId: room?.houseId || room?.HouseId,
+                // Map backend field names to frontend expected names
+                startDate: contract.checkinDate || contract.CheckinDate,
+                endDate: contract.checkoutDate || contract.CheckoutDate,
+                depositAmount: contract.depositAmount || contract.DepositAmount || 0,
+                contractStatus: contract.ContractStatus ?? contract.contractStatus ?? 0
+              };
+              // Remove PascalCase fields to avoid confusion
+              delete mappedContract.ContractStatus;
+              delete mappedContract.CheckinDate;
+              delete mappedContract.CheckoutDate;
+              delete mappedContract.DepositAmount;
+              return mappedContract;
+            } catch (enrichError) {
+              console.warn('Could not enrich contract:', enrichError);
+              // Return contract with fallback values
+              const fallbackContract = {
+                ...contract,
+                roomName: 'Room',
+                houseName: 'House',
+                startDate: contract.checkinDate || contract.CheckinDate,
+                endDate: contract.checkoutDate || contract.CheckoutDate,
+                depositAmount: contract.depositAmount || contract.DepositAmount || 0,
+                contractStatus: contract.ContractStatus ?? contract.contractStatus ?? 0
+              };
+              delete fallbackContract.ContractStatus;
+              delete fallbackContract.CheckinDate;
+              delete fallbackContract.CheckoutDate;
+              delete fallbackContract.DepositAmount;
+              return fallbackContract;
+            }
+          })
+        );
+        return enrichedContracts;
+      }
+
+      return contracts;
     } catch (error) {
       console.error('Error fetching contracts by tenant:', error);
       return [];

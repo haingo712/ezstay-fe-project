@@ -52,6 +52,12 @@ export default function OwnerRentalRequestsPage() {
             const response = await contractService.getRentalRequestsByOwner();
             console.log('📋 Rental requests:', response);
 
+            // Log to check CreatedAt field
+            if (response && response.length > 0) {
+                console.log('📅 First request CreatedAt:', response[0].CreatedAt || response[0].createdAt);
+                console.log('📅 Full first request:', response[0]);
+            }
+
             // Enrich with room info
             const enrichedRequests = await Promise.all(
                 (response || []).map(async (request) => {
@@ -62,13 +68,21 @@ export default function OwnerRentalRequestsPage() {
                                 ...request,
                                 roomName: roomData?.name || roomData?.roomName || 'N/A',
                                 roomPrice: roomData?.price || 0,
-                                boardingHouseName: roomData?.boardingHouseName || 'N/A'
+                                boardingHouseName: roomData?.boardingHouseName || 'N/A',
+                                // Normalize createdAt to camelCase
+                                createdAt: request.createdAt || request.CreatedAt || new Date().toISOString()
                             };
                         }
-                        return request;
+                        return {
+                            ...request,
+                            createdAt: request.createdAt || request.CreatedAt || new Date().toISOString()
+                        };
                     } catch (error) {
                         console.error('Error fetching room info:', error);
-                        return request;
+                        return {
+                            ...request,
+                            createdAt: request.createdAt || request.CreatedAt || new Date().toISOString()
+                        };
                     }
                 })
             );
@@ -106,10 +120,10 @@ export default function OwnerRentalRequestsPage() {
         const date = new Date(dateString);
         const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
 
-        if (diffInHours < 1) return t('ownerRentalRequests.justNow');
-        if (diffInHours < 24) return t('ownerRentalRequests.hoursAgo', { count: diffInHours });
+        if (diffInHours < 1) return t('ownerRentalRequests.justNow') || 'Just now';
+        if (diffInHours < 24) return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
         const diffInDays = Math.floor(diffInHours / 24);
-        return t('ownerRentalRequests.daysAgo', { count: diffInDays });
+        return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
     };
 
     const handleApprove = async (requestId) => {
@@ -383,6 +397,36 @@ export default function OwnerRentalRequestsPage() {
                                                     <span>{request.numberOfOccupants} {t('ownerRentalRequests.people')}</span>
                                                 </div>
                                             </div>
+
+                                            {/* CCCD Numbers - Always visible */}
+                                            <div className="mt-3 space-y-2">
+                                                <span className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-1">
+                                                    <CreditCard className="h-4 w-4" />
+                                                    {t('ownerRentalRequests.cccdNumber')}:
+                                                </span>
+                                                <div className="space-y-1.5">
+                                                    {(() => {
+                                                        const cccdArray = Array.isArray(request.citizenIdNumber)
+                                                            ? request.citizenIdNumber
+                                                            : [request.citizenIdNumber].filter(Boolean);
+
+                                                        return cccdArray.map((cccd, idx) => (
+                                                            <div key={idx} className="flex items-center gap-2">
+                                                                <span className={`text-xs font-medium px-2 py-0.5 rounded ${idx === 0
+                                                                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                                                                    }`}>
+                                                                    {idx === 0
+                                                                        ? (t('ownerRentalRequests.representative') || 'Representative')
+                                                                        : (t('ownerRentalRequests.coOccupant') || 'Co-occupant')
+                                                                    }
+                                                                </span>
+                                                                <span className="font-mono text-sm text-gray-900 dark:text-white">{cccd || 'N/A'}</span>
+                                                            </div>
+                                                        ));
+                                                    })()}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -399,14 +443,10 @@ export default function OwnerRentalRequestsPage() {
                                         </div>
                                     )}
 
-                                    {/* Status & Time */}
+                                    {/* Sent Date */}
                                     <div className="flex flex-col items-end gap-2">
-                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                                            <Clock className="h-4 w-4" />
-                                            {t('ownerRentalRequests.status.pending')}
-                                        </span>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                                            {getTimeAgo(request.createdAt)}
+                                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                                            {t('ownerRentalRequests.sentOn')}: {formatDate(request.createdAt)}
                                         </span>
                                     </div>
 
@@ -420,147 +460,9 @@ export default function OwnerRentalRequestsPage() {
                                             <FileText className="h-4 w-4" />
                                             {t('ownerRentalRequests.createContract')}
                                         </button>
-                                        <button
-                                            onClick={() => handleApprove(request.id)}
-                                            disabled={processingId === request.id}
-                                            className="flex items-center gap-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-                                        >
-                                            <CheckCircle className="h-4 w-4" />
-                                            {t('ownerRentalRequests.approve')}
-                                        </button>
-                                        <button
-                                            onClick={() => handleReject(request.id)}
-                                            disabled={processingId === request.id}
-                                            className="flex items-center gap-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-                                        >
-                                            <XCircle className="h-4 w-4" />
-                                            {t('ownerRentalRequests.reject')}
-                                        </button>
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Request ID & Date */}
-                            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                                <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    ID: {request.id?.substring(0, 8)}...
-                                </span>
-                                <div className="flex items-center gap-4">
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                        {t('ownerRentalRequests.sentOn')}: {formatDate(request.createdAt)}
-                                    </span>
-                                    <button
-                                        onClick={() => toggleExpand(request.id)}
-                                        className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                                    >
-                                        {expandedRequestId === request.id ? (
-                                            <>
-                                                <ChevronUp className="h-4 w-4" />
-                                                {t('ownerRentalRequests.hideDetails')}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ChevronDown className="h-4 w-4" />
-                                                {t('ownerRentalRequests.viewDetails')}
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Expanded Details - Identity Profile */}
-                            {expandedRequestId === request.id && (
-                                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                        <CreditCard className="h-4 w-4 text-purple-600" />
-                                        {t('ownerRentalRequests.tenantDetails')}
-                                    </h4>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                                        {/* Basic Info */}
-                                        <div className="space-y-2">
-                                            <h5 className="font-medium text-gray-700 dark:text-gray-300">{t('ownerRentalRequests.basicInfo')}</h5>
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                <span className="font-medium">{t('ownerRentalRequests.fullName')}:</span> {request.fullName || 'N/A'}
-                                            </p>
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                <span className="font-medium">{t('ownerRentalRequests.gender')}:</span> {getGenderText(request.gender)}
-                                            </p>
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                <span className="font-medium">{t('ownerRentalRequests.dateOfBirth')}:</span> {formatDate(request.dateOfBirth)}
-                                            </p>
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                <span className="font-medium">{t('ownerRentalRequests.phone')}:</span> {request.phone || 'N/A'}
-                                            </p>
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                <span className="font-medium">{t('ownerRentalRequests.email')}:</span> {request.email || 'N/A'}
-                                            </p>
-                                        </div>
-
-                                        {/* Address */}
-                                        <div className="space-y-2">
-                                            <h5 className="font-medium text-gray-700 dark:text-gray-300">{t('ownerRentalRequests.addressInfo')}</h5>
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                <span className="font-medium">{t('ownerRentalRequests.address')}:</span> {request.address || 'N/A'}
-                                            </p>
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                <span className="font-medium">{t('ownerRentalRequests.ward')}:</span> {request.wardName || 'N/A'}
-                                            </p>
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                <span className="font-medium">{t('ownerRentalRequests.province')}:</span> {request.provinceName || 'N/A'}
-                                            </p>
-                                            {request.temporaryResidence && (
-                                                <p className="text-gray-600 dark:text-gray-400">
-                                                    <span className="font-medium">{t('ownerRentalRequests.temporaryResidence')}:</span> {request.temporaryResidence}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        {/* CCCD Info */}
-                                        <div className="space-y-2">
-                                            <h5 className="font-medium text-gray-700 dark:text-gray-300">{t('ownerRentalRequests.cccdInfo')}</h5>
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                <span className="font-medium">{t('ownerRentalRequests.cccdNumber')}:</span> {request.citizenIdNumber || 'N/A'}
-                                            </p>
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                <span className="font-medium">{t('ownerRentalRequests.cccdIssuedDate')}:</span> {formatDate(request.citizenIdIssuedDate)}
-                                            </p>
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                <span className="font-medium">{t('ownerRentalRequests.cccdIssuedPlace')}:</span> {request.citizenIdIssuedPlace || 'N/A'}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* CCCD Images */}
-                                    {(request.frontImageUrl || request.backImageUrl) && (
-                                        <div className="mt-4">
-                                            <h5 className="font-medium text-gray-700 dark:text-gray-300 mb-2">{t('ownerRentalRequests.cccdImages')}</h5>
-                                            <div className="grid grid-cols-2 gap-4 max-w-md">
-                                                {request.frontImageUrl && (
-                                                    <div>
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('ownerRentalRequests.cccdFront')}</p>
-                                                        <img
-                                                            src={request.frontImageUrl}
-                                                            alt="CCCD Front"
-                                                            className="w-full h-24 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
-                                                        />
-                                                    </div>
-                                                )}
-                                                {request.backImageUrl && (
-                                                    <div>
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('ownerRentalRequests.cccdBack')}</p>
-                                                        <img
-                                                            src={request.backImageUrl}
-                                                            alt="CCCD Back"
-                                                            className="w-full h-24 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
                         </div>
                     ))}
                 </div>

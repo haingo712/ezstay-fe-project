@@ -413,8 +413,8 @@ export default function OwnerChatsPage() {
 
                           <div
                             className={`relative px-4 py-2 rounded-2xl ${isOwn
-                                ? 'bg-blue-600 text-white rounded-br-none'
-                                : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
+                              ? 'bg-blue-600 text-white rounded-br-none'
+                              : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
                               } ${isRevoking ? 'opacity-50' : ''}`}
                           >
                             {/* Message Images */}
@@ -517,13 +517,13 @@ export default function OwnerChatsPage() {
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-1">
-                  <button
+                  {/* <button
                     type="button"
                     className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                     title="Add emoji"
                   >
                     <Smile className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                  </button>
+                  </button> */}
                   <button
                     type="button"
                     onClick={() => imageInputRef.current?.click()}

@@ -51,6 +51,7 @@
         "filter": "Filter",
         "clearFilter": "Clear Filters",
         "loading": "Loading...",
+        "retry": "Retry",
         "save": "Save",
         "cancel": "Cancel",
         "delete": "Delete",
@@ -161,6 +162,46 @@
         "sending": "Sending...",
         "faceRegistration": "Face Registration",
         "registerFace": "Register Face"
+    },
+    "profileContracts": {
+        "title": "My Contracts",
+        "subtitle": "Manage your rental contracts",
+        "needsSign": "contracts need signature",
+        "searchPlaceholder": "Search by room, house...",
+        "waitingSignature": "Contract is waiting for your signature",
+        "room": "Room",
+        "house": "House",
+        "deposit": "Deposit",
+        "filter": {
+            "all": "All",
+            "needsSign": "Needs Sign",
+            "pending": "Pending",
+            "active": "Active",
+            "expired": "Expired"
+        },
+        "status": {
+            "pending": "Pending",
+            "active": "Active",
+            "cancelled": "Cancelled",
+            "expired": "Expired",
+            "cancelledByOwner": "Cancelled by Owner"
+        },
+        "you": "You",
+        "owner": "Owner",
+        "signed": "Signed",
+        "notSigned": "Not signed",
+        "viewDetails": "View Details",
+        "signContract": "Sign Contract",
+        "addReview": "Add Review",
+        "empty": {
+            "noResults": "No contracts found",
+            "noContracts": "No contracts yet",
+            "tryFilter": "Try changing the filter or search term",
+            "description": "When you rent a room, contracts will appear here"
+        },
+        "errors": {
+            "loadFailed": "Failed to load contracts"
+        }
     },
     "payment": {
         "history": "Payment History",
@@ -2198,6 +2239,8 @@
         "cccdImages": "ID Card Images",
         "cccdFront": "Front Side",
         "cccdBack": "Back Side",
+        "representative": "Representative",
+        "coOccupant": "Co-occupant",
         "stats": {
             "total": "Total Requests",
             "pending": "Pending",
