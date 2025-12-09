@@ -33,7 +33,8 @@
         "reports": "Báo cáo",
         "notifications": "Thông báo",
         "contentModeration": "Kiểm duyệt Nội dung",
-        "customerSupport": "Hỗ trợ Khách hàng"
+        "customerSupport": "Hỗ trợ Khách hàng",
+        "financialReports": "Báo cáo Tài chính"
     },
     "adminNav": {
         "adminPanel": "Bảng Điều Khiển Admin",
@@ -233,7 +234,8 @@
         "title": "KẾT NỐI VỚI",
         "titleHighlight": "NGƯỜI THUÊ CHẤT LƯỢNG",
         "subtitle": "Tìm kiếm và đăng tin cho thuê phòng trọ chất lượng. Giao dịch an toàn và minh bạch.",
-        "getStarted": "Bắt đầu ngay"
+        "getStarted": "Bắt đầu ngay",
+        "browsePosts": "Xem bài đăng"
     },
     "searchBar": {
         "title": "Tìm nhà trọ hoàn hảo của bạn",
@@ -489,7 +491,9 @@
         "allRooms": "Tất cả phòng",
         "unknownAuthor": "Chưa rõ tác giả",
         "removeFromFavorites": "Xóa khỏi yêu thích",
-        "addToFavorites": "Thêm vào yêu thích"
+        "addToFavorites": "Thêm vào yêu thích",
+        "views": "lượt xem",
+        "rentalRate": "đã thuê"
     },
     "rentalPostDetail": {
         "backToPosts": "Quay lại danh sách",

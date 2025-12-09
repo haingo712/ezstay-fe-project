@@ -33,7 +33,8 @@
         "reports": "Reports",
         "notifications": "Notifications",
         "contentModeration": "Content Moderation",
-        "customerSupport": "Customer Support"
+        "customerSupport": "Customer Support",
+        "financialReports": "Financial Reports"
     },
     "adminNav": {
         "adminPanel": "Admin Panel",
@@ -233,7 +234,8 @@
         "title": "CONNECT WITH",
         "titleHighlight": "QUALITY TENANTS",
         "subtitle": "Find and list quality rental properties. Safe and transparent transactions guaranteed.",
-        "getStarted": "Get Started"
+        "getStarted": "Get Started",
+        "browsePosts": "Browse Posts"
     },
     "searchBar": {
         "title": "Find Your Perfect Boarding House",
@@ -489,7 +491,9 @@
         "allRooms": "All rooms",
         "unknownAuthor": "Unknown Author",
         "removeFromFavorites": "Remove from favorites",
-        "addToFavorites": "Add to favorites"
+        "addToFavorites": "Add to favorites",
+        "views": "views",
+        "rentalRate": "rented"
     },
     "rentalPostDetail": {
         "backToPosts": "Back to Posts",

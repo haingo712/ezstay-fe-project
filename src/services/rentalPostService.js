@@ -41,14 +41,28 @@ const normalizePostData = (post) => {
     maxOccupants: roomData.maxOccupants || roomData.MaxOccupants
   } : null;
 
-  // Normalize nested BoardingHouse object
+  // Normalize nested BoardingHouse object including location
   const houseData = post.boardingHouse || post.BoardingHouse;
+  const locationData = houseData?.location || houseData?.Location;
+  const normalizedLocation = locationData ? {
+    ...locationData,
+    address: locationData.address || locationData.Address,
+    provinceName: locationData.provinceName || locationData.ProvinceName,
+    districtName: locationData.districtName || locationData.DistrictName,
+    wardName: locationData.wardName || locationData.WardName,
+    provinceId: locationData.provinceId || locationData.ProvinceId,
+    districtId: locationData.districtId || locationData.DistrictId,
+    wardId: locationData.wardId || locationData.WardId
+  } : null;
+
   const normalizedHouse = houseData ? {
     ...houseData,
     id: houseData.id || houseData.Id,
     houseName: houseData.houseName || houseData.HouseName,
-    location: houseData.location || houseData.Location,
-    amenities: houseData.amenities || houseData.Amenities
+    location: normalizedLocation,
+    amenities: houseData.amenities || houseData.Amenities,
+    totalRooms: houseData.totalRooms || houseData.TotalRooms || 0,
+    rentedRooms: houseData.rentedRooms || houseData.RentedRooms || 0
   } : null;
 
   const normalized = {
@@ -78,6 +92,11 @@ const normalizePostData = (post) => {
     // Nested objects (normalized)
     boardingHouse: normalizedHouse,
     room: normalizedRoom,
+    location: normalizedLocation || normalizedHouse?.location,
+    // View count and rental stats
+    viewCount: post.viewCount || post.ViewCount || 0,
+    totalRooms: post.totalRooms || post.TotalRooms || normalizedHouse?.totalRooms || 0,
+    rentedRooms: post.rentedRooms || post.RentedRooms || normalizedHouse?.rentedRooms || 0,
     // Additional fields
     approvedBy: post.approvedBy || post.ApprovedBy,
     approvedAt: post.approvedAt || post.ApprovedAt
@@ -346,11 +365,11 @@ export const rentalPostService = {
   },
 
   // Get post by ID PUBLIC (no auth required) - for guest access
-  getByIdPublic: async (postId) => {
+  getByIdPublic: async (postId, incrementView = true) => {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL;
       console.log('🌐 Fetching public post detail (no auth)...');
-      console.log('🔗 Full URL:', `${baseUrl}/api/RentalPosts/${postId}`);
+      console.log('🔗 Full URL:', `${baseUrl}/api/RentalPosts/${postId}?incrementView=${incrementView}`);
 
       if (!baseUrl) {
         console.error('❌ NEXT_PUBLIC_API_GATEWAY_URL is not defined!');
@@ -358,7 +377,7 @@ export const rentalPostService = {
       }
 
       // Use native fetch directly to avoid axios interceptors
-      const response = await fetch(`${baseUrl}/api/RentalPosts/${postId}`, {
+      const response = await fetch(`${baseUrl}/api/RentalPosts/${postId}?incrementView=${incrementView}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -421,9 +440,9 @@ export const rentalPostService = {
   },
 
   // Get post by ID (with enriched data)
-  getById: async (postId) => {
+  getById: async (postId, incrementView = true) => {
     try {
-      const response = await axiosInstance.get(`/api/RentalPosts/${postId}`);
+      const response = await axiosInstance.get(`/api/RentalPosts/${postId}?incrementView=${incrementView}`);
       console.log('📥 Raw getById response:', response.data);
 
       // Check if response is wrapped in ApiResponse structure
@@ -447,8 +466,8 @@ export const rentalPostService = {
   },
 
   // Alias for getById
-  getPostById: async (postId) => {
-    return rentalPostService.getById(postId);
+  getPostById: async (postId, incrementView = true) => {
+    return rentalPostService.getById(postId, incrementView);
   },
 
   // ==================== STAFF MANAGEMENT APIS ====================

@@ -32,6 +32,9 @@ export default function PaymentHistoryPage() {
     const [showModal, setShowModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
+    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    const [exporting, setExporting] = useState(false);
 
     useEffect(() => {
         fetchPayments();
@@ -116,6 +119,80 @@ export default function PaymentHistoryPage() {
     const openPaymentDetail = (payment) => {
         setSelectedPayment(payment);
         setShowModal(true);
+    };
+
+    const exportToExcel = async () => {
+        try {
+            setExporting(true);
+            
+            // Filter payments by selected month and year
+            const filteredByMonth = payments.filter(payment => {
+                const date = new Date(payment.transactionDate || payment.TransactionDate);
+                return date.getMonth() + 1 === selectedMonth && date.getFullYear() === selectedYear;
+            });
+
+            if (filteredByMonth.length === 0) {
+                alert(`Không có giao dịch nào trong tháng ${selectedMonth}/${selectedYear}`);
+                return;
+            }
+
+            // Import xlsx dynamically (client-side only)
+            const XLSX = (await import('xlsx')).default;
+
+            // Prepare data for Excel
+            const excelData = filteredByMonth.map((payment, index) => ({
+                'STT': index + 1,
+                'Ngày GD': formatDate(payment.transactionDate || payment.TransactionDate),
+                'Mã giao dịch': payment.transactionId || payment.TransactionId || 'N/A',
+                'Ngân hàng': getGatewayLabel(payment.gateway || payment.Gateway).label,
+                'Số TK': payment.accountNumber || payment.AccountNumber || 'N/A',
+                'Loại GD': (payment.transferType || payment.TransferType) === 'out' ? 'Chuyển khoản' : 'Nhận tiền',
+                'Nội dung': payment.content || payment.Content || 'N/A',
+                'Số tiền': payment.transferAmount || payment.TransferAmount || 0
+            }));
+
+            // Calculate total
+            const totalRow = {
+                'STT': '',
+                'Ngày GD': '',
+                'Mã giao dịch': '',
+                'Ngân hàng': '',
+                'Số TK': '',
+                'Loại GD': '',
+                'Nội dung': 'TỔNG CỘNG',
+                'Số tiền': filteredByMonth.reduce((sum, p) => sum + (p.transferAmount || p.TransferAmount || 0), 0)
+            };
+            excelData.push(totalRow);
+
+            // Create worksheet
+            const ws = XLSX.utils.json_to_sheet(excelData);
+
+            // Set column widths
+            ws['!cols'] = [
+                { wch: 5 },  // STT
+                { wch: 20 }, // Ngày GD
+                { wch: 25 }, // Mã giao dịch
+                { wch: 15 }, // Ngân hàng
+                { wch: 15 }, // Số TK
+                { wch: 15 }, // Loại GD
+                { wch: 40 }, // Nội dung
+                { wch: 15 }  // Số tiền
+            ];
+
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, `Tháng ${selectedMonth}-${selectedYear}`);
+
+            // Export file
+            XLSX.writeFile(wb, `LichSuThanhToan_${selectedMonth}_${selectedYear}.xlsx`);
+
+            console.log('✅ Exported', filteredByMonth.length, 'payments to Excel');
+        } catch (error) {
+            console.error('❌ Export error:', error);
+            alert('Không thể xuất file Excel. Vui lòng thử lại.');
+        } finally {
+            setExporting(false);
+        }
     };
 
     // Calculate stats
@@ -206,9 +283,9 @@ export default function PaymentHistoryPage() {
                         </div>
                     </div>
 
-                    {/* Search */}
-                    <div className="mb-6">
-                        <div className="relative max-w-md">
+                    {/* Search & Export */}
+                    <div className="mb-6 flex flex-col md:flex-row gap-4 items-start md:items-end">
+                        <div className="relative flex-1 max-w-md">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                             <input
                                 type="text"
@@ -217,6 +294,44 @@ export default function PaymentHistoryPage() {
                                 placeholder="Tìm theo mã giao dịch, nội dung..."
                                 className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
+                        </div>
+                        
+                        {/* Export Section */}
+                        <div className="flex items-end gap-3">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tháng</label>
+                                <select
+                                    value={selectedMonth}
+                                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                                    className="px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                >
+                                    {[...Array(12)].map((_, i) => (
+                                        <option key={i + 1} value={i + 1}>Tháng {i + 1}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Năm</label>
+                                <select
+                                    value={selectedYear}
+                                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                                    className="px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                >
+                                    {[2023, 2024, 2025, 2026].map(year => (
+                                        <option key={year} value={year}>{year}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <button
+                                onClick={exportToExcel}
+                                disabled={exporting}
+                                className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg flex items-center gap-2 font-medium"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                {exporting ? 'Đang xuất...' : 'Xuất Excel'}
+                            </button>
                         </div>
                     </div>
 

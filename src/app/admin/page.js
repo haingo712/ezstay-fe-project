@@ -6,6 +6,7 @@ import userManagementService from '@/services/userManagementService';
 import rentalPostService from '@/services/rentalPostService';
 import { apiFetch } from '@/utils/api';
 import FinancialDashboardWidgets from '@/components/FinancialDashboardWidgets';
+import FinancialRevenueChart from '@/components/FinancialRevenueChart';
 // Stat Card Component with gradient
 const StatCard = ({ title, value, subtitle, icon, gradient, trend, trendValue }) => (
   <div className={`relative overflow-hidden rounded-2xl p-6 ${gradient} shadow-lg`}>
@@ -381,6 +382,9 @@ export default function AdminPage() {
         </div>
         <FinancialDashboardWidgets />
       </div>
+
+      {/* Financial Revenue Chart */}
+      <FinancialRevenueChart months={6} />
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -14,17 +14,14 @@ import {
   ArrowDownRight,
   FileText,
   RefreshCw,
-  Download,
   Building2
 } from 'lucide-react';
 
-export default function AdminFinancialReportsPage() {
+export default function StaffFinancialReportsPage() {
   const [loading, setLoading] = useState(true);
   const [statistics, setStatistics] = useState(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [error, setError] = useState(null);
-  const [exporting, setExporting] = useState(false);
-  const reportRef = useRef(null);
 
   const currentYear = new Date().getFullYear();
   const years = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3];
@@ -97,146 +94,6 @@ export default function AdminFinancialReportsPage() {
     return Math.max(...data.map(item => item[field] || 0));
   };
 
-  // Export to PDF using browser print
-  const handleExportPDF = async () => {
-    setExporting(true);
-    try {
-      // Create a printable version
-      const printWindow = window.open('', '_blank');
-      const currentDate = new Date().toLocaleDateString('vi-VN');
-      
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Financial Report - ${selectedYear}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
-            h1 { color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 10px; }
-            h2 { color: #374151; margin-top: 30px; }
-            .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-            .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
-            .stat-card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }
-            .stat-value { font-size: 24px; font-weight: bold; color: #1e40af; }
-            .stat-label { font-size: 12px; color: #6b7280; margin-top: 5px; }
-            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            th, td { border: 1px solid #e5e7eb; padding: 10px; text-align: left; }
-            th { background: #f3f4f6; font-weight: 600; }
-            .amount { text-align: right; font-weight: 500; }
-            .commission { color: #059669; }
-            .footer { margin-top: 30px; text-align: center; color: #6b7280; font-size: 12px; }
-            @media print { body { padding: 0; } }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>📊 EZStay Financial Report</h1>
-            <div>
-              <p><strong>Year:</strong> ${selectedYear}</p>
-              <p><strong>Generated:</strong> ${currentDate}</p>
-            </div>
-          </div>
-          
-          <h2>Overview</h2>
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-value">${formatCurrency(statistics?.totalSystemRevenue)}</div>
-              <div class="stat-label">Total System Revenue</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value commission">${formatCurrency(statistics?.platformCommission)}</div>
-              <div class="stat-label">Platform Commission (5%)</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value">${formatCurrency(statistics?.totalPendingRevenue)}</div>
-              <div class="stat-label">Pending Revenue</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value">${statistics?.totalBills || 0}</div>
-              <div class="stat-label">Total Bills</div>
-            </div>
-          </div>
-          
-          <h2>Bill Statistics</h2>
-          <table>
-            <tr>
-              <th>Metric</th>
-              <th>Count</th>
-            </tr>
-            <tr><td>Paid Bills</td><td>${statistics?.paidBills || 0}</td></tr>
-            <tr><td>Unpaid Bills</td><td>${statistics?.unpaidBills || 0}</td></tr>
-            <tr><td>Cancelled Bills</td><td>${statistics?.cancelledBills || 0}</td></tr>
-            <tr><td>Total Owners</td><td>${statistics?.totalOwners || 0}</td></tr>
-            <tr><td>Active Owners</td><td>${statistics?.activeOwners || 0}</td></tr>
-          </table>
-          
-          <h2>Monthly Revenue Breakdown</h2>
-          <table>
-            <tr>
-              <th>Month</th>
-              <th class="amount">Revenue</th>
-              <th class="amount">Commission (5%)</th>
-              <th>Bills</th>
-              <th>Owners</th>
-            </tr>
-            ${(statistics?.revenueByMonth || []).map(item => `
-              <tr>
-                <td>${item.monthName} ${item.year}</td>
-                <td class="amount">${formatCurrency(item.totalRevenue)}</td>
-                <td class="amount commission">${formatCurrency(item.platformCommission)}</td>
-                <td>${item.billCount}</td>
-                <td>${item.ownerCount}</td>
-              </tr>
-            `).join('')}
-          </table>
-          
-          <h2>Top 10 Owners by Revenue</h2>
-          <table>
-            <tr>
-              <th>#</th>
-              <th>Owner</th>
-              <th class="amount">Total Revenue</th>
-              <th class="amount">Pending</th>
-              <th>Bills</th>
-              <th>Rooms</th>
-            </tr>
-            ${(statistics?.topOwners || []).map((owner, index) => `
-              <tr>
-                <td>${index + 1}</td>
-                <td>${owner.ownerName}</td>
-                <td class="amount">${formatCurrency(owner.totalRevenue)}</td>
-                <td class="amount">${formatCurrency(owner.pendingAmount)}</td>
-                <td>${owner.totalBills} (${owner.paidBills} paid)</td>
-                <td>${owner.roomCount}</td>
-              </tr>
-            `).join('')}
-          </table>
-          
-          <div class="footer">
-            <p>Generated by EZStay Admin System</p>
-            <p>This is an automatically generated report. For questions, contact support.</p>
-          </div>
-        </body>
-        </html>
-      `);
-      
-      printWindow.document.close();
-      printWindow.focus();
-      
-      // Wait for content to load then print
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-      }, 500);
-      
-    } catch (error) {
-      console.error('Export error:', error);
-      alert('Failed to export PDF. Please try again.');
-    } finally {
-      setExporting(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -273,7 +130,7 @@ export default function AdminFinancialReportsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" ref={reportRef}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
@@ -283,7 +140,7 @@ export default function AdminFinancialReportsPage() {
               Financial Reports
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2">
-              System-wide financial analytics and revenue reports
+              View system-wide financial statistics
             </p>
           </div>
 
@@ -305,14 +162,6 @@ export default function AdminFinancialReportsPage() {
               title="Refresh"
             >
               <RefreshCw className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            </button>
-            <button
-              onClick={handleExportPDF}
-              disabled={exporting}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50"
-            >
-              <Download className="w-4 h-4" />
-              {exporting ? 'Exporting...' : 'Export PDF'}
             </button>
           </div>
         </div>
@@ -421,14 +270,9 @@ export default function AdminFinancialReportsPage() {
                         <span className="text-gray-600 dark:text-gray-400 font-medium">
                           {item.monthName} {item.year}
                         </span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-gray-900 dark:text-white font-medium">
-                            {formatCurrency(item.totalRevenue)}
-                          </span>
-                          <span className="text-xs text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded">
-                            +{formatCurrency(item.platformCommission)}
-                          </span>
-                        </div>
+                        <span className="text-gray-900 dark:text-white font-medium">
+                          {formatCurrency(item.totalRevenue)}
+                        </span>
                       </div>
                       <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div
@@ -438,7 +282,7 @@ export default function AdminFinancialReportsPage() {
                       </div>
                       <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                         <span>{item.billCount} bills</span>
-                        <span>{item.ownerCount} owners</span>
+                        <span className="text-green-600">+{formatCurrency(item.platformCommission)}</span>
                       </div>
                     </div>
                   );
@@ -456,7 +300,7 @@ export default function AdminFinancialReportsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Users className="h-5 w-5 text-indigo-500" />
-              Top 10 Owners by Revenue
+              Top Owners by Revenue
             </h3>
             
             {statistics?.topOwners && statistics.topOwners.length > 0 ? (
@@ -480,20 +324,13 @@ export default function AdminFinancialReportsPage() {
                           <div>
                             <h4 className="font-medium text-gray-900 dark:text-white text-sm">{owner.ownerName}</h4>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {owner.roomCount} rooms • {owner.totalBills} bills
+                              {owner.roomCount} rooms • {owner.paidBills}/{owner.totalBills} bills paid
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-gray-900 dark:text-white text-sm">
-                            {formatCurrency(owner.totalRevenue)}
-                          </p>
-                          {owner.pendingAmount > 0 && (
-                            <p className="text-xs text-yellow-600">
-                              Pending: {formatCurrency(owner.pendingAmount)}
-                            </p>
-                          )}
-                        </div>
+                        <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                          {formatCurrency(owner.totalRevenue)}
+                        </p>
                       </div>
                       <div className="h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                         <div
@@ -519,7 +356,7 @@ export default function AdminFinancialReportsPage() {
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-500" />
-              Recent System Payments
+              Recent Payments
             </h3>
           </div>
           
@@ -532,12 +369,11 @@ export default function AdminFinancialReportsPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Room</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Commission</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {statistics.recentPayments.map((payment, index) => (
+                  {statistics.recentPayments.slice(0, 10).map((payment, index) => (
                     <tr key={payment.billId || index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <p className="font-medium text-gray-900 dark:text-white text-sm">{payment.ownerName}</p>
@@ -554,13 +390,8 @@ export default function AdminFinancialReportsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-semibold text-gray-900 dark:text-white">
-                          {formatCurrency(payment.amount)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className="font-semibold text-green-600">
-                          +{formatCurrency(payment.platformCommission)}
+                          {formatCurrency(payment.amount)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">

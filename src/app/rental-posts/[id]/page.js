@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -54,6 +54,7 @@ export default function RentalPostDetailPage() {
 
   const [post, setPost] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [reviewReplies, setReviewReplies] = useState({});
   const [loading, setLoading] = useState(true);
   const [showChatDialog, setShowChatDialog] = useState(false);
   const [groupByRoom, setGroupByRoom] = useState(false);
@@ -69,6 +70,9 @@ export default function RentalPostDetailPage() {
   });
   const [rentalRequestErrors, setRentalRequestErrors] = useState({});
   const [submittingRentalRequest, setSubmittingRentalRequest] = useState(false);
+
+  // Track if view has been incremented to avoid double counting
+  const viewIncrementedRef = useRef(false);
 
   // Handle dynamic CCCD fields
   const handleAddCCCD = () => {
@@ -108,19 +112,25 @@ export default function RentalPostDetailPage() {
 
       console.log('🔍 Loading post, isAuthenticated:', isAuthenticated);
 
+      // Determine if we should increment view (only once per page load)
+      const shouldIncrementView = !viewIncrementedRef.current;
+      if (shouldIncrementView) {
+        viewIncrementedRef.current = true;
+      }
+
       // Use authenticated API if logged in, public API for guests
       let postData = null;
       if (isAuthenticated) {
         console.log('🔐 User authenticated, using getPostById()');
         try {
-          postData = await rentalPostService.getPostById(postId);
+          postData = await rentalPostService.getPostById(postId, shouldIncrementView);
         } catch (authError) {
           console.warn('⚠️ Authenticated call failed, trying public API:', authError);
-          postData = await rentalPostService.getByIdPublic(postId);
+          postData = await rentalPostService.getByIdPublic(postId, false); // Don't increment again on fallback
         }
       } else {
         console.log('👤 Guest user, using getByIdPublic()');
-        postData = await rentalPostService.getByIdPublic(postId);
+        postData = await rentalPostService.getByIdPublic(postId, shouldIncrementView);
       }
       console.log('📋 Post detail:', postData);
 
@@ -146,6 +156,23 @@ export default function RentalPostDetailPage() {
           const reviewsData = await reviewService.getAllReviewsByRoomId(roomId);
           console.log('✅ Reviews loaded from ReviewAPI:', reviewsData);
           setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+
+          // Fetch replies for each review
+          if (Array.isArray(reviewsData) && reviewsData.length > 0) {
+            const repliesMap = {};
+            for (const review of reviewsData) {
+              try {
+                const reply = await reviewService.getReplyByReviewId(review.id);
+                if (reply) {
+                  repliesMap[review.id] = reply;
+                }
+              } catch (error) {
+                console.log('No reply for review:', review.id);
+              }
+            }
+            setReviewReplies(repliesMap);
+            console.log('💬 Replies loaded:', repliesMap);
+          }
 
           // Fetch userNames for all reviews
           if (Array.isArray(reviewsData) && reviewsData.length > 0) {
@@ -206,32 +233,43 @@ export default function RentalPostDetailPage() {
     try {
       const token = localStorage.getItem('token');
       const uniqueUserIds = [...new Set(reviewsList.map(r => r.userId))];
+      const namesMap = {};
 
-      // If no token (guest), set all as Anonymous
+      // First, try to get names from reviews themselves (if review has fullName)
+      reviewsList.forEach(review => {
+        if (review.fullName || review.FullName || review.userName || review.UserName) {
+          namesMap[review.userId] = review.fullName || review.FullName || review.userName || review.UserName;
+        }
+      });
+
+      // If no token (guest), use names from reviews or set as Anonymous
       if (!token) {
-        const namesMap = {};
         uniqueUserIds.forEach(userId => {
-          namesMap[userId] = 'Người dùng ẩn danh';
+          if (!namesMap[userId]) {
+            namesMap[userId] = 'Người dùng';
+          }
         });
         setUserNames(namesMap);
         return;
       }
-      const namesMap = {};
+
+      // Fetch remaining user names from API
+      const userIdsToFetch = uniqueUserIds.filter(id => !namesMap[id]);
 
       await Promise.all(
-        uniqueUserIds.map(async (userId) => {
+        userIdsToFetch.map(async (userId) => {
           try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts/${userId}`, {
               headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
               const userData = await response.json();
-              namesMap[userId] = userData?.fullName || userData?.FullName || 'Unknown User';
+              namesMap[userId] = userData?.fullName || userData?.FullName || 'Người dùng';
             } else {
-              namesMap[userId] = 'Unknown User';
+              namesMap[userId] = 'Người dùng';
             }
           } catch (err) {
-            namesMap[userId] = 'Unknown User';
+            namesMap[userId] = 'Người dùng';
           }
         })
       );
@@ -721,14 +759,18 @@ export default function RentalPostDetailPage() {
                             <p className="text-gray-800 dark:text-gray-200 mb-3 leading-relaxed text-base">
                               {review.content}
                             </p>
-                            {review.imageUrl && review.imageUrl.trim() !== '' && review.imageUrl !== 'null' && (
-                              <div className="mb-3">
-                                <img
-                                  src={review.imageUrl}
-                                  alt="Review"
-                                  className="rounded-lg max-h-64 w-auto object-cover border-2 border-gray-200 dark:border-gray-600 shadow-md"
-                                  onError={(e) => { e.target.style.display = 'none'; }}
-                                />
+                            {review.imageUrl && Array.isArray(review.imageUrl) && review.imageUrl.length > 0 && (
+                              <div className="mb-3 grid grid-cols-2 md:grid-cols-3 gap-2">
+                                {review.imageUrl.map((imgUrl, idx) => (
+                                  <img
+                                    key={idx}
+                                    src={imgUrl}
+                                    alt={`Review ${idx + 1}`}
+                                    className="rounded-lg h-48 w-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-md hover:scale-105 transition-transform cursor-pointer"
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                    onClick={() => window.open(imgUrl, '_blank')}
+                                  />
+                                ))}
                               </div>
                             )}
                             <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 bg-white/50 dark:bg-gray-800/50 px-3 py-2 rounded-md">
@@ -747,6 +789,42 @@ export default function RentalPostDetailPage() {
                                 </div>
                               )}
                             </div>
+
+                            {/* Owner Reply */}
+                            {reviewReplies[review.id] && (
+                              <div className="mt-4 ml-8 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border-l-4 border-blue-500">
+                                <div className="flex items-start gap-3">
+                                  <div className="h-10 w-10 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span className="text-white font-bold text-sm">CH</span>
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="font-bold text-gray-900 dark:text-white text-sm">Chủ nhà phản hồi</span>
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                                        {new Date(reviewReplies[review.id].createdAt).toLocaleDateString('vi-VN')}
+                                      </span>
+                                    </div>
+                                    <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                                      {reviewReplies[review.id].content}
+                                    </p>
+                                    {reviewReplies[review.id].image && Array.isArray(reviewReplies[review.id].image) && reviewReplies[review.id].image.length > 0 && (
+                                      <div className="mt-3 grid grid-cols-2 gap-2">
+                                        {reviewReplies[review.id].image.map((imgUrl, idx) => (
+                                          <img
+                                            key={idx}
+                                            src={imgUrl}
+                                            alt={`Reply ${idx + 1}`}
+                                            className="rounded-lg h-32 w-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-sm hover:scale-105 transition-transform cursor-pointer"
+                                            onError={(e) => { e.target.style.display = 'none'; }}
+                                            onClick={() => window.open(imgUrl, '_blank')}
+                                          />
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -792,7 +870,7 @@ export default function RentalPostDetailPage() {
                   <div className="flex-1">
                     <p className="text-xs text-gray-500 dark:text-gray-400">{t('rentalPostDetail.house')}</p>
                     <p className="font-medium text-gray-900 dark:text-white text-sm">
-                      {post.houseName || t('rentalPostDetail.notUpdated')}
+                      {post.houseName || post.boardingHouse?.houseName || t('rentalPostDetail.notUpdated')}
                     </p>
                   </div>
                 </div>
@@ -802,7 +880,7 @@ export default function RentalPostDetailPage() {
                   <div className="flex-1">
                     <p className="text-xs text-gray-500 dark:text-gray-400">{t('rentalPostDetail.room')}</p>
                     <p className="font-medium text-gray-900 dark:text-white text-sm">
-                      {post.roomName || t('rentalPostDetail.allRooms')}
+                      {post.roomName || post.room?.roomName || t('rentalPostDetail.notUpdated')}
                     </p>
                   </div>
                 </div>
@@ -828,13 +906,21 @@ export default function RentalPostDetailPage() {
                 </div>
 
                 {/* Address Section */}
-                {houseLocation && houseLocation.fullAddress && (
+                {(houseLocation?.fullAddress || post.boardingHouse?.location) && (
                   <div className="flex items-start gap-3 p-2 pt-3 border-t border-gray-200 dark:border-gray-700">
                     <MapPin className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('rentalPostDetail.address')}</p>
                       <p className="font-medium text-gray-900 dark:text-white text-sm leading-relaxed">
-                        {houseLocation.fullAddress}
+                        {houseLocation?.fullAddress || 
+                         [
+                           post.boardingHouse?.location?.address,
+                           post.boardingHouse?.location?.wardName,
+                           post.boardingHouse?.location?.districtName,
+                           post.boardingHouse?.location?.provinceName
+                         ].filter(Boolean).join(', ') ||
+                         t('rentalPostDetail.notUpdated')
+                        }
                       </p>
                     </div>
                   </div>

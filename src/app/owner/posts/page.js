@@ -687,13 +687,32 @@ export default function PostsPage() {
                       </div>
                     )}
 
-                    {/* Images count
-                    {post.imageUrls && post.imageUrls.length > 0 && (
-                      <div className="flex items-center text-gray-600 dark:text-gray-400">
-                        <span className="mr-2">🖼️</span>
-                        <span>{post.imageUrls.length} image{post.imageUrls.length > 1 ? 's' : ''}</span>
+                    {/* Room Info: Area & Price */}
+                    {post.room && (
+                      <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center">
+                          <span className="mr-2">📐</span>
+                          <span>{post.room.area || 0} m²</span>
+                        </div>
+                        <div className="flex items-center font-medium text-green-600 dark:text-green-400">
+                          <span>{new Intl.NumberFormat('vi-VN').format(post.room.price || 0)}đ</span>
+                        </div>
                       </div>
-                    )} */}
+                    )}
+
+                    {/* View Count */}
+                    <div className="flex items-center text-gray-600 dark:text-gray-400">
+                      <Eye className="w-4 h-4 mr-2" />
+                      <span>{post.viewCount || 0} lượt xem</span>
+                    </div>
+
+                    {/* Location */}
+                    {post.boardingHouse?.location?.fullAddress && (
+                      <div className="flex items-start text-gray-600 dark:text-gray-400">
+                        <span className="mr-2 mt-0.5">📍</span>
+                        <span className="line-clamp-2 text-xs">{post.boardingHouse.location.fullAddress}</span>
+                      </div>
+                    )}
 
                     {/* Created date */}
                     <div className="text-xs text-gray-500 dark:text-gray-500 mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
