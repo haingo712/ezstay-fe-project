@@ -731,39 +731,68 @@
         "deleteFailed": "Failed to delete review"
     },
     "ownerDashboard": {
-        "title": "Owner Dashboard",
-        "subtitle": "Manage your boarding houses and rooms",
+        "welcome": "Welcome",
+        "subtitle": "Manage your properties and track performance",
+        "manageHouses": "Manage Houses",
+        "createPost": "Create Post",
         "loading": "Loading Dashboard",
         "loadingHouses": "Loading your boarding houses...",
         "error": "Something went wrong",
         "tryAgain": "Try Again",
         "stats": {
-            "boardingHouses": "Boarding Houses",
+            "totalProperties": "Properties",
             "totalRooms": "Total Rooms",
-            "occupied": "Occupied",
-            "monthlyRevenue": "Monthly Revenue"
+            "occupiedRooms": "Occupied",
+            "activeContracts": "Active Contracts",
+            "pendingContracts": "Pending",
+            "monthlyRevenue": "Monthly Revenue",
+            "occupancy": "occupancy"
         },
-        "boardingHouse": {
+        "boardingHouses": {
+            "title": "Your Boarding Houses",
+            "subtitle": "Manage and track your properties",
             "active": "Active",
-            "inactive": "Inactive",
-            "units": "Units",
-            "rented": "Rented",
+            "rooms": "Rooms",
+            "occupied": "Occupied",
             "vacant": "Vacant",
-            "income": "Income",
-            "created": "Created",
-            "noDescription": "No description available",
-            "viewDetails": "View Details",
-            "viewRooms": "View Rooms"
+            "noHouses": "No Boarding Houses Yet",
+            "noHousesDesc": "Start by adding your first boarding house",
+            "addHouse": "Add Boarding House",
+            "viewAll": "View All"
+        },
+        "contracts": {
+            "title": "Recent Contracts",
+            "subtitle": "Latest rental contracts",
+            "viewAll": "View All",
+            "noContracts": "No contracts yet"
         },
         "quickActions": {
             "title": "Quick Actions",
-            "addBoardingHouse": "Add Boarding House",
-            "createRoom": "Create Room",
+            "addHouse": "Add Boarding House",
+            "addHouseDesc": "Register new property",
+            "createPost": "Create Rental Post",
+            "createPostDesc": "Advertise your rooms",
+            "manageContracts": "Manage Contracts",
+            "manageContractsDesc": "View and manage contracts",
             "bankAccount": "Bank Account",
-            "paymentManagement": "Payment Management",
-            "manageNotifications": "Manage Notifications",
-            "reports": "Reports",
-            "accountSettings": "Account Settings"
+            "bankAccountDesc": "Payment information",
+            "messages": "Messages",
+            "messagesDesc": "Chat with tenants"
+        },
+        "occupancy": {
+            "title": "Occupancy Overview",
+            "rate": "Occupancy Rate",
+            "occupied": "occupied",
+            "vacant": "vacant"
+        },
+        "rentalRequests": {
+            "title": "Rental Requests",
+            "pending": "pending"
+        },
+        "revenue": {
+            "title": "Revenue Trend",
+            "subtitle": "Last 6 months revenue",
+            "thisMonth": "This Month"
         },
         "recentActivity": {
             "title": "Recent Activity",
@@ -2353,6 +2382,72 @@
         "emptyState": {
             "noRequests": "No owner requests found",
             "noUsers": "No users found"
+        }
+    },
+    "ownerDashboard": {
+        "welcome": "Hello",
+        "subtitle": "Manage your boarding houses efficiently",
+        "loading": "Loading data...",
+        "manageHouses": "Manage Boarding Houses",
+        "createPost": "Create New Post",
+        "stats": {
+            "totalProperties": "Total Properties",
+            "totalRooms": "rooms",
+            "occupiedRooms": "Occupied Rooms",
+            "occupancy": "occupancy",
+            "activeContracts": "Active Contracts",
+            "pendingContracts": "pending",
+            "monthlyRevenue": "Monthly Revenue"
+        },
+        "boardingHouses": {
+            "title": "Your Boarding Houses",
+            "subtitle": "Manage and track your properties",
+            "viewAll": "View All",
+            "noHouses": "No boarding houses yet",
+            "noHousesDesc": "Start adding your first boarding house",
+            "addHouse": "Add Boarding House",
+            "active": "Active",
+            "rooms": "Rooms",
+            "occupied": "Occupied",
+            "vacant": "Vacant"
+        },
+        "contracts": {
+            "title": "Recent Contracts",
+            "subtitle": "Latest rental contracts",
+            "viewAll": "View All",
+            "noContracts": "No contracts yet",
+            "tenant": "Tenant",
+            "room": "Room",
+            "status": {
+                "pending": "Pending",
+                "active": "Active",
+                "expired": "Expired",
+                "cancelled": "Cancelled"
+            }
+        },
+        "quickActions": {
+            "title": "Quick Actions",
+            "addHouse": "Add Boarding House",
+            "addHouseDesc": "Create new property",
+            "createPost": "Create Rental Post",
+            "createPostDesc": "Create new listing",
+            "manageContracts": "Manage Contracts",
+            "manageContractsDesc": "View and create contracts",
+            "bankAccount": "Bank Account",
+            "bankAccountDesc": "Manage payments",
+            "messages": "Messages",
+            "messagesDesc": "Chat with tenants"
+        },
+        "occupancy": {
+            "title": "Room Status",
+            "rate": "Occupancy Rate",
+            "occupied": "rooms occupied",
+            "vacant": "rooms vacant"
+        },
+        "notifications": {
+            "title": "Notifications",
+            "viewAll": "View All",
+            "noNotifications": "No new notifications"
         }
     }
 }

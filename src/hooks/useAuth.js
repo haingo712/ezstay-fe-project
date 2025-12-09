@@ -111,7 +111,7 @@ export function useAuth() {
           setUser(updatedUser);
           console.log("✅ Updated user avatar:", updatedUser.avatar);
         } else {
-          console.log("⚠️ No profile data returned");
+          console.log("ℹ️ No profile data available - user may need to create profile");
         }
       } catch (err) {
         console.log("⚠️ Could not load avatar for navbar:", err.message);

@@ -690,39 +690,68 @@
         "deleteFailed": "Xóa đánh giá thất bại"
     },
     "ownerDashboard": {
-        "title": "Bảng điều khiển chủ nhà",
-        "subtitle": "Quản lý nhà trọ và phòng của bạn",
+        "welcome": "Chào mừng",
+        "subtitle": "Quản lý tài sản và theo dõi hiệu suất",
+        "manageHouses": "Quản lý nhà trọ",
+        "createPost": "Tạo bài đăng",
         "loading": "Đang tải bảng điều khiển",
         "loadingHouses": "Đang tải danh sách nhà trọ...",
         "error": "Đã xảy ra lỗi",
         "tryAgain": "Thử lại",
         "stats": {
-            "boardingHouses": "Nhà trọ",
+            "totalProperties": "Nhà trọ",
             "totalRooms": "Tổng số phòng",
-            "occupied": "Đã thuê",
-            "monthlyRevenue": "Doanh thu tháng"
+            "occupiedRooms": "Đã thuê",
+            "activeContracts": "Hợp đồng",
+            "pendingContracts": "Chờ duyệt",
+            "monthlyRevenue": "Doanh thu tháng",
+            "occupancy": "công suất"
         },
-        "boardingHouse": {
+        "boardingHouses": {
+            "title": "Nhà trọ của bạn",
+            "subtitle": "Quản lý và theo dõi tài sản",
             "active": "Hoạt động",
-            "inactive": "Không hoạt động",
-            "units": "Phòng",
-            "rented": "Đã thuê",
+            "rooms": "Phòng",
+            "occupied": "Đã thuê",
             "vacant": "Trống",
-            "income": "Thu nhập",
-            "created": "Ngày tạo",
-            "noDescription": "Chưa có mô tả",
-            "viewDetails": "Xem chi tiết",
-            "viewRooms": "Xem phòng"
+            "noHouses": "Chưa có nhà trọ",
+            "noHousesDesc": "Bắt đầu bằng cách thêm nhà trọ đầu tiên",
+            "addHouse": "Thêm nhà trọ",
+            "viewAll": "Xem tất cả"
+        },
+        "contracts": {
+            "title": "Hợp đồng gần đây",
+            "subtitle": "Hợp đồng thuê mới nhất",
+            "viewAll": "Xem tất cả",
+            "noContracts": "Chưa có hợp đồng"
         },
         "quickActions": {
             "title": "Thao tác nhanh",
-            "addBoardingHouse": "Thêm nhà trọ",
-            "createRoom": "Tạo phòng",
+            "addHouse": "Thêm nhà trọ",
+            "addHouseDesc": "Đăng ký tài sản mới",
+            "createPost": "Tạo bài đăng",
+            "createPostDesc": "Quảng cáo phòng của bạn",
+            "manageContracts": "Quản lý hợp đồng",
+            "manageContractsDesc": "Xem và quản lý hợp đồng",
             "bankAccount": "Tài khoản ngân hàng",
-            "paymentManagement": "Quản lý thanh toán",
-            "manageNotifications": "Quản lý thông báo",
-            "reports": "Báo cáo",
-            "accountSettings": "Cài đặt tài khoản"
+            "bankAccountDesc": "Thông tin thanh toán",
+            "messages": "Tin nhắn",
+            "messagesDesc": "Trò chuyện với người thuê"
+        },
+        "occupancy": {
+            "title": "Tổng quan công suất",
+            "rate": "Tỷ lệ lấp đầy",
+            "occupied": "đã thuê",
+            "vacant": "trống"
+        },
+        "rentalRequests": {
+            "title": "Yêu cầu thuê",
+            "pending": "chờ duyệt"
+        },
+        "revenue": {
+            "title": "xu hướng doanh thu",
+            "subtitle": "Doanh thu 6 tháng gần đây",
+            "thisMonth": "Tháng này"
         },
         "recentActivity": {
             "title": "Hoạt động gần đây",
@@ -2007,6 +2036,72 @@
         "activityRate": "Tỷ Lệ Hoạt Động",
         "active": "hoạt động",
         "ofTotal": "tổng số"
+    },
+    "ownerDashboard": {
+        "welcome": "Xin chào",
+        "subtitle": "Quản lý nhà trọ của bạn một cách hiệu quả",
+        "loading": "Đang tải dữ liệu...",
+        "manageHouses": "Quản lý nhà trọ",
+        "createPost": "Đăng tin mới",
+        "stats": {
+            "totalProperties": "Tổng nhà trọ",
+            "totalRooms": "phòng",
+            "occupiedRooms": "Phòng đã thuê",
+            "occupancy": "lấp đầy",
+            "activeContracts": "Hợp đồng hoạt động",
+            "pendingContracts": "chờ duyệt",
+            "monthlyRevenue": "Doanh thu tháng"
+        },
+        "boardingHouses": {
+            "title": "Nhà trọ của bạn",
+            "subtitle": "Quản lý và theo dõi các nhà trọ",
+            "viewAll": "Xem tất cả",
+            "noHouses": "Chưa có nhà trọ nào",
+            "noHousesDesc": "Bắt đầu thêm nhà trọ đầu tiên của bạn",
+            "addHouse": "Thêm nhà trọ",
+            "active": "Hoạt động",
+            "rooms": "Phòng",
+            "occupied": "Đã thuê",
+            "vacant": "Trống"
+        },
+        "contracts": {
+            "title": "Hợp đồng gần đây",
+            "subtitle": "Các hợp đồng thuê phòng mới nhất",
+            "viewAll": "Xem tất cả",
+            "noContracts": "Chưa có hợp đồng nào",
+            "tenant": "Khách thuê",
+            "room": "Phòng",
+            "status": {
+                "pending": "Chờ duyệt",
+                "active": "Hoạt động",
+                "expired": "Hết hạn",
+                "cancelled": "Đã hủy"
+            }
+        },
+        "quickActions": {
+            "title": "Thao tác nhanh",
+            "addHouse": "Thêm nhà trọ",
+            "addHouseDesc": "Tạo nhà trọ mới",
+            "createPost": "Đăng tin cho thuê",
+            "createPostDesc": "Tạo bài đăng mới",
+            "manageContracts": "Quản lý hợp đồng",
+            "manageContractsDesc": "Xem và tạo hợp đồng",
+            "bankAccount": "Tài khoản ngân hàng",
+            "bankAccountDesc": "Quản lý thanh toán",
+            "messages": "Tin nhắn",
+            "messagesDesc": "Trò chuyện với khách"
+        },
+        "occupancy": {
+            "title": "Tình trạng phòng",
+            "rate": "Tỷ lệ lấp đầy",
+            "occupied": "phòng đã thuê",
+            "vacant": "phòng trống"
+        },
+        "notifications": {
+            "title": "Thông báo",
+            "viewAll": "Xem tất cả",
+            "noNotifications": "Không có thông báo mới"
+        }
     },
     "myRentalRequests": {
         "title": "Yêu cầu thuê của tôi",

@@ -6,6 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
 import contractService from '@/services/contractService';
 import roomService from '@/services/roomService';
+import userManagementService from '@/services/userManagementService';
+import profileService from '@/services/profileService';
 import { toast } from 'react-toastify';
 import {
     Home,
@@ -52,22 +54,61 @@ export default function OwnerRentalRequestsPage() {
             const response = await contractService.getRentalRequestsByOwner();
             console.log('📋 Rental requests:', response);
 
-            // Enrich with room info
+            // Enrich with room, user, and profile info
             const enrichedRequests = await Promise.all(
                 (response || []).map(async (request) => {
                     try {
+                        let roomData = null;
+                        let userData = null;
+                        let userProfile = null;
+
+                        // Fetch room info
                         if (request.roomId) {
-                            const roomData = await roomService.getById(request.roomId);
-                            return {
-                                ...request,
-                                roomName: roomData?.name || roomData?.roomName || 'N/A',
-                                roomPrice: roomData?.price || 0,
-                                boardingHouseName: roomData?.boardingHouseName || 'N/A'
-                            };
+                            roomData = await roomService.getById(request.roomId);
                         }
-                        return request;
+
+                        // Fetch user account info (includes profile data)
+                        if (request.userId) {
+                            try {
+                                userData = await userManagementService.getAccountById(request.userId);
+                                console.log('👤 User data fetched:', userData);
+                            } catch (error) {
+                                console.error('Error fetching user info:', error);
+                            }
+                        }
+
+                        // Parse citizenIdNumber array to get first ID
+                        let primaryCitizenId = 'N/A';
+                        if (Array.isArray(request.citizenIdNumber) && request.citizenIdNumber.length > 0) {
+                            primaryCitizenId = request.citizenIdNumber[0];
+                        } else if (typeof request.citizenIdNumber === 'string') {
+                            primaryCitizenId = request.citizenIdNumber;
+                        }
+
+                        // Extract profile data from userData (backend may include profile in account response)
+                        const profile = userData?.profile || userData;
+
+                        return {
+                            ...request,
+                            roomName: roomData?.name || roomData?.roomName || 'N/A',
+                            roomPrice: roomData?.price || 0,
+                            boardingHouseName: roomData?.boardingHouseName || 'N/A',
+                            userName: userData?.fullName || profile?.fullName || userData?.username || 'N/A',
+                            userEmail: userData?.email || profile?.email || 'N/A',
+                            userPhone: userData?.phone || userData?.phoneNumber || profile?.phone || 'N/A',
+                            fullName: userData?.fullName || profile?.fullName || 'N/A',
+                            gender: profile?.gender || userData?.gender || 'N/A',
+                            dateOfBirth: profile?.dateOfBirth || userData?.dateOfBirth || null,
+                            citizenIdNumber: primaryCitizenId,
+                            address: profile?.detailAddress || profile?.address || 'N/A',
+                            wardName: profile?.wardName || 'N/A',
+                            provinceName: profile?.provinceName || 'N/A',
+                            temporaryResidence: profile?.temporaryResidence || null,
+                            citizenIdIssuedDate: profile?.citizenIdIssuedDate || null,
+                            citizenIdIssuedPlace: profile?.citizenIdIssuedPlace || 'N/A'
+                        };
                     } catch (error) {
-                        console.error('Error fetching room info:', error);
+                        console.error('Error enriching request:', error);
                         return request;
                     }
                 })
@@ -355,16 +396,16 @@ export default function OwnerRentalRequestsPage() {
 
                                             {/* Phone & Email */}
                                             <div className="flex flex-wrap gap-4 mt-2 text-sm">
-                                                {request.phone && (
+                                                {(request.userPhone && request.userPhone !== 'N/A') && (
                                                     <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                                                         <Phone className="h-4 w-4" />
-                                                        <span>{request.phone}</span>
+                                                        <span>{request.userPhone}</span>
                                                     </div>
                                                 )}
-                                                {request.email && (
+                                                {(request.userEmail && request.userEmail !== 'N/A') && (
                                                     <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                                                         <Mail className="h-4 w-4" />
-                                                        <span>{request.email}</span>
+                                                        <span>{request.userEmail}</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -490,10 +531,10 @@ export default function OwnerRentalRequestsPage() {
                                                 <span className="font-medium">{t('ownerRentalRequests.dateOfBirth')}:</span> {formatDate(request.dateOfBirth)}
                                             </p>
                                             <p className="text-gray-600 dark:text-gray-400">
-                                                <span className="font-medium">{t('ownerRentalRequests.phone')}:</span> {request.phone || 'N/A'}
+                                                <span className="font-medium">{t('ownerRentalRequests.phone')}:</span> {request.userPhone || 'N/A'}
                                             </p>
                                             <p className="text-gray-600 dark:text-gray-400">
-                                                <span className="font-medium">{t('ownerRentalRequests.email')}:</span> {request.email || 'N/A'}
+                                                <span className="font-medium">{t('ownerRentalRequests.email')}:</span> {request.userEmail || 'N/A'}
                                             </p>
                                         </div>
 

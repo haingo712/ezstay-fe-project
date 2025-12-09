@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { rentalPostService } from '@/services/rentalPostService';
-import { useTranslation } from '@/hooks/useTranslation';
 import {
   CheckCircle,
   XCircle,
@@ -24,7 +23,6 @@ import Image from 'next/image';
 import { toast } from 'react-toastify';
 
 export default function PostsReviewPage() {
-  const { t } = useTranslation();
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -51,12 +49,12 @@ export default function PostsReviewPage() {
       console.log('✅ Pending posts loaded:', response);
     } catch (error) {
       console.error('❌ Error loading pending posts:', error);
-      setError(t('staffPosts.loadError') || 'Failed to load pending posts. Please try again.');
+      setError('Failed to load pending posts. Please try again.');
       setPosts([]);
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -77,18 +75,20 @@ export default function PostsReviewPage() {
   });
 
   const handleApprove = async (postId) => {
-    setConfirmMessage(t('staffPosts.confirmApprove') || 'Bạn có chắc muốn duyệt bài đăng này? Bài đăng sẽ hiển thị cho tất cả người dùng.');
+    console.log('🔍 Approving post with ID:', postId);
+    setConfirmMessage('Are you sure you want to approve this post? It will be visible to all users.');
     setConfirmAction(() => async () => {
       try {
         setProcessingId(postId);
         setShowConfirmModal(false);
+        console.log('📤 Sending approve request for post:', postId);
         await rentalPostService.approvePost(postId);
         await loadPendingPosts();
-        setSuccessMessage(t('staffPosts.approveSuccess') || 'Bài đăng đã được duyệt thành công!');
+        setSuccessMessage('Post approved successfully!');
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (error) {
         console.error('Error approving post:', error);
-        toast.error(t('staffPosts.approveError') || 'Không thể duyệt bài đăng. Vui lòng thử lại.');
+        toast.error('Failed to approve post. Please try again.');
       } finally {
         setProcessingId(null);
       }
@@ -97,18 +97,18 @@ export default function PostsReviewPage() {
   };
 
   const handleReject = async (postId) => {
-    setConfirmMessage(t('staffPosts.confirmReject') || 'Bạn có chắc muốn từ chối bài đăng này?');
+    setConfirmMessage('Are you sure you want to reject this post?');
     setConfirmAction(() => async () => {
       try {
         setProcessingId(postId);
         setShowConfirmModal(false);
         await rentalPostService.rejectPost(postId);
         await loadPendingPosts();
-        setSuccessMessage(t('staffPosts.rejectSuccess') || 'Bài đăng đã bị từ chối.');
+        setSuccessMessage('Post rejected successfully.');
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (error) {
         console.error('Error rejecting post:', error);
-        toast.error(t('staffPosts.rejectError') || 'Không thể từ chối bài đăng. Vui lòng thử lại.');
+        toast.error('Failed to reject post. Please try again.');
       } finally {
         setProcessingId(null);
       }
@@ -170,21 +170,21 @@ export default function PostsReviewPage() {
 
     if (status === 0) {
       return {
-        text: t('staffPosts.status.pending') || 'Chờ duyệt',
+        text: 'Pending',
         icon: Clock,
         class: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
       };
     }
     if (status === 1) {
       return {
-        text: t('staffPosts.status.approved') || 'Đã duyệt',
+        text: 'Approved',
         icon: CheckCircle,
         class: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
       };
     }
     if (status === 2) {
       return {
-        text: t('staffPosts.status.rejected') || 'Đã từ chối',
+        text: 'Rejected',
         icon: XCircle,
         class: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
       };
@@ -202,7 +202,7 @@ export default function PostsReviewPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-500 dark:text-gray-400">{t('common.loading') || 'Đang tải...'}</p>
+          <p className="text-gray-500 dark:text-gray-400">Loading...</p>
         </div>
       </div>
     );
@@ -215,7 +215,7 @@ export default function PostsReviewPage() {
           <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
         </div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-          {t('staffPosts.error') || 'Lỗi Tải Bài Đăng'}
+          Error Loading Posts
         </h3>
         <p className="text-gray-500 dark:text-gray-400 mb-4">{error}</p>
         <button
@@ -223,7 +223,7 @@ export default function PostsReviewPage() {
           className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
-          {t('staffPosts.retry') || 'Thử Lại'}
+          Retry
         </button>
       </div>
     );
@@ -242,10 +242,10 @@ export default function PostsReviewPage() {
             <div className="text-white">
               <h1 className="text-2xl font-bold flex items-center gap-3">
                 <FileText className="w-7 h-7" />
-                {t('staffPosts.title') || 'Quản Lý Bài Đăng'}
+                Posts Management
               </h1>
               <p className="mt-1 opacity-90">
-                {t('staffPosts.subtitle') || 'Duyệt và kiểm duyệt các bài đăng cho thuê'}
+                Review and moderate rental posts
               </p>
             </div>
             <div className="mt-4 sm:mt-0 flex items-center gap-3">
@@ -254,11 +254,11 @@ export default function PostsReviewPage() {
                 className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
-                {t('common.refresh') || 'Làm mới'}
+                Refresh
               </button>
               <div className="bg-white/20 px-4 py-2 rounded-lg">
                 <span className="text-white font-medium">
-                  {pendingCount} {t('staffPosts.pendingReviews') || 'bài chờ duyệt'}
+                  {pendingCount} pending reviews
                 </span>
               </div>
             </div>
@@ -269,9 +269,9 @@ export default function PostsReviewPage() {
         <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <nav className="flex">
             {[
-              { key: 'pending', label: t('staffPosts.tabs.pending') || 'Chờ duyệt', count: pendingCount, icon: Clock, color: 'yellow' },
-              { key: 'approved', label: t('staffPosts.tabs.approved') || 'Đã duyệt', count: approvedCount, icon: CheckCircle, color: 'green' },
-              { key: 'rejected', label: t('staffPosts.tabs.rejected') || 'Từ chối', count: rejectedCount, icon: XCircle, color: 'red' }
+              { key: 'pending', label: 'Pending', count: pendingCount, icon: Clock, color: 'yellow' },
+              { key: 'approved', label: 'Approved', count: approvedCount, icon: CheckCircle, color: 'green' },
+              { key: 'rejected', label: 'Rejected', count: rejectedCount, icon: XCircle, color: 'red' }
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -392,7 +392,7 @@ export default function PostsReviewPage() {
                             ) : (
                               <CheckCircle className="w-5 h-5" />
                             )}
-                            {t('staffPosts.actions.approve') || 'Approve'}
+                            Approve
                           </button>
 
                           <button
@@ -405,7 +405,7 @@ export default function PostsReviewPage() {
                             ) : (
                               <XCircle className="w-5 h-5" />
                             )}
-                            {t('staffPosts.actions.reject') || 'Reject'}
+                            Reject
                           </button>
 
                           <button
@@ -413,7 +413,7 @@ export default function PostsReviewPage() {
                             className="inline-flex items-center gap-2 px-6 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 font-semibold rounded-lg transition-all"
                           >
                             <Eye className="w-5 h-5" />
-                            {t('staffPosts.actions.view') || 'View Details'}
+                            View Details
                           </button>
                         </div>
                       )}
@@ -450,14 +450,14 @@ export default function PostsReviewPage() {
             <FileText className="w-10 h-10 text-gray-400" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            {t('staffPosts.empty') || 'Không có bài đăng'}
+            No Posts
           </h3>
           <p className="text-gray-500 dark:text-gray-400">
             {activeTab === 'pending'
-              ? (t('staffPosts.emptyPending') || 'Không có bài đăng nào đang chờ duyệt.')
+              ? 'No posts pending review.'
               : activeTab === 'approved'
-                ? (t('staffPosts.emptyApproved') || 'Không có bài đăng nào đã duyệt.')
-                : (t('staffPosts.emptyRejected') || 'Không có bài đăng nào bị từ chối.')
+                ? 'No approved posts.'
+                : 'No rejected posts.'
             }
           </p>
         </div>
@@ -754,7 +754,7 @@ export default function PostsReviewPage() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              {t('common.confirm') || 'Xác nhận'}
+              Confirm
             </h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
               {confirmMessage}
@@ -764,7 +764,7 @@ export default function PostsReviewPage() {
                 onClick={() => setShowConfirmModal(false)}
                 className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
-                {t('common.cancel') || 'Hủy'}
+                Cancel
               </button>
               <button
                 onClick={() => {
@@ -772,7 +772,7 @@ export default function PostsReviewPage() {
                 }}
                 className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
               >
-                {t('common.confirm') || 'Xác nhận'}
+                Confirm
               </button>
             </div>
           </div>

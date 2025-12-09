@@ -2,7 +2,7 @@
  * Client for interacting with the FastAPI powered AI assistant.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_AI_ASSISTANT_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_AI_ASSISTANT_URL || "http://localhost:8001";
 
 async function handleResponse(response) {
   let payload;

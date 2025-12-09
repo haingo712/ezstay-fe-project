@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import { useAuth } from '../../hooks/useAuth';
-import { useTranslation } from '../../hooks/useTranslation';
 import { boardingHouseAPI, roomAPI, apiFetch } from '../../utils/api';
 import contractService from '../../services/contractService';
 
@@ -71,17 +70,18 @@ const QuickActionButton = ({ icon, title, description, onClick, color }) => {
 };
 
 // Boarding House Mini Card
-const BoardingHouseMiniCard = ({ house, onClick }) => (
-  <div
-    onClick={onClick}
-    className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-all group"
-  >
-    <div className="flex items-center justify-between mb-3">
-      <h4 className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-        {house.name}
-      </h4>
-      <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
-        Hoạt động
+const BoardingHouseMiniCard = ({ house, onClick }) => {
+  return (
+    <div
+      onClick={onClick}
+      className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-all group"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+          {house.name}
+        </h4>
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
+          Active
       </span>
     </div>
     <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
@@ -93,27 +93,28 @@ const BoardingHouseMiniCard = ({ house, onClick }) => (
     <div className="grid grid-cols-3 gap-2 text-center">
       <div className="p-2 bg-white dark:bg-gray-800 rounded-lg">
         <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{house.totalRooms || 0}</p>
-        <p className="text-xs text-gray-500 dark:text-gray-400">Phòng</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">Rooms</p>
       </div>
       <div className="p-2 bg-white dark:bg-gray-800 rounded-lg">
         <p className="text-lg font-bold text-green-600 dark:text-green-400">{house.occupiedRooms || 0}</p>
-        <p className="text-xs text-gray-500 dark:text-gray-400">Đã thuê</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">Occupied</p>
       </div>
       <div className="p-2 bg-white dark:bg-gray-800 rounded-lg">
         <p className="text-lg font-bold text-yellow-600 dark:text-yellow-400">{(house.totalRooms || 0) - (house.occupiedRooms || 0)}</p>
-        <p className="text-xs text-gray-500 dark:text-gray-400">Trống</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">Vacant</p>
       </div>
     </div>
   </div>
-);
+  );
+};
 
 // Contract Status Badge
 const ContractStatusBadge = ({ status }) => {
   const statusConfig = {
-    0: { label: 'Chờ duyệt', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
-    1: { label: 'Hoạt động', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-    2: { label: 'Hết hạn', color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' },
-    3: { label: 'Đã hủy', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
+    0: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
+    1: { label: 'Active', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
+    2: { label: 'Expired', color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' },
+    3: { label: 'Cancelled', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
   };
 
   const config = statusConfig[status] || statusConfig[0];
@@ -125,29 +126,31 @@ const ContractStatusBadge = ({ status }) => {
 };
 
 // Recent Contract Row
-const RecentContractRow = ({ contract }) => (
-  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-    <div className="flex items-center space-x-4">
-      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-        {(contract.tenantName || contract.TenantName || 'T')?.[0]?.toUpperCase()}
+const RecentContractRow = ({ contract }) => {
+  return (
+    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+      <div className="flex items-center space-x-4">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+          {(contract.tenantName || contract.TenantName || 'T')?.[0]?.toUpperCase()}
+        </div>
+        <div>
+          <p className="font-medium text-gray-900 dark:text-white">
+            {contract.tenantName || contract.TenantName || 'Tenant'}
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {contract.roomName || contract.RoomName || 'Room'}
+          </p>
+        </div>
       </div>
-      <div>
-        <p className="font-medium text-gray-900 dark:text-white">
-          {contract.tenantName || contract.TenantName || 'Khách thuê'}
+      <div className="text-right">
+        <p className="font-semibold text-gray-900 dark:text-white">
+          {(contract.monthlyRent || contract.MonthlyRent || 0).toLocaleString()}₫
         </p>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {contract.roomName || contract.RoomName || 'Phòng'}
-        </p>
+        <ContractStatusBadge status={contract.status || contract.Status || 0} />
       </div>
     </div>
-    <div className="text-right">
-      <p className="font-semibold text-gray-900 dark:text-white">
-        {(contract.monthlyRent || contract.MonthlyRent || 0).toLocaleString()}₫
-      </p>
-      <ContractStatusBadge status={contract.status || contract.Status || 0} />
-    </div>
-  </div>
-);
+  );
+};
 
 // Notification Item
 const NotificationItem = ({ notification, onMarkRead }) => {
@@ -195,7 +198,7 @@ const OccupancyChart = ({ occupied, total }) => {
   return (
     <div className="space-y-3">
       <div className="flex justify-between text-sm">
-        <span className="text-gray-600 dark:text-gray-400">Tỷ lệ lấp đầy</span>
+        <span className="text-gray-600 dark:text-gray-400">Occupancy Rate</span>
         <span className="font-semibold text-gray-900 dark:text-white">{percentage}%</span>
       </div>
       <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -205,8 +208,57 @@ const OccupancyChart = ({ occupied, total }) => {
         />
       </div>
       <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-        <span>{occupied} phòng đã thuê</span>
-        <span>{total - occupied} phòng trống</span>
+        <span>{occupied} Occupied</span>
+        <span>{total - occupied} Vacant</span>
+      </div>
+    </div>
+  );
+};
+
+// Revenue Chart Component (Simple bar chart)
+const RevenueChart = ({ monthlyData }) => {
+  const maxRevenue = Math.max(...monthlyData.map(m => m.revenue), 1);
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex items-end justify-between h-48 gap-2">
+        {monthlyData.map((month, index) => {
+          const height = (month.revenue / maxRevenue) * 100;
+          return (
+            <div key={index} className="flex-1 flex flex-col items-center gap-2">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-t-lg relative group cursor-pointer hover:opacity-80 transition-opacity" style={{ height: `${height}%`, minHeight: '8px' }}>
+                <div className="absolute inset-0 bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-lg"></div>
+                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  {month.revenue.toLocaleString()}₫
+                </div>
+              </div>
+              <span className="text-xs text-gray-600 dark:text-gray-400">{month.label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// Rental Requests Stats
+const RentalRequestsCard = ({ pendingRequests, onClick }) => {
+  return (
+    <div 
+      onClick={onClick}
+      className="bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all group"
+    >
+      <div className="flex items-center justify-between text-white">
+        <div>
+          <p className="text-sm font-medium text-white/80">Rental Requests</p>
+          <p className="text-3xl font-bold mt-1">{pendingRequests}</p>
+          <p className="text-sm text-white/70 mt-1">pending</p>
+        </div>
+        <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm group-hover:scale-110 transition-transform">
+          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
       </div>
     </div>
   );
@@ -214,7 +266,6 @@ const OccupancyChart = ({ occupied, total }) => {
 
 export default function OwnerDashboard() {
   const { user } = useAuth();
-  const { t } = useTranslation();
   const router = useRouter();
 
   // States
@@ -229,8 +280,19 @@ export default function OwnerDashboard() {
     vacantRooms: 0,
     monthlyRevenue: 0,
     activeContracts: 0,
+    pendingRentalRequests: 0,
     pendingContracts: 0,
   });
+
+  // Mock revenue data for last 6 months (in VND)
+  const [revenueData] = useState([
+    { label: 'T7', revenue: 1500000 },
+    { label: 'T8', revenue: 1800000 },
+    { label: 'T9', revenue: 2200000 },
+    { label: 'T10', revenue: 2000000 },
+    { label: 'T11', revenue: 2500000 },
+    { label: 'T12', revenue: 2800000 },
+  ]);
 
   // Load all dashboard data
   const loadDashboardData = useCallback(async () => {
@@ -292,6 +354,19 @@ export default function OwnerDashboard() {
         console.error('Error loading notifications:', error);
       }
 
+      // Load rental requests
+      try {
+        const rentalRequests = await contractService.getRentalRequestsByOwner();
+        const pendingRequests = (rentalRequests || []).length;
+        
+        setStats(prev => ({
+          ...prev,
+          pendingRentalRequests: pendingRequests,
+        }));
+      } catch (error) {
+        console.error('Error loading rental requests:', error);
+      }
+
       setStats(prev => ({
         ...prev,
         totalProperties: (houses || []).length,
@@ -333,7 +408,7 @@ export default function OwnerDashboard() {
               <div className="w-20 h-20 border-4 border-blue-200 dark:border-blue-800 rounded-full animate-pulse"></div>
               <div className="absolute top-0 left-0 w-20 h-20 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
             </div>
-            <p className="mt-6 text-gray-600 dark:text-gray-400 font-medium">Đang tải dữ liệu...</p>
+            <p className="mt-6 text-gray-600 dark:text-gray-400 font-medium">Loading...</p>
           </div>
         </div>
       </ProtectedRoute>
@@ -342,17 +417,17 @@ export default function OwnerDashboard() {
 
   return (
     <ProtectedRoute roles={['Owner']}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="bg-gray-50 dark:bg-gray-900">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 dark:from-blue-800 dark:via-blue-900 dark:to-indigo-900">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div className="mb-4 md:mb-0">
                 <h1 className="text-3xl font-bold text-white">
-                  Xin chào, {user?.fullName || user?.email?.split('@')[0] || 'Chủ trọ'}! 👋
+                  Welcome, {user?.fullName || user?.email?.split('@')[0] || 'Owner'}! 👋
                 </h1>
                 <p className="text-blue-100 mt-1">
-                  Quản lý nhà trọ của bạn một cách hiệu quả
+                  Manage your properties and track your business
                 </p>
               </div>
               <div className="flex space-x-3">
@@ -360,13 +435,13 @@ export default function OwnerDashboard() {
                   href="/owner/boarding-houses"
                   className="px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium transition-all backdrop-blur-sm"
                 >
-                  Quản lý nhà trọ
+                  Manage Houses
                 </Link>
                 <Link
                   href="/owner/posts"
                   className="px-5 py-2.5 bg-white text-blue-700 rounded-xl font-medium hover:bg-blue-50 transition-all shadow-lg"
                 >
-                  + Đăng tin mới
+                  + Create Post
                 </Link>
               </div>
             </div>
@@ -378,28 +453,28 @@ export default function OwnerDashboard() {
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatCard
-              title="Tổng nhà trọ"
+              title="Total Properties"
               value={stats.totalProperties}
-              subtitle={`${stats.totalRooms} phòng`}
+              subtitle={`${stats.totalRooms} rooms`}
               gradient="bg-gradient-to-br from-blue-500 to-blue-600"
               icon={<svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
             />
             <StatCard
-              title="Phòng đã thuê"
+              title="Occupied Rooms"
               value={stats.occupiedRooms}
-              subtitle={`${stats.totalRooms > 0 ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0}% lấp đầy`}
+              subtitle={`${stats.totalRooms > 0 ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0}% occupancy`}
               gradient="bg-gradient-to-br from-green-500 to-emerald-600"
               icon={<svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
             />
             <StatCard
-              title="Hợp đồng hoạt động"
+              title="Active Contracts"
               value={stats.activeContracts}
-              subtitle={`${stats.pendingContracts} chờ duyệt`}
+              subtitle={`${stats.pendingContracts} pending`}
               gradient="bg-gradient-to-br from-purple-500 to-purple-600"
               icon={<svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
             />
             <StatCard
-              title="Doanh thu tháng"
+              title="Monthly Revenue"
               value={`${(stats.monthlyRevenue / 1000000).toFixed(1)}M`}
               subtitle={`${stats.monthlyRevenue.toLocaleString()}₫`}
               gradient="bg-gradient-to-br from-orange-500 to-red-500"
@@ -416,14 +491,14 @@ export default function OwnerDashboard() {
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-xl font-bold text-gray-900 dark:text-white">Nhà trọ của bạn</h2>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Quản lý và theo dõi các nhà trọ</p>
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white">Boarding Houses</h2>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Your registered properties</p>
                     </div>
                     <Link
                       href="/owner/boarding-houses"
                       className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
                     >
-                      Xem tất cả →
+                      View All →
                     </Link>
                   </div>
                 </div>
@@ -436,10 +511,10 @@ export default function OwnerDashboard() {
                         </svg>
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        Chưa có nhà trọ nào
+                        No boarding houses yet
                       </h3>
                       <p className="text-gray-500 dark:text-gray-400 mb-6">
-                        Bắt đầu thêm nhà trọ đầu tiên của bạn
+                        Start by adding your first property
                       </p>
                       <Link
                         href="/owner/boarding-houses"
@@ -448,12 +523,12 @@ export default function OwnerDashboard() {
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
-                        Thêm nhà trọ
+                        Add Boarding House
                       </Link>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {boardingHouses.slice(0, 4).map(house => (
+                    <div className="grid grid-cols-1 gap-4">
+                      {boardingHouses.slice(0, 1).map(house => (
                         <BoardingHouseMiniCard
                           key={house.id}
                           house={house}
@@ -470,21 +545,21 @@ export default function OwnerDashboard() {
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-xl font-bold text-gray-900 dark:text-white">Hợp đồng gần đây</h2>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Các hợp đồng thuê phòng mới nhất</p>
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white">Recent Contracts</h2>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Latest rental agreements</p>
                     </div>
                     <Link
                       href="/owner/contracts"
                       className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
                     >
-                      Xem tất cả →
+                      View All →
                     </Link>
                   </div>
                 </div>
                 <div className="p-6">
                   {contracts.length === 0 ? (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                      Chưa có hợp đồng nào
+                      No contracts yet
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -499,86 +574,69 @@ export default function OwnerDashboard() {
 
             {/* Right Column - 1/3 width */}
             <div className="space-y-8">
-              {/* Quick Actions */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">Thao tác nhanh</h2>
-                </div>
-                <div className="p-4 space-y-2">
-                  <QuickActionButton
-                    icon={<svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>}
-                    title="Thêm nhà trọ"
-                    description="Tạo nhà trọ mới"
-                    color="blue"
-                    onClick={() => router.push('/owner/boarding-houses')}
-                  />
-                  <QuickActionButton
-                    icon={<svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>}
-                    title="Đăng tin cho thuê"
-                    description="Tạo bài đăng mới"
-                    color="green"
-                    onClick={() => router.push('/owner/posts')}
-                  />
-                  <QuickActionButton
-                    icon={<svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
-                    title="Quản lý hợp đồng"
-                    description="Xem và tạo hợp đồng"
-                    color="purple"
-                    onClick={() => router.push('/owner/contracts')}
-                  />
-                  <QuickActionButton
-                    icon={<svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>}
-                    title="Tài khoản ngân hàng"
-                    description="Quản lý thanh toán"
-                    color="orange"
-                    onClick={() => router.push('/owner/bank-account')}
-                  />
-                  <QuickActionButton
-                    icon={<svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>}
-                    title="Tin nhắn"
-                    description="Trò chuyện với khách"
-                    color="indigo"
-                    onClick={() => router.push('/owner/chats')}
-                  />
-                </div>
-              </div>
-
               {/* Occupancy Overview */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Tình trạng phòng</h2>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Room Occupancy</h2>
                 <OccupancyChart occupied={stats.occupiedRooms} total={stats.totalRooms} />
               </div>
 
-              {/* Notifications */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">Thông báo</h2>
-                    <Link
-                      href="/owner/notifications"
-                      className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
-                    >
-                      Xem tất cả
-                    </Link>
+              {/* Rental Requests */}
+              <RentalRequestsCard 
+                pendingRequests={stats.pendingRentalRequests} 
+                onClick={() => router.push('/owner/rental-requests')}
+              />
+            </div>
+          </div>
+
+          {/* Revenue Chart Section - Full Width */}
+          <div className="mt-8">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Revenue Trend</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Monthly revenue for the last 6 months</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">This Month</p>
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {(stats.monthlyRevenue / 1000000).toFixed(1)}M ₫
+                  </p>
+                </div>
+              </div>
+              <RevenueChart monthlyData={revenueData} />
+            </div>
+          </div>
+
+          {/* Notifications Section */}
+          <div className="mt-8">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">Notifications</h2>
+                  <Link
+                    href="/owner/notifications"
+                    className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
+                  >
+                    View All
+                  </Link>
+                </div>
+              </div>
+              <div className="p-4">
+                {notifications.length === 0 ? (
+                  <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                    No notifications
                   </div>
-                </div>
-                <div className="p-4">
-                  {notifications.length === 0 ? (
-                    <div className="text-center py-6 text-gray-500 dark:text-gray-400">
-                      Không có thông báo mới
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {notifications.map(notification => (
-                        <NotificationItem
-                          key={notification.id}
-                          notification={notification}
-                          onMarkRead={handleMarkNotificationRead}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
+                ) : (
+                  <div className="space-y-3">
+                    {notifications.map(notification => (
+                      <NotificationItem
+                        key={notification.id}
+                        notification={notification}
+                        onMarkRead={handleMarkNotificationRead}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
