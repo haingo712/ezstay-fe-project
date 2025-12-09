@@ -115,8 +115,6 @@ export function useAuth() {
       } catch (err) {
         console.log("⚠️ Could not load avatar for navbar:", err.message);
       }
-    } catch (err) {
-      // Silent fail - avatar is not critical
     }
   }, [isAuthenticated]); // Remove 'user' from dependencies to prevent loop
 
