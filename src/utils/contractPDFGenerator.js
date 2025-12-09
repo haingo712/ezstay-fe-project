@@ -1110,11 +1110,98 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   });
   yPos += 10;
 
-  // Signatures Section
-  if (yPos > 180) {
-    doc.addPage();
-    yPos = 20;
+  // Citizen ID Images Section
+  if (identityProfiles.length > 0) {
+    console.log('📸 Total identity profiles:', identityProfiles.length);
+    identityProfiles.forEach((profile, idx) => {
+      console.log(`Profile ${idx}:`, {
+        name: profile.fullName || profile.FullName,
+        hasFront: !!(profile.citizenIdFront || profile.CitizenIdFront),
+        hasBack: !!(profile.citizenIdBack || profile.CitizenIdBack),
+        frontUrl: profile.citizenIdFront || profile.CitizenIdFront,
+        backUrl: profile.citizenIdBack || profile.CitizenIdBack,
+      });
+    });
+    
+    const profilesWithImages = identityProfiles.filter(profile => 
+      (profile.citizenIdFront || profile.CitizenIdFront) || 
+      (profile.citizenIdBack || profile.CitizenIdBack)
+    );
+    
+    console.log('📸 Profiles with CCCD images:', profilesWithImages.length);
+    
+    if (profilesWithImages.length > 0) {
+      doc.addPage();
+      yPos = 20;
+      
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(12);
+      doc.text('CITIZEN ID CARD IMAGES', 20, yPos);
+      yPos += 10;
+      
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(10);
+      
+      profilesWithImages.forEach((profile, index) => {
+        const profileName = profile.fullName || profile.FullName || `Person ${index + 1}`;
+        const frontImage = profile.citizenIdFront || profile.CitizenIdFront;
+        const backImage = profile.citizenIdBack || profile.CitizenIdBack;
+        
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFont(undefined, 'bold');
+        doc.text(`${index + 1}. ${removeVietnameseDiacritics(profileName)}`, 20, yPos);
+        yPos += 8;
+        doc.setFont(undefined, 'normal');
+        
+        // Front image
+        if (frontImage) {
+          try {
+            doc.text('Front side:', 25, yPos);
+            yPos += 5;
+            // Add image with reasonable size (85mm x 54mm standard ID card ratio ~ 1.57)
+            const imgWidth = 85;
+            const imgHeight = 54;
+            doc.addImage(frontImage, 'JPEG', 25, yPos, imgWidth, imgHeight);
+            yPos += imgHeight + 5;
+          } catch (error) {
+            console.error('Error adding front ID image:', error);
+            doc.text('(Image not available)', 25, yPos);
+            yPos += 7;
+          }
+        }
+        
+        // Back image
+        if (backImage) {
+          if (yPos > 200) {
+            doc.addPage();
+            yPos = 20;
+          }
+          try {
+            doc.text('Back side:', 25, yPos);
+            yPos += 5;
+            const imgWidth = 85;
+            const imgHeight = 54;
+            doc.addImage(backImage, 'JPEG', 25, yPos, imgWidth, imgHeight);
+            yPos += imgHeight + 8;
+          } catch (error) {
+            console.error('Error adding back ID image:', error);
+            doc.text('(Image not available)', 25, yPos);
+            yPos += 7;
+          }
+        }
+        
+        yPos += 5;
+      });
+    }
   }
+
+  // Signatures Section
+  doc.addPage();
+  yPos = 20;
   
   doc.setFont(undefined, 'bold');
   doc.setFontSize(12);

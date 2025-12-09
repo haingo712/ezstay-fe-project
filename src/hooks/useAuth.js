@@ -101,17 +101,19 @@ export function useAuth() {
       return;
     }
 
-    // If avatar already exists, don't fetch again
-    if (user?.avatar) {
-      return;
-    }
-
-    // Fetch avatar only once
-    try {
-      const profileData = await profileService.getProfile();
-      if (profileData && (profileData.avata || profileData.avatar)) {
-        const updatedUser = { ...user, avatar: profileData.avata || profileData.avatar };
-        setUser(updatedUser);
+    if (user && !user.avatar) {
+      try {
+        console.log("🖼️ Fetching user profile for avatar...");
+        const profileData = await profileService.getProfile();
+        if (profileData) {
+          const updatedUser = { ...user, avatar: profileData.avata || profileData.avatar || null };
+          setUser(updatedUser);
+          console.log("✅ Updated user avatar:", updatedUser.avatar);
+        } else {
+          console.log("ℹ️ No profile data available - user may need to create profile");
+        }
+      } catch (err) {
+        console.log("⚠️ Could not load avatar for navbar:", err.message);
       }
     } catch (err) {
       // Silent fail - avatar is not critical
