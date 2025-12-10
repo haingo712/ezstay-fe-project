@@ -8,6 +8,7 @@ import imageService from "@/services/imageService";
 import serviceService from "@/services/serviceService";
 import userService from "@/services/tenantService";
 import utilityReadingService, { UtilityType } from "@/services/utilityReadingService";
+import utilityBillService from "@/services/utilityBillService";
 import vietnamAddressService from "@/services/vietnamAddressService";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -94,6 +95,10 @@ export default function ContractsManagementPage() {
   const [savingElectric, setSavingElectric] = useState(false);
   const [savingWater, setSavingWater] = useState(false);
   const [activeUtilityTab, setActiveUtilityTab] = useState('electric'); // 'electric' or 'water'
+
+  // Deposit bill states
+  const [depositBills, setDepositBills] = useState({}); // Map contractId -> depositBill
+  const [creatingDepositBill, setCreatingDepositBill] = useState(null); // contractId being processed
 
   // New contract creation states
   const [createStep, setCreateStep] = useState(1); // 1: contract, 2: identity profile, 3: utility readings, 4: services
@@ -516,8 +521,12 @@ export default function ContractsManagementPage() {
       if (houseContracts.length === 0 && enrichedContracts.length > 0) {
         console.warn("⚠️ No contracts matched this house - showing all contracts for debugging");
         setContracts(enrichedContracts);
+        // Load deposit bills for all contracts
+        await loadDepositBills(enrichedContracts);
       } else {
         setContracts(houseContracts);
+        // Load deposit bills for filtered contracts
+        await loadDepositBills(houseContracts);
       }
 
     } catch (error) {
@@ -525,6 +534,51 @@ export default function ContractsManagementPage() {
       setContracts([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Load deposit bill status for each contract (Active contracts only)
+  const loadDepositBills = async (contractsData) => {
+    const billsMap = {};
+    for (const contract of contractsData) {
+      const tenantSig = contract.tenantSignature || contract.TenantSignature;
+      const ownerSig = contract.ownerSignature || contract.OwnerSignature;
+      const depositAmount = contract.depositAmount || contract.DepositAmount || 0;
+      
+      // Only check for deposit bill if contract is Active and has deposit amount
+      if (contract.contractStatus === 'Active' && depositAmount > 0) {
+        try {
+          const depositBill = await utilityBillService.getDepositBillByContractIdForOwner(contract.id);
+          if (depositBill) {
+            billsMap[contract.id] = depositBill;
+          }
+        } catch (err) {
+          console.error('Error loading deposit bill for contract:', contract.id, err);
+        }
+      }
+    }
+    setDepositBills(billsMap);
+  };
+
+  // Create deposit bill for a contract
+  const handleCreateDepositBill = async (contract) => {
+    const contractId = contract.id || contract.Id;
+    try {
+      setCreatingDepositBill(contractId);
+      const result = await utilityBillService.createDepositBill(contractId);
+      
+      if (result?.isSuccess || result?.data) {
+        toast.success('Deposit bill created successfully!');
+        // Reload deposit bills
+        await loadDepositBills(contracts);
+      } else {
+        toast.error(result?.message || 'Failed to create deposit bill');
+      }
+    } catch (error) {
+      console.error('Error creating deposit bill:', error);
+      toast.error(error?.message || 'Failed to create deposit bill');
+    } finally {
+      setCreatingDepositBill(null);
     }
   };
 
@@ -2878,6 +2932,44 @@ export default function ContractsManagementPage() {
                         Utility Bill
                       </button>
                     )}
+
+                    {/* Create Deposit Bill - Only for Active contracts with deposit amount */}
+                    {contract.contractStatus === 'Active' && (contract.depositAmount || contract.DepositAmount) > 0 && (() => {
+                      const depositBill = depositBills[contract.id];
+                      const depositStatus = depositBill?.status || depositBill?.Status;
+                      
+                      if (!depositBill) {
+                        // No deposit bill yet - show create button
+                        return (
+                          <button
+                            onClick={() => handleCreateDepositBill(contract)}
+                            disabled={creatingDepositBill === contract.id}
+                            className="px-3 py-1 text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200 text-sm font-medium disabled:opacity-50"
+                            title="Create deposit bill for tenant to pay"
+                          >
+                            {creatingDepositBill === contract.id ? '⏳ Creating...' : '💰 Create Deposit Bill'}
+                          </button>
+                        );
+                      }
+                      
+                      if (depositStatus === 'Unpaid') {
+                        return (
+                          <span className="px-3 py-1 text-yellow-600 dark:text-yellow-400 text-sm font-medium">
+                            💰 Deposit: Waiting Payment
+                          </span>
+                        );
+                      }
+                      
+                      if (depositStatus === 'Paid') {
+                        return (
+                          <span className="px-3 py-1 text-green-600 dark:text-green-400 text-sm font-medium">
+                            ✅ Deposit Paid
+                          </span>
+                        );
+                      }
+                      
+                      return null;
+                    })()}
 
                     {/* Upload Contract Images - Only for Pending contracts, hidden for Active and Cancelled */}
                     {contract.contractStatus === 'Pending' && (

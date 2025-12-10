@@ -106,6 +106,102 @@ class UtilityBillService {
     }
 
     /**
+     * Get deposit bill for a contract
+     * @param {string} contractId - Contract ID
+     * @returns {Promise} Deposit bill or null
+     */
+    async getDepositBillByContractId(contractId) {
+        try {
+            console.log('💰 Fetching deposit bill for contract:', contractId);
+            
+            // Try to get all tenant bills first, then filter client-side
+            // This is more reliable than OData filter which can be finicky with GUIDs
+            const response = await apiFetch(`/api/UtilityBills/tenant`, {
+                method: 'GET',
+            });
+            
+            const bills = response?.value || response || [];
+            console.log('✅ All tenant bills:', bills);
+            
+            // Filter by contractId and BillType = Deposit (2)
+            const depositBill = bills.find(b => {
+                const billContractId = (b.contractId || b.ContractId || '').toLowerCase();
+                const targetContractId = contractId.toLowerCase();
+                const billType = b.billType || b.BillType;
+                const status = b.status || b.Status;
+                
+                return billContractId === targetContractId && 
+                       (billType === 2 || billType === 'Deposit') && 
+                       status !== 'Cancelled';
+            });
+            
+            console.log('✅ Deposit bill for contract:', contractId, depositBill);
+            return depositBill || null;
+        } catch (error) {
+            console.error('❌ Error fetching deposit bill:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Create deposit bill for a contract (Owner only)
+     * @param {string} contractId - Contract ID
+     * @returns {Promise} Created deposit bill
+     */
+    async createDepositBill(contractId) {
+        try {
+            console.log('💰 Creating deposit bill for contract:', contractId);
+            
+            const response = await apiFetch(`/api/UtilityBills/deposit/${contractId}`, {
+                method: 'POST',
+            });
+            
+            console.log('✅ Deposit bill created:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ Error creating deposit bill:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get deposit bill for a contract (Owner version - uses owner endpoint)
+     * @param {string} contractId - Contract ID
+     * @returns {Promise} Deposit bill or null
+     */
+    async getDepositBillByContractIdForOwner(contractId) {
+        try {
+            console.log('💰 Fetching deposit bill for contract (owner):', contractId);
+            
+            // Use owner endpoint
+            const response = await apiFetch(`/api/UtilityBills/owner`, {
+                method: 'GET',
+            });
+            
+            const bills = response?.value || response || [];
+            console.log('✅ All owner bills:', bills);
+            
+            // Filter by contractId and BillType = Deposit (2)
+            const depositBill = bills.find(b => {
+                const billContractId = (b.contractId || b.ContractId || '').toLowerCase();
+                const targetContractId = contractId.toLowerCase();
+                const billType = b.billType || b.BillType;
+                const status = b.status || b.Status;
+                
+                return billContractId === targetContractId && 
+                       (billType === 2 || billType === 'Deposit') && 
+                       status !== 'Cancelled';
+            });
+            
+            console.log('✅ Deposit bill for contract:', contractId, depositBill);
+            return depositBill || null;
+        } catch (error) {
+            console.error('❌ Error fetching deposit bill (owner):', error);
+            return null;
+        }
+    }
+
+    /**
      * Format currency to VND
      * @param {number} amount - Amount to format
      * @returns {string} Formatted currency
