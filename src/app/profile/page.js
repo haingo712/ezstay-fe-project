@@ -418,6 +418,39 @@ export default function ProfilePage() {
     setPasswordError("");
     setPasswordSuccess("");
 
+    // Validate required fields
+    if (!passwordData.oldPassword) {
+      setPasswordError("Current password is required");
+      return;
+    }
+
+    if (!passwordData.newPassword) {
+      setPasswordError("New password is required");
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters");
+      return;
+    }
+
+    if (!passwordData.confirmPassword) {
+      setPasswordError("Please confirm your new password");
+      return;
+    }
+
+    // Check if new password matches confirm password
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError("New password and confirm password do not match");
+      return;
+    }
+
+    // Check if new password is same as old password
+    if (passwordData.oldPassword === passwordData.newPassword) {
+      setPasswordError("New password must be different from current password");
+      return;
+    }
+
     try {
       setChangingPassword(true);
 

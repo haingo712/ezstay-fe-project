@@ -8,6 +8,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import AddressSelector from "@/components/AddressSelector";
 import vietnamAddressService from "@/services/vietnamAddressService";
 import notification from "@/utils/notification";
+import imageService from "@/services/imageService";
 
 // Image Gallery Component for Boarding House - 3 Thumbnails Layout
 function ImageCarousel({ images, houseName, t }) {
@@ -462,26 +463,65 @@ export default function BoardingHousesPage() {
     try {
       setSubmitting(true);
 
-      // Backend PUT endpoint expects JSON with ImageUrls (array of strings), not FormData
-      // Filter imagePreviews to keep only existing URLs (strings), exclude new File previews
-      const existingImageUrls = imagePreviews.filter(preview => typeof preview === 'string');
+      // Backend PUT endpoint uses [FromForm] - needs FormData
+      // Separate existing URLs and new files
+      const existingImageUrls = imagePreviews.filter(preview => typeof preview === 'string' && preview.startsWith('http'));
+      const newImageFiles = selectedImages.filter(img => img instanceof File);
+      
+      console.log("📸 Existing images:", existingImageUrls.length);
+      console.log("📸 New image files:", newImageFiles.length);
 
-      const updateData = {
+      // Step 1: Upload new images to ImageAPI first
+      let newImageUrls = [];
+      if (newImageFiles.length > 0) {
+        console.log("📤 Uploading new images to ImageAPI...");
+        try {
+          newImageUrls = await imageService.uploadMultiple(newImageFiles);
+          console.log("✅ New images uploaded:", newImageUrls);
+        } catch (uploadError) {
+          console.error("❌ Failed to upload new images:", uploadError);
+          notification.error(`Failed to upload images: ${uploadError.message}`);
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      // Step 2: Combine existing URLs + new URLs
+      const allImageUrls = [...existingImageUrls, ...newImageUrls];
+      console.log("📋 All image URLs:", allImageUrls.length);
+
+      if (allImageUrls.length === 0) {
+        notification.error('At least one image is required');
+        setSubmitting(false);
+        return;
+      }
+
+      // Step 3: Create FormData for update
+      const formData = new FormData();
+      formData.append('HouseName', houseData.houseName);
+      formData.append('Description', houseData.description || '');
+      
+      // Location with dot notation for nested object
+      formData.append('Location.ProvinceId', houseData.addressData.provinceCode?.toString() || '');
+      formData.append('Location.CommuneId', houseData.addressData.wardCode?.toString() || '');
+      formData.append('Location.AddressDetail', houseData.addressData.address || '');
+      
+      // Add ImageUrls as array
+      allImageUrls.forEach((url) => {
+        formData.append('ImageUrls', url);
+      });
+
+      console.log("📤 Updating boarding house with FormData");
+      console.log("📋 Update data:", {
         HouseName: houseData.houseName,
         Description: houseData.description || '',
-        ImageUrls: existingImageUrls, // Array of existing image URL strings
-        Location: {
-          ProvinceId: houseData.addressData.provinceCode?.toString() || '',
-          CommuneId: houseData.addressData.wardCode?.toString() || '',
-          AddressDetail: houseData.addressData.address || ''
-        }
-      };
+        'Location.ProvinceId': houseData.addressData.provinceCode?.toString() || '',
+        'Location.CommuneId': houseData.addressData.wardCode?.toString() || '',
+        'Location.AddressDetail': houseData.addressData.address || '',
+        ImageUrls: allImageUrls,
+      });
 
-      console.log("📤 Updating boarding house with JSON data");
-      console.log("📸 Existing images (ImageUrls):", existingImageUrls.length);
-      console.log("📋 Update data:", updateData);
-
-      const res = await boardingHouseAPI.update(editingHouse.id, updateData);
+      const res = await boardingHouseAPI.update(editingHouse.id, formData);
       if (res && res.isSuccess !== false) {
         notification.success(t('ownerBoardingHouses.messages.updateSuccess') + '!');
         setShowModal(false);

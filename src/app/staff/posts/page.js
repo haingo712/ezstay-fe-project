@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 import { rentalPostService } from '@/services/rentalPostService';
 import {
   CheckCircle,
@@ -17,6 +18,7 @@ import {
   FileText,
   MapPin,
   DollarSign,
+  List,
   Maximize2
 } from 'lucide-react';
 import Image from 'next/image';
@@ -24,6 +26,7 @@ import { toast } from 'react-toastify';
 
 export default function PostsReviewPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -67,6 +70,7 @@ export default function PostsReviewPage() {
   }, [mounted, user, loadPendingPosts]);
 
   const filteredPosts = posts.filter(post => {
+    if (activeTab === 'all') return true;
     const status = post.isApproved ?? post.IsApproved;
     if (activeTab === 'pending') return status === 0;
     if (activeTab === 'approved') return status === 1;
@@ -277,32 +281,85 @@ export default function PostsReviewPage() {
         {/* Tabs */}
         <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <nav className="flex">
-            {[
-              { key: 'pending', label: 'Pending', count: pendingCount, icon: Clock, color: 'yellow' },
-              { key: 'approved', label: 'Approved', count: approvedCount, icon: CheckCircle, color: 'green' },
-              { key: 'rejected', label: 'Rejected', count: rejectedCount, icon: XCircle, color: 'red' }
-            ].map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`flex-1 py-4 px-4 font-medium text-sm transition-colors border-b-2 flex items-center justify-center gap-2 ${activeTab === tab.key
-                    ? `border-${tab.color}-500 text-${tab.color}-600 dark:text-${tab.color}-400 bg-white dark:bg-gray-800`
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                    }`}
-                >
-                  <Icon className={`w-4 h-4 ${activeTab === tab.key ? `text-${tab.color}-500` : ''}`} />
-                  {tab.label}
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === tab.key
-                    ? `bg-${tab.color}-100 text-${tab.color}-700 dark:bg-${tab.color}-900/30 dark:text-${tab.color}-400`
-                    : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-                    }`}>
-                    {tab.count}
-                  </span>
-                </button>
-              );
-            })}
+            {/* All Tab */}
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`flex-1 py-4 px-4 font-medium text-sm transition-colors border-b-2 flex items-center justify-center gap-2 ${
+                activeTab === 'all'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-800'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <List className={`w-4 h-4 ${activeTab === 'all' ? 'text-blue-500' : ''}`} />
+              All
+              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                activeTab === 'all'
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+              }`}>
+                {posts.length}
+              </span>
+            </button>
+
+            {/* Pending Tab */}
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`flex-1 py-4 px-4 font-medium text-sm transition-colors border-b-2 flex items-center justify-center gap-2 ${
+                activeTab === 'pending'
+                  ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400 bg-white dark:bg-gray-800'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <Clock className={`w-4 h-4 ${activeTab === 'pending' ? 'text-yellow-500' : ''}`} />
+              Pending
+              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                activeTab === 'pending'
+                  ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+              }`}>
+                {pendingCount}
+              </span>
+            </button>
+
+            {/* Approved Tab */}
+            <button
+              onClick={() => setActiveTab('approved')}
+              className={`flex-1 py-4 px-4 font-medium text-sm transition-colors border-b-2 flex items-center justify-center gap-2 ${
+                activeTab === 'approved'
+                  ? 'border-green-500 text-green-600 dark:text-green-400 bg-white dark:bg-gray-800'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <CheckCircle className={`w-4 h-4 ${activeTab === 'approved' ? 'text-green-500' : ''}`} />
+              Approved
+              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                activeTab === 'approved'
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+              }`}>
+                {approvedCount}
+              </span>
+            </button>
+
+            {/* Rejected Tab */}
+            <button
+              onClick={() => setActiveTab('rejected')}
+              className={`flex-1 py-4 px-4 font-medium text-sm transition-colors border-b-2 flex items-center justify-center gap-2 ${
+                activeTab === 'rejected'
+                  ? 'border-red-500 text-red-600 dark:text-red-400 bg-white dark:bg-gray-800'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <XCircle className={`w-4 h-4 ${activeTab === 'rejected' ? 'text-red-500' : ''}`} />
+              Rejected
+              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                activeTab === 'rejected'
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+              }`}>
+                {rejectedCount}
+              </span>
+            </button>
           </nav>
         </div>
       </div>

@@ -10,6 +10,7 @@ import Footer from '@/components/Footer';
 import { useAuth } from '@/hooks/useAuth';
 import SafeImage from '@/components/SafeImage';
 import { toast } from 'react-toastify';
+import notification from '@/utils/notification';
 
 export default function ReviewDetailPage() {
   const params = useParams();
@@ -66,7 +67,8 @@ export default function ReviewDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm(t('reviewDetail.confirmDelete'))) return;
+    const confirmed = await notification.confirm(t('reviewDetail.confirmDelete'), t('common.confirm') || 'Xác nhận');
+    if (!confirmed) return;
 
     try {
       await reviewService.deleteReview(reviewId);

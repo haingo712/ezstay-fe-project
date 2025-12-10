@@ -219,8 +219,8 @@ class Notification {
     return this.modal(message, {
       title,
       type: 'warning',
-      confirmText: 'Confirm',
-      cancelText: 'Cancel',
+      confirmText: 'Yes',
+      cancelText: 'No',
       showCancel: true
     });
   }

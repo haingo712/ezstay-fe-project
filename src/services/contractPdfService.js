@@ -17,8 +17,8 @@ const contractPdfService = {
       console.log('✍️ Owner signature:', ownerSignature ? 'Yes' : 'No');
       console.log('✍️ Tenant signature:', tenantSignature ? 'Yes' : 'No');
 
-      // Step 1: Generate PDF with signatures embedded
-      const doc = generateContractPDF(contract, ownerSignature, tenantSignature);
+      // Step 1: Generate PDF with signatures embedded (now async)
+      const doc = await generateContractPDF(contract, ownerSignature, tenantSignature);
       
       // Step 2: Convert PDF to Blob
       const pdfBlob = doc.output('blob');
@@ -112,11 +112,11 @@ const contractPdfService = {
    * @param {string} ownerSignature - Owner's signature (base64 data URL)
    * @param {string} tenantSignature - Tenant's signature (base64 data URL)
    */
-  downloadSignedPdf: (contract, ownerSignature = null, tenantSignature = null) => {
+  downloadSignedPdf: async (contract, ownerSignature = null, tenantSignature = null) => {
     try {
       console.log('⬇️ Downloading signed contract PDF...');
       
-      const doc = generateContractPDF(contract, ownerSignature, tenantSignature);
+      const doc = await generateContractPDF(contract, ownerSignature, tenantSignature);
       const fileName = `Contract-${contract.id?.slice(0, 8) || 'unknown'}-signed-${new Date().toISOString().split('T')[0]}.pdf`;
       
       doc.save(fileName);
@@ -133,36 +133,109 @@ const contractPdfService = {
    * @param {string} ownerSignature - Owner's signature (base64 data URL)
    * @param {string} tenantSignature - Tenant's signature (base64 data URL)
    */
-  previewSignedPdf: (contract, ownerSignature = null, tenantSignature = null) => {
+  previewSignedPdf: async (contract, ownerSignature = null, tenantSignature = null) => {
+    // Open window first to avoid popup blocker
+    const newWindow = window.open('', '_blank');
+    
+    if (!newWindow) {
+      notification.warning('Please allow popups to preview the contract PDF');
+      return;
+    }
+    
+    // Show loading state
+    newWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Loading Contract PDF...</title>
+        <style>
+          body { 
+            margin: 0; padding: 0; 
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; font-family: Arial, sans-serif;
+            background: #f5f5f5;
+          }
+          .loader { text-align: center; }
+          .spinner { 
+            width: 50px; height: 50px; 
+            border: 5px solid #e0e0e0; 
+            border-top: 5px solid #3b82f6; 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+          }
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+      </head>
+      <body>
+        <div class="loader">
+          <div class="spinner"></div>
+          <p>Generating PDF, please wait...</p>
+          <p style="font-size: 12px; color: #666;">Loading images may take a few seconds</p>
+        </div>
+      </body>
+      </html>
+    `);
+    
     try {
       console.log('👁️ Previewing signed contract PDF...');
       
-      const doc = generateContractPDF(contract, ownerSignature, tenantSignature);
+      const doc = await generateContractPDF(contract, ownerSignature, tenantSignature);
       const pdfDataUri = doc.output('datauristring');
       
-      const newWindow = window.open();
-      if (newWindow) {
-        newWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>Contract Preview - ${contract.id?.slice(0, 8) || 'Contract'}</title>
-            <style>
-              body { margin: 0; padding: 0; overflow: hidden; }
-              iframe { width: 100%; height: 100vh; border: none; }
-            </style>
-          </head>
-          <body>
-            <iframe src='${pdfDataUri}'></iframe>
-          </body>
-          </html>
-        `);
-      } else {
-        notification.warning('Please allow popups to preview the contract PDF');
-      }
+      // Replace loading content with PDF
+      newWindow.document.open();
+      newWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Contract Preview - ${contract.id?.slice(0, 8) || 'Contract'}</title>
+          <style>
+            body { margin: 0; padding: 0; overflow: hidden; }
+            iframe { width: 100%; height: 100vh; border: none; }
+          </style>
+        </head>
+        <body>
+          <iframe src='${pdfDataUri}'></iframe>
+        </body>
+        </html>
+      `);
+      newWindow.document.close();
     } catch (error) {
       console.error('❌ Error previewing PDF:', error);
-      throw error;
+      
+      // Show error in the window
+      newWindow.document.open();
+      newWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Error - Contract PDF</title>
+          <style>
+            body { 
+              margin: 0; padding: 40px; 
+              font-family: Arial, sans-serif;
+              background: #fef2f2;
+              color: #991b1b;
+            }
+            h1 { color: #dc2626; }
+            pre { 
+              background: #fee2e2; 
+              padding: 15px; 
+              border-radius: 8px;
+              overflow: auto;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>❌ Error Generating PDF</h1>
+          <p>An error occurred while generating the contract PDF:</p>
+          <pre>${error.message || error}</pre>
+          <p>Please try again or contact support.</p>
+        </body>
+        </html>
+      `);
+      newWindow.document.close();
     }
   }
 };

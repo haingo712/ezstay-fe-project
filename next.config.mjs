@@ -1,6 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['face-api.js'],
+  
+  // Disable error overlay in development
+  devIndicators: {
+    buildActivity: false,
+  },
+  
+  // Customize which errors show overlay
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
+
   images: {
     remotePatterns: [
       {

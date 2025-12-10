@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@microsoft/signalr": "^10.0.0",
     "axios": "^1.12.2",
     "face-api.js": "^0.22.2",
     "firebase": "^12.5.0",

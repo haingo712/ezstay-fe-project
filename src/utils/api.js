@@ -161,6 +161,12 @@ async function apiFetch(path, options = {}) {
         errorData = { message: response.statusText };
       }
 
+      // For 404 errors, return null instead of throwing to prevent error overlay
+      if (response.status === 404) {
+        console.warn(`⚠️ Resource not found (404): ${url}`);
+        return null;
+      }
+
       // Build detailed error message for validation errors
       let errorMessage = errorData.message || errorData.title || `Request failed with status ${response.status}`;
       if (errorData.errors && typeof errorData.errors === 'object') {
@@ -262,8 +268,8 @@ export const boardingHouseAPI = {
   },
   // Create with FormData (supports multiple image upload)
   create: (formData) => api.postFormData('/api/BoardingHouses', formData),
-  // Update with JSON (backend expects ImageUrls array)
-  update: (id, data) => api.put(`/api/BoardingHouses/${id}`, data),
+  // Update with FormData (backend uses [FromForm] - expects ImageUrls as array of strings)
+  update: (id, formData) => api.putFormData(`/api/BoardingHouses/${id}`, formData),
   delete: (id) => api.delete(`/api/BoardingHouses/${id}`),
 
   // Ranking & Analytics APIs

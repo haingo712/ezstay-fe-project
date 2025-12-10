@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import paymentService from '@/services/paymentService';
 import { paymentAPI } from '@/utils/api';
 import { useTranslation } from '@/hooks/useTranslation';
+import notification from '@/utils/notification';
 
 export default function BankAccountPage() {
     const { t } = useTranslation();
@@ -245,7 +246,8 @@ export default function BankAccountPage() {
     };
 
     const handleDelete = async (account) => {
-        if (!confirm(t('bankAccount.deleteConfirm'))) {
+        const confirmed = await notification.confirm(t('bankAccount.deleteConfirm'), t('common.confirm') || 'Xác nhận');
+        if (!confirmed) {
             return;
         }
 

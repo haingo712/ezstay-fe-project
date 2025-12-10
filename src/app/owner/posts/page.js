@@ -8,6 +8,7 @@ import boardingHouseService from '@/services/boardingHouseService';
 import roomService from '@/services/roomService';
 import { FileText, Plus, Edit2, Trash2, Copy, X, Building, Home, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-toastify';
+import notification from '@/utils/notification';
 
 export default function PostsPage() {
   const { user } = useAuth();
@@ -275,7 +276,8 @@ export default function PostsPage() {
   };
 
   const handleDeletePost = async (postId) => {
-    if (confirm(t('ownerPosts.messages.deleteConfirm'))) {
+    const confirmed = await notification.confirm(t('ownerPosts.messages.deleteConfirm'), t('common.confirm') || 'Xác nhận');
+    if (confirmed) {
       try {
         await rentalPostService.deletePost(postId, user.id);
         await loadPosts();

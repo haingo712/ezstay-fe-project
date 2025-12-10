@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
 import utilityBillService from '@/services/utilityBillService';
 import paymentService from '@/services/paymentService';
+import { useBillNotifications } from '@/hooks/useSignalR';
+import { toast } from 'react-toastify';
 import { apiFetch } from '@/utils/api';
 
 // Helper function to get bill amount (handles different API field names)
@@ -54,6 +56,64 @@ export default function BillPaymentPage() {
     const [selectedBankAccount, setSelectedBankAccount] = useState(null);
     const [loadingBankAccounts, setLoadingBankAccounts] = useState(false);
     const [paymentSuccess, setPaymentSuccess] = useState(false);
+    const [userId, setUserId] = useState(null);
+
+    // Get user ID for SignalR connection
+    useEffect(() => {
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+            try {
+                const parsed = JSON.parse(userData);
+                setUserId(parsed.id || parsed.userId);
+            } catch (e) {
+                console.error('Error parsing user data:', e);
+            }
+        }
+    }, []);
+
+    // Handle real-time payment notifications via SignalR
+    const handlePaymentNotification = useCallback((type, data) => {
+        console.log(`📢 Payment notification: ${type}`, data);
+        
+        // Check if this notification is for our current bill
+        const notificationBillId = data?.billId || data?.BillId || data?.data?.billId;
+        const currentBillIdClean = billId?.replace(/-/g, '').toLowerCase();
+        const notificationBillIdClean = notificationBillId?.replace(/-/g, '').toLowerCase();
+        
+        const isThisBill = notificationBillIdClean === currentBillIdClean || 
+                          notificationBillId === billId;
+        
+        if (type === 'payment_confirmed' && isThisBill) {
+            console.log('✅ Payment confirmed via SignalR for this bill!');
+            
+            // Show success toast immediately
+            toast.success(
+                <div>
+                    <strong>🎉 Thanh toán thành công!</strong>
+                    <p>Hóa đơn {formatCurrency(data?.amount || getBillAmount(bill))} đã được thanh toán</p>
+                </div>,
+                { 
+                    autoClose: 5000,
+                    position: 'top-center',
+                    style: { fontSize: '16px' }
+                }
+            );
+            
+            setPaymentSuccess(true);
+            
+            // Auto redirect after showing success
+            setTimeout(() => {
+                router.push('/bills');
+            }, 3000);
+        } else if (type === 'status_updated' && isThisBill) {
+            console.log('📊 Bill status updated via SignalR');
+            // Reload bill to get new status
+            loadBillDetails();
+        }
+    }, [billId, bill, router]);
+
+    // Connect to SignalR for real-time updates
+    const { isConnected } = useBillNotifications(userId, handlePaymentNotification);
 
     useEffect(() => {
         if (billId) {
@@ -218,7 +278,7 @@ export default function BillPaymentPage() {
         }
     };
 
-    // Polling for payment status - check bill status directly
+    // Polling for payment status - check bill status directly (faster polling + toast notification)
     const startPaymentPolling = () => {
         console.log('🔄 Starting payment status polling...');
         
@@ -233,8 +293,22 @@ export default function BillPaymentPage() {
                 const status = getBillStatus(updatedBill);
                 
                 if (status === 'Paid') {
-                    console.log('✅ Payment confirmed! Redirecting...');
+                    console.log('✅ Payment confirmed via polling!');
                     clearInterval(pollInterval);
+                    
+                    // Show success toast immediately
+                    toast.success(
+                        <div>
+                            <strong>🎉 Thanh toán thành công!</strong>
+                            <p>Hóa đơn {formatCurrency(getBillAmount(updatedBill))} đã được xác nhận</p>
+                        </div>,
+                        { 
+                            autoClose: 5000,
+                            position: 'top-center',
+                            style: { fontSize: '16px' }
+                        }
+                    );
+                    
                     setPaymentSuccess(true);
                     
                     // Auto redirect to bills page after 3 seconds
@@ -245,7 +319,7 @@ export default function BillPaymentPage() {
             } catch (err) {
                 console.error('Error checking payment status:', err);
             }
-        }, 5000); // Check every 5 seconds
+        }, 3000); // Check every 3 seconds for faster response
 
         // Stop polling after 10 minutes
         setTimeout(() => {
@@ -747,15 +821,33 @@ export default function BillPaymentPage() {
                                         </ol>
                                     </div>
 
-                                    {/* Auto-checking Status */}
+                                    {/* Auto-checking Status with SignalR indicator */}
                                     <div className="w-full max-w-sm bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-emerald-600 border-t-transparent"></div>
-                                            <div>
-                                                <p className="text-emerald-800 font-medium text-sm">Waiting for payment...</p>
-                                                <p className="text-emerald-600 text-xs">Auto-checking every 5 seconds</p>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-emerald-600 border-t-transparent"></div>
+                                                <div>
+                                                    <p className="text-emerald-800 font-medium text-sm">Đang chờ thanh toán...</p>
+                                                    <p className="text-emerald-600 text-xs">Tự động kiểm tra mỗi 3 giây</p>
+                                                </div>
+                                            </div>
+                                            {/* SignalR Connection Status */}
+                                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                                                isConnected 
+                                                    ? 'bg-green-100 text-green-700' 
+                                                    : 'bg-gray-100 text-gray-500'
+                                            }`}>
+                                                <span className={`w-2 h-2 rounded-full ${
+                                                    isConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+                                                }`}></span>
+                                                {isConnected ? 'Live' : 'Offline'}
                                             </div>
                                         </div>
+                                        {isConnected && (
+                                            <p className="text-emerald-600 text-xs mt-2 pl-8">
+                                                ✓ Thông báo real-time đã bật - Bạn sẽ nhận thông báo ngay khi thanh toán thành công
+                                            </p>
+                                        )}
                                     </div>
 
                                     {/* Action Buttons */}

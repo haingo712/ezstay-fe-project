@@ -211,7 +211,8 @@ class ChatService {
   async getOwnerChatRooms() {
     try {
       console.log('Fetching owner chat rooms...');
-      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/chat-room/owner`, {
+      // Use /api/Chat/chat-room/user endpoint for owner
+      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/chat-room/user`, {
         method: 'GET',
         headers: this.getHeaders(),
       });
@@ -227,7 +228,9 @@ class ChatService {
       }
 
       const data = await response.json();
-      console.log('Owner chat rooms data:', data);
+      console.log('Owner chat rooms RAW data:', JSON.stringify(data, null, 2));
+      console.log('Owner chat rooms data.data:', data?.data);
+      console.log('First room full object:', JSON.stringify(data?.data?.[0] || data?.[0], null, 2));
       return data?.data || data || [];
     } catch (error) {
       console.error('Error getting owner chat rooms:', error);

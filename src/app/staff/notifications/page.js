@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "@/utils/api";
 import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from 'react-toastify';
+import notification from '@/utils/notification';
 
 // Function to mark notification as read
 async function markAsReadNotification(id) {
@@ -326,8 +327,9 @@ export default function StaffNotificationsPage() {
 
     // Handle delete notification
     const handleDeleteNotification = async (id, title) => {
-        const confirmDelete = window.confirm(
-            `Are you sure you want to delete notification:\n"${title}"?`
+        const confirmDelete = await notification.confirm(
+            `Are you sure you want to delete notification:\n"${title}"?`,
+            'Confirm Delete'
         );
 
         if (!confirmDelete) return;

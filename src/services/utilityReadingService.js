@@ -44,6 +44,26 @@ class UtilityReadingService {
     }
 
     /**
+     * Get first (initial) utility reading by contract and type
+     * This is the reading added when contract is created - should not be edited/deleted
+     * @param {string} contractId - Contract ID
+     * @param {number} utilityType - 0 = Water, 1 = Electric
+     * @returns {Promise} First utility reading
+     */
+    async getFirstReading(contractId, utilityType) {
+        try {
+            console.log(`⚡ Fetching first ${utilityType === 1 ? 'electric' : 'water'} reading for contract:`, contractId);
+            const response = await api.get(`/api/UtilityReading/first/${contractId}/type/${utilityType}`);
+            console.log('✅ First reading fetched:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ Error fetching first reading:', error);
+            // Return null instead of throwing - first reading might not exist
+            return null;
+        }
+    }
+
+    /**
      * Get latest utility reading by contract and type
      * @param {string} contractId - Contract ID
      * @param {number} utilityType - 0 = Water, 1 = Electric

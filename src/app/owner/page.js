@@ -284,15 +284,8 @@ export default function OwnerDashboard() {
     pendingContracts: 0,
   });
 
-  // Mock revenue data for last 6 months (in VND)
-  const [revenueData] = useState([
-    { label: 'T7', revenue: 1500000 },
-    { label: 'T8', revenue: 1800000 },
-    { label: 'T9', revenue: 2200000 },
-    { label: 'T10', revenue: 2000000 },
-    { label: 'T11', revenue: 2500000 },
-    { label: 'T12', revenue: 2800000 },
-  ]);
+  // Revenue data for last 6 months (from real API data)
+  const [revenueData, setRevenueData] = useState([]);
 
   // Load all dashboard data
   const loadDashboardData = useCallback(async () => {
@@ -365,6 +358,69 @@ export default function OwnerDashboard() {
         }));
       } catch (error) {
         console.error('Error loading rental requests:', error);
+      }
+
+      // Load revenue data from utility bills (last 6 months)
+      try {
+        const billsResponse = await apiFetch('/api/UtilityBills/owner', { method: 'GET' });
+        const bills = billsResponse?.value || billsResponse || [];
+        
+        // Filter paid bills (status = 1 or 'Paid')
+        const paidBills = bills.filter(b => {
+          const status = b.status || b.Status;
+          return status === 1 || status === 'Paid';
+        });
+
+        // Group by month (last 6 months)
+        const now = new Date();
+        const monthlyRevenue = {};
+        const monthLabels = [];
+        
+        // Generate last 6 months labels
+        for (let i = 5; i >= 0; i--) {
+          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          const monthLabel = `T${date.getMonth() + 1}`;
+          monthLabels.push({ key: monthKey, label: monthLabel });
+          monthlyRevenue[monthKey] = 0;
+        }
+
+        // Sum revenue by month
+        paidBills.forEach(bill => {
+          const paidDate = bill.paidAt || bill.PaidAt || bill.updatedAt || bill.UpdatedAt;
+          if (paidDate) {
+            const date = new Date(paidDate);
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            if (monthlyRevenue[monthKey] !== undefined) {
+              const amount = bill.totalAmount || bill.TotalAmount || bill.amount || bill.Amount || 0;
+              monthlyRevenue[monthKey] += amount;
+            }
+          }
+        });
+
+        // Convert to chart data
+        const chartData = monthLabels.map(({ key, label }) => ({
+          label,
+          revenue: monthlyRevenue[key] || 0
+        }));
+
+        console.log('📊 Revenue chart data:', chartData);
+        setRevenueData(chartData);
+
+        // Calculate total monthly revenue (current month)
+        const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        totalRevenue = monthlyRevenue[currentMonthKey] || totalRevenue;
+      } catch (error) {
+        console.error('Error loading revenue data:', error);
+        // Set default empty data
+        setRevenueData([
+          { label: 'T7', revenue: 0 },
+          { label: 'T8', revenue: 0 },
+          { label: 'T9', revenue: 0 },
+          { label: 'T10', revenue: 0 },
+          { label: 'T11', revenue: 0 },
+          { label: 'T12', revenue: 0 },
+        ]);
       }
 
       setStats(prev => ({

@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import ownerRequestService from '@/services/ownerRequestService';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import notification from '@/utils/notification';
 
 export default function OwnerRequestsPage() {
   const { user } = useAuth();
@@ -39,7 +40,8 @@ export default function OwnerRequestsPage() {
   };
 
   const handleApprove = async (requestId) => {
-    if (!confirm('Bạn có chắc muốn phê duyệt đơn này?')) return;
+    const confirmed = await notification.confirm('Bạn có chắc muốn phê duyệt đơn này?', 'Xác nhận phê duyệt');
+    if (!confirmed) return;
 
     try {
       setProcessingId(requestId);

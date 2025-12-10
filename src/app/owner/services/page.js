@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
 import serviceService from '@/services/serviceService';
 import { toast } from 'react-toastify';
+import notification from '@/utils/notification';
 
 export default function OwnerServicesPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -106,7 +107,8 @@ export default function OwnerServicesPage() {
   };
 
   const handleDelete = async (serviceId) => {
-    if (!confirm(t('ownerServices.messages.deleteConfirm'))) return;
+    const confirmed = await notification.confirm(t('ownerServices.messages.deleteConfirm'), t('common.confirm') || 'Xác nhận');
+    if (!confirmed) return;
 
     try {
       await serviceService.remove(serviceId);
