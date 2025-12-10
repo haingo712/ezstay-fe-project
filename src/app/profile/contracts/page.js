@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
 import contractService from '@/services/contractService';
+import utilityBillService from '@/services/utilityBillService';
 import {
     FileText,
     Clock,
@@ -18,7 +19,8 @@ import {
     Banknote,
     Search,
     Filter,
-    Star
+    Star,
+    CreditCard
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -33,6 +35,7 @@ export default function UserContractsPage() {
     const [error, setError] = useState(null);
     const [filter, setFilter] = useState('all'); // all, pending, active, expired
     const [searchTerm, setSearchTerm] = useState('');
+    const [depositBills, setDepositBills] = useState({}); // Map contractId -> depositBill
 
     useEffect(() => {
         if (user?.id) {
@@ -52,13 +55,40 @@ export default function UserContractsPage() {
                 tenantSig: c.tenantSignature || c.TenantSignature,
                 ownerSig: c.ownerSignature || c.OwnerSignature
             })));
-            setContracts(response.data || response || []);
+            const contractsData = response.data || response || [];
+            setContracts(contractsData);
+            
+            // Load deposit bills for contracts that are fully signed
+            await loadDepositBills(contractsData);
         } catch (error) {
             console.error('Error loading contracts:', error);
             setError(t('profileContracts.errors.loadFailed') || 'Failed to load contracts');
         } finally {
             setLoading(false);
         }
+    };
+
+    // Load deposit bill status for each contract
+    const loadDepositBills = async (contractsData) => {
+        const billsMap = {};
+        for (const contract of contractsData) {
+            const tenantSig = getTenantSignature(contract);
+            const ownerSig = getOwnerSignature(contract);
+            const depositAmount = contract.depositAmount || contract.DepositAmount || 0;
+            
+            // Only check for deposit bill if both signed and has deposit amount
+            if (tenantSig && ownerSig && depositAmount > 0) {
+                try {
+                    const depositBill = await utilityBillService.getDepositBillByContractId(contract.id);
+                    if (depositBill) {
+                        billsMap[contract.id] = depositBill;
+                    }
+                } catch (err) {
+                    console.error('Error loading deposit bill for contract:', contract.id, err);
+                }
+            }
+        }
+        setDepositBills(billsMap);
     };
 
     const getStatusConfig = (status) => {
@@ -346,7 +376,7 @@ export default function UserContractsPage() {
                                             </div>
 
                                             {/* Actions */}
-                                            <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                            <div className="flex flex-wrap justify-end gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                                                 <button
                                                     onClick={() => router.push(`/profile/contracts/${contract.id}`)}
                                                     className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -365,6 +395,48 @@ export default function UserContractsPage() {
                                                         {t('profileContracts.signContract') || 'Sign Contract'}
                                                     </button>
                                                 )}
+
+                                                {/* Show Pay Deposit button if both signed and deposit not paid */}
+                                                {getTenantSignature(contract) && getOwnerSignature(contract) && (contract.depositAmount || contract.DepositAmount) > 0 && (() => {
+                                                    const depositBill = depositBills[contract.id];
+                                                    const depositStatus = depositBill?.status || depositBill?.Status;
+                                                    
+                                                    if (!depositBill) {
+                                                        // No deposit bill yet - waiting for owner to create
+                                                        return (
+                                                            <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg">
+                                                                <Clock className="h-4 w-4" />
+                                                                <span className="text-sm">Waiting for deposit bill</span>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    
+                                                    if (depositStatus === 'Unpaid') {
+                                                        return (
+                                                            <button
+                                                                onClick={() => router.push(`/payment/bill/${depositBill.id || depositBill.Id}`)}
+                                                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-lg hover:from-emerald-600 hover:to-teal-600 transition-colors shadow-lg animate-pulse"
+                                                            >
+                                                                <CreditCard className="h-4 w-4" />
+                                                                {t('profileContracts.payDeposit') || 'Pay Deposit'}
+                                                                <span className="ml-1 text-sm font-bold">
+                                                                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(contract.depositAmount || contract.DepositAmount)}
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    }
+                                                    
+                                                    if (depositStatus === 'Paid') {
+                                                        return (
+                                                            <div className="flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg">
+                                                                <CheckCircle className="h-4 w-4" />
+                                                                <span className="text-sm font-medium">Deposit Paid</span>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    
+                                                    return null;
+                                                })()}
 
                                                 {/* Show Add Review button only for Active contracts */}
                                                 {(contract.contractStatus === 1 || contract.contractStatus === 'Active') && (

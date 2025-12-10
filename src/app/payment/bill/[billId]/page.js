@@ -156,15 +156,53 @@ export default function BillPaymentPage() {
                 return;
             }
 
-            // Create QR data from selected bank account
+            const bankAccountId = selectedBankAccount.id || selectedBankAccount.Id;
+            const amount = getBillAmount(bill);
+            // Remove dashes from billId for description (bank webhook strips dashes from content)
+            const description = billId.replace(/-/g, '');
+
+            // Call API to get QR code with amount and description
+            const qrApiUrl = `https://payment-api-r4zy.onrender.com/api/Bank/bank-account/${bankAccountId}/qr?amount=${amount}&description=${encodeURIComponent(description)}`;
+            console.log('🔗 Fetching QR from:', qrApiUrl);
+
+            const token = localStorage.getItem('authToken') ||
+                localStorage.getItem('ezstay_token') ||
+                localStorage.getItem('token');
+
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const qrResponse = await fetch(qrApiUrl, {
+                method: 'GET',
+                headers
+            });
+
+            if (!qrResponse.ok) {
+                throw new Error(`Failed to get QR code: ${qrResponse.status}`);
+            }
+
+            const qrResult = await qrResponse.json();
+            console.log('📱 QR API Response:', qrResult);
+
+            // Create QR data from API response - imageQR is the field returned by backend
+            const qrCodeUrl = qrResult.imageQR || qrResult.qrDataURL || qrResult.qrCodeUrl || 
+                              qrResult.data?.imageQR || qrResult.data?.qrDataURL || 
+                              qrResult.value?.imageQR || selectedBankAccount.imageQR;
+            
+            console.log('📱 QR Code URL:', qrCodeUrl);
+
             const qrInfo = {
                 billId: billId,
-                amount: getBillAmount(bill),
+                amount: amount,
                 bankName: selectedBankAccount.bankName,
                 accountNumber: selectedBankAccount.accountNumber,
                 accountName: selectedBankAccount.accountHolderName || selectedBankAccount.accountName || 'Owner',
-                transactionContent: `BILL ${billId.substring(0, 8).toUpperCase()}`,
-                qrCodeUrl: selectedBankAccount.imageQR
+                transactionContent: description,
+                qrCodeUrl: qrCodeUrl
             };
 
             setQrData(qrInfo);
@@ -180,35 +218,29 @@ export default function BillPaymentPage() {
         }
     };
 
-    // Polling for payment status
+    // Polling for payment status - check bill status directly
     const startPaymentPolling = () => {
+        console.log('🔄 Starting payment status polling...');
+        
         const pollInterval = setInterval(async () => {
             try {
-                // Use external payment API
-                const token = localStorage.getItem('authToken') ||
-                    localStorage.getItem('ezstay_token') ||
-                    localStorage.getItem('token');
-
-                const headers = {
-                    'Content-Type': 'application/json',
-                };
-                if (token) {
-                    headers['Authorization'] = `Bearer ${token}`;
-                }
-
-                const response = await fetch(`https://payment-api-r4zy.onrender.com/api/Payment/check-payment/${billId}`, {
-                    method: 'GET',
-                    headers
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('💳 Payment status check:', data);
-
-                    if (data?.isPaid) {
-                        clearInterval(pollInterval);
-                        setPaymentSuccess(true);
-                    }
+                console.log('🔍 Checking bill payment status...');
+                
+                // Reload bill details to check if status changed to "Paid"
+                const updatedBill = await utilityBillService.getBillById(billId);
+                console.log('💳 Bill status check:', updatedBill);
+                
+                const status = getBillStatus(updatedBill);
+                
+                if (status === 'Paid') {
+                    console.log('✅ Payment confirmed! Redirecting...');
+                    clearInterval(pollInterval);
+                    setPaymentSuccess(true);
+                    
+                    // Auto redirect to bills page after 3 seconds
+                    setTimeout(() => {
+                        router.push('/bills');
+                    }, 3000);
                 }
             } catch (err) {
                 console.error('Error checking payment status:', err);
@@ -218,6 +250,7 @@ export default function BillPaymentPage() {
         // Stop polling after 10 minutes
         setTimeout(() => {
             clearInterval(pollInterval);
+            console.log('⏱️ Polling timeout - stopped after 10 minutes');
         }, 600000);
 
         return () => clearInterval(pollInterval);
@@ -630,15 +663,19 @@ export default function BillPaymentPage() {
                                 <p className="text-emerald-100">Your payment has been confirmed</p>
                             </div>
                             <div className="p-6">
-                                <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                                <div className="bg-gray-50 rounded-xl p-4 mb-4">
                                     <p className="text-sm text-gray-500 mb-1">Amount Paid</p>
                                     <p className="text-2xl font-bold text-gray-900">{formatCurrency(getBillAmount(bill))}</p>
+                                </div>
+                                <div className="bg-blue-50 rounded-xl p-3 mb-6 flex items-center justify-center gap-2">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                                    <p className="text-blue-600 text-sm">Redirecting to bills in 3 seconds...</p>
                                 </div>
                                 <button
                                     onClick={() => router.push('/bills')}
                                     className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-colors"
                                 >
-                                    Back to Bills
+                                    Back to Bills Now
                                 </button>
                             </div>
                         </div>
