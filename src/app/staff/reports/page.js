@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { reviewAPI } from "@/utils/api";
 import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from 'react-toastify';
+import notification from '@/utils/notification';
 
 function StatusBadge({ status, t }) {
     // Backend có thể trả về số (0,1,2) hoặc string
@@ -50,7 +51,8 @@ export default function StaffReportsPage() {
             setLoading(false);
         }
     }; const handleApprove = async (reportId) => {
-        if (!confirm('Bạn có chắc chắn muốn duyệt báo cáo này?')) return;
+        const confirmed = await notification.confirm('Bạn có chắc chắn muốn duyệt báo cáo này?', 'Xác nhận duyệt');
+        if (!confirmed) return;
         setProcessing(reportId);
         try {
             const response = await reviewAPI.updateReviewReportStatus(reportId, { Status: 1 });

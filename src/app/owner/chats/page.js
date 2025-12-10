@@ -46,12 +46,20 @@ export default function OwnerChatsPage() {
 
   useEffect(() => {
     if (selectedChatRoom) {
-      loadMessages(selectedChatRoom.id);
-      // Auto-refresh messages every 5 seconds when a chat is selected
-      const interval = setInterval(() => {
-        loadMessages(selectedChatRoom.id);
-      }, 5000);
-      return () => clearInterval(interval);
+      // Get the correct room ID
+      const roomId = selectedChatRoom.id || selectedChatRoom.chatRoomId || selectedChatRoom.Id || selectedChatRoom.ChatRoomId;
+      
+      // Only load messages if we have a valid GUID roomId (not a number like "1")
+      if (roomId && typeof roomId === 'string' && roomId.includes('-')) {
+        loadMessages(roomId);
+        // Auto-refresh messages every 5 seconds when a chat is selected
+        const interval = setInterval(() => {
+          loadMessages(roomId);
+        }, 5000);
+        return () => clearInterval(interval);
+      } else {
+        console.warn('Invalid chat room ID:', roomId, 'Full room data:', selectedChatRoom);
+      }
     }
   }, [selectedChatRoom]);
 
@@ -76,12 +84,59 @@ export default function OwnerChatsPage() {
     try {
       setLoading(true);
       const rooms = await chatService.getOwnerChatRooms();
-      console.log('Loaded chat rooms:', rooms);
-      setChatRooms(rooms || []);
+      console.log('Raw chat rooms from API:', rooms);
+      
+      if (rooms?.[0]) {
+        console.log('First room ALL KEYS:', Object.keys(rooms[0]));
+        console.log('First room FULL OBJECT:', JSON.stringify(rooms[0], null, 2));
+      }
+      
+      // Normalize room data - ensure each room has an 'id' field (GUID format)
+      const normalizedRooms = (rooms || []).map((room, index) => {
+        // Find the correct ID field (should be a GUID) - check all possible field names
+        const possibleIds = {
+          chatRoomId: room.chatRoomId,
+          ChatRoomId: room.ChatRoomId,
+          roomId: room.roomId,
+          RoomId: room.RoomId,
+          id: room.id,
+          Id: room.Id,
+        };
+        console.log(`Room ${index} - All possible IDs:`, possibleIds);
+        
+        // Find the first GUID-like ID (contains hyphens)
+        let roomId = null;
+        for (const [key, value] of Object.entries(possibleIds)) {
+          if (value && typeof value === 'string' && value.includes('-')) {
+            console.log(`Room ${index} - Using ${key}:`, value);
+            roomId = value;
+            break;
+          }
+        }
+        
+        // If no GUID found, use whatever ID is available
+        if (!roomId) {
+          roomId = room.chatRoomId || room.ChatRoomId || room.roomId || room.RoomId || room.id || room.Id;
+          console.warn(`Room ${index} - No GUID found, using:`, roomId);
+        }
+        
+        return {
+          ...room,
+          id: roomId
+        };
+      });
+      console.log('Normalized chat rooms:', normalizedRooms);
+      
+      setChatRooms(normalizedRooms);
 
-      // Auto-select first room if available
-      if (rooms && rooms.length > 0 && !selectedChatRoom) {
-        setSelectedChatRoom(rooms[0]);
+      // Auto-select first room if available and has valid ID
+      if (normalizedRooms && normalizedRooms.length > 0 && !selectedChatRoom) {
+        const firstRoom = normalizedRooms[0];
+        if (firstRoom.id && typeof firstRoom.id === 'string' && firstRoom.id.includes('-')) {
+          setSelectedChatRoom(firstRoom);
+        } else {
+          console.warn('First room does not have valid GUID ID:', firstRoom.id);
+        }
       }
     } catch (error) {
       console.error('Error loading chat rooms:', error);
@@ -109,7 +164,8 @@ export default function OwnerChatsPage() {
 
     try {
       setSending(true);
-      await chatService.sendMessage(selectedChatRoom.id, newMessage.trim(), selectedImages);
+      const roomId = selectedChatRoom.id || selectedChatRoom.chatRoomId || selectedChatRoom.Id || selectedChatRoom.ChatRoomId;
+      await chatService.sendMessage(roomId, newMessage.trim(), selectedImages);
       setNewMessage('');
 
       // Clear selected images
@@ -118,7 +174,7 @@ export default function OwnerChatsPage() {
       setImagePreviews([]);
 
       // Reload messages
-      await loadMessages(selectedChatRoom.id);
+      await loadMessages(roomId);
 
       // Update chat room list to reflect new message
       await loadChatRooms();
@@ -205,13 +261,18 @@ export default function OwnerChatsPage() {
   };
 
   const handleSelectChatRoom = async (room) => {
+    // Get the correct room ID
+    const roomId = room.id || room.chatRoomId || room.Id || room.ChatRoomId;
+    const currentRoomId = selectedChatRoom?.id || selectedChatRoom?.chatRoomId;
+    
     // Don't reload if same room is selected
-    if (selectedChatRoom?.id === room.id) return;
+    if (currentRoomId === roomId) return;
 
-    setSelectedChatRoom(room);
+    setSelectedChatRoom({ ...room, id: roomId });
     // Load messages for the selected room
     try {
-      const response = await chatService.getMessages(room.id);
+      console.log('Loading messages for room:', roomId);
+      const response = await chatService.getMessages(roomId);
       const messagesData = response.data || response;
       setMessages(Array.isArray(messagesData) ? messagesData : []);
     } catch (error) {

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import contractService from '@/services/contractService';
+import utilityBillService from '@/services/utilityBillService';
+import { toast } from 'react-toastify';
 import {
     Building2,
     Calendar,
@@ -20,7 +22,10 @@ import {
     MapPin,
     CreditCard,
     PenLine,
-    Image as ImageIcon
+    Image as ImageIcon,
+    Wallet,
+    AlertTriangle,
+    Loader2
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -33,12 +38,39 @@ export default function ContractDetailPage() {
     const [contract, setContract] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [depositBill, setDepositBill] = useState(null);
+    const [depositLoading, setDepositLoading] = useState(false);
 
     useEffect(() => {
         if (params.id) {
             loadContract();
         }
     }, [params.id]);
+
+    // Load deposit bill khi contract đã Active
+    useEffect(() => {
+        if (contract && contract.contractStatus === 1 && contract.depositAmount > 0) {
+            loadDepositBill();
+        }
+    }, [contract]);
+
+    const loadDepositBill = async () => {
+        try {
+            setDepositLoading(true);
+            const response = await utilityBillService.getDepositBillByContractId(params.id);
+            console.log('Deposit bill:', response);
+            if (response && response.data) {
+                setDepositBill(response.data);
+            } else if (response) {
+                setDepositBill(response);
+            }
+        } catch (error) {
+            console.error('Error loading deposit bill:', error);
+            // Nếu không có bill thì không báo lỗi
+        } finally {
+            setDepositLoading(false);
+        }
+    };
 
     const loadContract = async () => {
         try {
@@ -432,6 +464,89 @@ export default function ContractDetailPage() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Deposit Payment Section - Only show when contract is Active and deposit > 0 */}
+                    {contract.contractStatus === 1 && contract.depositAmount > 0 && (
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border-2 border-orange-200 dark:border-orange-800">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                <Wallet className="h-5 w-5 text-orange-600" />
+                                Tiền cọc
+                            </h2>
+                            
+                            {depositLoading ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+                                    <span className="ml-2 text-gray-500">Đang tải thông tin tiền cọc...</span>
+                                </div>
+                            ) : depositBill ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                        <div>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Số tiền cọc</p>
+                                            <p className="text-2xl font-bold text-orange-600">
+                                                {formatCurrency(depositBill.totalAmount || contract.depositAmount)}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Trạng thái</p>
+                                            {depositBill.status === 1 ? (
+                                                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                                    <CheckCircle className="h-4 w-4" />
+                                                    Đã thanh toán
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                                                    <Clock className="h-4 w-4" />
+                                                    Chưa thanh toán
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    {depositBill.status !== 1 && (
+                                        <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
+                                            <div className="flex items-start gap-3">
+                                                <AlertTriangle className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                                                <div className="flex-1">
+                                                    <p className="text-sm text-orange-800 dark:text-orange-200 font-medium">
+                                                        Bạn cần thanh toán tiền cọc để hoàn tất hợp đồng
+                                                    </p>
+                                                    <p className="text-xs text-orange-600 dark:text-orange-300 mt-1">
+                                                        Vui lòng thanh toán để chủ trọ xác nhận hợp đồng
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => router.push('/bills')}
+                                                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:from-orange-600 hover:to-amber-600 font-medium transition-all"
+                                            >
+                                                <Wallet className="h-5 w-5" />
+                                                Đi đến trang thanh toán
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {depositBill.status === 1 && depositBill.paidAt && (
+                                        <p className="text-xs text-gray-400 text-center">
+                                            Đã thanh toán lúc: {formatDateTime(depositBill.paidAt)}
+                                        </p>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="text-center py-6">
+                                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+                                        <Clock className="h-8 w-8 text-gray-400" />
+                                    </div>
+                                    <p className="text-gray-600 dark:text-gray-400">
+                                        Hóa đơn tiền cọc sẽ được tạo bởi chủ trọ
+                                    </p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+                                        Số tiền cọc: {formatCurrency(contract.depositAmount)}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Contract Images */}
                     {contract.contractImage && contract.contractImage.length > 0 && (

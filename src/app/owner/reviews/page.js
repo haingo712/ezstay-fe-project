@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { reviewAPI } from '@/utils/api';
 import { useTranslation } from '@/hooks/useTranslation';
 import { toast } from 'react-toastify';
+import notification from '@/utils/notification';
 
 // ============ MOCK DATA FOR DEMO - DELETE AFTER SCREENSHOT ============
 const MOCK_REVIEWS = [
@@ -271,7 +272,8 @@ export default function OwnerReviewsPage() {
   };
 
   const handleDeleteReply = async (replyId) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa phản hồi này?')) return;
+    const confirmed = await notification.confirm('Bạn có chắc chắn muốn xóa phản hồi này?', 'Xác nhận xóa');
+    if (!confirmed) return;
     try {
       await reviewAPI.deleteReviewReply(replyId);
       setSuccess('Xóa phản hồi thành công!');

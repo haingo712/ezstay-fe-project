@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import api from "@/utils/api";
 import { useBillNotifications } from "@/hooks/useSignalR";
 import { FileText, Clock, CheckCircle, AlertCircle, Search, Eye, Plus, X, Home, Zap, Droplets, Wrench, ChevronLeft, ChevronRight, Ban, RefreshCw, Calendar, Wifi, WifiOff } from "lucide-react";
+import notification from '@/utils/notification';
 
 // Format currency
 const formatCurrency = (amount) => {
@@ -169,7 +170,8 @@ export default function OwnerBillsPage() {
     };
 
     const handleMarkAsPaid = async (billId) => {
-        if (!confirm('Xác nhận đánh dấu hóa đơn này đã thanh toán?')) return;
+        const confirmed = await notification.confirm('Xác nhận đánh dấu hóa đơn này đã thanh toán?', 'Xác nhận thanh toán');
+        if (!confirmed) return;
 
         try {
             await api.put(`/api/UtilityBills/${billId}/pay`, {});
@@ -203,7 +205,8 @@ export default function OwnerBillsPage() {
     };
 
     const handleDeleteBill = async (billId) => {
-        if (!confirm('Bạn có chắc chắn muốn xóa hóa đơn này? Thao tác này không thể hoàn tác.')) return;
+        const confirmed = await notification.confirm('Bạn có chắc chắn muốn xóa hóa đơn này? Thao tác này không thể hoàn tác.', 'Xác nhận xóa');
+        if (!confirmed) return;
 
         try {
             await api.delete(`/api/UtilityBills/${billId}`);

@@ -332,17 +332,6 @@ export default function Navbar() {
                         </Link>
                       )}
 
-                      {/* Lịch sử thuê - Chỉ cho User */}
-                      {(userRole === 1 || userRole === "user") && (
-                        <Link
-                          href="/profile/rental-history"
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          onClick={() => setIsUserMenuOpen(false)}
-                        >
-                          {t('nav.rentalHistory')}
-                        </Link>
-                      )}
-
                       {/* Hợp đồng của tôi - Chỉ cho User */}
                       {(userRole === 1 || userRole === "user") && (
                         <Link
@@ -350,7 +339,7 @@ export default function Navbar() {
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
-                          My Contracts
+                          {t('nav.myContracts')}
                         </Link>
                       )}
 
@@ -405,7 +394,7 @@ export default function Navbar() {
                           className="block w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
-                          Register as Owner
+                          {t('nav.registerAsOwner')}
                         </Link>
                       )}
 

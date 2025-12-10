@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import utilityReadingService from "@/services/utilityReadingService";
 import api from "@/utils/api";
+import notification from '@/utils/notification';
 
 export default function UtilityReadingsPage() {
     const params = useParams();
@@ -20,6 +21,10 @@ export default function UtilityReadingsPage() {
     const [waterReadings, setWaterReadings] = useState([]);
     const [loadingReadings, setLoadingReadings] = useState(false);
     const [activeTab, setActiveTab] = useState('electric');
+    
+    // First readings (initial readings added from contract - should not be editable/deletable)
+    const [firstElectricReadingId, setFirstElectricReadingId] = useState(null);
+    const [firstWaterReadingId, setFirstWaterReadingId] = useState(null);
 
     // Form states
     const [showForm, setShowForm] = useState(false);
@@ -43,7 +48,8 @@ export default function UtilityReadingsPage() {
 
     // Generate Monthly Bill
     const handleGenerateMonthlyBill = async () => {
-        if (!confirm('Are you sure you want to generate a monthly utility bill for this contract?')) {
+        const confirmed = await notification.confirm('Are you sure you want to generate a monthly utility bill for this contract?', 'Generate Bill');
+        if (!confirmed) {
             return;
         }
 
@@ -108,6 +114,27 @@ export default function UtilityReadingsPage() {
                 new Date(b.readingDate) - new Date(a.readingDate)
             );
             setWaterReadings(sortedWater);
+            
+            // Fetch first readings to know which ones should not be editable/deletable
+            try {
+                const firstElectric = await utilityReadingService.getFirstReading(contractId, 1);
+                if (firstElectric?.id) {
+                    setFirstElectricReadingId(firstElectric.id);
+                    console.log('⚡ First electric reading ID:', firstElectric.id);
+                }
+            } catch (e) {
+                console.log('No first electric reading found');
+            }
+            
+            try {
+                const firstWater = await utilityReadingService.getFirstReading(contractId, 0);
+                if (firstWater?.id) {
+                    setFirstWaterReadingId(firstWater.id);
+                    console.log('💧 First water reading ID:', firstWater.id);
+                }
+            } catch (e) {
+                console.log('No first water reading found');
+            }
         } catch (error) {
             console.error('Error fetching utility readings:', error);
             setElectricReadings([]);
@@ -150,7 +177,8 @@ export default function UtilityReadingsPage() {
     };
 
     const handleDeleteReading = async (readingId) => {
-        if (!confirm('Are you sure you want to delete this reading?')) return;
+        const confirmed = await notification.confirm('Are you sure you want to delete this reading?', 'Confirm Delete');
+        if (!confirmed) return;
 
         try {
             await utilityReadingService.delete(readingId);
@@ -563,10 +591,19 @@ export default function UtilityReadingsPage() {
                                         <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
                                             {(activeTab === 'electric' ? electricReadings : waterReadings).map((reading) => {
                                                 const unit = activeTab === 'electric' ? 'kWh' : 'm³';
+                                                // Check if this is the first (initial) reading - should not be editable/deletable
+                                                const isFirstReading = activeTab === 'electric' 
+                                                    ? reading.id === firstElectricReadingId 
+                                                    : reading.id === firstWaterReadingId;
                                                 return (
                                                     <tr key={reading.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                                         <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">
                                                             {utilityReadingService.formatDate(reading.readingDate)}
+                                                            {isFirstReading && (
+                                                                <span className="ml-2 px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded">
+                                                                    Initial
+                                                                </span>
+                                                            )}
                                                         </td>
                                                         <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400 text-right">
                                                             {reading.previousIndex?.toLocaleString() || '0'}
@@ -587,22 +624,26 @@ export default function UtilityReadingsPage() {
                                                             {reading.note || '-'}
                                                         </td>
                                                         <td className="px-4 py-4 text-center">
-                                                            <div className="flex items-center justify-center gap-3">
-                                                                <button
-                                                                    onClick={() => handleEditReading(reading)}
-                                                                    className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                                                    title="Edit"
-                                                                >
-                                                                    ✏️
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleDeleteReading(reading.id)}
-                                                                    className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                                                    title="Delete"
-                                                                >
-                                                                    🗑️
-                                                                </button>
-                                                            </div>
+                                                            {!isFirstReading ? (
+                                                                <div className="flex items-center justify-center gap-3">
+                                                                    <button
+                                                                        onClick={() => handleEditReading(reading)}
+                                                                        className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                                                        title="Edit"
+                                                                    >
+                                                                        ✏️
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeleteReading(reading.id)}
+                                                                        className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                                        title="Delete"
+                                                                    >
+                                                                        🗑️
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-xs text-gray-400 dark:text-gray-500">-</span>
+                                                            )}
                                                         </td>
                                                     </tr>
                                                 );

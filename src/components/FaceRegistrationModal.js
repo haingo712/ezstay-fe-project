@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
 import faceLoginService from '@/services/faceLoginService';
+import notification from '@/utils/notification';
 
 export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUpdate = false }) {
   const [loading, setLoading] = useState(false);
@@ -148,7 +149,8 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Bạn có chắc muốn xóa khuôn mặt đã đăng ký? Bạn sẽ cần đăng ký lại để sử dụng đăng nhập bằng khuôn mặt.')) {
+    const confirmed = await notification.confirm('Bạn có chắc muốn xóa khuôn mặt đã đăng ký? Bạn sẽ cần đăng ký lại để sử dụng đăng nhập bằng khuôn mặt.', 'Xác nhận xóa');
+    if (!confirmed) {
       return;
     }
     setLoading(true);

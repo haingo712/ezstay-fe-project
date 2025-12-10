@@ -18,25 +18,23 @@ export default function PreviewSignedPDF({
 }) {
   const [loading, setLoading] = useState(false);
 
-  const handlePreview = () => {
+  const handlePreview = async () => {
     try {
       setLoading(true);
-      contractPdfService.previewSignedPdf(contract, ownerSignature, tenantSignature);
+      await contractPdfService.previewSignedPdf(contract, ownerSignature, tenantSignature);
     } catch (error) {
       console.error('Error previewing PDF:', error);
-      notification.error('Unable to preview PDF. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     try {
       setLoading(true);
-      contractPdfService.downloadSignedPdf(contract, ownerSignature, tenantSignature);
+      await contractPdfService.downloadSignedPdf(contract, ownerSignature, tenantSignature);
     } catch (error) {
       console.error('Error downloading PDF:', error);
-      notification.error('Unable to download PDF. Please try again.');
     } finally {
       setLoading(false);
     }

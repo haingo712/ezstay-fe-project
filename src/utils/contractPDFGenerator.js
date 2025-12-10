@@ -2,6 +2,222 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import notification from '@/utils/notification';
 
+// List of CORS proxies to try (updated with more reliable proxies)
+const CORS_PROXIES = [
+  (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
+
+/**
+ * Try to load image using our own Next.js API proxy
+ * This is the most reliable method as it bypasses all CORS issues
+ * @param {string} url - Image URL
+ * @returns {Promise<string|null>} Base64 data URL or null if failed
+ */
+async function loadImageViaApiProxy(url) {
+  try {
+    // Use our own API route to proxy the image
+    const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+    console.log('🔄 Trying internal API proxy for:', url.substring(0, 80) + '...');
+    
+    const response = await fetch(proxyUrl);
+    
+    if (response.ok) {
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          console.log('✅ Internal API proxy succeeded');
+          resolve(reader.result);
+        };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    }
+    console.warn('❌ Internal API proxy failed:', response.status);
+    return null;
+  } catch (error) {
+    console.warn('❌ Internal API proxy error:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Try to fetch image using fetch API with external CORS proxies
+ * @param {string} url - Image URL
+ * @returns {Promise<string|null>} Base64 data URL or null if failed
+ */
+async function fetchImageAsBase64(url) {
+  try {
+    // Try fetch with cors proxy
+    for (const proxyFn of CORS_PROXIES) {
+      const proxyUrl = proxyFn(url);
+      console.log('🔄 Trying fetch with external proxy:', proxyUrl.substring(0, 80) + '...');
+      
+      try {
+        const response = await fetch(proxyUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'image/*',
+          },
+        });
+        
+        if (response.ok) {
+          const blob = await response.blob();
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              console.log('✅ External proxy fetch succeeded');
+              resolve(reader.result);
+            };
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+        }
+      } catch (fetchError) {
+        console.warn('❌ Fetch failed:', fetchError.message);
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('❌ fetchImageAsBase64 error:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Convert image URL to base64 data URL
+ * Tries multiple methods: internal API proxy, direct load, external CORS proxies
+ * @param {string} url - Image URL
+ * @returns {Promise<string|null>} Base64 data URL or null if failed
+ */
+async function urlToBase64(url) {
+  if (!url) return null;
+  
+  // If already base64, return as-is
+  if (url.startsWith('data:image/')) {
+    return url;
+  }
+  
+  // Skip blob URLs - they won't work across contexts
+  if (url.startsWith('blob:')) {
+    console.warn('⚠️ Skipping blob URL (not supported):', url.substring(0, 50));
+    return null;
+  }
+  
+  console.log('📸 Starting image load for URL:', url.substring(0, 100) + '...');
+  
+  // Method 1: Try our internal API proxy first (most reliable)
+  const apiProxyResult = await loadImageViaApiProxy(url);
+  if (apiProxyResult) {
+    return apiProxyResult;
+  }
+  
+  // Method 2: Try direct loading (works for same-origin or CORS-enabled URLs)
+  const directResult = await loadImageDirect(url);
+  if (directResult) {
+    console.log('✅ Direct loading succeeded');
+    return directResult;
+  }
+  
+  // Method 3: Try CORS proxies with Image element
+  const urlsToTry = CORS_PROXIES.map(proxy => proxy(url));
+  
+  for (const tryUrl of urlsToTry) {
+    console.log('🔄 Trying Image element with proxy:', tryUrl.substring(0, 80) + '...');
+    
+    try {
+      const result = await new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        const timeoutId = setTimeout(() => {
+          console.warn('⏱️ Timeout for:', tryUrl.substring(0, 50));
+          resolve(null);
+        }, 15000); // 15 second timeout per attempt
+        
+        img.onload = () => {
+          clearTimeout(timeoutId);
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width || 400;
+            canvas.height = img.height || 250;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const base64 = canvas.toDataURL('image/jpeg', 0.8);
+            console.log('✅ Image element method succeeded');
+            resolve(base64);
+          } catch (e) {
+            console.error('❌ Canvas error:', e.message);
+            resolve(null);
+          }
+        };
+        
+        img.onerror = (err) => {
+          clearTimeout(timeoutId);
+          console.warn('❌ Failed to load with Image element');
+          resolve(null);
+        };
+        
+        img.src = tryUrl;
+      });
+      
+      if (result) return result;
+    } catch (error) {
+      console.error('❌ Error in Image element method:', error.message);
+    }
+  }
+  
+  // Method 4: Try fetch API with external proxies as last resort
+  console.log('🔄 Trying fetch API with external proxies...');
+  const fetchResult = await fetchImageAsBase64(url);
+  if (fetchResult) {
+    return fetchResult;
+  }
+  
+  console.error('❌ All attempts failed for URL:', url.substring(0, 100));
+  return null;
+}
+
+/**
+ * Try to load image directly without proxy (for same-origin or CORS-enabled URLs)
+ * @param {string} url - Image URL
+ * @returns {Promise<string|null>} Base64 data URL or null if failed
+ */
+async function loadImageDirect(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    const timeoutId = setTimeout(() => {
+      resolve(null);
+    }, 8000); // 8 second timeout
+    
+    img.onload = () => {
+      clearTimeout(timeoutId);
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width || 400;
+        canvas.height = img.height || 250;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const base64 = canvas.toDataURL('image/jpeg', 0.8);
+        resolve(base64);
+      } catch (e) {
+        resolve(null);
+      }
+    };
+    
+    img.onerror = () => {
+      clearTimeout(timeoutId);
+      resolve(null);
+    };
+    
+    img.src = url;
+  });
+}
+
 /**
  * Remove Vietnamese diacritics and convert to ASCII
  * This is needed because jsPDF default fonts don't support Vietnamese characters
@@ -80,15 +296,22 @@ function detectImageFormat(base64String) {
  * @param {Object} contract - Contract data
  * @param {string} ownerSignature - Owner's digital signature (base64)
  * @param {string} tenantSignature - Tenant's digital signature (base64)
- * @returns {jsPDF} PDF document
+ * @returns {Promise<jsPDF>} PDF document
  */
-export function generateContractPDF(contract, ownerSignature = null, tenantSignature = null) {
+export async function generateContractPDF(contract, ownerSignature = null, tenantSignature = null) {
   console.log('📄 PDF Generator - Received contract data:', contract);
   console.log('📄 PDF Generator - Contract keys:', Object.keys(contract));
   console.log('📄 PDF Generator - Identity Profiles:', contract.identityProfiles || contract.IdentityProfiles);
   console.log('📄 PDF Generator - Room Details:', contract.roomDetails || contract.RoomDetails);
   console.log('📄 PDF Generator - Electricity Reading:', contract.electricityReading || contract.ElectricityReading);
   console.log('📄 PDF Generator - Water Reading:', contract.waterReading || contract.WaterReading);
+  
+  // Use signatures from contract data if not provided as parameters
+  const finalOwnerSignature = ownerSignature || contract.ownerSignature || contract.OwnerSignature || null;
+  const finalTenantSignature = tenantSignature || contract.tenantSignature || contract.TenantSignature || null;
+  
+  console.log('✍️ PDF Generator - Owner Signature:', finalOwnerSignature ? 'Available' : 'Not available');
+  console.log('✍️ PDF Generator - Tenant Signature:', finalTenantSignature ? 'Available' : 'Not available');
   
   const doc = new jsPDF();
   
@@ -201,7 +424,22 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   
   // Get room details (already declared above)
   const roomName = contract.roomName || roomDetails.name || roomDetails.Name || '';
-  const roomAddress = roomDetails.address || roomDetails.Address || '';
+  
+  // Get full address from roomDetails or boardingHouse location
+  const boardingHouse = contract.boardingHouse || contract.BoardingHouse;
+  const houseLocation = boardingHouse?.location || boardingHouse?.Location || roomDetails.location || roomDetails.Location;
+  let roomAddress = roomDetails.fullAddress || roomDetails.FullAddress || 
+                    roomDetails.address || roomDetails.Address || '';
+  
+  // If no address in roomDetails, try to get from boardingHouse location
+  if (!roomAddress && houseLocation) {
+    roomAddress = houseLocation.fullAddress || houseLocation.FullAddress ||
+      [houseLocation.addressDetail || houseLocation.AddressDetail,
+       houseLocation.communeName || houseLocation.CommuneName,
+       houseLocation.districtName || houseLocation.DistrictName,
+       houseLocation.provinceName || houseLocation.ProvinceName].filter(Boolean).join(', ');
+  }
+  
   const roomArea = roomDetails.area || roomDetails.Area || '';
   const maxOccupants = roomDetails.maxOccupants || roomDetails.MaxOccupants || contract.numberOfOccupants || contract.NumberOfOccupants || '';
   
@@ -1143,95 +1381,6 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   });
   yPos += 10;
 
-  // Citizen ID Images Section
-  if (identityProfiles.length > 0) {
-    console.log('📸 Total identity profiles:', identityProfiles.length);
-    identityProfiles.forEach((profile, idx) => {
-      console.log(`Profile ${idx}:`, {
-        name: profile.fullName || profile.FullName,
-        hasFront: !!(profile.citizenIdFront || profile.CitizenIdFront),
-        hasBack: !!(profile.citizenIdBack || profile.CitizenIdBack),
-        frontUrl: profile.citizenIdFront || profile.CitizenIdFront,
-        backUrl: profile.citizenIdBack || profile.CitizenIdBack,
-      });
-    });
-    
-    const profilesWithImages = identityProfiles.filter(profile => 
-      (profile.citizenIdFront || profile.CitizenIdFront) || 
-      (profile.citizenIdBack || profile.CitizenIdBack)
-    );
-    
-    console.log('📸 Profiles with CCCD images:', profilesWithImages.length);
-    
-    if (profilesWithImages.length > 0) {
-      doc.addPage();
-      yPos = 20;
-      
-      doc.setFont(undefined, 'bold');
-      doc.setFontSize(12);
-      doc.text('CITIZEN ID CARD IMAGES', 20, yPos);
-      yPos += 10;
-      
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(10);
-      
-      profilesWithImages.forEach((profile, index) => {
-        const profileName = profile.fullName || profile.FullName || `Person ${index + 1}`;
-        const frontImage = profile.citizenIdFront || profile.CitizenIdFront;
-        const backImage = profile.citizenIdBack || profile.CitizenIdBack;
-        
-        if (yPos > 250) {
-          doc.addPage();
-          yPos = 20;
-        }
-        
-        doc.setFont(undefined, 'bold');
-        doc.text(`${index + 1}. ${removeVietnameseDiacritics(profileName)}`, 20, yPos);
-        yPos += 8;
-        doc.setFont(undefined, 'normal');
-        
-        // Front image
-        if (frontImage) {
-          try {
-            doc.text('Front side:', 25, yPos);
-            yPos += 5;
-            // Add image with reasonable size (85mm x 54mm standard ID card ratio ~ 1.57)
-            const imgWidth = 85;
-            const imgHeight = 54;
-            doc.addImage(frontImage, 'JPEG', 25, yPos, imgWidth, imgHeight);
-            yPos += imgHeight + 5;
-          } catch (error) {
-            console.error('Error adding front ID image:', error);
-            doc.text('(Image not available)', 25, yPos);
-            yPos += 7;
-          }
-        }
-        
-        // Back image
-        if (backImage) {
-          if (yPos > 200) {
-            doc.addPage();
-            yPos = 20;
-          }
-          try {
-            doc.text('Back side:', 25, yPos);
-            yPos += 5;
-            const imgWidth = 85;
-            const imgHeight = 54;
-            doc.addImage(backImage, 'JPEG', 25, yPos, imgWidth, imgHeight);
-            yPos += imgHeight + 8;
-          } catch (error) {
-            console.error('Error adding back ID image:', error);
-            doc.text('(Image not available)', 25, yPos);
-            yPos += 7;
-          }
-        }
-        
-        yPos += 5;
-      });
-    }
-  }
-
   // Signatures Section
   doc.addPage();
   yPos = 20;
@@ -1263,11 +1412,11 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   
   // Owner signature (Party A - Lessor - bên trái)
   doc.rect(25, yPos, signatureBoxWidth, signatureBoxHeight);
-  if (ownerSignature) {
+  if (finalOwnerSignature) {
     try {
       // Detect image format from base64 string or use auto-detection
-      const ownerFormat = detectImageFormat(ownerSignature);
-      doc.addImage(ownerSignature, ownerFormat, 27, yPos + 2, signatureBoxWidth - 4, signatureBoxHeight - 4);
+      const ownerFormat = detectImageFormat(finalOwnerSignature);
+      doc.addImage(finalOwnerSignature, ownerFormat, 27, yPos + 2, signatureBoxWidth - 4, signatureBoxHeight - 4);
     } catch (error) {
       console.error('Error adding owner signature to PDF:', error);
     }
@@ -1275,11 +1424,11 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   
   // Tenant signature (Party B - Lessee - bên phải)
   doc.rect(125, yPos, signatureBoxWidth, signatureBoxHeight);
-  if (tenantSignature) {
+  if (finalTenantSignature) {
     try {
       // Detect image format from base64 string or use auto-detection
-      const tenantFormat = detectImageFormat(tenantSignature);
-      doc.addImage(tenantSignature, tenantFormat, 127, yPos + 2, signatureBoxWidth - 4, signatureBoxHeight - 4);
+      const tenantFormat = detectImageFormat(finalTenantSignature);
+      doc.addImage(finalTenantSignature, tenantFormat, 127, yPos + 2, signatureBoxWidth - 4, signatureBoxHeight - 4);
     } catch (error) {
       console.error('Error adding tenant signature to PDF:', error);
     }
@@ -1317,12 +1466,158 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
   yPos += 15;
   
   // Verification note
-  if (ownerSignature && tenantSignature) {
+  if (finalOwnerSignature && finalTenantSignature) {
     doc.setFontSize(9);
     doc.setTextColor(0, 128, 0);
     doc.setFont(undefined, 'italic');
     yPos += 7;
+  }
+
+  // ============================================
+  // CITIZEN ID CARD IMAGES SECTION (AT THE END)
+  // ============================================
+  try {
+    if (identityProfiles.length > 0) {
+      console.log('📸 Processing Citizen ID images at the end of PDF...');
+      
+      // Check for profiles with images
+      const profilesWithImages = identityProfiles.filter(profile => 
+        (profile.frontImageUrl || profile.FrontImageUrl || profile.citizenIdFront || profile.CitizenIdFront) || 
+        (profile.backImageUrl || profile.BackImageUrl || profile.citizenIdBack || profile.CitizenIdBack)
+      );
+      
+      console.log('📸 Profiles with CCCD images:', profilesWithImages.length);
+      
+      if (profilesWithImages.length > 0) {
+        // New page for Citizen ID section
+        doc.addPage();
+        yPos = 20;
+        
+        doc.setFont(undefined, 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(0, 0, 0);
+        doc.text('CITIZEN ID CARD IMAGES', 105, yPos, { align: 'center' });
+        doc.line(20, yPos + 3, 190, yPos + 3);
+        yPos += 15;
+        
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(10);
+        
+        // Process each profile
+        for (let index = 0; index < profilesWithImages.length; index++) {
+          const profile = profilesWithImages[index];
+          const profileName = profile.fullName || profile.FullName || `Person ${index + 1}`;
+          
+          // Get image URLs
+          const frontImageUrl = profile.frontImageUrl || profile.FrontImageUrl || profile.citizenIdFront || profile.CitizenIdFront;
+          const backImageUrl = profile.backImageUrl || profile.BackImageUrl || profile.citizenIdBack || profile.CitizenIdBack;
+          
+          // Determine role label
+          let roleLabel = '';
+          if (index === 0) {
+            roleLabel = ' (Owner/Lessor)';
+          } else if (index === 1) {
+            roleLabel = ' (Tenant/Lessee)';
+          } else {
+            roleLabel = ' (Co-occupant)';
+          }
+          
+          // Check if need new page (need space for header + images side by side ~70px)
+          if (yPos > 200) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          // Profile header
+          doc.setFont(undefined, 'bold');
+          doc.setFontSize(11);
+          doc.text(`${index + 1}. ${removeVietnameseDiacritics(profileName)}${roleLabel}`, 20, yPos);
+          yPos += 6;
+          
+          // Citizen ID Number
+          const citizenId = profile.citizenIdNumber || profile.CitizenIdNumber || '';
+          if (citizenId) {
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(10);
+            doc.text(`Citizen ID Number: ${citizenId}`, 20, yPos);
+            yPos += 7;
+          }
+          
+          // Image dimensions - side by side layout
+          const imgWidth = 85;
+          const imgHeight = 54;
+          const leftX = 15;      // Left image X position
+          const rightX = 105;   // Right image X position
+          
+          // Load both images in parallel
+          let frontBase64 = null;
+          let backBase64 = null;
+          
+          try {
+            const [frontResult, backResult] = await Promise.all([
+              frontImageUrl ? urlToBase64(frontImageUrl) : Promise.resolve(null),
+              backImageUrl ? urlToBase64(backImageUrl) : Promise.resolve(null)
+            ]);
+            frontBase64 = frontResult;
+            backBase64 = backResult;
+          } catch (loadError) {
+            console.error('❌ Error loading images:', loadError);
+          }
+          
+          // Add labels
+          doc.setFont(undefined, 'italic');
+          doc.setFontSize(9);
+          doc.text('Front side:', leftX, yPos);
+          doc.text('Back side:', rightX, yPos);
+          yPos += 4;
+          
+          const imageStartY = yPos;
+          
+          // Add front image (left side)
+          if (frontBase64) {
+            try {
+              const imgFormat = detectImageFormat(frontBase64);
+              doc.addImage(frontBase64, imgFormat, leftX, imageStartY, imgWidth, imgHeight);
+              console.log('✅ Front image added to PDF (left)');
+            } catch (imgError) {
+              console.error('❌ Error adding front image:', imgError);
+              doc.setTextColor(150, 150, 150);
+              doc.text('[Image error]', leftX, imageStartY + 20);
+              doc.setTextColor(0, 0, 0);
+            }
+          } else if (frontImageUrl) {
+            doc.setTextColor(100, 100, 100);
+            doc.text('[Not available]', leftX, imageStartY + 20);
+            doc.setTextColor(0, 0, 0);
+          }
+          
+          // Add back image (right side)
+          if (backBase64) {
+            try {
+              const imgFormat = detectImageFormat(backBase64);
+              doc.addImage(backBase64, imgFormat, rightX, imageStartY, imgWidth, imgHeight);
+              console.log('✅ Back image added to PDF (right)');
+            } catch (imgError) {
+              console.error('❌ Error adding back image:', imgError);
+              doc.setTextColor(150, 150, 150);
+              doc.text('[Image error]', rightX, imageStartY + 20);
+              doc.setTextColor(0, 0, 0);
+            }
+          } else if (backImageUrl) {
+            doc.setTextColor(100, 100, 100);
+            doc.text('[Not available]', rightX, imageStartY + 20);
+            doc.setTextColor(0, 0, 0);
+          }
+          
+          // Move Y position after images
+          yPos = imageStartY + imgHeight + 10;
+        }
       }
+    }
+  } catch (citizenIdError) {
+    console.error('❌ Error in Citizen ID Images section:', citizenIdError);
+    // Continue - don't block PDF generation
+  }
 
   // Footer on last page
   doc.setFontSize(9);
@@ -1338,39 +1633,49 @@ export function generateContractPDF(contract, ownerSignature = null, tenantSigna
 }
 
 /**
- * Preview contract PDF in a new window
+ * Preview contract PDF - opens in new tab using blob URL (no popup blocker issues)
  */
-export function previewContractPDF(contract, ownerSignature = null, tenantSignature = null) {
-  const doc = generateContractPDF(contract, ownerSignature, tenantSignature);
-  
-  // Open preview in new window
-  const pdfDataUri = doc.output('datauristring');
-  const newWindow = window.open();
-  if (newWindow) {
-    newWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Contract Preview - ${contract.id?.slice(0, 8) || 'Contract'}</title>
-        <style>
-          body { margin: 0; padding: 0; overflow: hidden; }
-          iframe { width: 100%; height: 100vh; border: none; }
-        </style>
-      </head>
-      <body>
-        <iframe src='${pdfDataUri}'></iframe>
-      </body>
-      </html>
-    `);
-  } else {
-    notification.warning('Please allow popups to preview the contract PDF');
+export async function previewContractPDF(contract, ownerSignature = null, tenantSignature = null) {
+  try {
+    const doc = await generateContractPDF(contract, ownerSignature, tenantSignature);
+    
+    // Create blob from PDF
+    const pdfBlob = doc.output('blob');
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    
+    // Try to open in new tab (more reliable than window.open with document.write)
+    const newTab = window.open(blobUrl, '_blank');
+    
+    if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
+      // Popup was blocked - fallback to download
+      console.warn('⚠️ Popup blocked, falling back to download');
+      notification.info('Popup blocked. The PDF will be downloaded instead.');
+      
+      // Create download link as fallback
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `Contract-Preview-${contract.id?.slice(0, 8) || 'unknown'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up blob URL after a delay
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } else {
+      // Successfully opened in new tab
+      // Clean up blob URL when the tab is closed (after some time)
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000); // Clean up after 1 minute
+    }
+  } catch (error) {
+    console.error('❌ Error previewing PDF:', error);
+    notification.error('Failed to preview PDF. Please try downloading instead.');
   }
 }
 
 /**
  * Download contract PDF
  */
-export function downloadContractPDF(contract, ownerSignature = null, tenantSignature = null) {
-  const doc = generateContractPDF(contract, ownerSignature, tenantSignature);
+export async function downloadContractPDF(contract, ownerSignature = null, tenantSignature = null) {
+  const doc = await generateContractPDF(contract, ownerSignature, tenantSignature);
   doc.save(`Contract-${contract.id?.slice(0, 8) || 'unknown'}-${new Date().toISOString().split('T')[0]}.pdf`);
 }

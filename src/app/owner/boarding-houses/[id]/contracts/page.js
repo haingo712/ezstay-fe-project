@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import contractService from "@/services/contractService";
 import roomService from "@/services/roomService";
+import boardingHouseService from "@/services/boardingHouseService";
 import otpService from "@/services/otpService";
 import imageService from "@/services/imageService";
 import serviceService from "@/services/serviceService";
@@ -18,6 +19,7 @@ import api from "@/utils/api";
 import { toast } from "react-toastify";
 import SignatureCanvas from "@/components/SignatureCanvas";
 import { generateContractPDF as generatePDF, previewContractPDF as previewPDF, downloadContractPDF } from "@/utils/contractPDFGenerator";
+import notification from '@/utils/notification';
 
 
 export default function ContractsManagementPage() {
@@ -2051,7 +2053,8 @@ export default function ContractsManagementPage() {
   };
 
   const handleDeleteUtilityReading = async (readingId) => {
-    if (!confirm('Are you sure you want to delete this utility reading?')) {
+    const confirmed = await notification.confirm('Are you sure you want to delete this utility reading?', 'Confirm Delete');
+    if (!confirmed) {
       return;
     }
 
@@ -2591,27 +2594,94 @@ export default function ContractsManagementPage() {
   const generateContractPDF = async (contract) => {
     try {
       console.log('📄 Preparing contract PDF with complete data...');
+      console.log('📋 Contract ID:', contract.id);
+
+      // Fetch FULL contract data from API GET /api/Contract/{id} - same as previewContractPDF
+      let fullContract = null;
+      try {
+        fullContract = await contractService.getById(contract.id);
+        console.log('✅ Full contract data fetched:', fullContract);
+        console.log('📋 Full contract keys:', Object.keys(fullContract || {}));
+        console.log('👤 Identity profiles from API:', fullContract?.identityProfiles || fullContract?.IdentityProfiles);
+      } catch (error) {
+        console.error('❌ Error fetching full contract:', error);
+        fullContract = contract; // Fallback to passed contract
+      }
+
+      // Use full contract data or fallback
+      let enrichedContract = fullContract ? { ...fullContract } : { ...contract };
+
+      // Add current user (owner) info if not present in contract
+      if (user && (!enrichedContract.owner && !enrichedContract.Owner)) {
+        enrichedContract.owner = {
+          fullName: user.fullName || user.name || user.FullName || user.Name,
+          email: user.email || user.Email,
+          phone: user.phone || user.phoneNumber || user.Phone || user.PhoneNumber,
+          address: user.address || user.Address
+        };
+        console.log('👤 Added current user as owner:', enrichedContract.owner);
+      }
 
       // Extract signatures from contract (they're included in main contract response)
       const signatures = {
-        ownerSignature: contract.ownerSignature || contract.OwnerSignature || null,
-        tenantSignature: contract.tenantSignature || contract.TenantSignature || null
+        ownerSignature: enrichedContract.ownerSignature || enrichedContract.OwnerSignature || null,
+        tenantSignature: enrichedContract.tenantSignature || enrichedContract.TenantSignature || null
       };
+      console.log('✅ Signatures extracted from contract:', signatures);
 
       // Enrich contract with room details if not already present
-      let enrichedContract = { ...contract };
-      if (contract.roomId && !contract.roomDetails) {
+      if (enrichedContract.roomId && !enrichedContract.roomDetails) {
         try {
-          const roomDetails = await roomService.getById(contract.roomId);
+          const roomDetails = await roomService.getById(enrichedContract.roomId);
           enrichedContract.roomDetails = roomDetails;
-          enrichedContract.roomName = roomDetails?.name || roomDetails?.roomName || contract.roomName;
+          enrichedContract.roomName = roomDetails?.name || roomDetails?.roomName || enrichedContract.roomName;
           console.log('✅ Room details fetched for PDF:', roomDetails);
+          
+          // Fetch boardingHouse to get full address (room doesn't have address, but house does)
+          const houseId = roomDetails?.houseId || roomDetails?.HouseId;
+          if (houseId) {
+            try {
+              const houseData = await boardingHouseService.getById(houseId);
+              console.log('✅ BoardingHouse data fetched for PDF:', houseData);
+              
+              // Get full address from house location
+              const location = houseData?.location || houseData?.Location;
+              if (location) {
+                const fullAddress = location.fullAddress || location.FullAddress || 
+                  [location.addressDetail || location.AddressDetail, 
+                   location.communeName || location.CommuneName,
+                   location.districtName || location.DistrictName,
+                   location.provinceName || location.ProvinceName].filter(Boolean).join(', ');
+                
+                enrichedContract.roomDetails.address = fullAddress;
+                enrichedContract.roomDetails.fullAddress = fullAddress;
+                enrichedContract.roomDetails.location = location;
+                enrichedContract.boardingHouse = houseData;
+                console.log('✅ Full address added to roomDetails:', fullAddress);
+              }
+            } catch (houseError) {
+              console.error('❌ Error fetching boardingHouse for address:', houseError);
+            }
+          }
         } catch (error) {
           console.error('❌ Error fetching room details for PDF:', error);
         }
       }
 
-      // Fetch identity profiles if not already present
+      // Try to fetch owner info if ownerId exists but no owner details
+      if (enrichedContract.ownerId && !enrichedContract.owner?.fullName) {
+        try {
+          const ownerData = await userService.getById(enrichedContract.ownerId);
+          if (ownerData) {
+            enrichedContract.owner = ownerData;
+            console.log('✅ Owner data fetched:', ownerData);
+          }
+        } catch (error) {
+          console.log('Could not fetch owner data, using current user info');
+        }
+      }
+
+      // Fetch identity profiles if not already present (fallback)
       if (!enrichedContract.identityProfiles || enrichedContract.identityProfiles.length === 0) {
         console.log('🔍 Identity profiles not found in contract, fetching...');
         try {
@@ -2680,6 +2750,33 @@ export default function ContractsManagementPage() {
           enrichedContract.roomDetails = roomDetails;
           enrichedContract.roomName = roomDetails?.name || roomDetails?.roomName || enrichedContract.roomName;
           console.log('✅ Room details fetched for preview:', roomDetails);
+          
+          // Fetch boardingHouse to get full address (room doesn't have address, but house does)
+          const houseId = roomDetails?.houseId || roomDetails?.HouseId;
+          if (houseId) {
+            try {
+              const houseData = await boardingHouseService.getById(houseId);
+              console.log('✅ BoardingHouse data fetched for preview:', houseData);
+              
+              // Get full address from house location
+              const location = houseData?.location || houseData?.Location;
+              if (location) {
+                const fullAddress = location.fullAddress || location.FullAddress || 
+                  [location.addressDetail || location.AddressDetail, 
+                   location.communeName || location.CommuneName,
+                   location.districtName || location.DistrictName,
+                   location.provinceName || location.ProvinceName].filter(Boolean).join(', ');
+                
+                enrichedContract.roomDetails.address = fullAddress;
+                enrichedContract.roomDetails.fullAddress = fullAddress;
+                enrichedContract.roomDetails.location = location;
+                enrichedContract.boardingHouse = houseData;
+                console.log('✅ Full address added to roomDetails:', fullAddress);
+              }
+            } catch (houseError) {
+              console.error('❌ Error fetching boardingHouse for address:', houseError);
+            }
+          }
         } catch (error) {
           console.error('❌ Error fetching room details for preview:', error);
         }
