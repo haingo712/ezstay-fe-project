@@ -81,7 +81,7 @@ export default function ContractDetailPage() {
             setContract(response.data || response);
         } catch (error) {
             console.error('Error loading contract:', error);
-            setError('Không thể tải thông tin hợp đồng');
+            setError('Unable to load contract information');
         } finally {
             setLoading(false);
         }
@@ -90,11 +90,11 @@ export default function ContractDetailPage() {
     const getStatusBadge = (status) => {
         // Backend enum: Pending=0, Active=1, Cancelled=2, Expired=3, Evicted=4
         const statusConfig = {
-            0: { label: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-            1: { label: 'Đang hoạt động', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-            2: { label: 'Đã hủy', color: 'bg-gray-100 text-gray-800', icon: XCircle },
-            3: { label: 'Đã hết hạn', color: 'bg-red-100 text-red-800', icon: XCircle },
-            4: { label: 'Bị chấm dứt', color: 'bg-red-100 text-red-800', icon: XCircle },
+            0: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+            1: { label: 'Active', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+            2: { label: 'Cancelled', color: 'bg-gray-100 text-gray-800', icon: XCircle },
+            3: { label: 'Expired', color: 'bg-red-100 text-red-800', icon: XCircle },
+            4: { label: 'Terminated', color: 'bg-red-100 text-red-800', icon: XCircle },
         };
 
         const config = statusConfig[status] || statusConfig[0];
@@ -143,7 +143,7 @@ export default function ContractDetailPage() {
                     <div className="max-w-4xl mx-auto px-4 py-8">
                         <div className="text-center py-12">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                            <p className="mt-4 text-gray-600 dark:text-gray-400">Đang tải thông tin hợp đồng...</p>
+                            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading contract information...</p>
                         </div>
                     </div>
                     <Footer />
@@ -161,13 +161,13 @@ export default function ContractDetailPage() {
                         <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
                             <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                {error || 'Không tìm thấy hợp đồng'}
+                                {error || 'Contract not found'}
                             </h3>
                             <button
                                 onClick={() => router.back()}
                                 className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                             >
-                                Quay lại
+                                Go Back
                             </button>
                         </div>
                     </div>
@@ -189,7 +189,7 @@ export default function ContractDetailPage() {
                         className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 mb-6"
                     >
                         <ArrowLeft className="h-5 w-5" />
-                        Quay lại
+                        Back
                     </button>
 
                     {/* Sign Contract Banner - Show when user hasn't signed yet */}
@@ -201,8 +201,8 @@ export default function ContractDetailPage() {
                                         <PenLine className="h-7 w-7 text-white" />
                                     </div>
                                     <div>
-                                        <h2 className="text-xl font-bold">Hợp đồng đang chờ chữ ký của bạn</h2>
-                                        <p className="text-white/80">Vui lòng ký để hoàn tất hợp đồng thuê phòng</p>
+                                        <h2 className="text-xl font-bold">Contract awaiting your signature</h2>
+                                        <p className="text-white/80">Please sign to complete the rental contract</p>
                                     </div>
                                 </div>
                                 <button
@@ -210,7 +210,7 @@ export default function ContractDetailPage() {
                                     className="flex items-center gap-2 px-6 py-3 bg-white text-orange-600 font-semibold rounded-xl hover:bg-orange-50 transition-colors shadow-lg"
                                 >
                                     <PenLine className="h-5 w-5" />
-                                    Ký ngay
+                                    Sign Now
                                 </button>
                             </div>
                         </div>
@@ -224,8 +224,8 @@ export default function ContractDetailPage() {
                                     <Building2 className="h-8 w-8 text-white" />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-bold">{contract.roomName || 'Phòng trọ'}</h1>
-                                    <p className="text-white/80">{contract.houseName || 'Nhà trọ'}</p>
+                                    <h1 className="text-2xl font-bold">{contract.roomName || 'Room'}</h1>
+                                    <p className="text-white/80">{contract.houseName || 'Boarding House'}</p>
                                 </div>
                             </div>
                             {getStatusBadge(contract.contractStatus)}
@@ -236,25 +236,25 @@ export default function ContractDetailPage() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
                         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <Banknote className="h-5 w-5 text-green-600" />
-                            Thông tin tài chính
+                            Financial Information
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Giá thuê hàng tháng</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Monthly Rent</p>
                                 <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                                     {formatCurrency(contract.roomPrice)}
                                 </p>
                             </div>
                             <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Tiền cọc</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Deposit</p>
                                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                                     {formatCurrency(contract.depositAmount)}
                                 </p>
                             </div>
                             <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Số người ở</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Number of Occupants</p>
                                 <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                                    {contract.numberOfOccupants || 1} người
+                                    {contract.numberOfOccupants || 1} people
                                 </p>
                             </div>
                         </div>
@@ -264,13 +264,13 @@ export default function ContractDetailPage() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
                         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <Calendar className="h-5 w-5 text-blue-600" />
-                            Thời gian hợp đồng
+                            Contract Period
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                                 <Calendar className="h-6 w-6 text-green-600" />
                                 <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Ngày nhận phòng</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Check-in Date</p>
                                     <p className="text-lg font-semibold text-gray-900 dark:text-white">
                                         {formatDate(contract.checkinDate)}
                                     </p>
@@ -279,7 +279,7 @@ export default function ContractDetailPage() {
                             <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
                                 <Calendar className="h-6 w-6 text-red-600" />
                                 <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Ngày trả phòng</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Check-out Date</p>
                                     <p className="text-lg font-semibold text-gray-900 dark:text-white">
                                         {formatDate(contract.checkoutDate)}
                                     </p>
@@ -293,12 +293,12 @@ export default function ContractDetailPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                 <CreditCard className="h-5 w-5 text-yellow-600" />
-                                Chỉ số điện nước ban đầu
+                                Initial Utility Readings
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {contract.electricityReading && (
                                     <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">Chỉ số điện</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Electricity Reading</p>
                                         <p className="text-xl font-bold text-yellow-600">
                                             {contract.electricityReading.reading || contract.electricityReading} kWh
                                         </p>
@@ -306,7 +306,7 @@ export default function ContractDetailPage() {
                                 )}
                                 {contract.waterReading && (
                                     <div className="p-4 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg">
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">Chỉ số nước</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Water Reading</p>
                                         <p className="text-xl font-bold text-cyan-600">
                                             {contract.waterReading.reading || contract.waterReading} m³
                                         </p>
@@ -321,7 +321,7 @@ export default function ContractDetailPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                 <FileText className="h-5 w-5 text-indigo-600" />
-                                Dịch vụ đi kèm
+                                Included Services
                             </h2>
                             <div className="space-y-3">
                                 {contract.serviceInfors.map((service, idx) => (
@@ -346,7 +346,7 @@ export default function ContractDetailPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                 <Users className="h-5 w-5 text-purple-600" />
-                                Thông tin thành viên
+                                Member Information
                             </h2>
                             <div className="space-y-4">
                                 {contract.identityProfiles.map((profile, idx) => (
@@ -374,7 +374,7 @@ export default function ContractDetailPage() {
                                                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
                                                     : 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300'
                                                     }`}>
-                                                    {profile.isSigner ? 'Người ký' : 'Thành viên'}
+                                                    {profile.isSigner ? 'Signer' : 'Member'}
                                                 </span>
                                             </div>
                                         </div>
@@ -414,11 +414,11 @@ export default function ContractDetailPage() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
                         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <PenLine className="h-5 w-5 text-green-600" />
-                            Chữ ký
+                            Signatures
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Chủ trọ</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Owner</p>
                                 {contract.ownerSignature ? (
                                     <div>
                                         <img
@@ -427,15 +427,15 @@ export default function ContractDetailPage() {
                                             className="h-20 object-contain"
                                         />
                                         <p className="text-xs text-gray-400 mt-1">
-                                            Ký lúc: {formatDateTime(contract.ownerSignedAt)}
+                                            Signed at: {formatDateTime(contract.ownerSignedAt)}
                                         </p>
                                     </div>
                                 ) : (
-                                    <p className="text-gray-400 italic">Chưa ký</p>
+                                    <p className="text-gray-400 italic">Not signed</p>
                                 )}
                             </div>
                             <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Người thuê (Bạn)</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Tenant (You)</p>
                                 {contract.tenantSignature ? (
                                     <div>
                                         <img
@@ -444,22 +444,22 @@ export default function ContractDetailPage() {
                                             className="h-20 object-contain"
                                         />
                                         <p className="text-xs text-gray-400 mt-1">
-                                            Ký lúc: {formatDateTime(contract.tenantSignedAt)}
+                                            Signed at: {formatDateTime(contract.tenantSignedAt)}
                                         </p>
                                     </div>
                                 ) : contract.contractStatus === 0 ? (
                                     <div>
-                                        <p className="text-orange-500 italic mb-2">⚠️ Bạn chưa ký hợp đồng này</p>
+                                        <p className="text-orange-500 italic mb-2">⚠️ You haven't signed this contract yet</p>
                                         <button
                                             onClick={() => router.push(`/profile/contracts/${params.id}/signature`)}
                                             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:from-orange-600 hover:to-amber-600 text-sm"
                                         >
                                             <PenLine className="h-4 w-4" />
-                                            Ký ngay
+                                            Sign Now
                                         </button>
                                     </div>
                                 ) : (
-                                    <p className="text-gray-400 italic">Chưa ký</p>
+                                    <p className="text-gray-400 italic">Not signed</p>
                                 )}
                             </div>
                         </div>
@@ -470,34 +470,34 @@ export default function ContractDetailPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border-2 border-orange-200 dark:border-orange-800">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                 <Wallet className="h-5 w-5 text-orange-600" />
-                                Tiền cọc
+                                Deposit
                             </h2>
                             
                             {depositLoading ? (
                                 <div className="flex items-center justify-center py-8">
                                     <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-                                    <span className="ml-2 text-gray-500">Đang tải thông tin tiền cọc...</span>
+                                    <span className="ml-2 text-gray-500">Loading deposit information...</span>
                                 </div>
                             ) : depositBill ? (
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                                         <div>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">Số tiền cọc</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Deposit Amount</p>
                                             <p className="text-2xl font-bold text-orange-600">
                                                 {formatCurrency(depositBill.totalAmount || contract.depositAmount)}
                                             </p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">Trạng thái</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
                                             {depositBill.status === 1 ? (
                                                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                                                     <CheckCircle className="h-4 w-4" />
-                                                    Đã thanh toán
+                                                    Paid
                                                 </span>
                                             ) : (
                                                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
                                                     <Clock className="h-4 w-4" />
-                                                    Chưa thanh toán
+                                                    Unpaid
                                                 </span>
                                             )}
                                         </div>
@@ -509,10 +509,10 @@ export default function ContractDetailPage() {
                                                 <AlertTriangle className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
                                                 <div className="flex-1">
                                                     <p className="text-sm text-orange-800 dark:text-orange-200 font-medium">
-                                                        Bạn cần thanh toán tiền cọc để hoàn tất hợp đồng
+                                                        You need to pay the deposit to complete the contract
                                                     </p>
                                                     <p className="text-xs text-orange-600 dark:text-orange-300 mt-1">
-                                                        Vui lòng thanh toán để chủ trọ xác nhận hợp đồng
+                                                        Please pay so the owner can confirm the contract
                                                     </p>
                                                 </div>
                                             </div>
@@ -521,14 +521,14 @@ export default function ContractDetailPage() {
                                                 className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:from-orange-600 hover:to-amber-600 font-medium transition-all"
                                             >
                                                 <Wallet className="h-5 w-5" />
-                                                Đi đến trang thanh toán
+                                                Go to Payment Page
                                             </button>
                                         </div>
                                     )}
 
                                     {depositBill.status === 1 && depositBill.paidAt && (
                                         <p className="text-xs text-gray-400 text-center">
-                                            Đã thanh toán lúc: {formatDateTime(depositBill.paidAt)}
+                                            Paid at: {formatDateTime(depositBill.paidAt)}
                                         </p>
                                     )}
                                 </div>
@@ -538,10 +538,10 @@ export default function ContractDetailPage() {
                                         <Clock className="h-8 w-8 text-gray-400" />
                                     </div>
                                     <p className="text-gray-600 dark:text-gray-400">
-                                        Hóa đơn tiền cọc sẽ được tạo bởi chủ trọ
+                                        Deposit bill will be created by the owner
                                     </p>
                                     <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-                                        Số tiền cọc: {formatCurrency(contract.depositAmount)}
+                                        Deposit amount: {formatCurrency(contract.depositAmount)}
                                     </p>
                                 </div>
                             )}
@@ -553,7 +553,7 @@ export default function ContractDetailPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                 <ImageIcon className="h-5 w-5 text-pink-600" />
-                                Ảnh hợp đồng
+                                Contract Images
                             </h2>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 {contract.contractImage.map((img, idx) => (
@@ -574,7 +574,7 @@ export default function ContractDetailPage() {
                             </div>
                             {contract.contractUploadedAt && (
                                 <p className="text-xs text-gray-400 mt-2">
-                                    Tải lên lúc: {formatDateTime(contract.contractUploadedAt)}
+                                    Uploaded at: {formatDateTime(contract.contractUploadedAt)}
                                 </p>
                             )}
                         </div>
@@ -584,7 +584,7 @@ export default function ContractDetailPage() {
                     {contract.notes && (
                         <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-6 mb-6">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                Ghi chú
+                                Notes
                             </h2>
                             <p className="text-gray-700 dark:text-gray-300">{contract.notes}</p>
                         </div>
@@ -594,7 +594,7 @@ export default function ContractDetailPage() {
                     {contract.contractStatus === 3 && contract.reason && (
                         <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-6 mb-6">
                             <h2 className="text-lg font-semibold text-red-800 dark:text-red-300 mb-2">
-                                Lý do hủy hợp đồng
+                                Cancellation Reason
                             </h2>
                             <p className="text-red-700 dark:text-red-400">{contract.reason}</p>
                         </div>
@@ -602,9 +602,9 @@ export default function ContractDetailPage() {
 
                     {/* Timestamps */}
                     <div className="text-center text-sm text-gray-400 dark:text-gray-500 py-4">
-                        <p>Tạo lúc: {formatDateTime(contract.createdAt)}</p>
+                        <p>Created at: {formatDateTime(contract.createdAt)}</p>
                         {contract.updatedAt && contract.updatedAt !== contract.createdAt && (
-                            <p>Cập nhật: {formatDateTime(contract.updatedAt)}</p>
+                            <p>Updated: {formatDateTime(contract.updatedAt)}</p>
                         )}
                     </div>
                 </div>
