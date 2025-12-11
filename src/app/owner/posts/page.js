@@ -42,7 +42,7 @@ export default function PostsPage() {
         console.log('No user, skipping boarding houses load');
         return;
       }
-      console.log('🏠 Loading boarding houses...');
+      console.log(' Loading boarding houses...');
       const houses = await boardingHouseService.getAll();
       const ownerHouses = houses.filter(h => h.ownerId === user.id);
       console.log('✅ Loaded boarding houses:', ownerHouses.length);
@@ -1178,7 +1178,7 @@ export default function PostsPage() {
                                   }}
                                 />
                               ) : null}
-                              <span className={`text-xl flex-shrink-0 ${!amenity.imageUrl ? 'flex' : 'hidden'}`}>🏠</span>
+                              <span className={`text-xl flex-shrink-0 ${!amenity.imageUrl ? 'flex' : 'hidden'}`}></span>
                               <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                 {amenity.amenityName || amenity.name}
                               </span>

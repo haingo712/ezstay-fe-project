@@ -251,7 +251,7 @@ export default function RentalPostDetailPage() {
   // Fetch boarding house location from BoardingHouse API
   const fetchHouseLocation = async (boardingHouseId) => {
     try {
-      console.log('🏠 Fetching boarding house location:', boardingHouseId);
+      console.log(' Fetching boarding house location:', boardingHouseId);
       const houseData = await boardingHouseService.getById(boardingHouseId);
       console.log('✅ House data:', houseData);
 

@@ -1625,16 +1625,22 @@
     "staffDashboard": {
         "title": "Bảng Điều Khiển Staff",
         "welcome": "Chào mừng trở lại, Quản lý Staff! 👋",
-        "subtitle": "Đây là những gì đang xảy ra với kiểm duyệt nội dung và hỗ trợ người dùng hôm nay.",
+        "subtitle": "Quản lý và duyệt nội dung hệ thống EZStay",
+        "loading": "Đang tải dữ liệu...",
         "reviewReports": "Xem Báo Cáo",
         "stats": {
             "pendingPosts": "Bài Đăng Chờ Duyệt",
+            "needsAction": "Cần xử lý",
+            "totalUsers": "Tổng Người Dùng",
+            "owners": "chủ trọ",
+            "totalPosts": "Tổng Bài Đăng",
+            "pendingReports": "Báo Cáo Chờ Xử Lý",
+            "urgent": "Khẩn cấp",
             "activeUsers": "Người Dùng Hoạt Động",
             "supportTickets": "Yêu Cầu Hỗ Trợ",
             "flaggedContent": "Nội Dung Bị Gắn Cờ",
             "approvedToday": "Đã Duyệt Hôm Nay",
             "rejectedToday": "Đã Từ Chối Hôm Nay",
-            "totalPosts": "Tổng Bài Đăng",
             "avgResponseTime": "Thời Gian Phản Hồi TB"
         },
         "notifications": {
@@ -1680,9 +1686,30 @@
             "supportTickets": "Yêu Cầu Hỗ Trợ",
             "open": "đang mở",
             "manageUsers": "Quản Lý Người Dùng",
+            "users": "người dùng",
             "active": "hoạt động",
             "viewReports": "Xem Báo Cáo",
-            "analyticsInsights": "Phân tích & thông tin"
+            "analyticsInsights": "Phân tích & thông tin",
+            "manageAmenities": "Quản Lý Tiện Nghi",
+            "items": "mục"
+        },
+        "pendingPostsList": {
+            "title": "Bài Đăng Chờ Duyệt",
+            "viewAll": "Xem Tất Cả",
+            "empty": "Không có bài đăng chờ duyệt",
+            "byOwner": "Bởi",
+            "viewDetail": "Xem Chi Tiết"
+        },
+        "reportsList": {
+            "title": "Báo Cáo Chờ Xử Lý",
+            "viewAll": "Xem Tất Cả",
+            "empty": "Không có báo cáo",
+            "reportsWaiting": "báo cáo chờ xử lý"
+        },
+        "supportList": {
+            "title": "Yêu Cầu Hỗ Trợ",
+            "viewAll": "Xem Tất Cả",
+            "empty": "Không có yêu cầu hỗ trợ"
         }
     },
     "staffUsers": {
@@ -1766,6 +1793,7 @@
     },
     "staffReports": {
         "title": "Quản Lý Báo Cáo Đánh Giá",
+        "searchPlaceholder": "Tìm kiếm reviewId hoặc lý do...",
         "filters": {
             "all": "Tất Cả",
             "pending": "Chờ Xử Lý",
@@ -1792,7 +1820,11 @@
         "modal": {
             "rejectTitle": "Từ Chối Báo Cáo",
             "rejectReason": "Lý Do Từ Chối",
-            "rejectPlaceholder": "Nhập lý do từ chối..."
+            "rejectPlaceholder": "Nhập lý do từ chối...",
+            "rejectMessage": "Bạn đang từ chối báo cáo này. Vui lòng nhập lý do:",
+            "confirmReject": "Xác nhận từ chối",
+            "confirmApprove": "Bạn có chắc chắn muốn duyệt báo cáo này?",
+            "confirmApproveTitle": "Xác nhận duyệt"
         },
         "toast": {
             "approveConfirm": "Bạn có chắc chắn muốn duyệt báo cáo này?",
@@ -1847,6 +1879,8 @@
             "area": "Diện tích",
             "author": "Tác Giả",
             "contact": "Liên Hệ",
+            "viewCount": "Lượt xem",
+            "location": "Địa chỉ",
             "amenities": "Tiện nghi",
             "createdAt": "Ngày Tạo",
             "postId": "Mã Bài Đăng"
@@ -2183,6 +2217,31 @@
         "activityRate": "Tỷ Lệ Hoạt Động",
         "active": "hoạt động",
         "ofTotal": "tổng số"
+    },
+    "tenantManagement": {
+        "title": "Quản lý người thuê",
+        "subtitle": "Danh sách tất cả người thuê và người ở cùng hiện tại",
+        "loading": "Đang tải danh sách người thuê...",
+        "stats": {
+            "totalPeople": "Tổng số người",
+            "primaryTenants": "Người thuê chính",
+            "coOccupants": "Người ở cùng"
+        },
+        "search": {
+            "placeholder": "Tìm theo tên, email, SĐT, CCCD, phòng..."
+        },
+        "empty": {
+            "noTenants": "Chưa có người thuê",
+            "noTenantsDesc": "Khi có hợp đồng active, danh sách sẽ hiển thị ở đây",
+            "noResults": "Không tìm thấy người thuê",
+            "noResultsDesc": "Thử tìm kiếm với từ khóa khác"
+        },
+        "tenant": {
+            "primaryTenant": "Người thuê chính",
+            "coOccupant": "Người ở cùng",
+            "contract": "Hợp đồng",
+            "dob": "Sinh"
+        }
     },
     "ownerDashboard": {
         "welcome": "Xin chào",

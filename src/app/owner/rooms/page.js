@@ -764,7 +764,7 @@ function RoomsPageContent() {
                                 alt={amenity.amenityName}
                                 fill
                                 objectFit="contain"
-                                fallbackIcon="🏠"
+                                fallbackIcon=""
                               />
                             </div>
                           )}
@@ -961,7 +961,7 @@ function RoomsPageContent() {
                 {/* Room Amenities */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    🏠 Room Amenities
+                     Room Amenities
                   </label>
                   {loadingAmenities ? (
                     <div className="text-sm text-gray-500">Loading amenities...</div>
@@ -987,7 +987,7 @@ function RoomsPageContent() {
                                 alt={amenity.amenityName}
                                 fill
                                 objectFit="contain"
-                                fallbackIcon="🏠"
+                                fallbackIcon=""
                               />
                             </div>
                           )}
@@ -1117,7 +1117,7 @@ function RoomsPageContent() {
 
                   {/* Amenities */}
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">🏠 Amenities</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3"> Amenities</h3>
                     {selectedRoom.amenities && selectedRoom.amenities.length > 0 ? (
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {selectedRoom.amenities.map((amenity) => (
@@ -1132,11 +1132,11 @@ function RoomsPageContent() {
                                   alt={amenity.amenityName}
                                   fill
                                   objectFit="contain"
-                                  fallbackIcon="🏠"
+                                  fallbackIcon=""
                                 />
                               </div>
                             ) : (
-                              <span className="text-xl">🏠</span>
+                              <span className="text-xl"></span>
                             )}
                             <span className="text-sm font-medium text-gray-900 dark:text-white">
                               {amenity.amenityName}

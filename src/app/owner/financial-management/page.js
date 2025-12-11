@@ -275,17 +275,18 @@ export default function FinancialManagementPage() {
             {statistics?.revenueByMonth && statistics.revenueByMonth.length > 0 ? (
               <div className="space-y-3">
                 {statistics.revenueByMonth.map((item, index) => {
-                  const maxValue = getMaxChartValue(statistics.revenueByMonth, 'revenue');
-                  const percentage = maxValue > 0 ? (item.revenue / maxValue) * 100 : 0;
+                  const revenueValue = item.revenue ?? item.totalRevenue ?? 0;
+                  const maxValue = Math.max(...statistics.revenueByMonth.map(i => i.revenue ?? i.totalRevenue ?? 0), 1);
+                  const percentage = maxValue > 0 ? (revenueValue / maxValue) * 100 : 0;
 
                   return (
                     <div key={index} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400 font-medium">
-                          {item.monthName} {item.year}
+                          {item.monthName || `Month ${item.month}`} {item.year}
                         </span>
                         <span className="text-gray-900 dark:text-white font-medium">
-                          {formatCurrency(item.revenue)}
+                          {formatCurrency(revenueValue)}
                         </span>
                       </div>
                       <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">

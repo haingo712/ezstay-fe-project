@@ -52,7 +52,7 @@ export default function NotFound() {
           <div className="flex justify-center mb-8">
             <div className="relative">
               <div className="w-32 h-32 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                <div className="text-4xl animate-pulse">🏠</div>
+                <div className="text-4xl animate-pulse"></div>
               </div>
               <div className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center animate-bounce">
                 <span className="text-white text-sm">?</span>

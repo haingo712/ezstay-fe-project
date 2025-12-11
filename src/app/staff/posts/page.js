@@ -124,19 +124,11 @@ export default function PostsReviewPage() {
     try {
       setShowDetailModal(true);
 
-      // For pending posts (isApproved === 0), use the data we already have
-      // since the API might not return complete data for pending posts
-      if (post.isApproved === 0) {
-        console.log('👁️ Showing pending post details from cached data:', post.id);
-        setSelectedPost({ ...post, loading: false });
-        return;
-      }
-
-      // For approved/rejected posts, fetch fresh data from API
+      // Always fetch full post details from API to get Room and BoardingHouse info
       setSelectedPost({ ...post, loading: true });
       console.log('👁️ Fetching full post details for ID:', post.id);
 
-      const fullPost = await rentalPostService.getPostById(post.id);
+      const fullPost = await rentalPostService.getPostById(post.id, false); // Don't increment view count for staff review
       console.log('✅ Full post data received:', fullPost);
       console.log('Full post structure:', {
         id: fullPost.id,
@@ -155,7 +147,8 @@ export default function PostsReviewPage() {
         'room.price': fullPost.room?.price,
         'room.area': fullPost.room?.area,
         'room.amenities': fullPost.room?.amenities,
-        boardingHouse: fullPost.boardingHouse
+        boardingHouse: fullPost.boardingHouse,
+        viewCount: fullPost.viewCount
       });
 
       setSelectedPost(fullPost);
@@ -678,7 +671,7 @@ export default function PostsReviewPage() {
                                     }}
                                   />
                                 ) : null}
-                                <span className={`text-xl flex-shrink-0 ${!amenity.imageUrl ? 'flex' : 'hidden'}`}>🏠</span>
+                                <span className={`text-xl flex-shrink-0 ${!amenity.imageUrl ? 'flex' : 'hidden'}`}></span>
                                 <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                   {amenity.amenityName || amenity.name}
                                 </span>

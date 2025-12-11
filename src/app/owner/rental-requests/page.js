@@ -172,10 +172,10 @@ export default function OwnerRentalRequestsPage() {
             let boardingHouseId = request.boardingHouseId;
 
             if (!boardingHouseId && request.roomId) {
-                console.log('🏠 Fetching room to get boardingHouseId...');
+                console.log(' Fetching room to get boardingHouseId...');
                 const roomData = await roomService.getById(request.roomId);
                 boardingHouseId = roomData?.boardingHouseId || roomData?.BoardingHouseId || roomData?.houseId || roomData?.HouseId;
-                console.log('🏠 BoardingHouseId from room:', boardingHouseId);
+                console.log(' BoardingHouseId from room:', boardingHouseId);
             }
 
             if (!boardingHouseId) {

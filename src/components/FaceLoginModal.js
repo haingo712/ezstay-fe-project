@@ -44,7 +44,7 @@ export default function FaceLoginModal({ isOpen, onClose }) {
       }
       setError('');
     } catch (err) {
-      setError('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.');
+      setError('Unable to access camera. Please check camera permissions.');
     }
   };
 
@@ -84,7 +84,7 @@ export default function FaceLoginModal({ isOpen, onClose }) {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) {
-      setError('Camera chưa sẵn sàng');
+      setError('Camera not ready');
       return;
     }
     canvas.width = video.videoWidth;
@@ -129,11 +129,11 @@ export default function FaceLoginModal({ isOpen, onClose }) {
           router.refresh();
         }, 1500);
       } else {
-        setError(result.message || 'Không nhận diện được khuôn mặt. Vui lòng thử lại.');
+        setError(result.message || 'Face not recognized. Please try again.');
       }
     } catch (err) {
       console.error("❌ Face login error:", err);
-      const errorMessage = err.data?.message || err.message || 'Đăng nhập bằng khuôn mặt thất bại. Vui lòng thử lại.';
+      const errorMessage = err.data?.message || err.message || 'Face login failed. Please try again.';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -161,9 +161,9 @@ export default function FaceLoginModal({ isOpen, onClose }) {
                 </svg>
               </div>
               <div>
-                <h2 className="font-bold text-lg">Đăng nhập Face ID</h2>
+                <h2 className="font-bold text-lg">Face ID Login</h2>
                 <p className="text-xs text-white/80">
-                  {!capturedImage ? 'Đặt khuôn mặt vào khung' : loading ? 'Đang xác thực...' : 'Hoàn thành'}
+                  {!capturedImage ? 'Position your face in the frame' : loading ? 'Authenticating...' : 'Complete'}
                 </p>
               </div>
             </div>
@@ -189,7 +189,7 @@ export default function FaceLoginModal({ isOpen, onClose }) {
           {!error && capturedImage && !loading && (
             <div className="mb-3 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 p-3 rounded-r-lg">
               <p className="text-green-700 dark:text-green-300 text-sm">
-                ✨ Đăng nhập thành công! Đang chuyển hướng...
+                ✨ Login successful! Redirecting...
               </p>
             </div>
           )}
@@ -238,12 +238,12 @@ export default function FaceLoginModal({ isOpen, onClose }) {
                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
-                        Sẵn sàng
+                        Ready
                       </div>
                     ) : (
                       <div className="bg-gray-700 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
                         <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse" />
-                        Đang quét
+                        Scanning
                       </div>
                     )}
                   </div>
@@ -251,7 +251,7 @@ export default function FaceLoginModal({ isOpen, onClose }) {
                   {/* Guide text */}
                   <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 px-3 py-1.5 rounded-full">
                     <p className="text-white text-xs text-center whitespace-nowrap">
-                      {faceDetected ? '✅ Giữ nguyên và nhấn chụp' : '👤 Đặt mặt vào khung oval'}
+                      {faceDetected ? '✅ Hold still and capture' : '👤 Position face in oval frame'}
                     </p>
                   </div>
                 </>
@@ -262,7 +262,7 @@ export default function FaceLoginModal({ isOpen, onClose }) {
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <div className="text-center">
                         <div className="w-10 h-10 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                        <p className="text-white text-sm">Đang xác thực...</p>
+                        <p className="text-white text-sm">Authenticating...</p>
                       </div>
                     </div>
                   )}
@@ -289,19 +289,19 @@ export default function FaceLoginModal({ isOpen, onClose }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  {faceDetected ? 'Chụp & Đăng nhập' : 'Chụp ảnh'}
+                  {faceDetected ? 'Capture & Login' : 'Capture'}
                 </button>
                 <button 
                   onClick={onClose}
                   className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
-                  Hủy
+                  Cancel
                 </button>
               </>
             ) : loading ? (
               <div className="flex-1 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 py-2.5 px-4 rounded-xl text-sm font-medium text-center flex items-center justify-center gap-2">
                 <div className="w-4 h-4 border-2 border-purple-700 dark:border-purple-300 border-t-transparent rounded-full animate-spin" />
-                Đang xác thực danh tính...
+                Verifying identity...
               </div>
             ) : error ? (
               <>
@@ -312,13 +312,13 @@ export default function FaceLoginModal({ isOpen, onClose }) {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                  Thử lại
+                  Retry
                 </button>
                 <button 
                   onClick={onClose}
                   className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
-                  Hủy
+                  Cancel
                 </button>
               </>
             ) : null}
@@ -328,12 +328,12 @@ export default function FaceLoginModal({ isOpen, onClose }) {
           {!capturedImage && !error && (
             <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/10 rounded-xl border border-purple-200 dark:border-purple-800">
               <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
-                <span>💡</span> Mẹo để nhận diện tốt hơn:
+                <span>💡</span> Tips for better recognition:
               </p>
               <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-0.5 ml-4">
-                <li>• Đảm bảo đủ ánh sáng</li>
-                <li>• Nhìn thẳng vào camera</li>
-                <li>• Giữ khuôn mặt trong khung oval</li>
+                <li>• Ensure adequate lighting</li>
+                <li>• Look directly at the camera</li>
+                <li>• Keep your face within the oval frame</li>
               </ul>
             </div>
           )}

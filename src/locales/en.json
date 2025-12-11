@@ -1667,16 +1667,22 @@
     "staffDashboard": {
         "title": "Staff Dashboard",
         "welcome": "Welcome back, Staff Manager! 👋",
-        "subtitle": "Here's what's happening with content moderation and user support today.",
+        "subtitle": "Manage and review content for EZStay system",
+        "loading": "Loading data...",
         "reviewReports": "Review Reports",
         "stats": {
             "pendingPosts": "Pending Posts",
+            "needsAction": "Needs Action",
+            "totalUsers": "Total Users",
+            "owners": "owners",
+            "totalPosts": "Total Posts",
+            "pendingReports": "Pending Reports",
+            "urgent": "Urgent",
             "activeUsers": "Active Users",
             "supportTickets": "Support Tickets",
             "flaggedContent": "Flagged Content",
             "approvedToday": "Approved Today",
             "rejectedToday": "Rejected Today",
-            "totalPosts": "Total Posts",
             "avgResponseTime": "Avg Response Time"
         },
         "notifications": {
@@ -1722,13 +1728,35 @@
             "supportTickets": "Support Tickets",
             "open": "open",
             "manageUsers": "Manage Users",
+            "users": "users",
             "active": "active",
             "viewReports": "View Reports",
-            "analyticsInsights": "Analytics & insights"
+            "analyticsInsights": "Analytics & insights",
+            "manageAmenities": "Manage Amenities",
+            "items": "items"
+        },
+        "pendingPostsList": {
+            "title": "Pending Posts",
+            "viewAll": "View All",
+            "empty": "No pending posts",
+            "byOwner": "By",
+            "viewDetail": "View Detail"
+        },
+        "reportsList": {
+            "title": "Pending Reports",
+            "viewAll": "View All",
+            "empty": "No pending reports",
+            "reportsWaiting": "reports waiting"
+        },
+        "supportList": {
+            "title": "Support Tickets",
+            "viewAll": "View All",
+            "empty": "No support tickets"
         }
     },
     "staffUsers": {
         "title": "User Management",
+        "subtitle": "Manage user and property owner accounts",
         "tabs": {
             "all": "All Users",
             "users": "Users",
@@ -1737,14 +1765,25 @@
             "inactive": "Inactive",
             "ownerRequests": "Owner Requests"
         },
+        "stats": {
+            "totalUsers": "Total Users",
+            "totalOwners": "Total Owners",
+            "active": "Active",
+            "inactive": "Inactive"
+        },
         "createAccount": "Create Account",
         "table": {
             "name": "Name",
+            "fullName": "Full Name",
             "email": "Email",
             "phone": "Phone",
             "role": "Role",
             "status": "Status",
-            "actions": "Actions"
+            "actions": "Actions",
+            "accountId": "Account ID",
+            "reason": "Reason",
+            "submittedAt": "Submitted At",
+            "createdAt": "Created At"
         },
         "roles": {
             "user": "User",
@@ -1754,14 +1793,19 @@
         },
         "status": {
             "active": "Active",
-            "inactive": "Inactive"
+            "inactive": "Inactive",
+            "pending": "Pending",
+            "approved": "Approved",
+            "rejected": "Rejected"
         },
         "actions": {
             "view": "View",
             "edit": "Edit",
             "toggleStatus": "Toggle Status",
             "approve": "Approve",
-            "reject": "Reject"
+            "reject": "Reject",
+            "activate": "Activate",
+            "deactivate": "Deactivate"
         },
         "modal": {
             "createTitle": "Create New Account",
@@ -1773,8 +1817,13 @@
             "phone": "Phone",
             "password": "Password",
             "role": "Role",
+            "accountType": "Account Type",
             "rejectReason": "Rejection Reason",
-            "rejectPlaceholder": "Enter reason for rejection..."
+            "rejectPlaceholder": "Enter reason for rejection...",
+            "cancel": "Cancel",
+            "save": "Save",
+            "create": "Create",
+            "confirm": "Confirm"
         },
         "toast": {
             "createSuccess": "Account created successfully!",
@@ -1787,10 +1836,15 @@
             "statusFailed": "Failed to update account status",
             "approveFailed": "Failed to approve request",
             "rejectFailed": "Failed to reject request"
+        },
+        "emptyState": {
+            "noRequests": "No owner requests found",
+            "noUsers": "No users found"
         }
     },
     "staffReports": {
         "title": "Review Reports Management",
+        "searchPlaceholder": "Search reviewId or reason...",
         "filters": {
             "all": "All",
             "pending": "Pending",
@@ -1817,7 +1871,11 @@
         "modal": {
             "rejectTitle": "Reject Report",
             "rejectReason": "Rejection Reason",
-            "rejectPlaceholder": "Enter reason for rejection..."
+            "rejectPlaceholder": "Enter reason for rejection...",
+            "rejectMessage": "You are about to reject this report. Please enter a reason:",
+            "confirmReject": "Confirm Reject",
+            "confirmApprove": "Are you sure you want to approve this report?",
+            "confirmApproveTitle": "Confirm Approval"
         },
         "toast": {
             "approveConfirm": "Are you sure you want to approve this report?",
@@ -1871,6 +1929,8 @@
             "area": "Area",
             "author": "Author",
             "contact": "Contact",
+            "viewCount": "View Count",
+            "location": "Location",
             "amenities": "Amenities",
             "createdAt": "Created At",
             "postId": "Post ID"
@@ -2103,30 +2163,6 @@
             "allUsers": "All Users",
             "owners": "Owners Only",
             "staff": "Staff Only"
-        }
-    },
-    "staffReports": {
-        "title": "Review Reports",
-        "subtitle": "Manage review reports from owners",
-        "searchPlaceholder": "Search by reviewId or reason...",
-        "empty": "No reports found",
-        "noReports": "No reports found",
-        "loading": "Loading reports...",
-        "error": "Error loading reports",
-        "filters": {
-            "all": "All",
-            "pending": "Pending",
-            "approved": "Approved",
-            "rejected": "Rejected"
-        },
-        "actions": {
-            "approve": "Approve",
-            "reject": "Reject"
-        },
-        "modal": {
-            "rejectTitle": "Reject Report",
-            "rejectMessage": "You are rejecting this report. Please enter the reason:",
-            "confirmReject": "Confirm Reject"
         }
     },
     "staffManagement": {
@@ -2463,74 +2499,29 @@
             "loadFailed": "Failed to load payment data. Please try again."
         }
     },
-    "staffUsers": {
-        "title": "User Management",
-        "subtitle": "Manage user and property owner accounts",
-        "createAccount": "Create Account",
+    "tenantManagement": {
+        "title": "Tenant Management",
+        "subtitle": "List of all current tenants and co-occupants",
+        "loading": "Loading tenant list...",
         "stats": {
-            "totalUsers": "Total Users",
-            "totalOwners": "Total Owners",
-            "active": "Active",
-            "inactive": "Inactive"
+            "totalPeople": "Total People",
+            "primaryTenants": "Primary Tenants",
+            "coOccupants": "Co-occupants"
         },
-        "tabs": {
-            "all": "All Users",
-            "users": "Users",
-            "owners": "Owners",
-            "ownerRequests": "Owner Requests",
-            "active": "Active",
-            "inactive": "Inactive"
+        "search": {
+            "placeholder": "Search by name, email, phone, ID card, room..."
         },
-        "table": {
-            "accountId": "Account ID",
-            "reason": "Reason",
-            "submittedAt": "Submitted At",
-            "status": "Status",
-            "actions": "Actions",
-            "fullName": "Full Name",
-            "email": "Email",
-            "phone": "Phone",
-            "role": "Role",
-            "createdAt": "Created At"
+        "empty": {
+            "noTenants": "No tenants yet",
+            "noTenantsDesc": "When there are active contracts, the list will appear here",
+            "noResults": "No tenants found",
+            "noResultsDesc": "Try searching with different keywords"
         },
-        "actions": {
-            "approve": "Approve",
-            "reject": "Reject",
-            "view": "View",
-            "edit": "Edit",
-            "activate": "Activate",
-            "deactivate": "Deactivate"
-        },
-        "status": {
-            "pending": "Pending",
-            "approved": "Approved",
-            "rejected": "Rejected",
-            "active": "Active",
-            "inactive": "Inactive"
-        },
-        "roles": {
-            "user": "User",
-            "owner": "Owner"
-        },
-        "modal": {
-            "createTitle": "Create New Account",
-            "editTitle": "Edit Account",
-            "viewTitle": "User Details",
-            "rejectTitle": "Reject Owner Request",
-            "accountType": "Account Type",
-            "fullName": "Full Name",
-            "email": "Email",
-            "phone": "Phone",
-            "password": "Password",
-            "rejectReason": "Rejection Reason",
-            "cancel": "Cancel",
-            "save": "Save",
-            "create": "Create",
-            "confirm": "Confirm"
-        },
-        "emptyState": {
-            "noRequests": "No owner requests found",
-            "noUsers": "No users found"
+        "tenant": {
+            "primaryTenant": "Primary Tenant",
+            "coOccupant": "Co-occupant",
+            "contract": "Contract",
+            "dob": "DOB"
         }
     },
     "ownerDashboard": {

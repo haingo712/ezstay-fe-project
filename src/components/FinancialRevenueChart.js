@@ -22,7 +22,7 @@ export default function FinancialRevenueChart({ months = 6 }) {
       setData(result || []);
     } catch (err) {
       console.error('Error loading revenue data:', err);
-      setError('Không thể tải dữ liệu doanh thu');
+      setError('Unable to load revenue data');
     } finally {
       setLoading(false);
     }

@@ -13,7 +13,7 @@ function FeatureCard({ icon, title, description }) {
 export default function Features() {
   const features = [
     {
-      icon: "🏠",
+      icon: "",
       title: "Easy Tenant Search",
       description: "Quickly connect with suitable tenants and save time."
     },

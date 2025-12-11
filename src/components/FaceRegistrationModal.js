@@ -64,7 +64,7 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
       setError('');
     } catch (err) {
       console.error('Camera error:', err);
-      setError('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.');
+      setError('Unable to access camera. Please check camera permissions.');
     }
   };
 
@@ -120,7 +120,7 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
 
   const handleRegister = async () => {
     if (!capturedImage) {
-      setError('Vui lòng chụp ảnh khuôn mặt trước');
+      setError('Please capture a photo first');
       return;
     }
     
@@ -137,11 +137,11 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
           if (onClose) onClose();
         }, 1500);
       } else {
-        setError(result.message || 'Đăng ký khuôn mặt thất bại. Vui lòng thử lại.');
+        setError(result.message || 'Face registration failed. Please try again.');
       }
     } catch (err) {
       console.error('❌ Registration error:', err);
-      const errorMessage = err.data?.message || err.message || 'Đăng ký khuôn mặt thất bại. Vui lòng thử lại.';
+      const errorMessage = err.data?.message || err.message || 'Face registration failed. Please try again.';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -149,7 +149,7 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
   };
 
   const handleDelete = async () => {
-    const confirmed = await notification.confirm('Bạn có chắc muốn xóa khuôn mặt đã đăng ký? Bạn sẽ cần đăng ký lại để sử dụng đăng nhập bằng khuôn mặt.', 'Xác nhận xóa');
+    const confirmed = await notification.confirm('Are you sure you want to delete your registered face? You will need to register again to use face login.', 'Confirm Deletion');
     if (!confirmed) {
       return;
     }
@@ -165,10 +165,10 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
           if (onClose) onClose();
         }, 1500);
       } else {
-        setError(result.message || 'Xóa khuôn mặt thất bại. Vui lòng thử lại.');
+        setError(result.message || 'Failed to delete face. Please try again.');
       }
     } catch (err) {
-      setError(err.message || 'Xóa khuôn mặt thất bại. Vui lòng thử lại.');
+      setError(err.message || 'Failed to delete face. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -197,13 +197,13 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
               </div>
               <div>
                 <h2 className="font-bold text-lg">
-                  {hasFaceRegistered || isUpdate ? 'Cập nhật Face ID' : 'Đăng ký Face ID'}
+                  {hasFaceRegistered || isUpdate ? 'Update Face ID' : 'Register Face ID'}
                 </h2>
                 <p className="text-xs text-white/80">
-                  {checkingFace ? 'Đang kiểm tra...' : 
-                   loading ? 'Đang xử lý...' : 
-                   success ? 'Hoàn thành!' : 
-                   'Chụp ảnh mặt nhìn thẳng'}
+                  {checkingFace ? 'Checking...' : 
+                   loading ? 'Processing...' : 
+                   success ? 'Complete!' : 
+                   'Capture a front-facing photo'}
                 </p>
               </div>
             </div>
@@ -230,7 +230,7 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
           {success && (
             <div className="mb-3 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 p-3 rounded-r-lg">
               <p className="text-green-700 dark:text-green-300 text-sm">
-                🎉 {hasFaceRegistered ? 'Cập nhật' : 'Đăng ký'} khuôn mặt thành công!
+                🎉 {hasFaceRegistered ? 'Face updated' : 'Face registered'} successfully!
               </p>
             </div>
           )}
@@ -238,7 +238,7 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
           {hasFaceRegistered && !capturedImage && !loading && !success && (
             <div className="mb-3 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-3 rounded-r-lg">
               <p className="text-blue-700 dark:text-blue-300 text-sm">
-                ℹ️ Bạn đã đăng ký khuôn mặt. Chụp ảnh mới để cập nhật.
+                ℹ️ You have already registered a face. Take a new photo to update.
               </p>
             </div>
           )}
@@ -287,12 +287,12 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
-                        Sẵn sàng
+                        Ready
                       </div>
                     ) : (
                       <div className="bg-gray-700 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
                         <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse" />
-                        Đang quét
+                        Scanning
                       </div>
                     )}
                   </div>
@@ -300,7 +300,7 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
                   {/* Guide text */}
                   <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 px-3 py-1.5 rounded-full">
                     <p className="text-white text-xs text-center whitespace-nowrap">
-                      {faceDetected ? '✅ Nhấn chụp' : '👤 Đặt mặt vào khung'}
+                      {faceDetected ? '✅ Press capture' : '👤 Position face in frame'}
                     </p>
                   </div>
                 </>
@@ -315,7 +315,7 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <div className="text-center">
                         <div className="w-10 h-10 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                        <p className="text-white text-sm">Đang xử lý...</p>
+                        <p className="text-white text-sm">Processing...</p>
                       </div>
                     </div>
                   )}
@@ -342,7 +342,7 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  Chụp ảnh
+                  Capture
                 </button>
                 {hasFaceRegistered && (
                   <button 
@@ -350,7 +350,7 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
                     disabled={loading}
                     className="px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-medium disabled:opacity-50"
                   >
-                    Xóa
+                    Delete
                   </button>
                 )}
               </>
@@ -364,12 +364,12 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
                   {loading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Đang xử lý...
+                      Processing...
                     </>
                   ) : success ? (
-                    <>✅ Hoàn thành!</>
+                    <>✅ Complete!</>
                   ) : (
-                    <>{hasFaceRegistered ? '🔄 Cập nhật' : '✅ Đăng ký'}</>
+                    <>{hasFaceRegistered ? '🔄 Update' : '✅ Register'}</>
                   )}
                 </button>
                 <button 
@@ -377,7 +377,7 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
                   disabled={loading || success}
                   className="px-4 py-2.5 bg-gray-500 hover:bg-gray-600 text-white rounded-xl text-sm font-medium disabled:opacity-50"
                 >
-                  Chụp lại
+                  Retake
                 </button>
               </>
             )}
@@ -387,7 +387,7 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, isUp
           {!capturedImage && !success && (
             <div className="mt-3 text-center">
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                💡 Đảm bảo đủ ánh sáng và nhìn thẳng vào camera
+                💡 Ensure adequate lighting and look directly at the camera
               </p>
             </div>
           )}

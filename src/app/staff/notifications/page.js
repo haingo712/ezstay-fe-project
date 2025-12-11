@@ -5,6 +5,24 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from 'react-toastify';
 import notification from '@/utils/notification';
 
+// Map notification type number to string enum for backend
+const notificationTypeMap = {
+    0: "System",
+    1: "Promotion",
+    2: "Warning",
+    3: "OwnerRegister"
+};
+
+// Helper function to convert notificationType
+function convertNotificationType(data) {
+    return {
+        ...data,
+        notificationType: typeof data.notificationType === 'number'
+            ? notificationTypeMap[data.notificationType]
+            : data.notificationType
+    };
+}
+
 // Function to mark notification as read
 async function markAsReadNotification(id) {
     try {
@@ -19,9 +37,10 @@ async function markAsReadNotification(id) {
 // Function to create new notification
 async function createNotification(data) {
     try {
+        const requestData = convertNotificationType(data);
         const res = await apiFetch("/api/Notification", {
             method: "POST",
-            body: JSON.stringify(data),
+            body: JSON.stringify(requestData),
             headers: {
                 "Content-Type": "application/json"
             }
@@ -35,9 +54,10 @@ async function createNotification(data) {
 // Function to update notification
 async function updateNotification(id, data) {
     try {
+        const requestData = convertNotificationType(data);
         const res = await apiFetch(`/api/Notification/${id}`, {
             method: "PUT",
-            body: JSON.stringify(data),
+            body: JSON.stringify(requestData),
             headers: {
                 "Content-Type": "application/json"
             }
@@ -62,9 +82,10 @@ async function deleteNotification(id) {
 // Function to create notification by role
 async function createNotificationByRole(data) {
     try {
+        const requestData = convertNotificationType(data);
         const res = await apiFetch("/api/Notification/by-role", {
             method: "POST",
-            body: JSON.stringify(data),
+            body: JSON.stringify(requestData),
             headers: {
                 "Content-Type": "application/json"
             }
@@ -78,9 +99,10 @@ async function createNotificationByRole(data) {
 // Function to create scheduled notification
 async function createScheduledNotification(data) {
     try {
+        const requestData = convertNotificationType(data);
         const res = await apiFetch("/api/Notification/schedule", {
             method: "POST",
-            body: JSON.stringify(data),
+            body: JSON.stringify(requestData),
             headers: {
                 "Content-Type": "application/json"
             }
@@ -376,7 +398,7 @@ export default function StaffNotificationsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="bg-gray-50 dark:bg-gray-900 p-6">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">

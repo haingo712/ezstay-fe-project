@@ -9,7 +9,7 @@ class BoardingHouseService {
   // Lấy tất cả boarding houses
   async getAll() {
     try {
-      console.log("🏠 Fetching all boarding houses...");
+      console.log(" Fetching all boarding houses...");
       const response = await boardingHouseAPI.getAll();
       console.log("✅ Boarding houses fetched successfully:", response);
       return response;
@@ -22,7 +22,7 @@ class BoardingHouseService {
   // Lấy boarding house theo ID
   async getById(id) {
     try {
-      console.log(`🏠 Fetching boarding house with ID: ${id}...`);
+      console.log(` Fetching boarding house with ID: ${id}...`);
       const response = await boardingHouseAPI.getById(id);
       console.log("✅ Boarding house fetched successfully:", response);
       return response;
@@ -35,7 +35,7 @@ class BoardingHouseService {
   // Lấy boarding houses theo owner ID
   async getByOwnerId(ownerId) {
     try {
-      console.log(`🏠 Fetching boarding houses for owner: ${ownerId}...`);
+      console.log(` Fetching boarding houses for owner: ${ownerId}...`);
       const response = await boardingHouseAPI.getByOwnerId(ownerId);
       console.log("✅ Owner's boarding houses fetched successfully:", response);
       return response;
@@ -48,7 +48,7 @@ class BoardingHouseService {
   // Tạo boarding house mới
   async create(data) {
     try {
-      console.log("🏠 Creating new boarding house...", data);
+      console.log(" Creating new boarding house...", data);
       const response = await boardingHouseAPI.create(data);
       console.log("✅ Boarding house created successfully:", response);
       return response;
@@ -61,7 +61,7 @@ class BoardingHouseService {
   // Cập nhật boarding house
   async update(id, data) {
     try {
-      console.log(`🏠 Updating boarding house ${id}...`, data);
+      console.log(` Updating boarding house ${id}...`, data);
       const response = await boardingHouseAPI.update(id, data);
       console.log("✅ Boarding house updated successfully:", response);
       return response;
@@ -74,7 +74,7 @@ class BoardingHouseService {
   // Xóa boarding house
   async delete(id) {
     try {
-      console.log(`🏠 Deleting boarding house ${id}...`);
+      console.log(` Deleting boarding house ${id}...`);
       const response = await boardingHouseAPI.delete(id);
       console.log("✅ Boarding house deleted successfully");
       return response;

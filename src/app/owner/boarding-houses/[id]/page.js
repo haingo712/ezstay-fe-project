@@ -160,7 +160,7 @@ export default function OwnerBoardingHouseDetail() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-              <div className="text-blue-600 dark:text-blue-400 text-2xl">🏠</div>
+              <div className="text-blue-600 dark:text-blue-400 text-2xl"></div>
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('ownerBoardingHouseDetail.stats.totalRooms')}</p>
@@ -238,7 +238,7 @@ export default function OwnerBoardingHouseDetail() {
 
         {rooms.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">🏠</div>
+            <div className="text-6xl mb-4"></div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
               {t('ownerBoardingHouseDetail.rooms.empty.title')}
             </h3>
@@ -331,7 +331,7 @@ export default function OwnerBoardingHouseDetail() {
             onClick={() => {/* Add room management functionality */}}
             className="flex items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
           >
-            <div className="text-green-600 dark:text-green-400 text-2xl mr-3">🏠</div>
+            <div className="text-green-600 dark:text-green-400 text-2xl mr-3"></div>
             <div>
               <h3 className="font-medium text-gray-900 dark:text-white">{t('ownerBoardingHouseDetail.quickActions.roomManagement')}</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">{t('ownerBoardingHouseDetail.quickActions.roomManagementDesc')}</p>

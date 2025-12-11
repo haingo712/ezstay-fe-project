@@ -41,7 +41,7 @@ function GlobalNotificationBell() {
       <button
         className="relative p-2 rounded-full hover:bg-blue-100 dark:hover:bg-gray-700 focus:outline-none"
         onClick={() => setShowDropdown((v) => !v)}
-        title="Xem thông báo"
+        title="View notifications"
       >
         <svg className="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.243a2 2 0 0 1-3.714 0M21 19H3m16-2V9a7 7 0 1 0-14 0v8a2 2 0 0 1-2 2h16a2 2 0 0 1-2-2Z" />
@@ -52,8 +52,8 @@ function GlobalNotificationBell() {
       </button>
       {showDropdown && (
         <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-gray-800 shadow-lg rounded-lg p-2 z-50">
-          <div className="font-bold mb-2 text-blue-700">Thông báo mới</div>
-          {notifications.length === 0 && <div className="text-gray-500 text-sm">Không có thông báo.</div>}
+          <div className="font-bold mb-2 text-blue-700">New Notifications</div>
+          {notifications.length === 0 && <div className="text-gray-500 text-sm">No notifications.</div>}
           <ul>
             {notifications.slice(0, 10).map(n => (
               <li
@@ -73,7 +73,7 @@ function GlobalNotificationBell() {
                 <div className="text-gray-700 dark:text-gray-200 text-xs">{n.message}</div>
                 <div className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString()}</div>
                 {!n.isRead && (
-                  <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">Mới</span>
+                  <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">New</span>
                 )}
               </li>
             ))}
@@ -372,7 +372,7 @@ export default function Navbar() {
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
-                          {t('nav.paymentHistory') || 'Lịch sử thanh toán'}
+                          {t('nav.paymentHistory') || 'Payment History'}
                         </Link>
                       )}
 

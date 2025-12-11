@@ -109,7 +109,7 @@ export default function FeaturedPosts() {
                 </p>
 
                 <div className="text-gray-700 dark:text-gray-300 text-sm mb-2">
-                  🏠 {post.houseName || 'N/A'}{post.roomName && post.roomName !== 'All rooms' && post.roomName !== 'AllRRoom' && ` - ${post.roomName}`}
+                   {post.houseName || 'N/A'}{post.roomName && post.roomName !== 'All rooms' && post.roomName !== 'AllRRoom' && ` - ${post.roomName}`}
                 </div>
 
                 <div className="flex-1"></div>

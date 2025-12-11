@@ -9,7 +9,7 @@ import Image from 'next/image';
 export default function SafeImage({ 
   src, 
   alt = 'Image', 
-  fallbackIcon = '🏠',
+  fallbackIcon = '',
   className = '',
   fill = false,
   width,

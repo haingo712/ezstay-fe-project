@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import contractService from '@/services/contractService';
 import profileService from '@/services/profileService';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Users, Search, Home, Calendar, Phone, Mail, MapPin, User, Building2, IdCard } from 'lucide-react';
 
 export default function TenantManagementPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [tenants, setTenants] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -93,7 +95,7 @@ export default function TenantManagementPage() {
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">Đang tải danh sách người thuê...</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">{t('tenantManagement.loading')}</p>
             </div>
           </div>
         </div>
@@ -108,10 +110,10 @@ export default function TenantManagementPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <Users className="h-8 w-8 text-blue-600" />
-            Quản lý người thuê
+            {t('tenantManagement.title')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Danh sách tất cả người thuê và người ở cùng hiện tại
+            {t('tenantManagement.subtitle')}
           </p>
         </div>
 
@@ -123,7 +125,7 @@ export default function TenantManagementPage() {
                 <Users className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Tổng số người</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('tenantManagement.stats.totalPeople')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{tenants.length}</p>
               </div>
             </div>
@@ -135,7 +137,7 @@ export default function TenantManagementPage() {
                 <User className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Người thuê chính</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('tenantManagement.stats.primaryTenants')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {tenants.filter(t => t.isPrimary).length}
                 </p>
@@ -149,7 +151,7 @@ export default function TenantManagementPage() {
                 <Users className="h-6 w-6 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Người ở cùng</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('tenantManagement.stats.coOccupants')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {tenants.filter(t => !t.isPrimary).length}
                 </p>
@@ -166,7 +168,7 @@ export default function TenantManagementPage() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm theo tên, email, SĐT, CCCD, phòng..."
+              placeholder={t('tenantManagement.search.placeholder')}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -177,10 +179,10 @@ export default function TenantManagementPage() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-12 text-center border border-gray-200 dark:border-gray-700">
             <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              {searchTerm ? 'Không tìm thấy người thuê' : 'Chưa có người thuê'}
+              {searchTerm ? t('tenantManagement.empty.noResults') : t('tenantManagement.empty.noTenants')}
             </h3>
             <p className="text-gray-600 dark:text-gray-400">
-              {searchTerm ? 'Thử tìm kiếm với từ khóa khác' : 'Khi có hợp đồng active, danh sách sẽ hiển thị ở đây'}
+              {searchTerm ? t('tenantManagement.empty.noResultsDesc') : t('tenantManagement.empty.noTenantsDesc')}
             </p>
           </div>
         ) : (
@@ -202,7 +204,7 @@ export default function TenantManagementPage() {
                         {tenant.fullName}
                         {tenant.isPrimary && (
                           <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
-                            Người thuê chính
+                            {t('tenantManagement.tenant.primaryTenant')}
                           </span>
                         )}
                       </h3>
@@ -239,7 +241,7 @@ export default function TenantManagementPage() {
                   </div>
                   <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                     <Calendar className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm">Sinh: {formatDate(tenant.dateOfBirth)}</span>
+                    <span className="text-sm">{t('tenantManagement.tenant.dob')}: {formatDate(tenant.dateOfBirth)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                     <MapPin className="h-4 w-4 text-gray-400" />
@@ -249,7 +251,7 @@ export default function TenantManagementPage() {
 
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-sm">
                   <div className="text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">Hợp đồng:</span> {formatDate(tenant.startDate)} - {formatDate(tenant.endDate)}
+                    <span className="font-medium">{t('tenantManagement.tenant.contract')}:</span> {formatDate(tenant.startDate)} - {formatDate(tenant.endDate)}
                   </div>
                 </div>
               </div>

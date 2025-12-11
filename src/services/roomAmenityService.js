@@ -3,7 +3,7 @@ import api from '../utils/api';
 // RoomAmenity Service - Quản lý các tiện ích của phòng
 const getAllRoomAmenities = async (roomId) => {
   try {
-    console.log(`🏠 Fetching all amenities for room ID: ${roomId}...`);
+    console.log(` Fetching all amenities for room ID: ${roomId}...`);
     
     const response = await api.get(`/api/RoomAmenity/ByRoomId/${roomId}`);
     console.log("✅ Success fetching room amenities:", response);

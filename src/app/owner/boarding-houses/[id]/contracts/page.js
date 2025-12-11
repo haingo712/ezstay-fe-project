@@ -469,7 +469,7 @@ export default function ContractsManagementPage() {
     try {
       setLoading(true);
       console.log("📄 Fetching contracts for owner:", user.id);
-      console.log("🏠 Current boarding house ID:", houseId);
+      console.log(" Current boarding house ID:", houseId);
 
       // Fetch contracts for this owner (no need to pass user.id since it's from JWT token)
       const contractsResponse = await contractService.getByOwnerId();
@@ -481,7 +481,7 @@ export default function ContractsManagementPage() {
           try {
             if (contract.roomId) {
               const roomResponse = await roomService.getById(contract.roomId);
-              console.log(`🏠 Room info for ${contract.roomId}:`, roomResponse);
+              console.log(` Room info for ${contract.roomId}:`, roomResponse);
               return {
                 ...contract,
                 roomName: roomResponse?.name || roomResponse?.roomName || 'Unknown Room',
@@ -516,7 +516,7 @@ export default function ContractsManagementPage() {
       });
 
       console.log("📄 Total contracts:", enrichedContracts.length);
-      console.log("🏠 Contracts for this house:", houseContracts.length);
+      console.log(" Contracts for this house:", houseContracts.length);
       console.log("📄 Filtered contracts:", houseContracts);
 
       // Temporary: Show all contracts if filter returns empty (for debugging)
@@ -592,11 +592,11 @@ export default function ContractsManagementPage() {
 
     try {
       setRoomsLoading(true);
-      console.log("🏠 Fetching rooms for house ID:", houseId);
+      console.log(" Fetching rooms for house ID:", houseId);
 
       // Fetch rooms for this specific boarding house
       const roomsResponse = await roomService.getByBoardingHouseId(houseId);
-      console.log("🏠 Rooms fetched:", roomsResponse);
+      console.log(" Rooms fetched:", roomsResponse);
 
       // Filter only available rooms (roomStatus = 0)
       // BUT: Include current editing room even if not available
@@ -3844,7 +3844,7 @@ export default function ContractsManagementPage() {
                           value={contractData.roomId}
                           onChange={(e) => {
                             const selectedRoomId = e.target.value;
-                            console.log("🏠 Room selected:", selectedRoomId);
+                            console.log(" Room selected:", selectedRoomId);
 
                             // Find selected room to get price
                             const selectedRoom = rooms.find(r => r.id === selectedRoomId);

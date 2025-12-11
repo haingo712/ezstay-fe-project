@@ -201,7 +201,7 @@ const AddressSelector = ({
       <div className="relative">
         <label className={labelClass}>
           <span className="flex items-center">
-            🏠 {t('profile.detailAddress')} {required && <span className="text-red-500 ml-1">*</span>}
+             {t('profile.detailAddress')} {required && <span className="text-red-500 ml-1">*</span>}
           </span>
         </label>
         <div className="relative">

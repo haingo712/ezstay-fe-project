@@ -12,7 +12,7 @@ const translations = {
 };
 
 export function LanguageProvider({ children }) {
-    const [language, setLanguage] = useState('vi'); // Default to Vietnamese
+    const [language, setLanguage] = useState('en'); // Default to English
     const [isLoading, setIsLoading] = useState(true);
     const [mounted, setMounted] = useState(false);
 
