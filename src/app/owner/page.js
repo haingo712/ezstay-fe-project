@@ -7,6 +7,7 @@ import ProtectedRoute from '../../components/ProtectedRoute';
 import { useAuth } from '../../hooks/useAuth';
 import { boardingHouseAPI, roomAPI, apiFetch } from '../../utils/api';
 import contractService from '../../services/contractService';
+import rentalPostService from '../../services/rentalPostService';
 
 // Stat Card Component
 const StatCard = ({ title, value, subtitle, icon, gradient, trend, trendValue }) => (
@@ -127,15 +128,21 @@ const ContractStatusBadge = ({ status }) => {
 
 // Recent Contract Row
 const RecentContractRow = ({ contract }) => {
+  // Extract tenant name from identityProfiles array
+  const identityProfiles = contract.identityProfiles || contract.IdentityProfiles || [];
+  const primaryTenant = identityProfiles[0] || {};
+  const tenantName = primaryTenant.fullName || primaryTenant.FullName || 
+                     contract.tenantName || contract.TenantName || 'Tenant';
+  
   return (
     <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
       <div className="flex items-center space-x-4">
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-          {(contract.tenantName || contract.TenantName || 'T')?.[0]?.toUpperCase()}
+          {tenantName?.[0]?.toUpperCase() || 'T'}
         </div>
         <div>
           <p className="font-medium text-gray-900 dark:text-white">
-            {contract.tenantName || contract.TenantName || 'Tenant'}
+            {tenantName}
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {contract.roomName || contract.RoomName || 'Room'}
@@ -144,9 +151,9 @@ const RecentContractRow = ({ contract }) => {
       </div>
       <div className="text-right">
         <p className="font-semibold text-gray-900 dark:text-white">
-          {(contract.monthlyRent || contract.MonthlyRent || 0).toLocaleString()}₫
+          {(contract.roomPrice || contract.RoomPrice || contract.monthlyRent || contract.MonthlyRent || 0).toLocaleString()}₫
         </p>
-        <ContractStatusBadge status={contract.status || contract.Status || 0} />
+        <ContractStatusBadge status={contract.contractStatus || contract.ContractStatus || contract.status || contract.Status || 0} />
       </div>
     </div>
   );
@@ -215,28 +222,75 @@ const OccupancyChart = ({ occupied, total }) => {
   );
 };
 
-// Revenue Chart Component (Simple bar chart)
+// Revenue Chart Component (List style matching admin dashboard)
 const RevenueChart = ({ monthlyData }) => {
   const maxRevenue = Math.max(...monthlyData.map(m => m.revenue), 1);
   
+  // Get month name from label (e.g., "T12" -> "Dec 2025")
+  const getMonthName = (label, index) => {
+    const now = new Date();
+    const monthsBack = monthlyData.length - 1 - index;
+    const date = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+  };
+
+  // Calculate growth for each month
+  const getGrowth = (index) => {
+    if (index === 0) return 0;
+    const current = monthlyData[index]?.revenue || 0;
+    const previous = monthlyData[index - 1]?.revenue || 0;
+    return current - previous;
+  };
+
+  // Count bills (mock based on revenue - you can replace with real data)
+  const getBillCount = (revenue) => {
+    if (revenue === 0) return 0;
+    return Math.max(1, Math.floor(revenue / 200000));
+  };
+  
   return (
-    <div className="space-y-4">
-      <div className="flex items-end justify-between h-48 gap-2">
-        {monthlyData.map((month, index) => {
-          const height = (month.revenue / maxRevenue) * 100;
-          return (
-            <div key={index} className="flex-1 flex flex-col items-center gap-2">
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-t-lg relative group cursor-pointer hover:opacity-80 transition-opacity" style={{ height: `${height}%`, minHeight: '8px' }}>
-                <div className="absolute inset-0 bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-lg"></div>
-                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  {month.revenue.toLocaleString()}₫
-                </div>
+    <div className="space-y-3">
+      {monthlyData.map((month, index) => {
+        const growth = getGrowth(index);
+        const percentage = maxRevenue > 0 ? (month.revenue / maxRevenue) * 100 : 0;
+        const billCount = getBillCount(month.revenue);
+        
+        return (
+          <div key={index} className="space-y-2">
+            {/* Month Header */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {getMonthName(month.label, index)}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-orange-500">
+                  {month.revenue > 0 ? `${month.revenue.toLocaleString('vi-VN')}₫` : '0₫'}
+                </span>
+                {growth !== 0 && (
+                  <span className={`text-xs ${growth > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {growth > 0 ? '+' : ''}{growth.toLocaleString('vi-VN')}₫
+                  </span>
+                )}
               </div>
-              <span className="text-xs text-gray-600 dark:text-gray-400">{month.label}</span>
             </div>
-          );
-        })}
-      </div>
+            
+            {/* Progress Bar */}
+            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+            
+            {/* Stats Row */}
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+              <span>{billCount} bills</span>
+              <span>{billCount > 0 ? '1' : '0'} owners</span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -282,6 +336,9 @@ export default function OwnerDashboard() {
     activeContracts: 0,
     pendingRentalRequests: 0,
     pendingContracts: 0,
+    totalPostViews: 0,
+    totalPosts: 0,
+    occupancyRate: 0,
   });
 
   // Revenue data for last 6 months (from real API data)
@@ -360,7 +417,40 @@ export default function OwnerDashboard() {
         console.error('Error loading rental requests:', error);
       }
 
-      // Load revenue data from utility bills (last 6 months)
+      // Load owner posts for view count statistics
+      try {
+        const ownerPosts = await rentalPostService.getOwnerPosts();
+        const postsArray = Array.isArray(ownerPosts) ? ownerPosts : [];
+        const totalPostViews = postsArray.reduce((sum, post) => sum + (post.viewCount || 0), 0);
+        
+        setStats(prev => ({
+          ...prev,
+          totalPostViews,
+          totalPosts: postsArray.length,
+        }));
+        console.log('📊 Post views loaded:', { totalPosts: postsArray.length, totalPostViews });
+      } catch (error) {
+        console.error('Error loading owner posts:', error);
+      }
+
+      // Load occupancy rate from API
+      try {
+        const occupancyResponse = await boardingHouseAPI.getOwnerOccupancyRate();
+        if (occupancyResponse?.isSuccess && occupancyResponse?.data) {
+          const occupancyData = occupancyResponse.data;
+          setStats(prev => ({
+            ...prev,
+            occupancyRate: occupancyData.occupancyRate || 0,
+            totalRooms: occupancyData.totalRooms || prev.totalRooms,
+            occupiedRooms: occupancyData.occupiedRooms || prev.occupiedRooms,
+          }));
+          console.log('📊 Occupancy rate loaded:', occupancyData);
+        }
+      } catch (error) {
+        console.error('Error loading occupancy rate:', error);
+      }
+
+      // Load revenue data from utility bills (last 12 months)
       try {
         const billsResponse = await apiFetch('/api/UtilityBills/owner', { method: 'GET' });
         const bills = billsResponse?.value || billsResponse || [];
@@ -371,13 +461,13 @@ export default function OwnerDashboard() {
           return status === 1 || status === 'Paid';
         });
 
-        // Group by month (last 6 months)
+        // Group by month (last 12 months)
         const now = new Date();
         const monthlyRevenue = {};
         const monthLabels = [];
         
-        // Generate last 6 months labels
-        for (let i = 5; i >= 0; i--) {
+        // Generate last 12 months labels
+        for (let i = 11; i >= 0; i--) {
           const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
           const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
           const monthLabel = `T${date.getMonth() + 1}`;
@@ -412,15 +502,14 @@ export default function OwnerDashboard() {
         totalRevenue = monthlyRevenue[currentMonthKey] || totalRevenue;
       } catch (error) {
         console.error('Error loading revenue data:', error);
-        // Set default empty data
-        setRevenueData([
-          { label: 'T7', revenue: 0 },
-          { label: 'T8', revenue: 0 },
-          { label: 'T9', revenue: 0 },
-          { label: 'T10', revenue: 0 },
-          { label: 'T11', revenue: 0 },
-          { label: 'T12', revenue: 0 },
-        ]);
+        // Set default empty data for 12 months
+        const defaultData = [];
+        const now = new Date();
+        for (let i = 11; i >= 0; i--) {
+          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          defaultData.push({ label: `T${date.getMonth() + 1}`, revenue: 0 });
+        }
+        setRevenueData(defaultData);
       }
 
       setStats(prev => ({
@@ -507,7 +596,7 @@ export default function OwnerDashboard() {
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 -mt-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <StatCard
               title="Total Properties"
               value={stats.totalProperties}
@@ -516,11 +605,18 @@ export default function OwnerDashboard() {
               icon={<svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
             />
             <StatCard
-              title="Occupied Rooms"
-              value={stats.occupiedRooms}
-              subtitle={`${stats.totalRooms > 0 ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0}% occupancy`}
+              title="Occupancy Rate"
+              value={`${stats.occupancyRate || (stats.totalRooms > 0 ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0)}%`}
+              subtitle={`${stats.occupiedRooms}/${stats.totalRooms} rooms occupied`}
               gradient="bg-gradient-to-br from-green-500 to-emerald-600"
-              icon={<svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
+              icon={<svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
+            />
+            <StatCard
+              title="Post Views"
+              value={stats.totalPostViews.toLocaleString()}
+              subtitle={`${stats.totalPosts} posts total`}
+              gradient="bg-gradient-to-br from-pink-500 to-rose-600"
+              icon={<svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>}
             />
             <StatCard
               title="Active Contracts"
@@ -531,10 +627,17 @@ export default function OwnerDashboard() {
             />
             <StatCard
               title="Monthly Revenue"
-              value={`${(stats.monthlyRevenue / 1000000).toFixed(1)}M`}
-              subtitle={`${stats.monthlyRevenue.toLocaleString()}₫`}
+              value={`${stats.monthlyRevenue.toLocaleString()}₫`}
+              subtitle="this month"
               gradient="bg-gradient-to-br from-orange-500 to-red-500"
               icon={<svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+            />
+            <StatCard
+              title="Rental Requests"
+              value={stats.pendingRentalRequests}
+              subtitle="pending requests"
+              gradient="bg-gradient-to-br from-yellow-500 to-amber-600"
+              icon={<svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-1v8m0 0l3-3m-3 3L9 8m-5 5h2.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293h3.172a1 1 0 00.707-.293l2.414-2.414a1 1 0 01.707-.293H20" /></svg>}
             />
           </div>
 
@@ -636,6 +739,26 @@ export default function OwnerDashboard() {
                 <OccupancyChart occupied={stats.occupiedRooms} total={stats.totalRooms} />
               </div>
 
+              {/* Post Views Card */}
+              <div 
+                onClick={() => router.push('/owner/posts')}
+                className="bg-gradient-to-br from-pink-500 via-rose-500 to-red-500 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all group"
+              >
+                <div className="flex items-center justify-between text-white">
+                  <div>
+                    <p className="text-sm font-medium text-white/80">Total Post Views</p>
+                    <p className="text-3xl font-bold mt-1">{stats.totalPostViews.toLocaleString()}</p>
+                    <p className="text-sm text-white/70 mt-1">{stats.totalPosts} posts</p>
+                  </div>
+                  <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm group-hover:scale-110 transition-transform">
+                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
               {/* Rental Requests */}
               <RentalRequestsCard 
                 pendingRequests={stats.pendingRentalRequests} 
@@ -647,17 +770,13 @@ export default function OwnerDashboard() {
           {/* Revenue Chart Section - Full Width */}
           <div className="mt-8">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Revenue Trend</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Monthly revenue for the last 6 months</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">This Month</p>
-                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {(stats.monthlyRevenue / 1000000).toFixed(1)}M ₫
-                  </p>
-                </div>
+              <div className="mb-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                  Monthly Revenue (Last 12 Months)
+                </h2>
               </div>
               <RevenueChart monthlyData={revenueData} />
             </div>

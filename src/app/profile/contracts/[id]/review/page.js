@@ -10,7 +10,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import RoleBasedRedirect from '@/components/RoleBasedRedirect';
 import { toast } from 'react-toastify';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AddReviewPage() {
     const { user } = useAuth();
@@ -52,13 +52,13 @@ export default function AddReviewPage() {
                 return;
             }
 
-            // Check if review already exists using backend endpoint
-            const exists = await reviewService.checkReviewExists(contractId);
-            if (exists) {
-                toast.info('Bạn đã đánh giá hợp đồng này rồi');
-                router.push('/profile/contracts');
-                return;
-            }
+            // Removed: Allow multiple reviews per contract
+            // const exists = await reviewService.checkReviewExists(contractId);
+            // if (exists) {
+            //     toast.info('Bạn đã đánh giá hợp đồng này rồi');
+            //     router.push('/profile/contracts');
+            //     return;
+            // }
         } catch (error) {
             console.error('Error loading contract:', error);
             toast.error('Không thể tải thông tin hợp đồng');
@@ -208,7 +208,7 @@ export default function AddReviewPage() {
                 <div className="max-w-4xl mx-auto px-4 py-12">
                     <div className="text-center">
                         <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                        <p className="mt-4 text-gray-600 dark:text-gray-400">Đang tải...</p>
+                        <p className="mt-4 text-gray-600 dark:text-gray-400">{t('addReview.loading')}</p>
                     </div>
                 </div>
                 <Footer />
@@ -223,7 +223,7 @@ export default function AddReviewPage() {
                 <Navbar />
                 <div className="max-w-4xl mx-auto px-4 py-12">
                     <div className="text-center">
-                        <p className="text-gray-600 dark:text-gray-400">Không tìm thấy hợp đồng</p>
+                        <p className="text-gray-600 dark:text-gray-400">{t('addReview.contractNotFound')}</p>
                     </div>
                 </div>
                 <Footer />
@@ -243,30 +243,30 @@ export default function AddReviewPage() {
                     className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6"
                 >
                     <ArrowLeft className="h-5 w-5" />
-                    Quay lại
+                    {t('addReview.back')}
                 </button>
 
                 {/* Page Title */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                        Đánh giá hợp đồng
+                        {t('addReview.title')}
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400">
-                        Chia sẻ trải nghiệm của bạn về hợp đồng này
+                        {t('addReview.subtitle')}
                     </p>
                 </div>
 
                 {/* Contract Info Card */}
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
                     <h3 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">
-                        Thông tin hợp đồng
+                        {t('addReview.contractInfo')}
                     </h3>
                     <div className="grid grid-cols-2 gap-2 text-sm text-blue-700 dark:text-blue-300">
                         <div>
-                            <span className="font-medium">Phòng:</span> {contract.roomName || 'N/A'}
+                            <span className="font-medium">{t('addReview.room')}:</span> {contract.roomName || 'N/A'}
                         </div>
                         <div>
-                            <span className="font-medium">Mã HĐ:</span> {contractId.slice(0, 8)}...
+                            <span className="font-medium">{t('addReview.contractCode')}:</span> {contractId.slice(0, 8)}...
                         </div>
                     </div>
                 </div>
@@ -276,11 +276,11 @@ export default function AddReviewPage() {
                     {/* Rating */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                            Đánh giá <span className="text-red-500">*</span>
+                            {t('addReview.rating')} <span className="text-red-500">*</span>
                         </label>
                         {renderStars(reviewForm.rating)}
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                            {reviewForm.rating} {reviewForm.rating === 1 ? 'sao' : 'sao'}
+                            {reviewForm.rating} {t('addReview.stars')}
                         </p>
                         {errors.rating && (
                             <p className="text-red-500 text-sm mt-1">{errors.rating}</p>
@@ -290,12 +290,12 @@ export default function AddReviewPage() {
                     {/* Content */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Nội dung đánh giá <span className="text-red-500">*</span>
+                            {t('addReview.content')} <span className="text-red-500">*</span>
                         </label>
                         <textarea
                             value={reviewForm.content}
                             onChange={(e) => setReviewForm({ ...reviewForm, content: e.target.value })}
-                            placeholder="Chia sẻ trải nghiệm của bạn về hợp đồng này..."
+                            placeholder={t('addReview.contentPlaceholder')}
                             rows={8}
                             maxLength={1000}
                             required
@@ -304,7 +304,7 @@ export default function AddReviewPage() {
                         />
                         <div className="flex justify-between items-center mt-2">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {reviewForm.content.length}/1000 ký tự
+                                {reviewForm.content.length}/1000 {t('addReview.characters')}
                             </p>
                             {errors.content && (
                                 <p className="text-red-500 text-sm">{errors.content}</p>
@@ -315,7 +315,7 @@ export default function AddReviewPage() {
                     {/* Image Upload (Optional but backend requires it) */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Hình ảnh (Tùy chọn)
+                            {t('addReview.image')}
                         </label>
                         <input
                             type="file"
@@ -324,7 +324,7 @@ export default function AddReviewPage() {
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-200"
                         />
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Tối đa 5MB. Hỗ trợ: JPG, PNG, GIF
+                            {t('addReview.imageHint')}
                         </p>
 
                         {/* Image Preview */}
@@ -354,7 +354,7 @@ export default function AddReviewPage() {
                             disabled={submitting}
                             className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                         >
-                            Hủy
+                            {t('addReview.cancel')}
                         </button>
                         <button
                             type="submit"
@@ -364,12 +364,12 @@ export default function AddReviewPage() {
                             {submitting ? (
                                 <>
                                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                    Đang gửi...
+                                    {t('addReview.submitting')}
                                 </>
                             ) : (
                                 <>
                                     <Send className="h-5 w-5" />
-                                    Gửi đánh giá
+                                    {t('addReview.submit')}
                                 </>
                             )}
                         </button>

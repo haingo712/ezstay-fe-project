@@ -208,6 +208,7 @@
     },
     "payment": {
         "history": "Lịch sử thanh toán",
+        "historySubtitle": "Xem tất cả các giao dịch thanh toán của bạn",
         "amount": "Số tiền",
         "transactionType": "Loại giao dịch",
         "transferIn": "Nhận tiền",
@@ -224,7 +225,16 @@
         "detail": "Chi tiết",
         "close": "Đóng",
         "noHistory": "Chưa có lịch sử thanh toán",
-        "noHistoryDesc": "Khi bạn thanh toán hóa đơn, lịch sử sẽ hiển thị ở đây."
+        "noHistoryDesc": "Khi bạn thanh toán hóa đơn, lịch sử sẽ hiển thị ở đây.",
+        "loading": "Đang tải lịch sử thanh toán...",
+        "loadError": "Không thể tải lịch sử thanh toán",
+        "backToBills": "Quay lại Hóa đơn",
+        "searchPlaceholder": "Tìm theo mã giao dịch, nội dung...",
+        "month": "Tháng",
+        "year": "Năm",
+        "exporting": "Đang xuất...",
+        "exportExcel": "Xuất Excel",
+        "transactionDetail": "Chi tiết giao dịch"
     },
     "support": {
         "title": "Hỗ trợ khách hàng",
@@ -409,8 +419,8 @@
         "noPhone": "Không có SĐT"
     },
     "bills": {
-        "title": "Hóa đơn tiện ích",
-        "subtitle": "Quản lý và thanh toán hóa đơn điện nước",
+        "title": "Hóa đơn của tôi",
+        "subtitle": "Quản lý và thanh toán các hóa đơn tiền phòng, điện nước",
         "loading": "Đang tải hóa đơn...",
         "backToHome": "Quay lại trang chủ",
         "totalBills": "Tổng hóa đơn",
@@ -419,17 +429,23 @@
         "overdue": "Quá hạn",
         "cancelled": "Đã hủy",
         "status": "Trạng thái",
+        "allStatus": "Tất cả trạng thái",
         "all": "Tất cả",
         "search": "Tìm kiếm",
-        "searchPlaceholder": "Tìm theo ghi chú, số tiền...",
-        "billId": "Mã hóa đơn",
+        "searchPlaceholder": "Tìm theo mã, phòng, số tiền...",
+        "billId": "Mã HĐ",
+        "billType": "Loại",
+        "room": "Phòng",
         "createdDate": "Ngày tạo",
         "amount": "Số tiền",
         "paymentMethod": "Phương thức",
         "actions": "Thao tác",
         "view": "Xem",
+        "viewDetail": "Xem chi tiết",
         "pay": "Thanh toán",
+        "payNow": "Thanh toán",
         "noBills": "Không có hóa đơn nào",
+        "noBillsDesc": "Hóa đơn sẽ xuất hiện khi chủ nhà tạo cho bạn",
         "showing": "Hiển thị",
         "to": "đến",
         "of": "trong",
@@ -440,7 +456,25 @@
         "paymentDate": "Ngày thanh toán",
         "note": "Ghi chú",
         "close": "Đóng",
-        "errorLoading": "Không thể tải danh sách hóa đơn. Vui lòng thử lại."
+        "errorLoading": "Không thể tải danh sách hóa đơn. Vui lòng thử lại.",
+        "paymentHistory": "Lịch sử thanh toán",
+        "monthly": "Hàng tháng",
+        "deposit": "Tiền cọc",
+        "live": "Trực tiếp",
+        "offline": "Ngoại tuyến",
+        "paymentSuccess": "Thanh toán thành công!",
+        "newBill": "Hóa đơn mới!",
+        "youHaveNewBill": "Bạn có hóa đơn mới",
+        "boardingHouse": "Nhà trọ",
+        "roomRent": "Tiền thuê phòng",
+        "billDetailsSection": "Chi tiết hóa đơn",
+        "electricity": "Tiền điện",
+        "water": "Tiền nước",
+        "startReading": "Đầu kỳ",
+        "endReading": "Cuối kỳ",
+        "consumption": "Tiêu thụ",
+        "total": "Thành tiền",
+        "cannotLoadBill": "Không thể tải chi tiết hóa đơn"
     },
     "rentalHistory": {
         "title": "Lịch sử thuê trọ",
@@ -592,6 +626,7 @@
                 "fullNameRequired": "Vui lòng nhập họ và tên",
                 "phoneRequired": "Vui lòng nhập số điện thoại",
                 "cccdRequired": "Vui lòng nhập ít nhất 1 số CCCD",
+                "duplicateCCCD": "Số CCCD không được trùng nhau",
                 "incompleteCCCD": "Thông tin CCCD chưa đầy đủ. Vui lòng cập nhật hồ sơ trước khi gửi yêu cầu.",
                 "loadProfileFailed": "Không thể tải thông tin cá nhân. Vui lòng thử lại."
             }
@@ -1464,6 +1499,39 @@
             "uploadFailed": "Lỗi khi upload chữ ký. Vui lòng thử lại.",
             "otpInvalidExpired": "Mã OTP không đúng hoặc đã hết hạn",
             "generalError": "Có lỗi xảy ra. Vui lòng thử lại."
+        }
+    },
+    "addReview": {
+        "title": "Đánh giá hợp đồng",
+        "subtitle": "Chia sẻ trải nghiệm của bạn về hợp đồng này",
+        "loading": "Đang tải...",
+        "contractNotFound": "Không tìm thấy hợp đồng",
+        "back": "Quay lại",
+        "contractInfo": "Thông tin hợp đồng",
+        "room": "Phòng",
+        "contractCode": "Mã HĐ",
+        "rating": "Đánh giá",
+        "stars": "sao",
+        "content": "Nội dung đánh giá",
+        "contentPlaceholder": "Chia sẻ trải nghiệm của bạn về hợp đồng này...",
+        "characters": "ký tự",
+        "image": "Hình ảnh (Tùy chọn)",
+        "imageHint": "Tối đa 5MB. Hỗ trợ: JPG, PNG, GIF",
+        "cancel": "Hủy",
+        "submit": "Gửi đánh giá",
+        "submitting": "Đang gửi...",
+        "errors": {
+            "ratingRequired": "Đánh giá phải từ 1 đến 5 sao",
+            "contentRequired": "Nội dung đánh giá là bắt buộc",
+            "contentTooLong": "Nội dung không được vượt quá 1000 ký tự",
+            "imageTooLarge": "Kích thước ảnh không được vượt quá 5MB",
+            "invalidImageType": "Chỉ chấp nhận file ảnh",
+            "onlyActiveContract": "Chỉ có thể đánh giá hợp đồng đang hoạt động",
+            "alreadyReviewed": "Bạn đã đánh giá hợp đồng này rồi",
+            "submitFailed": "Không thể gửi đánh giá. Vui lòng thử lại."
+        },
+        "messages": {
+            "success": "Đánh giá của bạn đã được gửi thành công!"
         }
     },
     "ownerReviews": {

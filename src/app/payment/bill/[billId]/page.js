@@ -10,6 +10,28 @@ import { useBillNotifications } from '@/hooks/useSignalR';
 import { toast } from 'react-toastify';
 import { apiFetch } from '@/utils/api';
 
+// Retry fetch with exponential backoff for Render cold start
+const fetchWithRetry = async (url, options, maxRetries = 3) => {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            const response = await fetch(url, options);
+            
+            // If server is waking up, it might return 502/503
+            if (response.status === 502 || response.status === 503) {
+                console.log(`⏳ Server waking up... Retry ${i + 1}/${maxRetries}`);
+                await new Promise(resolve => setTimeout(resolve, (i + 1) * 2000));
+                continue;
+            }
+            
+            return response;
+        } catch (error) {
+            console.log(`❌ Fetch error, retry ${i + 1}/${maxRetries}:`, error.message);
+            if (i === maxRetries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, (i + 1) * 2000));
+        }
+    }
+};
+
 // Helper function to get bill amount (handles different API field names)
 const getBillAmount = (bill) => {
     return bill?.totalAmount || bill?.TotalAmount || bill?.amount || bill?.Amount || 0;
@@ -87,17 +109,7 @@ export default function BillPaymentPage() {
             console.log('✅ Payment confirmed via SignalR for this bill!');
             
             // Show success toast immediately
-            toast.success(
-                <div>
-                    <strong>🎉 Thanh toán thành công!</strong>
-                    <p>Hóa đơn {formatCurrency(data?.amount || getBillAmount(bill))} đã được thanh toán</p>
-                </div>,
-                { 
-                    autoClose: 5000,
-                    position: 'top-center',
-                    style: { fontSize: '16px' }
-                }
-            );
+            
             
             setPaymentSuccess(true);
             
@@ -176,7 +188,7 @@ export default function BillPaymentPage() {
                 headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const response = await fetch(externalApiUrl, {
+            const response = await fetchWithRetry(externalApiUrl, {
                 method: 'GET',
                 headers
             });
@@ -236,7 +248,7 @@ export default function BillPaymentPage() {
                 headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const qrResponse = await fetch(qrApiUrl, {
+            const qrResponse = await fetchWithRetry(qrApiUrl, {
                 method: 'GET',
                 headers
             });
@@ -297,17 +309,7 @@ export default function BillPaymentPage() {
                     clearInterval(pollInterval);
                     
                     // Show success toast immediately
-                    toast.success(
-                        <div>
-                            <strong>🎉 Thanh toán thành công!</strong>
-                            <p>Hóa đơn {formatCurrency(getBillAmount(updatedBill))} đã được xác nhận</p>
-                        </div>,
-                        { 
-                            autoClose: 5000,
-                            position: 'top-center',
-                            style: { fontSize: '16px' }
-                        }
-                    );
+                    
                     
                     setPaymentSuccess(true);
                     
@@ -782,72 +784,6 @@ export default function BillPaymentPage() {
                                     <div className="w-full max-w-sm bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl p-4 text-center mb-6">
                                         <p className="text-emerald-100 text-sm">Amount to Pay</p>
                                         <p className="text-3xl font-bold text-white">{formatCurrency(qrData?.amount)}</p>
-                                    </div>
-
-                                    {/* Bank Details */}
-                                    <div className="w-full max-w-sm space-y-3 mb-6">
-                                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                                            <span className="text-gray-500 text-sm">Bank</span>
-                                            <span className="font-semibold text-gray-900">{qrData?.bankName}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                                            <span className="text-gray-500 text-sm">Account Number</span>
-                                            <span className="font-mono font-medium text-gray-900">{qrData?.accountNumber}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                                            <span className="text-gray-500 text-sm">Account Name</span>
-                                            <span className="font-medium text-gray-900">{qrData?.accountName}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                                            <span className="text-amber-700 text-sm">Reference</span>
-                                            <span className="font-mono font-bold text-amber-800">{qrData?.transactionContent}</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Instructions */}
-                                    <div className="w-full max-w-sm bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-                                        <p className="text-sm text-blue-800 font-semibold mb-2 flex items-center gap-2">
-                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                            </svg>
-                                            Payment Instructions
-                                        </p>
-                                        <ol className="text-sm text-blue-700 space-y-1.5 list-decimal list-inside">
-                                            <li>Open your mobile banking app</li>
-                                            <li>Select QR code scanning feature</li>
-                                            <li>Scan the QR code above</li>
-                                            <li>Verify the amount and confirm payment</li>
-                                            <li>Payment will be confirmed automatically</li>
-                                        </ol>
-                                    </div>
-
-                                    {/* Auto-checking Status with SignalR indicator */}
-                                    <div className="w-full max-w-sm bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-emerald-600 border-t-transparent"></div>
-                                                <div>
-                                                    <p className="text-emerald-800 font-medium text-sm">Đang chờ thanh toán...</p>
-                                                    <p className="text-emerald-600 text-xs">Tự động kiểm tra mỗi 3 giây</p>
-                                                </div>
-                                            </div>
-                                            {/* SignalR Connection Status */}
-                                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                                                isConnected 
-                                                    ? 'bg-green-100 text-green-700' 
-                                                    : 'bg-gray-100 text-gray-500'
-                                            }`}>
-                                                <span className={`w-2 h-2 rounded-full ${
-                                                    isConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
-                                                }`}></span>
-                                                {isConnected ? 'Live' : 'Offline'}
-                                            </div>
-                                        </div>
-                                        {isConnected && (
-                                            <p className="text-emerald-600 text-xs mt-2 pl-8">
-                                                ✓ Thông báo real-time đã bật - Bạn sẽ nhận thông báo ngay khi thanh toán thành công
-                                            </p>
-                                        )}
                                     </div>
 
                                     {/* Action Buttons */}

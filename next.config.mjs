@@ -2,10 +2,11 @@
 const nextConfig = {
   transpilePackages: ['face-api.js'],
   
-  // Disable error overlay in development
-  devIndicators: {
-    buildActivity: false,
-  },
+  // Completely disable Next.js dev indicators (the floating button in corner)
+  devIndicators: false,
+  
+  // Disable error overlay completely in Next.js 15
+  reactStrictMode: false,
   
   // Customize which errors show overlay
   onDemandEntries: {

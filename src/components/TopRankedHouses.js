@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import boardingHouseService from "@/services/boardingHouseService";
+import { rentalPostService } from "@/services/rentalPostService";
 import { useGuestRedirect } from "@/hooks/useGuestRedirect";
 import { FaStar, FaSmile, FaMeh, FaFrown, FaMapMarkerAlt, FaTrophy } from "react-icons/fa";
 
@@ -16,6 +17,7 @@ export default function TopRankedHouses() {
   const [loadingRating, setLoadingRating] = useState(true);
   const [loadingSentiment, setLoadingSentiment] = useState(true);
   const [activeTab, setActiveTab] = useState("Rating");
+  const [navigatingId, setNavigatingId] = useState(null);
 
   // Fetch rating data
   const fetchRatingHouses = useCallback(async () => {
@@ -63,8 +65,37 @@ export default function TopRankedHouses() {
     }
   }, [authLoading, isAuthenticated, fetchRatingHouses, fetchSentimentHouses]);
 
-  const handleViewDetails = (houseId) => {
-    router.push(`/rental-posts?boardingHouseId=${houseId}`);
+  const handleViewDetails = async (houseId) => {
+    try {
+      setNavigatingId(houseId);
+      // Find posts for this boarding house and navigate to the first post detail
+      let allPosts = [];
+      if (isAuthenticated) {
+        allPosts = await rentalPostService.getAllForUser();
+      } else {
+        allPosts = await rentalPostService.getAllPublic();
+      }
+      
+      // Filter posts by boardingHouseId
+      const housePosts = (allPosts || []).filter(
+        post => (post.boardingHouseId || post.BoardingHouseId) === houseId
+      );
+      
+      if (housePosts.length > 0) {
+        // Navigate to the first post detail
+        const postId = housePosts[0].id || housePosts[0].Id;
+        router.push(`/rental-posts/${postId}`);
+      } else {
+        // Fallback: navigate to rental posts page filtered by boarding house
+        router.push(`/rental-posts?boardingHouseId=${houseId}`);
+      }
+    } catch (error) {
+      console.error("Error finding posts for boarding house:", error);
+      // Fallback to list page
+      router.push(`/rental-posts?boardingHouseId=${houseId}`);
+    } finally {
+      setNavigatingId(null);
+    }
   };
 
   const getRankIcon = (index) => {
@@ -143,13 +174,14 @@ export default function TopRankedHouses() {
 
           {/* View Button */}
           <button
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={navigatingId === house.boardingHouseId}
             onClick={(e) => {
               e.stopPropagation();
               handleViewDetails(house.boardingHouseId);
             }}
           >
-            View Details
+            {navigatingId === house.boardingHouseId ? "Loading..." : "View Details"}
           </button>
         </div>
       </div>

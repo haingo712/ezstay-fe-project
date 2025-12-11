@@ -31,10 +31,6 @@ export default function PaymentHistoryPage() {
     const [selectedPayment, setSelectedPayment] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterStatus, setFilterStatus] = useState('all');
-    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-    const [exporting, setExporting] = useState(false);
 
     useEffect(() => {
         fetchPayments();
@@ -65,11 +61,11 @@ export default function PaymentHistoryPage() {
                 setPayments(paymentList);
             } else {
                 console.error('Failed to load payment history:', response.status);
-                setError('Không thể tải lịch sử thanh toán');
+                setError('loadError');
             }
         } catch (err) {
             console.error('Error fetching payments:', err);
-            setError('Không thể tải lịch sử thanh toán');
+            setError('loadError');
         } finally {
             setLoading(false);
         }
@@ -121,80 +117,6 @@ export default function PaymentHistoryPage() {
         setShowModal(true);
     };
 
-    const exportToExcel = async () => {
-        try {
-            setExporting(true);
-            
-            // Filter payments by selected month and year
-            const filteredByMonth = payments.filter(payment => {
-                const date = new Date(payment.transactionDate || payment.TransactionDate);
-                return date.getMonth() + 1 === selectedMonth && date.getFullYear() === selectedYear;
-            });
-
-            if (filteredByMonth.length === 0) {
-                alert(`Không có giao dịch nào trong tháng ${selectedMonth}/${selectedYear}`);
-                return;
-            }
-
-            // Import xlsx dynamically (client-side only)
-            const XLSX = (await import('xlsx')).default;
-
-            // Prepare data for Excel
-            const excelData = filteredByMonth.map((payment, index) => ({
-                'STT': index + 1,
-                'Ngày GD': formatDate(payment.transactionDate || payment.TransactionDate),
-                'Mã giao dịch': payment.transactionId || payment.TransactionId || 'N/A',
-                'Ngân hàng': getGatewayLabel(payment.gateway || payment.Gateway).label,
-                'Số TK': payment.accountNumber || payment.AccountNumber || 'N/A',
-                'Loại GD': (payment.transferType || payment.TransferType) === 'out' ? 'Chuyển khoản' : 'Nhận tiền',
-                'Nội dung': payment.content || payment.Content || 'N/A',
-                'Số tiền': payment.transferAmount || payment.TransferAmount || 0
-            }));
-
-            // Calculate total
-            const totalRow = {
-                'STT': '',
-                'Ngày GD': '',
-                'Mã giao dịch': '',
-                'Ngân hàng': '',
-                'Số TK': '',
-                'Loại GD': '',
-                'Nội dung': 'TỔNG CỘNG',
-                'Số tiền': filteredByMonth.reduce((sum, p) => sum + (p.transferAmount || p.TransferAmount || 0), 0)
-            };
-            excelData.push(totalRow);
-
-            // Create worksheet
-            const ws = XLSX.utils.json_to_sheet(excelData);
-
-            // Set column widths
-            ws['!cols'] = [
-                { wch: 5 },  // STT
-                { wch: 20 }, // Ngày GD
-                { wch: 25 }, // Mã giao dịch
-                { wch: 15 }, // Ngân hàng
-                { wch: 15 }, // Số TK
-                { wch: 15 }, // Loại GD
-                { wch: 40 }, // Nội dung
-                { wch: 15 }  // Số tiền
-            ];
-
-            // Create workbook
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, `Tháng ${selectedMonth}-${selectedYear}`);
-
-            // Export file
-            XLSX.writeFile(wb, `LichSuThanhToan_${selectedMonth}_${selectedYear}.xlsx`);
-
-            console.log('✅ Exported', filteredByMonth.length, 'payments to Excel');
-        } catch (error) {
-            console.error('❌ Export error:', error);
-            alert('Không thể xuất file Excel. Vui lòng thử lại.');
-        } finally {
-            setExporting(false);
-        }
-    };
-
     // Calculate stats
     const totalAmount = payments.reduce((sum, p) => sum + (p.transferAmount || p.TransferAmount || 0), 0);
     const totalPayments = payments.length;
@@ -207,7 +129,7 @@ export default function PaymentHistoryPage() {
                     <div className="flex items-center justify-center py-20">
                         <div className="text-center">
                             <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto"></div>
-                            <p className="mt-4 text-gray-600 dark:text-gray-400">Đang tải lịch sử thanh toán...</p>
+                            <p className="mt-4 text-gray-600 dark:text-gray-400">{t('payment.loading')}</p>
                         </div>
                     </div>
                     <Footer />
@@ -229,16 +151,16 @@ export default function PaymentHistoryPage() {
                             className="flex items-center text-gray-600 dark:text-gray-400 hover:text-blue-600 mb-4 transition-colors"
                         >
                             <ArrowLeft className="w-5 h-5 mr-2" />
-                            Quay lại Hóa đơn
+                            {t('payment.backToBills')}
                         </button>
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             <div>
                                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                                     <Receipt className="h-8 w-8 text-blue-600" />
-                                    Lịch sử thanh toán
+                                    {t('payment.history')}
                                 </h1>
                                 <p className="text-gray-600 dark:text-gray-400 mt-1">
-                                    Xem tất cả các giao dịch thanh toán của bạn
+                                    {t('payment.historySubtitle')}
                                 </p>
                             </div>
                         </div>
@@ -252,7 +174,7 @@ export default function PaymentHistoryPage() {
                                     <CreditCard className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Tổng giao dịch</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('payment.totalTransactions')}</p>
                                     <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalPayments}</p>
                                 </div>
                             </div>
@@ -264,7 +186,7 @@ export default function PaymentHistoryPage() {
                                     <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Tổng đã thanh toán</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('payment.totalPaid')}</p>
                                     <p className="text-2xl font-bold text-green-600 dark:text-green-400">{formatCurrency(totalAmount)}</p>
                                 </div>
                             </div>
@@ -276,68 +198,30 @@ export default function PaymentHistoryPage() {
                                     <CheckCircle className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Thành công</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('payment.success')}</p>
                                     <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalPayments}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Search & Export */}
-                    <div className="mb-6 flex flex-col md:flex-row gap-4 items-start md:items-end">
-                        <div className="relative flex-1 max-w-md">
+                    {/* Search */}
+                    <div className="mb-6">
+                        <div className="relative max-w-md">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                             <input
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Tìm theo mã giao dịch, nội dung..."
+                                placeholder={t('payment.searchPlaceholder')}
                                 className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
-                        </div>
-                        
-                        {/* Export Section */}
-                        <div className="flex items-end gap-3">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tháng</label>
-                                <select
-                                    value={selectedMonth}
-                                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                                    className="px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                >
-                                    {[...Array(12)].map((_, i) => (
-                                        <option key={i + 1} value={i + 1}>Tháng {i + 1}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Năm</label>
-                                <select
-                                    value={selectedYear}
-                                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                                    className="px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                >
-                                    {[2023, 2024, 2025, 2026].map(year => (
-                                        <option key={year} value={year}>{year}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <button
-                                onClick={exportToExcel}
-                                disabled={exporting}
-                                className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg flex items-center gap-2 font-medium"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                {exporting ? 'Đang xuất...' : 'Xuất Excel'}
-                            </button>
                         </div>
                     </div>
 
                     {error && (
                         <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl">
-                            {error}
+                            {t(`payment.${error}`)}
                         </div>
                     )}
 
@@ -347,8 +231,8 @@ export default function PaymentHistoryPage() {
                             <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Receipt className="w-10 h-10 text-gray-400" />
                             </div>
-                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Chưa có lịch sử thanh toán</h3>
-                            <p className="text-gray-600 dark:text-gray-400">Khi bạn thanh toán hóa đơn, lịch sử sẽ hiển thị ở đây.</p>
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('payment.noHistory')}</h3>
+                            <p className="text-gray-600 dark:text-gray-400">{t('payment.noHistoryDesc')}</p>
                         </div>
                     ) : (
                         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
@@ -356,13 +240,13 @@ export default function PaymentHistoryPage() {
                                 <table className="w-full">
                                     <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                                         <tr>
-                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ngày giao dịch</th>
-                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mã GD</th>
-                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ngân hàng</th>
-                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Loại GD</th>
-                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nội dung</th>
-                                            <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Số tiền</th>
-                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Thao tác</th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('payment.transactionDate')}</th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('payment.transactionId')}</th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('payment.bank')}</th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('payment.transactionType')}</th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('payment.content')}</th>
+                                            <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('payment.amount')}</th>
+                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('payment.detail')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -426,7 +310,7 @@ export default function PaymentHistoryPage() {
                                                             className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                                         >
                                                             <Eye className="h-4 w-4" />
-                                                            Chi tiết
+                                                            {t('payment.detail')}
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -449,7 +333,7 @@ export default function PaymentHistoryPage() {
                             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between rounded-t-2xl">
                                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
                                     <Receipt className="h-6 w-6" />
-                                    Chi tiết giao dịch
+                                    {t('payment.transactionDetail')}
                                 </h3>
                                 <button
                                     onClick={() => setShowModal(false)}
@@ -475,26 +359,26 @@ export default function PaymentHistoryPage() {
                                     )}
                                     <span className="inline-flex items-center gap-1 mt-2 px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
                                         <CheckCircle className="h-4 w-4" />
-                                        Thành công
+                                        {t('payment.success')}
                                     </span>
                                 </div>
 
                                 {/* Details */}
                                 <div className="space-y-3">
                                     <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
-                                        <span className="text-gray-500 dark:text-gray-400">Mã giao dịch</span>
+                                        <span className="text-gray-500 dark:text-gray-400">{t('payment.transactionId')}</span>
                                         <span className="font-mono text-sm text-gray-900 dark:text-white">
                                             {selectedPayment.transactionId || selectedPayment.TransactionId}
                                         </span>
                                     </div>
                                     <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
-                                        <span className="text-gray-500 dark:text-gray-400">Ngân hàng</span>
+                                        <span className="text-gray-500 dark:text-gray-400">{t('payment.bank')}</span>
                                         <span className="text-gray-900 dark:text-white">
                                             {getGatewayLabel(selectedPayment.gateway || selectedPayment.Gateway).label}
                                         </span>
                                     </div>
                                     <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
-                                        <span className="text-gray-500 dark:text-gray-400">Số tài khoản</span>
+                                        <span className="text-gray-500 dark:text-gray-400">{t('payment.accountNumber')}</span>
                                         <span className="font-mono text-gray-900 dark:text-white">
                                             {selectedPayment.accountNumber || selectedPayment.AccountNumber}
                                         </span>
@@ -514,14 +398,14 @@ export default function PaymentHistoryPage() {
                                         )}
                                     </div>
                                     <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
-                                        <span className="text-gray-500 dark:text-gray-400">Ngày giao dịch</span>
+                                        <span className="text-gray-500 dark:text-gray-400">{t('payment.transactionDate')}</span>
                                         <span className="text-gray-900 dark:text-white">
                                             {formatDate(selectedPayment.transactionDate || selectedPayment.TransactionDate)}
                                         </span>
                                     </div>
                                     {(selectedPayment.content || selectedPayment.Content) && (
                                         <div className="py-2">
-                                            <span className="text-gray-500 dark:text-gray-400 block mb-2">Nội dung chuyển khoản</span>
+                                            <span className="text-gray-500 dark:text-gray-400 block mb-2">{t('payment.content')}</span>
                                             <p className="text-gray-900 dark:text-white text-sm bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                                                 {selectedPayment.content || selectedPayment.Content}
                                             </p>
@@ -529,7 +413,7 @@ export default function PaymentHistoryPage() {
                                     )}
                                     {(selectedPayment.billId || selectedPayment.BillId) && (
                                         <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
-                                            <span className="text-gray-500 dark:text-gray-400">Mã hóa đơn</span>
+                                            <span className="text-gray-500 dark:text-gray-400">{t('payment.billId')}</span>
                                             <span className="font-mono text-sm text-blue-600 dark:text-blue-400">
                                                 {(selectedPayment.billId || selectedPayment.BillId)?.substring(0, 8).toUpperCase()}
                                             </span>
@@ -544,7 +428,7 @@ export default function PaymentHistoryPage() {
                                     onClick={() => setShowModal(false)}
                                     className="w-full px-6 py-3 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white rounded-xl font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
                                 >
-                                    Đóng
+                                    {t('payment.close')}
                                 </button>
                             </div>
                         </div>

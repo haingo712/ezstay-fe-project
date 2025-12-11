@@ -24,7 +24,7 @@ export default function ContractSignaturePage() {
     const [fullName, setFullName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [otpCode, setOtpCode] = useState('');
-    const [otpTimer, setOtpTimer] = useState(300); // 5 minutes
+    const [otpTimer, setOtpTimer] = useState(90); // 1.5 minutes
     const [verifying, setVerifying] = useState(false);
     const [resending, setResending] = useState(false);
 
@@ -97,7 +97,7 @@ export default function ContractSignaturePage() {
                 }
             }
 
-            setOtpTimer(300); // Reset to 5 minutes
+            setOtpTimer(90); // Reset to 1.5 minutes
             setOtpCode(''); // Clear current input
             toast.success(t('signaturePage.messages.otpSent'));
         } catch (error) {
