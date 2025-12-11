@@ -215,3 +215,11 @@ html.dark input:-webkit-autofill:active {
 .shadow-3xl {
   box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.3);
 }
+
+/* Hide Next.js dev error overlay button */
+nextjs-portal,
+[data-nextjs-dialog-overlay],
+[data-nextjs-toast],
+body > nextjs-portal {
+  display: none !important;
+}

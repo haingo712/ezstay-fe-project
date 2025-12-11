@@ -286,7 +286,10 @@ export const boardingHouseAPI = {
   getRatingSummary: (id) => api.get(`/api/BoardingHouses/${id}/rating-feedback`),
 
   // Get sentiment summary for a boarding house (positive/neutral/negative analysis using Python ML)
-  getSentimentSummary: (id) => api.get(`/api/BoardingHouses/${id}/sentiment-feedback`)
+  getSentimentSummary: (id) => api.get(`/api/BoardingHouses/${id}/sentiment-feedback`),
+
+  // Get owner occupancy rate statistics
+  getOwnerOccupancyRate: () => api.get('/api/BoardingHouses/owner/occupancy-rate')
 };
 
 // House Location API

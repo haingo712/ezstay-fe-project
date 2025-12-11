@@ -453,7 +453,10 @@ export default function OwnerBillsPage() {
                                     const totalAmount = getBillAmount(bill);
                                     const roomName = bill.roomName || bill.RoomName || '-';
                                     const createdAt = bill.createdAt || bill.CreatedAt;
-                                    const billingPeriod = bill.billingPeriod || bill.BillingPeriod || bill.note?.match(/\d+\/\d+/)?.[0] || '-';
+                                    
+                                    // For both Deposit and Monthly bills, show created date with time
+                                    const billingPeriod = createdAt ? formatDate(createdAt) : '-';
+                                    
                                     const statusBadge = getStatusBadge(status);
                                     const typeBadge = getTypeBadge(billType);
 

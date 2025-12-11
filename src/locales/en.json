@@ -208,6 +208,7 @@
     },
     "payment": {
         "history": "Payment History",
+        "historySubtitle": "View all your payment transactions",
         "amount": "Amount",
         "transactionType": "Transaction Type",
         "transferIn": "Money In",
@@ -224,7 +225,16 @@
         "detail": "Detail",
         "close": "Close",
         "noHistory": "No Payment History",
-        "noHistoryDesc": "When you pay a bill, history will be shown here."
+        "noHistoryDesc": "When you pay a bill, history will be shown here.",
+        "loading": "Loading payment history...",
+        "loadError": "Failed to load payment history",
+        "backToBills": "Back to Bills",
+        "searchPlaceholder": "Search by transaction ID, content...",
+        "month": "Month",
+        "year": "Year",
+        "exporting": "Exporting...",
+        "exportExcel": "Export Excel",
+        "transactionDetail": "Transaction Detail"
     },
     "support": {
         "title": "Customer Support",
@@ -409,8 +419,8 @@
         "noPhone": "No phone"
     },
     "bills": {
-        "title": "Utility Bills",
-        "subtitle": "Manage and pay your electricity and water bills",
+        "title": "My Bills",
+        "subtitle": "Manage and pay your room, electricity and water bills",
         "loading": "Loading bills...",
         "backToHome": "Back to home",
         "totalBills": "Total Bills",
@@ -419,17 +429,23 @@
         "overdue": "Overdue",
         "cancelled": "Cancelled",
         "status": "Status",
+        "allStatus": "All Status",
         "all": "All",
         "search": "Search",
-        "searchPlaceholder": "Search by note, amount...",
+        "searchPlaceholder": "Search by ID, room, amount...",
         "billId": "Bill ID",
+        "billType": "Type",
+        "room": "Room",
         "createdDate": "Created Date",
         "amount": "Amount",
         "paymentMethod": "Payment Method",
         "actions": "Actions",
         "view": "View",
+        "viewDetail": "View Detail",
         "pay": "Pay",
+        "payNow": "Pay Now",
         "noBills": "No bills found",
+        "noBillsDesc": "Bills will appear when your landlord creates them",
         "showing": "Showing",
         "to": "to",
         "of": "of",
@@ -440,7 +456,25 @@
         "paymentDate": "Payment Date",
         "note": "Note",
         "close": "Close",
-        "errorLoading": "Unable to load bill list. Please try again."
+        "errorLoading": "Unable to load bill list. Please try again.",
+        "paymentHistory": "Payment History",
+        "monthly": "Monthly",
+        "deposit": "Deposit",
+        "live": "Live",
+        "offline": "Offline",
+        "paymentSuccess": "Payment Successful!",
+        "newBill": "New Bill!",
+        "youHaveNewBill": "You have a new bill",
+        "boardingHouse": "Boarding House",
+        "roomRent": "Room Rent",
+        "billDetailsSection": "Bill Details",
+        "electricity": "Electricity",
+        "water": "Water",
+        "startReading": "Start Reading",
+        "endReading": "End Reading",
+        "consumption": "Consumption",
+        "total": "Total",
+        "cannotLoadBill": "Cannot load bill details"
     },
     "rentalHistory": {
         "title": "Rental History",
@@ -591,6 +625,7 @@
                 "fullNameRequired": "Please enter your full name",
                 "phoneRequired": "Please enter your phone number",
                 "cccdRequired": "Please enter at least 1 ID card number",
+                "duplicateCCCD": "ID card numbers cannot be duplicated",
                 "incompleteCCCD": "ID card information is incomplete. Please update your profile before submitting.",
                 "loadProfileFailed": "Failed to load your profile. Please try again."
             }
@@ -1506,6 +1541,39 @@
             "uploadFailed": "Failed to upload signature. Please try again.",
             "otpInvalidExpired": "OTP is invalid or expired",
             "generalError": "An error occurred. Please try again."
+        }
+    },
+    "addReview": {
+        "title": "Review Contract",
+        "subtitle": "Share your experience about this contract",
+        "loading": "Loading...",
+        "contractNotFound": "Contract not found",
+        "back": "Back",
+        "contractInfo": "Contract Information",
+        "room": "Room",
+        "contractCode": "Contract ID",
+        "rating": "Rating",
+        "stars": "stars",
+        "content": "Review Content",
+        "contentPlaceholder": "Share your experience about this contract...",
+        "characters": "characters",
+        "image": "Image (Optional)",
+        "imageHint": "Max 5MB. Supported: JPG, PNG, GIF",
+        "cancel": "Cancel",
+        "submit": "Submit Review",
+        "submitting": "Submitting...",
+        "errors": {
+            "ratingRequired": "Rating must be from 1 to 5 stars",
+            "contentRequired": "Review content is required",
+            "contentTooLong": "Content must not exceed 1000 characters",
+            "imageTooLarge": "Image size must not exceed 5MB",
+            "invalidImageType": "Only image files are accepted",
+            "onlyActiveContract": "You can only review active contracts",
+            "alreadyReviewed": "You have already reviewed this contract",
+            "submitFailed": "Unable to submit review. Please try again."
+        },
+        "messages": {
+            "success": "Your review has been submitted successfully!"
         }
     },
     "ownerReviews": {

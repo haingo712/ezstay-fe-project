@@ -35,13 +35,15 @@ const formatCurrency = (amount) => {
     }).format(amount || 0);
 };
 
-// Format date
+// Format date with time
 const formatDate = (dateString) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('vi-VN', {
         year: 'numeric',
         month: '2-digit',
-        day: '2-digit'
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
     });
 };
 
@@ -88,8 +90,8 @@ export default function TenantBillsPage() {
             // Payment was confirmed
             toast.success(
                 <div>
-                    <strong>✅ Thanh toán thành công!</strong>
-                    <p>{data.message || `Hóa đơn ${formatCurrency(data.amount)} đã được thanh toán`}</p>
+                    <strong>✅ Payment successfully!</strong>
+                    <p>{data.message || `Bill ${formatCurrency(data.amount)} has been paid`}</p>
                 </div>,
                 { autoClose: 5000 }
             );
@@ -134,7 +136,8 @@ export default function TenantBillsPage() {
             setLoading(true);
             setError(null);
 
-            const response = await utilityBillService.getTenantBills({
+            // Use new method that includes deposit bills from user's contracts
+            const response = await utilityBillService.getAllTenantBillsIncludingDeposit({
                 $orderby: 'CreatedAt desc'
             });
 
@@ -217,13 +220,13 @@ export default function TenantBillsPage() {
     const getStatusBadge = (status) => {
         switch (status) {
             case 'Paid':
-                return { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle className="w-4 h-4" />, label: 'Đã thanh toán' };
+                return { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle className="w-4 h-4" />, label: t('bills.paid') };
             case 'Unpaid':
-                return { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <Clock className="w-4 h-4" />, label: 'Chưa thanh toán' };
+                return { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <Clock className="w-4 h-4" />, label: t('bills.unpaid') };
             case 'Overdue':
-                return { bg: 'bg-red-100', text: 'text-red-800', icon: <AlertCircle className="w-4 h-4" />, label: 'Quá hạn' };
+                return { bg: 'bg-red-100', text: 'text-red-800', icon: <AlertCircle className="w-4 h-4" />, label: t('bills.overdue') };
             case 'Cancelled':
-                return { bg: 'bg-gray-100', text: 'text-gray-800', icon: <X className="w-4 h-4" />, label: 'Đã hủy' };
+                return { bg: 'bg-gray-100', text: 'text-gray-800', icon: <X className="w-4 h-4" />, label: t('bills.cancelled') };
             default:
                 return { bg: 'bg-gray-100', text: 'text-gray-800', icon: null, label: status };
         }
@@ -233,9 +236,9 @@ export default function TenantBillsPage() {
     const getTypeBadge = (type) => {
         switch (type) {
             case 'Monthly':
-                return { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Hàng tháng' };
+                return { bg: 'bg-blue-100', text: 'text-blue-800', label: t('bills.monthly') };
             case 'Deposit':
-                return { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Tiền cọc' };
+                return { bg: 'bg-purple-100', text: 'text-purple-800', label: t('bills.deposit') };
             default:
                 return { bg: 'bg-gray-100', text: 'text-gray-800', label: type };
         }
@@ -248,7 +251,7 @@ export default function TenantBillsPage() {
                 <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                        <p className="mt-4 text-gray-600 dark:text-gray-400">Đang tải hóa đơn...</p>
+                        <p className="mt-4 text-gray-600 dark:text-gray-400">{t('bills.loading')}</p>
                     </div>
                 </div>
                 <Footer />
@@ -267,7 +270,7 @@ export default function TenantBillsPage() {
                             <div>
                                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                                     <FileText className="w-8 h-8 text-blue-600" />
-                                    Hóa đơn của tôi
+                                    {t('bills.title')}
                                     {/* Real-time connection indicator */}
                                     <span 
                                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -275,20 +278,20 @@ export default function TenantBillsPage() {
                                                 ? 'bg-green-100 text-green-700' 
                                                 : 'bg-gray-100 text-gray-500'
                                         }`}
-                                        title={isConnected ? 'Đang nhận cập nhật real-time' : 'Đang kết nối...'}
+                                        title={isConnected ? t('bills.live') : t('bills.offline')}
                                     >
                                         {isConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-                                        {isConnected ? 'Live' : 'Offline'}
+                                        {isConnected ? t('bills.live') : t('bills.offline')}
                                     </span>
                                 </h1>
-                                <p className="mt-2 text-gray-600 dark:text-gray-400">Quản lý và thanh toán các hóa đơn tiền phòng, điện nước</p>
+                                <p className="mt-2 text-gray-600 dark:text-gray-400">{t('bills.subtitle')}</p>
                             </div>
                             <button
                                 onClick={() => router.push('/payment/history')}
                                 className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
                             >
                                 <History className="w-5 h-5" />
-                                Lịch sử thanh toán
+                                {t('bills.paymentHistory')}
                             </button>
                         </div>
                     </div>
@@ -298,7 +301,7 @@ export default function TenantBillsPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tổng hóa đơn</p>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('bills.totalBills')}</p>
                                     <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.total}</p>
                                 </div>
                                 <div className="bg-blue-100 p-3 rounded-xl">
@@ -310,7 +313,7 @@ export default function TenantBillsPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Chưa thanh toán</p>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('bills.unpaid')}</p>
                                     <p className="text-2xl font-bold text-yellow-600 mt-1">{stats.unpaid}</p>
                                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(stats.unpaidAmount)}</p>
                                 </div>
@@ -323,7 +326,7 @@ export default function TenantBillsPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Đã thanh toán</p>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('bills.paid')}</p>
                                     <p className="text-2xl font-bold text-green-600 mt-1">{stats.paid}</p>
                                 </div>
                                 <div className="bg-green-100 p-3 rounded-xl">
@@ -335,7 +338,7 @@ export default function TenantBillsPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Quá hạn</p>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('bills.overdue')}</p>
                                     <p className="text-2xl font-bold text-red-600 mt-1">{stats.overdue}</p>
                                 </div>
                                 <div className="bg-red-100 p-3 rounded-xl">
@@ -350,24 +353,24 @@ export default function TenantBillsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Trạng thái
+                                    {t('bills.status')}
                                 </label>
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
                                     className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                 >
-                                    <option value="all">Tất cả trạng thái</option>
-                                    <option value="Unpaid">Chưa thanh toán</option>
-                                    <option value="Paid">Đã thanh toán</option>
-                                    <option value="Overdue">Quá hạn</option>
-                                    <option value="Cancelled">Đã hủy</option>
+                                    <option value="all">{t('bills.allStatus')}</option>
+                                    <option value="Unpaid">{t('bills.unpaid')}</option>
+                                    <option value="Paid">{t('bills.paid')}</option>
+                                    <option value="Overdue">{t('bills.overdue')}</option>
+                                    <option value="Cancelled">{t('bills.cancelled')}</option>
                                 </select>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Tìm kiếm
+                                    {t('bills.search')}
                                 </label>
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -375,7 +378,7 @@ export default function TenantBillsPage() {
                                         type="text"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        placeholder="Tìm theo mã, phòng, số tiền..."
+                                        placeholder={t('bills.searchPlaceholder')}
                                         className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
                                     />
                                 </div>
@@ -390,8 +393,8 @@ export default function TenantBillsPage() {
                                 <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <FileText className="w-10 h-10 text-gray-400" />
                                 </div>
-                                <p className="text-gray-500 dark:text-gray-400 font-medium text-lg">Không có hóa đơn nào</p>
-                                <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Hóa đơn sẽ xuất hiện khi chủ nhà tạo cho bạn</p>
+                                <p className="text-gray-500 dark:text-gray-400 font-medium text-lg">{t('bills.noBills')}</p>
+                                <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">{t('bills.noBillsDesc')}</p>
                             </div>
                         ) : (
                             <>
@@ -400,13 +403,13 @@ export default function TenantBillsPage() {
                                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                         <thead className="bg-gray-50 dark:bg-gray-700">
                                             <tr>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Mã HĐ</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Loại</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Phòng</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Ngày tạo</th>
-                                                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Số tiền</th>
-                                                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Trạng thái</th>
-                                                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Thao tác</th>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('bills.billId')}</th>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('bills.billType')}</th>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('bills.room')}</th>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('bills.createdDate')}</th>
+                                                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('bills.amount')}</th>
+                                                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('bills.status')}</th>
+                                                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('bills.actions')}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
@@ -454,7 +457,7 @@ export default function TenantBillsPage() {
                                                                 <button
                                                                     onClick={() => handleViewDetail(bill)}
                                                                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                                    title="Xem chi tiết"
+                                                                    title={t('bills.viewDetail')}
                                                                 >
                                                                     <Eye className="w-5 h-5" />
                                                                 </button>
@@ -464,7 +467,7 @@ export default function TenantBillsPage() {
                                                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white text-xs font-medium rounded-lg hover:bg-green-600 transition-colors"
                                                                     >
                                                                         <CreditCard className="w-4 h-4" />
-                                                                        Thanh toán
+                                                                        {t('bills.payNow')}
                                                                     </button>
                                                                 )}
                                                             </div>
@@ -536,7 +539,7 @@ export default function TenantBillsPage() {
                         {totalPages > 1 && (
                             <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
                                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                                    Hiển thị {startIndex + 1} - {Math.min(endIndex, filteredBills.length)} / {filteredBills.length} hóa đơn
+                                    {t('bills.showing')} {startIndex + 1} - {Math.min(endIndex, filteredBills.length)} / {filteredBills.length} {t('bills.results')}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button
@@ -571,7 +574,7 @@ export default function TenantBillsPage() {
                             {/* Modal Header */}
                             <div className="flex justify-between items-center mb-6 pb-4 border-b dark:border-gray-700">
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Chi tiết hóa đơn</h2>
+                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('bills.billDetails')}</h2>
                                     {selectedBill && (
                                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-mono">
                                             #{(selectedBill.id || selectedBill.Id || '').toString().substring(0, 8).toUpperCase()}
@@ -589,13 +592,13 @@ export default function TenantBillsPage() {
                             {loadingDetail ? (
                                 <div className="flex items-center justify-center py-12">
                                     <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-                                    <span className="ml-3 text-gray-600 dark:text-gray-400">Đang tải chi tiết...</span>
+                                    <span className="ml-3 text-gray-600 dark:text-gray-400">{t('bills.loading')}</span>
                                 </div>
                             ) : selectedBill ? (
                                 <div className="space-y-6">
                                     {/* Amount Card */}
                                     <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl p-6 text-white">
-                                        <p className="text-blue-100 text-sm mb-1">Tổng số tiền</p>
+                                        <p className="text-blue-100 text-sm mb-1">{t('bills.amount')}</p>
                                         <p className="text-3xl font-bold">{formatCurrency(getBillAmount(selectedBill))}</p>
                                         <div className="mt-3">
                                             {(() => {
@@ -616,7 +619,7 @@ export default function TenantBillsPage() {
                                         <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
                                             <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1">
                                                 <Home className="w-4 h-4" />
-                                                <span className="text-xs uppercase tracking-wide">Nhà trọ</span>
+                                                <span className="text-xs uppercase tracking-wide">{t('bills.boardingHouse')}</span>
                                             </div>
                                             <p className="font-medium text-gray-900 dark:text-white">
                                                 {selectedBill.houseName || selectedBill.HouseName || '-'}
@@ -625,7 +628,7 @@ export default function TenantBillsPage() {
                                         <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
                                             <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1">
                                                 <FileText className="w-4 h-4" />
-                                                <span className="text-xs uppercase tracking-wide">Phòng</span>
+                                                <span className="text-xs uppercase tracking-wide">{t('bills.room')}</span>
                                             </div>
                                             <p className="font-medium text-gray-900 dark:text-white">
                                                 {selectedBill.roomName || selectedBill.RoomName || '-'}
@@ -640,7 +643,7 @@ export default function TenantBillsPage() {
                                                 <div className="bg-purple-100 p-2 rounded-lg">
                                                     <Home className="w-5 h-5 text-purple-600" />
                                                 </div>
-                                                <span className="font-medium text-purple-900">Tiền thuê phòng</span>
+                                                <span className="font-medium text-purple-900">{t('bills.roomRent')}</span>
                                             </div>
                                             <span className="text-lg font-bold text-purple-600">
                                                 {formatCurrency(selectedBill.roomPrice || selectedBill.RoomPrice)}
@@ -651,7 +654,7 @@ export default function TenantBillsPage() {
                                     {/* Details */}
                                     {(selectedBill.details || selectedBill.Details)?.length > 0 && (
                                         <div className="space-y-3">
-                                            <p className="font-semibold text-gray-700 dark:text-gray-300">Chi tiết hóa đơn</p>
+                                            <p className="font-semibold text-gray-700 dark:text-gray-300">{t('bills.billDetailsSection')}</p>
                                             {(selectedBill.details || selectedBill.Details).map((detail, index) => {
                                                 const detailType = (detail.type || detail.Type || '').toLowerCase();
                                                 const isElectric = detailType.includes('electric') || detailType.includes('điện');
@@ -663,23 +666,23 @@ export default function TenantBillsPage() {
                                                         <div key={index} className="bg-yellow-50 rounded-xl p-4">
                                                             <div className="flex items-center gap-2 mb-3">
                                                                 <Zap className="w-5 h-5 text-yellow-600" />
-                                                                <span className="font-medium text-yellow-800">Tiền điện</span>
+                                                                <span className="font-medium text-yellow-800">{t('bills.electricity')}</span>
                                                             </div>
                                                             <div className="grid grid-cols-4 gap-2 text-sm">
                                                                 <div>
-                                                                    <p className="text-yellow-600 text-xs">Đầu kỳ</p>
+                                                                    <p className="text-yellow-600 text-xs">{t('bills.startReading')}</p>
                                                                     <p className="font-medium text-yellow-900">{detail.previousIndex || detail.PreviousIndex || 0}</p>
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-yellow-600 text-xs">Cuối kỳ</p>
+                                                                    <p className="text-yellow-600 text-xs">{t('bills.endReading')}</p>
                                                                     <p className="font-medium text-yellow-900">{detail.currentIndex || detail.CurrentIndex || 0}</p>
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-yellow-600 text-xs">Tiêu thụ</p>
+                                                                    <p className="text-yellow-600 text-xs">{t('bills.consumption')}</p>
                                                                     <p className="font-medium text-yellow-900">{detail.consumption || detail.Consumption || 0} kWh</p>
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-yellow-600 text-xs">Thành tiền</p>
+                                                                    <p className="text-yellow-600 text-xs">{t('bills.total')}</p>
                                                                     <p className="font-bold text-yellow-900">{formatCurrency(detail.total || detail.Total)}</p>
                                                                 </div>
                                                             </div>
@@ -692,23 +695,23 @@ export default function TenantBillsPage() {
                                                         <div key={index} className="bg-blue-50 rounded-xl p-4">
                                                             <div className="flex items-center gap-2 mb-3">
                                                                 <Droplets className="w-5 h-5 text-blue-600" />
-                                                                <span className="font-medium text-blue-800">Tiền nước</span>
+                                                                <span className="font-medium text-blue-800">{t('bills.water')}</span>
                                                             </div>
                                                             <div className="grid grid-cols-4 gap-2 text-sm">
                                                                 <div>
-                                                                    <p className="text-blue-600 text-xs">Đầu kỳ</p>
+                                                                    <p className="text-blue-600 text-xs">{t('bills.startReading')}</p>
                                                                     <p className="font-medium text-blue-900">{detail.previousIndex || detail.PreviousIndex || 0}</p>
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-blue-600 text-xs">Cuối kỳ</p>
+                                                                    <p className="text-blue-600 text-xs">{t('bills.endReading')}</p>
                                                                     <p className="font-medium text-blue-900">{detail.currentIndex || detail.CurrentIndex || 0}</p>
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-blue-600 text-xs">Tiêu thụ</p>
+                                                                    <p className="text-blue-600 text-xs">{t('bills.consumption')}</p>
                                                                     <p className="font-medium text-blue-900">{detail.consumption || detail.Consumption || 0} m³</p>
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-blue-600 text-xs">Thành tiền</p>
+                                                                    <p className="text-blue-600 text-xs">{t('bills.total')}</p>
                                                                     <p className="font-bold text-blue-900">{formatCurrency(detail.total || detail.Total)}</p>
                                                                 </div>
                                                             </div>
@@ -747,7 +750,7 @@ export default function TenantBillsPage() {
                                     {/* Note */}
                                     {(selectedBill.note || selectedBill.Note) && (
                                         <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Ghi chú</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{t('bills.note')}</p>
                                             <p className="text-gray-900 dark:text-white">{selectedBill.note || selectedBill.Note}</p>
                                         </div>
                                     )}
@@ -758,7 +761,7 @@ export default function TenantBillsPage() {
                                             onClick={() => setShowDetailModal(false)}
                                             className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
                                         >
-                                            Đóng
+                                            {t('bills.close')}
                                         </button>
                                         {getBillStatus(selectedBill) === 'Unpaid' && (
                                             <button
@@ -769,14 +772,14 @@ export default function TenantBillsPage() {
                                                 className="flex-1 px-4 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 font-medium transition-colors flex items-center justify-center gap-2"
                                             >
                                                 <CreditCard className="w-5 h-5" />
-                                                Thanh toán ngay
+                                                {t('bills.payNow')}
                                             </button>
                                         )}
                                     </div>
                                 </div>
                             ) : (
                                 <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                                    Không thể tải chi tiết hóa đơn
+                                    {t('bills.cannotLoadBill')}
                                 </div>
                             )}
                         </div>

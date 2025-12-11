@@ -2911,22 +2911,25 @@ export default function ContractsManagementPage() {
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {filteredContracts.map((contract) => (
               <div key={contract.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-4 mb-2">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  {/* Contract Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center flex-wrap gap-3 mb-3">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                         {t('ownerContracts.contract')} #{contract.id?.slice(0, 8) || 'N/A'}
                       </h3>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${contract.contractStatus === 'Active'
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${contract.contractStatus === 'Active'
                         ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                         : contract.contractStatus === 'Expired'
                           ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          : contract.contractStatus === 'Pending'
+                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                         }`}>
                         {contract.contractStatus || 'Unknown'}
                       </span>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <div>
                         <strong>{t('ownerContracts.room')}:</strong> {contract.roomName || 'N/A'}
                       </div>
@@ -2946,34 +2949,31 @@ export default function ContractsManagementPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2 ml-4">
-                    {/* View button - Hidden */}
-                    {/* <button
-                      onClick={() => handleViewContract(contract)}
-                      className="px-3 py-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 text-sm font-medium"
-                    >
-                      {t('common.view')}
-                    </button> */}
 
-                    {/* Edit - Hidden for Active and Cancelled contracts */}
-                    {contract.contractStatus !== 'Active' && contract.contractStatus !== 'Cancelled' && (
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                    {/* Edit - Only for Pending contracts */}
+                    {contract.contractStatus === 'Pending' && (
                       <button
                         onClick={() => handleEditContract(contract)}
-                        className="px-3 py-1 text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-200 text-sm font-medium"
+                        className="px-3 py-1.5 bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 text-sm font-medium rounded-lg border border-yellow-200 dark:border-yellow-800 transition-colors"
                       >
                         Edit
                       </button>
                     )}
 
+                    {/* Preview PDF - Always visible */}
                     <button
                       onClick={() => previewContractPDF(contract)}
-                      className="px-3 py-1 text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 text-sm font-medium"
+                      className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-sm font-medium rounded-lg border border-purple-200 dark:border-purple-800 transition-colors"
                     >
                       {t('ownerContracts.actions.previewPdf')}
                     </button>
+                    
+                    {/* Print PDF - Always visible */}
                     <button
                       onClick={() => generateContractPDF(contract)}
-                      className="px-3 py-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200 text-sm font-medium"
+                      className="px-3 py-1.5 bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:hover:bg-green-900/50 text-green-700 dark:text-green-300 text-sm font-medium rounded-lg border border-green-200 dark:border-green-800 transition-colors"
                     >
                       {t('ownerContracts.actions.printPdf')}
                     </button>
@@ -2982,48 +2982,20 @@ export default function ContractsManagementPage() {
                     {contract.contractStatus === 'Active' && (
                       <button
                         onClick={() => handleCancelContract(contract)}
-                        className="px-3 py-1 text-orange-600 hover:text-orange-800 dark:text-orange-400 dark:hover:text-orange-200 text-sm font-medium"
+                        className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/30 dark:hover:bg-orange-900/50 text-orange-700 dark:text-orange-300 text-sm font-medium rounded-lg border border-orange-200 dark:border-orange-800 transition-colors"
                       >
                         {t('ownerContracts.actions.cancelContract')}
                       </button>
                     )}
-
-                    {/* Extend Contract - Hidden for Active, Pending and Cancelled contracts */}
-                    {contract.contractStatus !== 'Active' && contract.contractStatus !== 'Pending' && contract.contractStatus !== 'Cancelled' && (
-                      <button
-                        onClick={() => handleExtendContract(contract)}
-                        className="px-3 py-1 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200 text-sm font-medium"
-                      >
-                        {t('ownerContracts.actions.extendContract')}
-                      </button>
-                    )}
-
-                    {/* Add Signature Button - Hidden for Active and Cancelled contracts */}
-                    {/* Owner can only sign AFTER tenant has signed (TenantSignature must not be null) */}
-                    {contract.contractStatus !== 'Active' && contract.contractStatus !== 'Cancelled' &&
-                      (contract.tenantSignature || contract.TenantSignature) && (
-                        <button
-                          onClick={() => handleOpenSignatureModal(contract)}
-                          className="px-3 py-1 text-pink-600 hover:text-pink-800 dark:text-pink-400 dark:hover:text-pink-200 text-sm font-medium"
-                          title="Add electronic signature (Tenant must sign first)"
-                        >
-                          ✍️ Signature
-                        </button>
-                      )}
 
                     {/* Utility Reading Management - Only for Active contracts */}
                     {contract.contractStatus === 'Active' && (
                       <button
                         onClick={() => {
                           const contractId = contract.id || contract.Id;
-                          console.log('🔗 Navigating to utilities page:', {
-                            boardingHouseId: houseId,
-                            contractId: contractId,
-                            url: `/owner/boarding-houses/${houseId}/contracts/${contractId}/utilities`
-                          });
                           router.push(`/owner/boarding-houses/${houseId}/contracts/${contractId}/utilities`);
                         }}
-                        className="px-3 py-1 text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-200 text-sm font-medium"
+                        className="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 dark:hover:bg-teal-900/50 text-teal-700 dark:text-teal-300 text-sm font-medium rounded-lg border border-teal-200 dark:border-teal-800 transition-colors"
                         title="Manage electricity and water readings"
                       >
                         Utility Bill
@@ -3036,30 +3008,29 @@ export default function ContractsManagementPage() {
                       const depositStatus = depositBill?.status || depositBill?.Status;
                       
                       if (!depositBill) {
-                        // No deposit bill yet - show create button
                         return (
                           <button
                             onClick={() => handleCreateDepositBill(contract)}
                             disabled={creatingDepositBill === contract.id}
-                            className="px-3 py-1 text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200 text-sm font-medium disabled:opacity-50"
+                            className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-sm font-medium rounded-lg border border-emerald-200 dark:border-emerald-800 transition-colors disabled:opacity-50"
                             title="Create deposit bill for tenant to pay"
                           >
-                            {creatingDepositBill === contract.id ? '⏳ Creating...' : '💰 Create Deposit Bill'}
+                            {creatingDepositBill === contract.id ? '⏳ Creating...' : '💰 Deposit Bill'}
                           </button>
                         );
                       }
                       
                       if (depositStatus === 'Unpaid') {
                         return (
-                          <span className="px-3 py-1 text-yellow-600 dark:text-yellow-400 text-sm font-medium">
-                            💰 Deposit: Waiting Payment
+                          <span className="px-3 py-1.5 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 text-sm font-medium rounded-lg border border-yellow-200 dark:border-yellow-800">
+                            💰 Waiting Payment
                           </span>
                         );
                       }
                       
                       if (depositStatus === 'Paid') {
                         return (
-                          <span className="px-3 py-1 text-green-600 dark:text-green-400 text-sm font-medium">
+                          <span className="px-3 py-1.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-sm font-medium rounded-lg border border-green-200 dark:border-green-800">
                             ✅ Deposit Paid
                           </span>
                         );
@@ -3068,21 +3039,43 @@ export default function ContractsManagementPage() {
                       return null;
                     })()}
 
-                    {/* Upload Contract Images - Only for Pending contracts, hidden for Active and Cancelled */}
+                    {/* Extend Contract - Only for Expired contracts */}
+                    {contract.contractStatus === 'Expired' && (
+                      <button
+                        onClick={() => handleExtendContract(contract)}
+                        className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-sm font-medium rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors"
+                      >
+                        {t('ownerContracts.actions.extendContract')}
+                      </button>
+                    )}
+
+                    {/* Add Signature Button - Only for Pending contracts where tenant has signed */}
+                    {contract.contractStatus === 'Pending' &&
+                      (contract.tenantSignature || contract.TenantSignature) && (
+                        <button
+                          onClick={() => handleOpenSignatureModal(contract)}
+                          className="px-3 py-1.5 bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/30 dark:hover:bg-pink-900/50 text-pink-700 dark:text-pink-300 text-sm font-medium rounded-lg border border-pink-200 dark:border-pink-800 transition-colors"
+                          title="Add electronic signature (Tenant must sign first)"
+                        >
+                          ✍️ Signature
+                        </button>
+                      )}
+
+                    {/* Upload Contract Images - Only for Pending contracts */}
                     {contract.contractStatus === 'Pending' && (
                       <button
                         onClick={() => handleUploadContractImages(contract)}
-                        className="px-3 py-1 text-cyan-600 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-200 text-sm font-medium"
+                        className="px-3 py-1.5 bg-cyan-50 hover:bg-cyan-100 dark:bg-cyan-900/30 dark:hover:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300 text-sm font-medium rounded-lg border border-cyan-200 dark:border-cyan-800 transition-colors"
                       >
                         {t('ownerContracts.actions.uploadImages')}
                       </button>
                     )}
 
-                    {/* Delete - Hidden for Active and Cancelled contracts */}
-                    {contract.contractStatus !== 'Active' && contract.contractStatus !== 'Cancelled' && (
+                    {/* Delete - Only for Pending contracts */}
+                    {contract.contractStatus === 'Pending' && (
                       <button
                         onClick={() => handleDeleteContract(contract)}
-                        className="px-3 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-sm font-medium"
+                        className="px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 text-sm font-medium rounded-lg border border-red-200 dark:border-red-800 transition-colors"
                       >
                         Delete
                       </button>

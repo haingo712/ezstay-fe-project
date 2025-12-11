@@ -643,11 +643,16 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   const roomDesc = roomDetails.description || roomDetails.Description || '';
   const article1Text = `Party A agrees to lease to Party B the room "${removeVietnameseDiacritics(roomName)}" located at ${removeVietnameseDiacritics(roomAddress)}, managed by EZStay system. The room has an area of ${roomArea} m² and is designed to accommodate a maximum of ${maxOccupants} occupants. ${roomDesc ? 'Room description: ' + removeVietnameseDiacritics(roomDesc) + '. ' : ''}The room is fully furnished with essential equipment and facilities ready for residential use. All equipment and facilities are specifically listed and confirmed in the minutes of handover between the two parties. The leased premises shall be used solely for residential purposes and not for any illegal activities or commercial purposes without prior written consent from Party A.`;
   const article1Lines = doc.splitTextToSize(article1Text, 170);
+  // Check if we need a new page before drawing long text
+  if (yPos + article1Lines.length * 7 > 270) {
+    doc.addPage();
+    yPos = 20;
+  }
   doc.text(article1Lines, 20, yPos);
   yPos += article1Lines.length * 7 + 10;
   
   // Check if we need a new page before Article 2
-  if (yPos > 240) {
+  if (yPos > 220) {
     doc.addPage();
     yPos = 20;
   }
@@ -661,11 +666,16 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   const durationMonths = Math.round((checkoutDate - checkinDate) / (1000 * 60 * 60 * 24 * 30));
   const article2Text = `Duration of the lease: ${durationMonths} months, commencing on ${checkinDate.toLocaleDateString('en-GB')} and ending on ${checkoutDate.toLocaleDateString('en-GB')}. Upon expiration of this term, if both parties wish to continue the lease relationship, they shall negotiate the rental fee and other terms for a new lease contract. Party B will be given priority to sign a new contract for the same premises, provided that Party B has fulfilled all obligations under this contract and there is no violation of the terms herein. Either party wishing to extend must notify the other party in writing at least thirty (30) days prior to the expiration date.`;
   const article2Lines = doc.splitTextToSize(article2Text, 170);
+  // Check if we need a new page before drawing long text
+  if (yPos + article2Lines.length * 7 > 270) {
+    doc.addPage();
+    yPos = 20;
+  }
   doc.text(article2Lines, 20, yPos);
   yPos += article2Lines.length * 7 + 10;
   
   // Check if we need a new page
-  if (yPos > 250) {
+  if (yPos > 200) {
     doc.addPage();
     yPos = 20;
   }
@@ -679,11 +689,16 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   // Display full pricing information
   const article3Text = `Monthly rental fee: ${monthlyRent.toLocaleString()} VND/month. Room area: ${roomArea} m². Maximum occupants: ${maxOccupants} persons. Current number of occupants: ${numberOfOccupants} person(s). Party B shall pay Party A a security deposit of ${depositAmount.toLocaleString()} VND upon signing this contract. This deposit serves as security for Party A against any damages to the property or unpaid bills. The deposit will be returned to Party B within fifteen (15) days after the contract termination, after deducting any outstanding electricity, water, and other utility bills, as well as costs for repairs of damages (if any) caused by Party B during the lease period. Payment method: Party B shall pay the monthly rent to Party A not later than the 5th day of each month. Payment can be made via bank transfer to Party A's designated account or in cash with a receipt. Late payment will incur a penalty of 0.5% of the monthly rent for each day of delay.`;
   const article3Lines = doc.splitTextToSize(article3Text, 170);
+  // Check if we need a new page before drawing long text
+  if (yPos + article3Lines.length * 7 > 270) {
+    doc.addPage();
+    yPos = 20;
+  }
   doc.text(article3Lines, 20, yPos);
   yPos += article3Lines.length * 7 + 10;
 
   // Check if we need a new page
-  if (yPos > 250) {
+  if (yPos > 200) {
     doc.addPage();
     yPos = 20;
   }
@@ -734,11 +749,16 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   }
   const article4Text = `Party B shall be responsible for paying all utility costs including electricity, water, internet, and any other services used during the lease term. Utility charges shall be calculated based on actual consumption according to the meter readings. The cost per unit for electricity and water will be as follows:\n- Electricity: As per the current rate set by EVN (Vietnam Electricity) or as agreed by both parties\n- Water: As per the current rate set by the local water supply company or as agreed by both parties${utilityInfo}\n\nParty B must ensure timely payment of all utility bills. Failure to pay utility bills may result in disconnection of services, for which Party A shall not be held responsible. Party B shall also be responsible for maintaining the cleanliness of the leased premises and common areas.`;
   const article4Lines = doc.splitTextToSize(article4Text, 170);
+  // Check if we need a new page before drawing long text
+  if (yPos + article4Lines.length * 7 > 270) {
+    doc.addPage();
+    yPos = 20;
+  }
   doc.text(article4Lines, 20, yPos);
   yPos += article4Lines.length * 7 + 10;
 
   // Check if we need a new page
-  if (yPos > 250) {
+  if (yPos > 230) {
     doc.addPage();
     yPos = 20;
   }
@@ -749,6 +769,11 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   yPos += 10;
   
   doc.setFont(undefined, 'normal');
+  // Check if we need a new page before section header
+  if (yPos > 250) {
+    doc.addPage();
+    yPos = 20;
+  }
   doc.text('1/ Rights of Party A:', 20, yPos);
   yPos += 7;
   
@@ -762,10 +787,21 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   
   partyARights.forEach(right => {
     const rightLines = doc.splitTextToSize(right, 165);
+    // Check if we need a new page before drawing
+    if (yPos + rightLines.length * 7 > 270) {
+      doc.addPage();
+      yPos = 20;
+    }
     doc.text(rightLines, 25, yPos);
     yPos += rightLines.length * 7 + 3;
   });
   yPos += 5;
+  
+  // Check if we need a new page before "2/ Obligations"
+  if (yPos > 250) {
+    doc.addPage();
+    yPos = 20;
+  }
   
   doc.text('2/ Obligations of Party A:', 20, yPos);
   yPos += 7;
@@ -784,6 +820,11 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   
   partyAObligations.forEach(obligation => {
     const obligationLines = doc.splitTextToSize(obligation, 165);
+    // Check if we need a new page before drawing
+    if (yPos + obligationLines.length * 7 > 270) {
+      doc.addPage();
+      yPos = 20;
+    }
     doc.text(obligationLines, 25, yPos);
     yPos += obligationLines.length * 7 + 3;
   });
@@ -815,10 +856,21 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   
   partyBRights.forEach(right => {
     const rightLines = doc.splitTextToSize(right, 165);
+    // Check if we need a new page before drawing
+    if (yPos + rightLines.length * 7 > 270) {
+      doc.addPage();
+      yPos = 20;
+    }
     doc.text(rightLines, 25, yPos);
     yPos += rightLines.length * 7 + 3;
   });
   yPos += 5;
+
+  // Check if we need a new page before "2/ Obligations"
+  if (yPos > 250) {
+    doc.addPage();
+    yPos = 20;
+  }
 
   doc.text('2/ Obligations of Party B:', 20, yPos);
   yPos += 7;
@@ -843,11 +895,12 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   ];
   
   partyBObligations.forEach(obligation => {
-    if (yPos > 260) {
+    const obligationLines = doc.splitTextToSize(obligation, 165);
+    // Check if we need a new page before drawing
+    if (yPos + obligationLines.length * 7 > 270) {
       doc.addPage();
       yPos = 20;
     }
-    const obligationLines = doc.splitTextToSize(obligation, 165);
     doc.text(obligationLines, 25, yPos);
     yPos += obligationLines.length * 7 + 3;
   });
@@ -877,6 +930,11 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   
   article7Clauses.forEach(clause => {
     const clauseLines = doc.splitTextToSize(clause, 165);
+    // Check if we need a new page before drawing
+    if (yPos + clauseLines.length * 7 > 270) {
+      doc.addPage();
+      yPos = 20;
+    }
     doc.text(clauseLines, 25, yPos);
     yPos += clauseLines.length * 7 + 3;
   });
@@ -889,6 +947,12 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   }
 
   // Article 8: Privacy and Data Protection
+  // Check if we need a new page
+  if (yPos > 220) {
+    doc.addPage();
+    yPos = 20;
+  }
+
   doc.setFont(undefined, 'bold');
   doc.text('ARTICLE 8: PRIVACY AND DATA PROTECTION', 20, yPos);
   yPos += 10;
@@ -896,8 +960,19 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   doc.setFont(undefined, 'normal');
   const article8Text = 'Both parties agree to protect each other\'s personal information and shall not disclose such information to third parties without consent, except as required by law. Party A shall maintain confidentiality of Party B\'s personal data collected during the lease term. Party B consents to Party A collecting and processing personal information solely for the purpose of executing this contract and complying with legal requirements. All personal data shall be handled in accordance with applicable data protection laws and regulations.';
   const article8Lines = doc.splitTextToSize(article8Text, 170);
+  // Check if we need a new page before drawing long text
+  if (yPos + article8Lines.length * 7 > 270) {
+    doc.addPage();
+    yPos = 20;
+  }
   doc.text(article8Lines, 20, yPos);
   yPos += article8Lines.length * 7 + 10;
+
+  // Check if we need a new page
+  if (yPos > 200) {
+    doc.addPage();
+    yPos = 20;
+  }
 
   // Article 9: Maintenance and Repairs
   doc.setFont(undefined, 'bold');
@@ -907,11 +982,16 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   doc.setFont(undefined, 'normal');
   const article9Text = 'Party A shall be responsible for major structural repairs and maintenance of the building, including roof, walls, foundation, and building systems (plumbing, electrical mains). Party B shall be responsible for minor repairs and day-to-day maintenance, including but not limited to: replacement of light bulbs, minor plumbing repairs, cleaning, and general upkeep. Party B must report any defects or damages to Party A within 48 hours of discovery. Party A shall conduct repairs within a reasonable timeframe (typically 7-14 days for non-emergency repairs). For emergency repairs (water leaks, electrical hazards, broken locks), Party A must respond within 24 hours.';
   const article9Lines = doc.splitTextToSize(article9Text, 170);
+  // Check if we need a new page before drawing long text
+  if (yPos + article9Lines.length * 7 > 270) {
+    doc.addPage();
+    yPos = 20;
+  }
   doc.text(article9Lines, 20, yPos);
   yPos += article9Lines.length * 7 + 10;
 
   // Check if we need a new page
-  if (yPos > 210) {
+  if (yPos > 200) {
     doc.addPage();
     yPos = 20;
   }
@@ -924,8 +1004,19 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   doc.setFont(undefined, 'normal');
   const article10Text = 'Any disputes arising during the implementation of this contract shall be resolved through negotiation and mediation between the two parties in the spirit of cooperation and mutual understanding. If negotiations fail, the parties may seek assistance from local authorities or relevant government agencies for mediation. If mediation is unsuccessful, either party may bring the dispute to the competent People\'s Court in accordance with Vietnamese law. The governing law for this contract shall be the laws of the Socialist Republic of Vietnam.';
   const article10Lines = doc.splitTextToSize(article10Text, 170);
+  // Check if we need a new page before drawing long text
+  if (yPos + article10Lines.length * 7 > 270) {
+    doc.addPage();
+    yPos = 20;
+  }
   doc.text(article10Lines, 20, yPos);
   yPos += article10Lines.length * 7 + 10;
+
+  // Check if we need a new page
+  if (yPos > 200) {
+    doc.addPage();
+    yPos = 20;
+  }
 
   // Article 11: Force Majeure
   doc.setFont(undefined, 'bold');
@@ -935,6 +1026,11 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   doc.setFont(undefined, 'normal');
   const forceMajeureText = 'Force majeure circumstances are defined as events beyond the reasonable control of either party, including but not limited to: natural disasters (earthquakes, floods, typhoons, fires), war, civil unrest, riots, epidemics or pandemics, government orders or regulations, terrorism, or other unforeseen events that prevent contract performance. In case of force majeure:';
   const forceMajeureLines = doc.splitTextToSize(forceMajeureText, 170);
+  // Check if we need a new page before drawing long text
+  if (yPos + forceMajeureLines.length * 7 > 270) {
+    doc.addPage();
+    yPos = 20;
+  }
   doc.text(forceMajeureLines, 20, yPos);
   yPos += forceMajeureLines.length * 7 + 7;
   
@@ -949,11 +1045,12 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   ];
   
   forceMajeureClauses.forEach(clause => {
-    if (yPos > 260) {
+    const clauseLines = doc.splitTextToSize(clause, 165);
+    // Check if we need a new page before drawing
+    if (yPos + clauseLines.length * 7 > 270) {
       doc.addPage();
       yPos = 20;
     }
-    const clauseLines = doc.splitTextToSize(clause, 165);
     doc.text(clauseLines, 25, yPos);
     yPos += clauseLines.length * 7 + 3;
   });
@@ -986,11 +1083,12 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   ];
   
   partyATermination.forEach(term => {
-    if (yPos > 265) {
+    const termLines = doc.splitTextToSize(term, 165);
+    // Check if we need a new page before drawing
+    if (yPos + termLines.length * 7 > 270) {
       doc.addPage();
       yPos = 20;
     }
-    const termLines = doc.splitTextToSize(term, 165);
     doc.text(termLines, 25, yPos);
     yPos += termLines.length * 7 + 3;
   });
@@ -1015,11 +1113,12 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   ];
   
   partyBTermination.forEach(term => {
-    if (yPos > 265) {
+    const termLines = doc.splitTextToSize(term, 165);
+    // Check if we need a new page before drawing
+    if (yPos + termLines.length * 7 > 270) {
       doc.addPage();
       yPos = 20;
     }
-    const termLines = doc.splitTextToSize(term, 165);
     doc.text(termLines, 25, yPos);
     yPos += termLines.length * 7 + 3;
   });
@@ -1039,8 +1138,19 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   doc.setFont(undefined, 'normal');
   const article13Text = 'Any amendments, modifications, or supplements to this contract must be made in writing and signed by both parties. Verbal agreements or amendments shall not be legally binding. All amendments shall become appendices to this contract and have the same legal effect as the main contract. Both parties must retain copies of all signed amendments.';
   const article13Lines = doc.splitTextToSize(article13Text, 170);
+  // Check if we need a new page before drawing long text
+  if (yPos + article13Lines.length * 7 > 270) {
+    doc.addPage();
+    yPos = 20;
+  }
   doc.text(article13Lines, 20, yPos);
   yPos += article13Lines.length * 7 + 10;
+
+  // Check if we need a new page
+  if (yPos > 200) {
+    doc.addPage();
+    yPos = 20;
+  }
 
   // Article 14: Notices
   doc.setFont(undefined, 'bold');
@@ -1050,6 +1160,11 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   doc.setFont(undefined, 'normal');
   const noticesText = 'All notices, requests, demands, and communications between the parties shall be made in writing and delivered through the following methods:';
   const noticesLines = doc.splitTextToSize(noticesText, 170);
+  // Check if we need a new page before drawing long text
+  if (yPos + noticesLines.length * 7 > 270) {
+    doc.addPage();
+    yPos = 20;
+  }
   doc.text(noticesLines, 20, yPos);
   yPos += noticesLines.length * 7 + 7;
   
@@ -1064,11 +1179,12 @@ export async function generateContractPDF(contract, ownerSignature = null, tenan
   ];
   
   noticesClauses.forEach(clause => {
-    if (yPos > 265) {
+    const clauseLines = doc.splitTextToSize(clause, 165);
+    // Check if we need a new page before drawing
+    if (yPos + clauseLines.length * 7 > 270) {
       doc.addPage();
       yPos = 20;
     }
-    const clauseLines = doc.splitTextToSize(clause, 165);
     doc.text(clauseLines, 25, yPos);
     yPos += clauseLines.length * 7 + 3;
   });

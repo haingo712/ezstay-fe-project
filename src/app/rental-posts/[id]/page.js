@@ -45,6 +45,22 @@ import Footer from '@/components/Footer';
 import ChatDialog from '@/components/ChatDialog';
 import Image from 'next/image';
 
+// Helper function to validate image URL
+const isValidImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') return false;
+  // Must start with http:// or https://
+  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) return false;
+  // Check for common image extensions or known image hosts
+  const hasImageExtension = /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(trimmed);
+  const isKnownImageHost = trimmed.includes('cloudinary.com') || 
+                           trimmed.includes('ipfs.filebase.io') ||
+                           trimmed.includes('imgur.com') ||
+                           trimmed.includes('images.unsplash.com');
+  return hasImageExtension || isKnownImageHost;
+};
+
 export default function RentalPostDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -83,16 +99,43 @@ export default function RentalPostDetailPage() {
   };
 
   const handleRemoveCCCD = (index) => {
+    // Cannot remove the first CCCD (representative)
+    if (index === 0) return;
+    
     setRentalRequestData(prev => ({
       ...prev,
       citizenIdNumbers: prev.citizenIdNumbers.filter((_, i) => i !== index)
     }));
+    
+    // Clear duplicate error when removing
+    setRentalRequestErrors(prev => ({ ...prev, citizenIdNumbers: null }));
   };
 
   const handleChangeCCCD = (index, value) => {
+    // Cannot edit the first CCCD (representative) - it's auto-filled from user profile
+    if (index === 0) return;
+    
     setRentalRequestData(prev => {
       const newCitizenIdNumbers = [...prev.citizenIdNumbers];
       newCitizenIdNumbers[index] = value;
+      
+      // Check for duplicate CCCD
+      const trimmedValue = value.trim();
+      if (trimmedValue) {
+        const isDuplicate = newCitizenIdNumbers.some((cccd, i) => 
+          i !== index && cccd.trim() === trimmedValue
+        );
+        
+        if (isDuplicate) {
+          setRentalRequestErrors(prev => ({
+            ...prev,
+            citizenIdNumbers: t('rentalPostDetail.rentalRequest.errors.duplicateCCCD') || 'Số CCCD không được trùng nhau'
+          }));
+        } else {
+          setRentalRequestErrors(prev => ({ ...prev, citizenIdNumbers: null }));
+        }
+      }
+      
       return {
         ...prev,
         citizenIdNumbers: newCitizenIdNumbers
@@ -231,44 +274,54 @@ export default function RentalPostDetailPage() {
   // Fetch user names from Account API
   const fetchUserNames = async (reviewsList) => {
     try {
-      const token = localStorage.getItem('token');
-      const uniqueUserIds = [...new Set(reviewsList.map(r => r.userId))];
+      // Try multiple token storage keys
+      const token = localStorage.getItem('token') || 
+                    localStorage.getItem('authToken') || 
+                    localStorage.getItem('ezstay_token');
+      const uniqueUserIds = [...new Set(reviewsList.map(r => r.userId).filter(id => id))];
       const namesMap = {};
 
-      // First, try to get names from reviews themselves (if review has fullName)
+      // First, try to get names from reviews themselves (if review has fullName/userName/reviewerName)
       reviewsList.forEach(review => {
-        if (review.fullName || review.FullName || review.userName || review.UserName) {
-          namesMap[review.userId] = review.fullName || review.FullName || review.userName || review.UserName;
+        const name = review.fullName || review.FullName || 
+                     review.userName || review.UserName || 
+                     review.reviewerName || review.ReviewerName ||
+                     review.user?.fullName || review.User?.FullName ||
+                     review.user?.name || review.User?.Name;
+        if (name && name.trim() !== '') {
+          namesMap[review.userId] = name;
         }
       });
 
-      // If no token (guest), use names from reviews or set as Anonymous
-      if (!token) {
-        uniqueUserIds.forEach(userId => {
-          if (!namesMap[userId]) {
-            namesMap[userId] = 'Người dùng';
-          }
-        });
-        setUserNames(namesMap);
-        return;
-      }
-
-      // Fetch remaining user names from API
+      // Fetch user names from API for all users (no auth required for GET /api/Accounts/{id})
       const userIdsToFetch = uniqueUserIds.filter(id => !namesMap[id]);
+      
+      console.log('🔍 Fetching user names for IDs:', userIdsToFetch);
 
       await Promise.all(
         userIdsToFetch.map(async (userId) => {
           try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+              headers['Authorization'] = `Bearer ${token}`;
+            }
+            
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/api/Accounts/${userId}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
+              headers
             });
+            
             if (response.ok) {
               const userData = await response.json();
-              namesMap[userId] = userData?.fullName || userData?.FullName || 'Người dùng';
+              console.log(`✅ User ${userId} data:`, userData);
+              namesMap[userId] = userData?.fullName || userData?.FullName || 
+                                 userData?.name || userData?.Name || 
+                                 userData?.userName || userData?.UserName || 'Người dùng';
             } else {
+              console.log(`⚠️ Failed to fetch user ${userId}: ${response.status}`);
               namesMap[userId] = 'Người dùng';
             }
           } catch (err) {
+            console.log(`❌ Error fetching user ${userId}:`, err.message);
             namesMap[userId] = 'Người dùng';
           }
         })
@@ -347,6 +400,12 @@ export default function RentalPostDetailPage() {
     const validCCCDs = rentalRequestData.citizenIdNumbers.filter(cccd => cccd.trim());
     if (validCCCDs.length === 0) {
       errors.citizenIdNumbers = t('rentalPostDetail.rentalRequest.errors.cccdRequired') || 'Vui lòng nhập ít nhất 1 số CCCD';
+    } else {
+      // Check for duplicate CCCDs
+      const uniqueCCCDs = new Set(validCCCDs);
+      if (uniqueCCCDs.size !== validCCCDs.length) {
+        errors.citizenIdNumbers = t('rentalPostDetail.rentalRequest.errors.duplicateCCCD') || 'Số CCCD không được trùng nhau';
+      }
     }
 
     setRentalRequestErrors(errors);
@@ -702,16 +761,42 @@ export default function RentalPostDetailPage() {
                                   <p className="text-gray-800 dark:text-gray-200 mb-2 leading-relaxed text-sm">
                                     {review.content}
                                   </p>
-                                  {review.imageUrl && review.imageUrl.trim() !== '' && review.imageUrl !== 'null' && (
-                                    <div className="mb-2">
-                                      <img
-                                        src={review.imageUrl}
-                                        alt="Review"
-                                        className="rounded-lg max-h-48 w-auto object-cover border-2 border-gray-200 dark:border-gray-600 shadow-md"
-                                        onError={(e) => { e.target.style.display = 'none'; }}
-                                      />
-                                    </div>
-                                  )}
+                                  {/* Only show image if it's a valid URL and is an array with valid images */}
+                                  {(() => {
+                                    // Handle array format (from backend List<string>)
+                                    if (Array.isArray(review.imageUrl) && review.imageUrl.length > 0) {
+                                      const validImages = review.imageUrl.filter(isValidImageUrl);
+                                      if (validImages.length > 0) {
+                                        return (
+                                          <div className="mb-2 flex flex-wrap gap-2">
+                                            {validImages.map((imgUrl, idx) => (
+                                              <img
+                                                key={idx}
+                                                src={imgUrl}
+                                                alt={`Review ${idx + 1}`}
+                                                className="rounded-lg max-h-48 w-auto object-cover border-2 border-gray-200 dark:border-gray-600 shadow-md"
+                                                onError={(e) => { e.target.style.display = 'none'; }}
+                                              />
+                                            ))}
+                                          </div>
+                                        );
+                                      }
+                                    }
+                                    // Handle string format
+                                    if (isValidImageUrl(review.imageUrl)) {
+                                      return (
+                                        <div className="mb-2">
+                                          <img
+                                            src={review.imageUrl}
+                                            alt="Review"
+                                            className="rounded-lg max-h-48 w-auto object-cover border-2 border-gray-200 dark:border-gray-600 shadow-md"
+                                            onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+                                          />
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
                                   <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                                     <Calendar className="h-3 w-3" />
                                     <span>{new Date(review.createdAt).toLocaleDateString('vi-VN', {
@@ -759,20 +844,44 @@ export default function RentalPostDetailPage() {
                             <p className="text-gray-800 dark:text-gray-200 mb-3 leading-relaxed text-base">
                               {review.content}
                             </p>
-                            {review.imageUrl && Array.isArray(review.imageUrl) && review.imageUrl.length > 0 && (
-                              <div className="mb-3 grid grid-cols-2 md:grid-cols-3 gap-2">
-                                {review.imageUrl.map((imgUrl, idx) => (
-                                  <img
-                                    key={idx}
-                                    src={imgUrl}
-                                    alt={`Review ${idx + 1}`}
-                                    className="rounded-lg h-48 w-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-md hover:scale-105 transition-transform cursor-pointer"
-                                    onError={(e) => { e.target.style.display = 'none'; }}
-                                    onClick={() => window.open(imgUrl, '_blank')}
-                                  />
-                                ))}
-                              </div>
-                            )}
+                            {/* Handle both array and string imageUrl formats using isValidImageUrl helper */}
+                            {(() => {
+                              // Check for array format
+                              if (Array.isArray(review.imageUrl) && review.imageUrl.length > 0) {
+                                const validImages = review.imageUrl.filter(isValidImageUrl);
+                                if (validImages.length > 0) {
+                                  return (
+                                    <div className="mb-3 grid grid-cols-2 md:grid-cols-3 gap-2">
+                                      {validImages.map((imgUrl, idx) => (
+                                        <img
+                                          key={idx}
+                                          src={imgUrl}
+                                          alt={`Review ${idx + 1}`}
+                                          className="rounded-lg h-48 w-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-md hover:scale-105 transition-transform cursor-pointer"
+                                          onError={(e) => { e.target.style.display = 'none'; }}
+                                          onClick={() => window.open(imgUrl, '_blank')}
+                                        />
+                                      ))}
+                                    </div>
+                                  );
+                                }
+                              }
+                              // Check for string format
+                              if (isValidImageUrl(review.imageUrl)) {
+                                return (
+                                  <div className="mb-3">
+                                    <img
+                                      src={review.imageUrl}
+                                      alt="Review"
+                                      className="rounded-lg max-h-48 w-auto object-cover border-2 border-gray-200 dark:border-gray-600 shadow-md hover:scale-105 transition-transform cursor-pointer"
+                                      onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+                                      onClick={() => window.open(review.imageUrl, '_blank')}
+                                    />
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
                             <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 bg-white/50 dark:bg-gray-800/50 px-3 py-2 rounded-md">
                               <div className="flex items-center gap-1.5">
                                 <Calendar className="h-3.5 w-3.5" />
@@ -1097,9 +1206,15 @@ export default function RentalPostDetailPage() {
                             value={cccd}
                             onChange={(e) => handleChangeCCCD(index, e.target.value)}
                             placeholder={`${t('rentalPostDetail.rentalRequest.cccdNumber') || 'Số CCCD'} ${index + 1}`}
-                            className={`flex-1 px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${rentalRequestErrors.citizenIdNumbers ? 'border-red-500' : 'border-gray-300'}`}
+                            readOnly={index === 0}
+                            className={`flex-1 px-4 py-2.5 border rounded-lg dark:text-white ${
+                              index === 0 
+                                ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed border-gray-300 dark:border-gray-500' 
+                                : 'focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600'
+                            } ${rentalRequestErrors.citizenIdNumbers && index !== 0 ? 'border-red-500' : index === 0 ? '' : 'border-gray-300'}`}
                           />
-                          {rentalRequestData.citizenIdNumbers.length > 1 && (
+                          {/* Only show remove button for co-occupants (index > 0) */}
+                          {index > 0 && (
                             <button
                               type="button"
                               onClick={() => handleRemoveCCCD(index)}

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { rentalPostService } from '@/services/rentalPostService';
 import { useGuestRedirect } from '@/hooks/useGuestRedirect';
-import { Building, Home, MapPin, Calendar, Maximize2, Eye, Users, Phone } from 'lucide-react';
+import { Building, Home, MapPin, Calendar, Maximize2, Eye, Phone } from 'lucide-react';
 
 export default function LatestPosts() {
   const [posts, setPosts] = useState([]);
@@ -207,10 +207,12 @@ export default function LatestPosts() {
                       <Building className="w-4 h-4 mr-2 flex-shrink-0 text-purple-500" />
                       <span className="truncate font-medium">{post.houseName || 'Unknown House'}</span>
                     </div>
-                    <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
-                      <Home className="w-4 h-4 mr-2 flex-shrink-0 text-orange-500" />
-                      <span className="truncate">{post.roomName || 'All rooms'}</span>
-                    </div>
+                    {post.roomName && post.roomName !== 'All rooms' && post.roomName !== 'AllRRoom' && (
+                      <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
+                        <Home className="w-4 h-4 mr-2 flex-shrink-0 text-orange-500" />
+                        <span className="truncate">{post.roomName}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Full Address */}
@@ -221,28 +223,13 @@ export default function LatestPosts() {
                     </div>
                   )}
 
-                  {/* Stats: View Count & Rental Rate */}
+                  {/* Stats: View Count */}
                   <div className="flex items-center gap-4 mb-4 py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     {/* View Count */}
                     <div className="flex items-center gap-1.5 text-sm">
                       <Eye className="w-4 h-4 text-blue-500" />
                       <span className="text-gray-700 dark:text-gray-300 font-medium">{viewCount}</span>
                       <span className="text-gray-500 dark:text-gray-400 text-xs">lượt xem</span>
-                    </div>
-
-                    <div className="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
-
-                    {/* Rental Rate */}
-                    <div className="flex items-center gap-1.5 text-sm">
-                      <Users className="w-4 h-4 text-green-500" />
-                      <span className={`font-medium ${
-                        rentalRate >= 80 ? 'text-red-600 dark:text-red-400' : 
-                        rentalRate >= 50 ? 'text-orange-600 dark:text-orange-400' : 
-                        'text-green-600 dark:text-green-400'
-                      }`}>
-                        {rentalRate}%
-                      </span>
-                      <span className="text-gray-500 dark:text-gray-400 text-xs">đã thuê</span>
                     </div>
                   </div>
 
