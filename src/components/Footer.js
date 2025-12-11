@@ -164,7 +164,7 @@ export default function Footer() {
               </li>
               <li>
                 <span className="text-gray-700 dark:text-gray-300">
-                  Address: FPT University, Ho Chi Minh City
+                  Address: FPT University
                 </span>
               </li>
               <li>

@@ -102,10 +102,10 @@ const PendingPostCard = ({ post, onReview }) => (
     <div className="flex items-start justify-between">
       <div className="flex-1 min-w-0">
         <h4 className="font-semibold text-gray-900 dark:text-white truncate">
-          {post.title || post.Title || 'Bài đăng'}
+          {post.title || post.Title || 'Post'}
         </h4>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Đăng bởi: {post.authorName || post.AuthorName || 'Chủ trọ'}
+          Posted by: {post.authorName || post.AuthorName || 'Owner'}
         </p>
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
           {new Date(post.createdAt || post.CreatedAt).toLocaleDateString('vi-VN')}
@@ -115,7 +115,7 @@ const PendingPostCard = ({ post, onReview }) => (
         onClick={() => onReview(post)}
         className="ml-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
       >
-        Duyệt
+        Review
       </button>
     </div>
   </div>
@@ -139,7 +139,7 @@ const ReportCard = ({ report }) => {
         </div>
       </div>
       <span className={`px-3 py-1 text-xs font-medium rounded-full ${severityColors[report.severity]}`}>
-        {report.count} báo cáo
+        {report.count} reports
       </span>
     </div>
   );
@@ -259,7 +259,7 @@ export default function StaffDashboard() {
         // Group reports by reason/type for display
         const reportGroups = {};
         pendingReports.forEach(report => {
-          const reason = report.reason || report.Reason || 'Khác';
+          const reason = report.reason || report.Reason || 'Other';
           if (!reportGroups[reason]) {
             reportGroups[reason] = { count: 0, reports: [] };
           }
@@ -270,7 +270,7 @@ export default function StaffDashboard() {
         // Convert to array format for display
         const formattedReports = Object.entries(reportGroups).map(([type, data]) => ({
           type: type,
-          description: `${data.count} báo cáo chờ xử lý`,
+          description: `${data.count} pending reports`,
           count: data.count,
           severity: data.count > 5 ? 'high' : data.count > 2 ? 'medium' : 'low'
         })).slice(0, 3);
@@ -341,7 +341,7 @@ export default function StaffDashboard() {
             <div className="w-20 h-20 border-4 border-purple-200 dark:border-purple-800 rounded-full animate-pulse"></div>
             <div className="absolute top-0 left-0 w-20 h-20 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
-          <p className="mt-6 text-gray-600 dark:text-gray-400 font-medium">Đang tải dữ liệu...</p>
+          <p className="mt-6 text-gray-600 dark:text-gray-400 font-medium">{t('staffDashboard.loading')}</p>
         </div>
       </div>
     );
@@ -355,10 +355,10 @@ export default function StaffDashboard() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="mb-4 md:mb-0">
               <h1 className="text-3xl font-bold text-white">
-                Staff Dashboard 👋
+                {t('staffDashboard.title')} 👋
               </h1>
               <p className="text-purple-100 mt-1">
-                Quản lý và duyệt nội dung hệ thống EZStay
+                {t('staffDashboard.subtitle')}
               </p>
             </div>
             {/* <div className="flex space-x-3">
@@ -384,29 +384,29 @@ export default function StaffDashboard() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
-            title="Bài đăng chờ duyệt"
+            title={t('staffDashboard.stats.pendingPosts')}
             value={stats.pendingPosts}
-            badge={stats.pendingPosts > 0 ? 'Cần xử lý' : null}
+            badge={stats.pendingPosts > 0 ? t('staffDashboard.stats.needsAction') : null}
             gradient="bg-gradient-to-br from-yellow-500 to-orange-500"
             icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
           />
           <StatCard
-            title="Tổng người dùng"
+            title={t('staffDashboard.stats.totalUsers')}
             value={stats.totalUsers}
-            subtitle={`${stats.totalOwners} chủ trọ`}
+            subtitle={`${stats.totalOwners} ${t('staffDashboard.stats.owners')}`}
             gradient="bg-gradient-to-br from-blue-500 to-blue-600"
             icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
           />
           <StatCard
-            title="Tổng bài đăng"
+            title={t('staffDashboard.stats.totalPosts')}
             value={stats.totalPosts}
             gradient="bg-gradient-to-br from-green-500 to-emerald-600"
             icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>}
           />
           <StatCard
-            title="Báo cáo chờ xử lý"
+            title={t('staffDashboard.stats.pendingReports')}
             value={stats.pendingReports}
-            badge={stats.pendingReports > 5 ? 'Khẩn cấp' : null}
+            badge={stats.pendingReports > 5 ? t('staffDashboard.stats.urgent') : null}
             gradient="bg-gradient-to-br from-red-500 to-pink-600"
             icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
           />
@@ -419,7 +419,7 @@ export default function StaffDashboard() {
             {/* Quick Actions */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Thao tác nhanh</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('staffDashboard.quickActions.title')}</h2>
               </div>
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* <QuickActionCard
@@ -441,22 +441,22 @@ export default function StaffDashboard() {
                 <QuickActionCard
                   href="/staff/users"
                   icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" /></svg>}
-                  title="Quản lý người dùng"
-                  description={`${stats.totalUsers + stats.totalOwners} người dùng`}
+                  title={t('staffDashboard.quickActions.manageUsers')}
+                  description={`${stats.totalUsers + stats.totalOwners} ${t('staffDashboard.quickActions.users')}`}
                   color="blue"
                 />
                 <QuickActionCard
                   href="/staff/amenity-management"
                   icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>}
-                  title="Quản lý tiện ích"
-                  description="Cập nhật danh sách tiện ích"
+                  title={t('staffDashboard.quickActions.manageAmenities')}
+                  description={t('staffDashboard.quickActions.analyticsInsights')}
                   color="green"
                 />
                 <QuickActionCard
                   href="/staff/support"
                   icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
-                  title="Hỗ trợ khách hàng"
-                  description={`${stats.pendingSupportTickets} yêu cầu chờ xử lý`}
+                  title={t('staffDashboard.quickActions.supportTickets')}
+                  description={`${stats.pendingSupportTickets} ${t('staffDashboard.quickActions.pending')}`}
                   color="orange"
                   badge={stats.pendingSupportTickets > 0 ? stats.pendingSupportTickets : null}
                 />

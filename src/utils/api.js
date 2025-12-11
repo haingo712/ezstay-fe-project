@@ -259,7 +259,7 @@ export const boardingHouseAPI = {
   getById: (id) => api.get(`/api/BoardingHouses/${id}`),
   // Backend endpoint /api/BoardingHouses/owner gets ownerId from JWT token
   getByOwnerId: () => {
-    console.log("🏠 Calling boarding house API...");
+    console.log(" Calling boarding house API...");
     console.log("🔑 Current token:", authService.getToken() ? "Present" : "Missing");
     console.log("👤 User info:", authService.getUserInfo());
 

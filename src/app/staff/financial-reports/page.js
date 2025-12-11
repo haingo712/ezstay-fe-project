@@ -96,14 +96,10 @@ export default function StaffFinancialReportsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent mx-auto"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading financial data...</p>
-            </div>
-          </div>
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading financial data...</p>
         </div>
       </div>
     );
@@ -111,29 +107,24 @@ export default function StaffFinancialReportsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center">
-            <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">{error}</h3>
-            <button
-              onClick={loadFinancialStatistics}
-              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 mx-auto"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Try Again
-            </button>
-          </div>
-        </div>
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center">
+        <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">{error}</h3>
+        <button
+          onClick={loadFinancialStatistics}
+          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 mx-auto"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Try Again
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+    <div>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
               <BarChart3 className="h-8 w-8 text-indigo-600" />
@@ -409,7 +400,6 @@ export default function StaffFinancialReportsPage() {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 }

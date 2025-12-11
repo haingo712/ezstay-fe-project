@@ -225,7 +225,7 @@ export default function BoardingHousesPage() {
     try {
       setLoading(true);
       setError(null);
-      console.log("🏠 Fetching boarding houses for user:", user.id, "Role:", user.role);
+      console.log(" Fetching boarding houses for user:", user.id, "Role:", user.role);
       console.log("📄 Full user object:", user);
 
       // Debug token info
@@ -803,7 +803,7 @@ export default function BoardingHousesPage() {
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800 rounded-lg p-4 border border-blue-100 dark:border-gray-700">
                 <label htmlFor="houseName" className="block text-sm font-bold text-gray-800 dark:text-gray-200 mb-3">
                   <span className="flex items-center">
-                    <span className="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center mr-2 text-lg">🏠</span>
+                    <span className="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center mr-2 text-lg"></span>
                     {t('ownerBoardingHouses.modal.houseName')} <span className="text-red-500 ml-1">*</span>
                   </span>
                 </label>

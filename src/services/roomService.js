@@ -400,28 +400,28 @@ class RoomService {
 
   async getRoomsByOwner() {
     try {
-      console.log("🏠 Fetching rooms for current owner...");
+      console.log(" Fetching rooms for current owner...");
 
       // First, get all boarding houses for this owner
       const { boardingHouseAPI } = await import("@/utils/api");
       console.log("📞 Calling boardingHouseAPI.getByOwnerId()...");
       const houses = await boardingHouseAPI.getByOwnerId();
-      console.log("🏠 API Response - Found boarding houses:", houses);
-      console.log("🏠 Houses type:", typeof houses, "Array:", Array.isArray(houses));
+      console.log(" API Response - Found boarding houses:", houses);
+      console.log(" Houses type:", typeof houses, "Array:", Array.isArray(houses));
 
       // Handle different response formats
       let housesArray = houses;
       if (houses && houses.data && Array.isArray(houses.data)) {
-        console.log("🏠 Using houses.data");
+        console.log(" Using houses.data");
         housesArray = houses.data;
       } else if (houses && houses.result && Array.isArray(houses.result)) {
-        console.log("🏠 Using houses.result");
+        console.log(" Using houses.result");
         housesArray = houses.result;
       } else if (houses && houses.value && Array.isArray(houses.value)) {
-        console.log("🏠 Using houses.value (OData format)");
+        console.log(" Using houses.value (OData format)");
         housesArray = houses.value;
       } else if (!Array.isArray(houses)) {
-        console.log("🏠 Response is not array, checking properties:", Object.keys(houses || {}));
+        console.log(" Response is not array, checking properties:", Object.keys(houses || {}));
       }
 
       if (!housesArray || housesArray.length === 0) {

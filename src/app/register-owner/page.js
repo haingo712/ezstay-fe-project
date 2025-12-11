@@ -134,7 +134,7 @@ export default function RegisterOwnerPage() {
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
                         <div className="mb-8">
                             <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
-                                🏠 Register to Become an Owner
+                                 Register to Become an Owner
                             </h1>
                             <p className="text-gray-600 dark:text-gray-400">
                                 Please fill in all the information to submit your registration. Staff will review your application as soon as possible.

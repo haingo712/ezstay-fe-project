@@ -46,12 +46,15 @@ export default function StaffReportsPage() {
             setReports(data);
         } catch (err) {
             console.error('Load error:', err);
-            setError('Không thể tải danh sách báo cáo');
+            setError('Unable to load reports');
         } finally {
             setLoading(false);
         }
     }; const handleApprove = async (reportId) => {
-        const confirmed = await notification.confirm('Bạn có chắc chắn muốn duyệt báo cáo này?', 'Xác nhận duyệt');
+        const confirmed = await notification.confirm(
+            t('staffReports.modal.confirmApprove') || 'Are you sure you want to approve this report?',
+            t('staffReports.modal.confirmApproveTitle') || 'Confirm Approval'
+        );
         if (!confirmed) return;
         setProcessing(reportId);
         try {
@@ -65,10 +68,10 @@ export default function StaffReportsPage() {
 
             // Reload lại danh sách để đảm bảo sync với server
             setTimeout(() => loadReports(), 500);
-            toast.success(t('staffReports.toast.approveSuccess') || 'Duyệt báo cáo thành công!');
+            toast.success(t('staffReports.toast.approveSuccess') || 'Report approved successfully!');
         } catch (err) {
             console.error('Approve error:', err);
-            toast.error((err.message || t('staffReports.toast.processFailed') || 'Xử lý thất bại. Vui lòng thử lại'));
+            toast.error((err.message || t('staffReports.toast.processFailed') || 'Processing failed. Please try again'));
         } finally {
             setProcessing(null);
         }
@@ -78,7 +81,7 @@ export default function StaffReportsPage() {
 
     const handleReject = async () => {
         if (!rejectModal.reason.trim()) {
-            toast.warning(t('staffReports.toast.enterRejectReason') || 'Vui lòng nhập lý do từ chối');
+            toast.warning(t('staffReports.toast.enterRejectReason') || 'Please enter a rejection reason');
             return;
         }
         setProcessing(rejectModal.id);
@@ -94,10 +97,10 @@ export default function StaffReportsPage() {
 
             // Reload lại danh sách để đảm bảo sync với server
             setTimeout(() => loadReports(), 500);
-            toast.success(t('staffReports.toast.rejectSuccess') || 'Từ chối báo cáo thành công!');
+            toast.success(t('staffReports.toast.rejectSuccess') || 'Report rejected successfully!');
         } catch (err) {
             console.error(err);
-            toast.error(t('staffReports.toast.processFailed') || 'Xử lý thất bại. Vui lòng thử lại');
+            toast.error(t('staffReports.toast.processFailed') || 'Processing failed. Please try again');
         } finally {
             setProcessing(null);
         }
@@ -130,7 +133,7 @@ export default function StaffReportsPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('staffReports.searchPlaceholder') || 'Tìm kiếm reviewId hoặc lý do...'} className="px-3 py-2 border rounded-md w-64 bg-white dark:bg-gray-700" />
+                    <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('staffReports.searchPlaceholder') || 'Search by reviewId or reason...'} className="px-3 py-2 border rounded-md w-64 bg-white dark:bg-gray-700" />
                     <div className="flex items-center space-x-2">
                         <button onClick={() => setFilter('all')} className={`px-3 py-2 rounded-md ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700'}`}>{t('staffReports.filters.all')}</button>
                         <button onClick={() => setFilter('pending')} className={`px-3 py-2 rounded-md ${filter === 'pending' ? 'bg-yellow-500 text-white' : 'bg-gray-100 dark:bg-gray-700'}`}>{t('staffReports.filters.pending')}</button>
@@ -179,7 +182,7 @@ export default function StaffReportsPage() {
                             <div className="mt-4 flex items-center justify-between">
                                 <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleString()}</p>
                                 <div className="flex items-center gap-2">
-                                    <button disabled={processing === r.id || isApproved} onClick={() => handleApprove(r.id)} className="px-3 py-1 bg-green-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed">{processing === r.id ? t('common.processing') || 'Đang...' : t('staffReports.actions.approve')}</button>
+                                    <button disabled={processing === r.id || isApproved} onClick={() => handleApprove(r.id)} className="px-3 py-1 bg-green-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed">{processing === r.id ? t('common.processing') || 'Processing...' : t('staffReports.actions.approve')}</button>
                                     <button disabled={processing === r.id || isRejected} onClick={() => openReject(r.id)} className="px-3 py-1 bg-red-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed">{t('staffReports.actions.reject')}</button>
                                 </div>
                             </div>
@@ -192,11 +195,11 @@ export default function StaffReportsPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
                         <h3 className="text-lg font-semibold mb-2">{t('staffReports.modal.rejectTitle')}</h3>
-                        <p className="text-sm text-gray-500 mb-4">{t('staffReports.modal.rejectMessage') || 'Bạn đang từ chối báo cáo này. Vui lòng nhập lý do:'}</p>
+                        <p className="text-sm text-gray-500 mb-4">{t('staffReports.modal.rejectMessage') || 'You are rejecting this report. Please enter a reason:'}</p>
                         <textarea value={rejectModal.reason} onChange={(e) => setRejectModal(prev => ({ ...prev, reason: e.target.value }))} rows={4} className="w-full p-2 border rounded mb-4" />
                         <div className="flex justify-end gap-2">
                             <button onClick={() => setRejectModal({ open: false, id: null, reason: '' })} className="px-3 py-2 rounded border">{t('common.cancel')}</button>
-                            <button onClick={handleReject} className="px-3 py-2 rounded bg-red-600 text-white">{t('staffReports.modal.confirmReject') || 'Xác nhận từ chối'}</button>
+                            <button onClick={handleReject} className="px-3 py-2 rounded bg-red-600 text-white">{t('staffReports.modal.confirmReject') || 'Confirm Rejection'}</button>
                         </div>
                     </div>
                 </div>

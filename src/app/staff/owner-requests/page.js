@@ -33,24 +33,24 @@ export default function OwnerRequestsPage() {
       setRequests(data);
     } catch (error) {
       console.error('Error loading requests:', error);
-      alert('Không thể tải danh sách đơn đăng ký');
+      alert('Unable to load owner registration requests');
     } finally {
       setLoading(false);
     }
   };
 
   const handleApprove = async (requestId) => {
-    const confirmed = await notification.confirm('Bạn có chắc muốn phê duyệt đơn này?', 'Xác nhận phê duyệt');
+    const confirmed = await notification.confirm('Are you sure you want to approve this request?', 'Confirm Approval');
     if (!confirmed) return;
 
     try {
       setProcessingId(requestId);
       await ownerRequestService.approveRequest(requestId);
-      alert('Đã phê duyệt đơn thành công!');
+      alert('Request approved successfully!');
       await loadRequests();
     } catch (error) {
       console.error('Error approving request:', error);
-      alert('Không thể phê duyệt đơn: ' + (error.response?.data?.message || error.message));
+      alert('Unable to approve request: ' + (error.response?.data?.message || error.message));
     } finally {
       setProcessingId(null);
     }
@@ -64,19 +64,19 @@ export default function OwnerRequestsPage() {
 
   const handleRejectSubmit = async () => {
     if (!rejectionReason.trim()) {
-      alert('Vui lòng nhập lý do từ chối');
+      alert('Please enter a rejection reason');
       return;
     }
 
     try {
       setProcessingId(selectedRequest.id);
       await ownerRequestService.rejectRequest(selectedRequest.id, rejectionReason);
-      alert('Đã từ chối đơn thành công!');
+      alert('Request rejected successfully!');
       setShowRejectModal(false);
       await loadRequests();
     } catch (error) {
       console.error('Error rejecting request:', error);
-      alert('Không thể từ chối đơn: ' + (error.response?.data?.message || error.message));
+      alert('Unable to reject request: ' + (error.response?.data?.message || error.message));
     } finally {
       setProcessingId(null);
     }
@@ -105,7 +105,7 @@ export default function OwnerRequestsPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Đang tải...</p>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );
@@ -116,9 +116,9 @@ export default function OwnerRequestsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Quản lý đơn đăng ký Owner</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Owner Registration Management</h1>
           <p className="mt-2 text-gray-600">
-            Xét duyệt các đơn đăng ký trở thành chủ nhà
+            Review owner registration requests
           </p>
         </div>
 
@@ -132,7 +132,7 @@ export default function OwnerRequestsPage() {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Đơn chờ duyệt</p>
+                <p className="text-sm font-medium text-gray-500">Pending Requests</p>
                 <p className="text-2xl font-semibold text-gray-900">{requests.length}</p>
               </div>
             </div>
@@ -155,8 +155,8 @@ export default function OwnerRequestsPage() {
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Không có đơn nào</h3>
-            <p className="mt-1 text-sm text-gray-500">Chưa có đơn đăng ký owner nào chờ duyệt</p>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No requests</h3>
+            <p className="mt-1 text-sm text-gray-500">No pending owner registration requests</p>
           </div>
         ) : (
           <div className="bg-white shadow-sm rounded-lg overflow-hidden">
@@ -164,22 +164,22 @@ export default function OwnerRequestsPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Người dùng
+                    User
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Lý do
+                    Reason
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Hình ảnh
+                    Image
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ngày gửi
+                    Submitted Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Trạng thái
+                    Status
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Hành động
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -204,10 +204,10 @@ export default function OwnerRequestsPage() {
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:text-blue-800 text-sm"
                         >
-                          Xem ảnh
+                          View Image
                         </a>
                       ) : (
-                        <span className="text-gray-400 text-sm">Không có</span>
+                        <span className="text-gray-400 text-sm">None</span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -220,14 +220,14 @@ export default function OwnerRequestsPage() {
                         disabled={processingId === request.id}
                         className="text-green-600 hover:text-green-900 mr-4 disabled:opacity-50"
                       >
-                        {processingId === request.id ? 'Đang xử lý...' : 'Phê duyệt'}
+                        {processingId === request.id ? 'Processing...' : 'Approve'}
                       </button>
                       <button
                         onClick={() => handleRejectClick(request)}
                         disabled={processingId === request.id}
                         className="text-red-600 hover:text-red-900 disabled:opacity-50"
                       >
-                        Từ chối
+                        Reject
                       </button>
                     </td>
                   </tr>
@@ -243,11 +243,11 @@ export default function OwnerRequestsPage() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Từ chối đơn đăng ký</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Reject Registration Request</h3>
               <textarea
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows="4"
-                placeholder="Nhập lý do từ chối..."
+                placeholder="Enter rejection reason..."
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
               />
@@ -257,14 +257,14 @@ export default function OwnerRequestsPage() {
                   disabled={!rejectionReason.trim() || processingId}
                   className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 disabled:opacity-50"
                 >
-                  {processingId ? 'Đang xử lý...' : 'Xác nhận từ chối'}
+                  {processingId ? 'Processing...' : 'Confirm Rejection'}
                 </button>
                 <button
                   onClick={() => setShowRejectModal(false)}
                   disabled={processingId}
                   className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 disabled:opacity-50"
                 >
-                  Hủy
+                  Cancel
                 </button>
               </div>
             </div>

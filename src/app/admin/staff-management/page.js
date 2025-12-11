@@ -45,9 +45,8 @@ export default function StaffManagementPage() {
   };
 
   const exportToCSV = () => {
-    const headers = ['ID', 'Full Name', 'Email', 'Phone', 'Status', 'Created Date'];
+    const headers = ['Full Name', 'Email', 'Phone', 'Status', 'Created Date'];
     const rows = filteredStaff.map(staff => [
-      staff.id,
       staff.fullName || 'N/A',
       staff.email,
       staff.phone || 'N/A',
@@ -561,9 +560,6 @@ export default function StaffManagementPage() {
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {staff.fullName || 'N/A'}
                             </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              ID: {staff.id}
-                            </div>
                           </div>
                         </div>
                       </td>
@@ -638,8 +634,8 @@ export default function StaffManagementPage() {
       </div>
 
       {showCreateModal && (
-        <div className="fixed inset-0 bg-gray-200 bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 {t('staffManagement.modal.createTitle')}
@@ -715,8 +711,8 @@ export default function StaffManagementPage() {
       )}
 
       {showEditModal && selectedStaff && (
-        <div className="fixed inset-0 bg-gray-200 bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 {t('staffManagement.modal.editTitle')}
@@ -795,8 +791,8 @@ export default function StaffManagementPage() {
       )}
 
       {showDeleteConfirm && selectedStaff && (
-        <div className="fixed inset-0 bg-gray-200 bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl">
             <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 dark:bg-red-900 rounded-full">
               <svg className="w-8 h-8 text-red-600 dark:text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -832,8 +828,8 @@ export default function StaffManagementPage() {
       )}
 
       {showViewModal && selectedStaff && (
-        <div className="fixed inset-0 bg-gray-200 bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full shadow-xl">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <div>
@@ -866,10 +862,6 @@ export default function StaffManagementPage() {
                 <div>
                   <label className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('staffManagement.form.phone')}</label>
                   <p className="text-gray-900 dark:text-white mt-1">{selectedStaff.phone || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('staffManagement.form.accountId')}</label>
-                  <p className="text-gray-900 dark:text-white mt-1">{selectedStaff.id}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('staffManagement.table.status')}</label>

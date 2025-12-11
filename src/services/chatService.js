@@ -212,7 +212,7 @@ class ChatService {
     try {
       console.log('Fetching owner chat rooms...');
       // Use /api/Chat/chat-room/user endpoint for owner
-      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/chat-room/user`, {
+      const response = await fetch(`${API_GATEWAY_URL}/api/Chat/chat-room/owner`, {
         method: 'GET',
         headers: this.getHeaders(),
       });
